@@ -23,6 +23,7 @@ class Academia extends Model
         'complemento',
         'valor_mensalidade',
         'descricao',
+        'email',
         'senha',
         'cnpj',
         'tipos_aulas'

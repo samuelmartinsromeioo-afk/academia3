@@ -42,6 +42,7 @@ class AcademiaController extends Controller
         'endereco'=>'required|string|max:255',
         'valor_mensalidade'=>'required|numeric|min:0',
         'descricao'=>'nullable|string|max:255',
+        'email'=>'required|string|max:255',
         'senha'=>'required|string|min:8|confirmed',
         'cnpj'=>'required|string|unique:academias,cnpj|max:18',
         'infraestrutura'=>'required|string|max:255',

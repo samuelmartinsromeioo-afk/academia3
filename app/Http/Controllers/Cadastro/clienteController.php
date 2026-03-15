@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\cadastro;
+namespace App\Http\Controllers\Cadastro;
 
 
 use App\Http\Controllers\Controller;

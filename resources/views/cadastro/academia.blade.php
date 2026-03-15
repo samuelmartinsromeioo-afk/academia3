@@ -125,6 +125,14 @@
         </div>
 
         <div class="form-group">
+            <label>E-mail</label>
+            <div class="input-wrapper">
+                <i class="fa-solid fa-envelope"></i>
+                <input type="email" name="email" value="{{ old('email') }}" required>
+            </div>
+        </div>
+
+        <div class="form-group">
             <label>Senha</label>
             <div class="input-wrapper">
                 <i class="fa-solid fa-key"></i>
