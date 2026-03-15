@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Cadastro;
 use App\Http\Controllers\Controller; 
 use App\Models\cadastro\Academia;
+use App\Models\cadastro\Cliente;
+use App\Models\cadastro\Personal;
 use Illuminate\Http\Request;
 
 class AcademiaController extends Controller
@@ -51,10 +53,33 @@ class AcademiaController extends Controller
         
         $dados['senha'] = bcrypt($dados['senha']);
         Academia::create($dados);
-        return redirect()->route('form.academia')->with('sucesso', 'Personal cadastrado com sucesso!');
+        return redirect()->route('login.index')->with('sucesso', 'Academia cadastrada com sucesso!');
         return redirect()->route('cadastro.SelecaoCadastro');
     }
 
+    public function dashboard($id)
+    {
+        $academia = Academia::findOrFail($id);
+        if (!$academia) {
+            return redirect()->route('login.index')->with('erro', 'Academia não encontrada.');
+        }
+
+        // exemplo de dados
+        $totalAlunos = Cliente::where('academia_id', $id)->count();
+        $personais = Personal::where('academia_id', $id)->count();
+        $faturamento = $totalAlunos * $academia->valor_mensalidade;
+        $planosAtivos = Cliente::where('academia_id', $id)->where('plano_ativo', true)->count();
+        $alunos = Cliente::where('academia_id', $id)->get(); 
+
+        return view('academia.dashboard', compact(
+            'academia',
+            'totalAlunos',
+            'planosAtivos',
+            'faturamento',
+            'personais',
+            'alunos'
+        ));
+    }
     /**
      * Display the specified resource.
      */

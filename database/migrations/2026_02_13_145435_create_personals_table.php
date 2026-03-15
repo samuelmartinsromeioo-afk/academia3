@@ -20,6 +20,7 @@ return new class extends Migration
             $table->string('email')->unique();
             $table->string('cep');
             $table->string('rua');
+            $table->string('foto');
             $table->string('bairro');
             $table->string('cidade');
             $table->string('estado');

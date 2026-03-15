@@ -24,7 +24,7 @@ class ClienteController extends Controller
 
     $cliente = \App\Models\cadastro\Cliente::find($id);
     $personals = \App\Models\cadastro\Personal::all();
-    $academias = \App\Models\cadastro\Academia::all();
+    $academias = \App\Models\cadastro\academia::all();
 
    $meusAgendamentos = \App\Models\Agenda::where('cliente_id', $id)
                     ->with(['personal', 'academia'])
@@ -137,7 +137,7 @@ class ClienteController extends Controller
         
         // Criptografar senha
         $validated['senha'] = Hash::make($validated['senha']);
-
+        
         Cliente::create($validated);
 
         return redirect()->route('login.index')
@@ -172,6 +172,15 @@ class ClienteController extends Controller
 
     return redirect()->back()->with('sucesso', 'Horário agendado com sucesso!');
 }
+public function escolherAcademia(Request $request)
+{
+    $request->validate([
+        'academia_id' => 'required|exists:academias,id'
+    ]);
 
+    session(['academia_id' => $request->academia_id]);
+
+    return redirect()->route('cliente.index');
+}
 
 }
