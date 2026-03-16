@@ -32,4 +32,8 @@ class Agenda extends Model
     {
         return $this->belongsTo(Personal::class, 'personal_id');
     }
+    public function academia()
+    {
+        return $this->belongsTo(\App\Models\cadastro\Academia::class, 'academia_id');
+    }
 }

@@ -324,6 +324,10 @@
                                 <div>
                                     <strong style="color:var(--primary);">${item.hora_inicio.substring(0,5)} - ${item.hora_fim.substring(0,5)}</strong>
                                     <p style="margin:5px 0 0 0; font-size:0.85rem;">${item.descricao || 'Bloqueado'}</p>
+                                    <small style="color:var(--text-muted); font-size:0.7rem;">
+                                    <i class="fas fa-dumbbell"></i>
+                                    ${item.academia ? item.academia.nome : 'Academia não informada'}
+                                    </small>
                                     ${!podeCancelar ? '<small style="color:var(--text-muted); font-size:0.6rem; display:block; margin-top:4px;">Bloqueado (limite 24h)</small>' : ''}
                                 </div>
                                 <button type="button" class="btn-delete-agenda" 
