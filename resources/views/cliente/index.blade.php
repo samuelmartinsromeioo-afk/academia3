@@ -15,6 +15,7 @@
             --border: rgba(255,255,255,0.08);
             --input-bg: rgba(255,255,255,0.04);
             --success: #28a745;
+            --error: #ff4444;
         }
 
         body { background-color: var(--bg-dark); font-family: 'Inter', sans-serif; color: var(--text-main); margin: 0; padding: 0; overflow-x: hidden; }
@@ -43,8 +44,8 @@
         .stat-card span { display: block; color: var(--text-muted); font-size: 0.7rem; text-transform: uppercase; font-weight: 800; }
         .stat-card h2 { margin: 5px 0 0; font-size: 1.5rem; }
 
-        /* Meus Treinos */
-        .treino-item { background: var(--card-bg); padding: 20px; border-radius: 15px; border-left: 4px solid var(--primary); display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+        /* Estilo para Listas (Academias e Treinos) */
+        .list-item { background: var(--card-bg); padding: 20px; border-radius: 15px; border-left: 4px solid var(--primary); display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-right: 1px solid var(--border); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
         .badge-status { background: rgba(212, 255, 0, 0.1); color: var(--primary); padding: 5px 12px; border-radius: 20px; font-size: 0.65rem; font-weight: 800; text-transform: uppercase; }
 
         /* Vitrine de Personals */
@@ -97,7 +98,7 @@
         <div class="dropdown-menu" id="dropdownMenu">
             <button type="button" onclick="window.location.href='{{ route('cliente.index') }}'"><i class="fas fa-chart-line"></i> Menu Principal</button>
             <button type="button" onclick="toggleEditForm()"><i class="fas fa-user-edit"></i> Editar Perfil</button>
-            <form action="{{ route('logout') }}" method="POST">
+            <form action="{{ route('login.logout') }}" method="POST">
                 @csrf
                 <button type="submit" style="color: #ff4444;"><i class="fas fa-power-off"></i> Sair</button>
             </form>
@@ -110,11 +111,19 @@
 </div>
 
 <div class="container">
+    {{-- Mensagens de Sucesso/Erro --}}
+    @if(session('success'))
+        <div style="background: rgba(40, 167, 69, 0.2); border: 1px solid var(--success); color: #fff; padding: 15px; border-radius: 12px; margin-bottom: 20px;">
+            {{ session('success') }}
+        </div>
+    @endif
+
     <header id="mainHeader" style="margin-bottom: 30px;">
         <h1 style="margin:0; font-size: 1.8rem; font-weight: 900; letter-spacing: -1px;">CENTRAL DO ALUNO</h1>
         <p style="color: var(--text-muted); font-size: 0.9rem;">Bem-vindo de volta, foque nos seus objetivos.</p>
     </header>
 
+    {{-- Formulário de Edição --}}
     <div id="editFormContainer">
         <form action="{{ route('cliente.update', $cliente->id) }}" method="POST" class="profile-card">
             @csrf @method('PUT')
@@ -124,14 +133,14 @@
             <div class="form-grid">
                 <div class="col-3">
                     <label>Nome Completo</label>
-                    <div class="input-wrapper"><i class="fas fa-user"></i><input type="text" name="nome" value="{{ $cliente->nome }}"></div>
+                    <div class="input-wrapper"><i class="fas fa-user"></i><input type="text" name="nome" value="{{ $cliente->nome }}" required></div>
                 </div>
                 <div class="col-3">
                     <label>E-mail</label>
-                    <div class="input-wrapper"><i class="fas fa-envelope"></i><input type="email" name="email" value="{{ $cliente->email }}"></div>
+                    <div class="input-wrapper"><i class="fas fa-envelope"></i><input type="email" name="email" value="{{ $cliente->email }}" required></div>
                 </div>
                 <div class="col-3">
-                    <label>Nova Senha (deixe em branco para manter)</label>
+                    <label>Nova Senha (deixe em branco)</label>
                     <div class="input-wrapper"><i class="fas fa-lock"></i><input type="password" name="senha" placeholder="********"></div>
                 </div>
                 <div class="col-3">
@@ -139,11 +148,23 @@
                     <div class="input-wrapper">
                         <i class="fas fa-venus-mars"></i>
                         <select name="sexo">
-                            <option value="M" {{ $cliente->sexo == 'M' ? 'selected' : '' }}>Masculino</option>
-                            <option value="F" {{ $cliente->sexo == 'F' ? 'selected' : '' }}>Feminino</option>
-                            <option value="O" {{ $cliente->sexo == 'O' ? 'selected' : '' }}>Outro</option>
+                            <option value="masculino" {{ $cliente->sexo == 'masculino' ? 'selected' : '' }}>Masculino</option>
+                            <option value="feminino" {{ $cliente->sexo == 'feminino' ? 'selected' : '' }}>Feminino</option>
+                            <option value="outro" {{ $cliente->sexo == 'outro' ? 'selected' : '' }}>Outro</option>
                         </select>
                     </div>
+                </div>
+            </div>
+
+            <div class="section-title">Medidas Físicas</div>
+            <div class="form-grid">
+                <div class="col-3">
+                    <label>Peso (kg)</label>
+                    <div class="input-wrapper"><i class="fas fa-weight"></i><input type="number" step="0.01" name="peso" value="{{ $cliente->peso }}"></div>
+                </div>
+                <div class="col-3">
+                    <label>Altura (m)</label>
+                    <div class="input-wrapper"><i class="fas fa-ruler-vertical"></i><input type="number" step="0.01" name="altura" value="{{ $cliente->altura }}"></div>
                 </div>
             </div>
 
@@ -175,41 +196,6 @@
                 </div>
             </div>
 
-            <div class="section-title">Ficha Técnica & Objetivos</div>
-            <div class="form-grid">
-                <div class="col-2">
-                    <label>Altura (cm)</label>
-                    <div class="input-wrapper"><i class="fas fa-ruler-vertical"></i><input type="number" name="altura" value="{{ $cliente->altura }}"></div>
-                </div>
-                <div class="col-2">
-                    <label>Peso (kg)</label>
-                    <div class="input-wrapper"><i class="fas fa-weight"></i><input type="number" step="0.1" name="peso" value="{{ $cliente->peso }}"></div>
-                </div>
-                <div class="col-2">
-                    <label>Idade</label>
-                    <div class="input-wrapper"><i class="fas fa-calendar-day"></i><input type="number" name="idade" value="{{ $cliente->idade }}"></div>
-                </div>
-                <div class="col-6">
-                    <label>Frequência Semanal</label>
-                    <div class="input-wrapper">
-                        <i class="fas fa-dumbbell"></i>
-                        <select name="frequencia_semanal">
-                            <option value="1-2" {{ $cliente->frequencia_semanal == '1-2' ? 'selected' : '' }}>1 a 2 vezes</option>
-                            <option value="3-4" {{ $cliente->frequencia_semanal == '3-4' ? 'selected' : '' }}>3 a 4 vezes</option>
-                            <option value="5+" {{ $cliente->frequencia_semanal == '5+' ? 'selected' : '' }}>5 ou mais</option>
-                        </select>
-                    </div>
-                </div>
-                <div class="col-6">
-                    <label>Resumo do Objetivo</label>
-                    <div class="input-wrapper"><textarea name="resumo_objetivo">{{ $cliente->resumo_objetivo }}</textarea></div>
-                </div>
-                <div class="col-6">
-                    <label>Condição Clínica / Observações</label>
-                    <div class="input-wrapper"><textarea name="condicao_clinica">{{ $cliente->condicao_clinica }}</textarea></div>
-                </div>
-            </div>
-
             <button type="submit" class="btn-action">Atualizar Perfil Completo</button>
         </form>
     </div>
@@ -224,29 +210,24 @@
             <div class="stat-card">
                 <i class="fas fa-ruler-vertical"></i>
                 <span>Altura</span>
-                <h2>{{ $cliente->altura ?? '--' }} <small style="font-size: 0.8rem;">cm</small></h2>
+                <h2>{{ $cliente->altura ?? '--' }} <small style="font-size: 0.8rem;">m</small></h2>
             </div>
-            @php
-            use Carbon\Carbon;
-            @endphp
-
             <div class="stat-card">
                 <i class="fas fa-fire"></i>
-                <span>Idade</span>
-                <h2>{{ Carbon::parse($cliente->idade)->age ?? '--' }} 
-                    <small style="font-size: 0.8rem;">anos</small>
-                </h2>
+                <span>Status</span>
+                <h2 style="font-size: 1.1rem; color: var(--primary);">{{ $cliente->academia_id ? 'Ativo' : 'Sem Plano' }}</h2>
             </div>
         </div>
 
+        {{-- AGENDA --}}
         <div class="section-title">Minha Agenda de Treinos</div>
         @forelse($meusAgendamentos as $agendamento)
-            <div class="treino-item">
+            <div class="list-item">
                 <div>
                     <strong style="display: block; font-size: 1rem;">{{ $agendamento->personal->nome }}</strong>
                     <span style="color: var(--text-muted); font-size: 0.8rem;">
                         <i class="far fa-calendar-alt"></i> {{ \Carbon\Carbon::parse($agendamento->data)->format('d/m/Y') }} 
-                        às {{ \Carbon\Carbon::parse($agendamento->horario_inicio)->format('H:i') }}
+                        às {{ \Carbon\Carbon::parse($agendamento->hora_inicio)->format('H:i') }}
                     </span>
                 </div>
                 <div class="badge-status">Confirmado</div>
@@ -257,6 +238,7 @@
             </div>
         @endforelse
 
+        {{-- PERSONALS --}}
         <div class="section-title">Personals Disponíveis</div>
         <div class="dashboard-grid" style="grid-template-columns: repeat(2, 1fr);">
             @foreach($personals as $p)
@@ -274,9 +256,42 @@
             </div>
             @endforeach
         </div>
+
+        {{-- ACADEMIAS --}}
+        <div class="section-title">Academias Parceiras (Contratar)</div>
+        <div id="listaAcademias">
+            @forelse($academias as $academia)
+                <div class="list-item">
+                    <div style="flex: 1;">
+                        <strong style="display: block; font-size: 1.1rem; color: var(--primary);">{{ $academia->nome }}</strong>
+                        <span style="color: var(--text-muted); font-size: 0.8rem;">
+                            <i class="fas fa-map-marker-alt"></i> {{ $academia->cidade }} - {{ $academia->estado }}
+                        </span>
+                        <div style="margin-top: 5px; font-weight: 700; color: #fff;">
+                            Mensalidade: R$ {{ number_format($academia->valor_mensalidade, 2, ',', '.') }}
+                        </div>
+                    </div>
+                    
+                    @if($cliente->academia_id == $academia->id)
+                        <div class="badge-status" style="background: var(--primary); color: #000;">Meu Plano</div>
+                    @else
+                        <form action="{{ route('academias.contratar') }}" method="POST">
+                            @csrf
+                            <input type="hidden" name="academia_id" value="{{ $academia->id }}">
+                            <button type="submit" class="btn-action" style="margin:0; padding: 10px 20px; width: auto; font-size: 0.7rem;">
+                                Contratar
+                            </button>
+                        </form>
+                    @endif
+                </div>
+            @empty
+                <p style="color: var(--text-muted); text-align: center;">Nenhuma academia disponível no momento.</p>
+            @endforelse
+        </div>
     </div>
 </div>
 
+{{-- MODAL AGENDA --}}
 <div id="agendaModal" class="modal-overlay">
     <div class="profile-card" style="width: 90%; max-width: 450px; border: 1px solid var(--primary);">
         <i class="fas fa-times close-form" onclick="fecharAgenda()"></i>
@@ -284,51 +299,30 @@
         <p style="color: var(--text-muted); font-size: 0.8rem; margin-bottom: 20px;">Selecione um horário disponível:</p>
         
         <div id="listaHorarios" style="max-height: 400px; overflow-y: auto;">
-            @forelse($horariosDisponiveis as $h)
+            @foreach($horariosDisponiveis as $h)
             <div class="horario-item personal-horario-{{ $h->personal_id }}" style="display: none;">
                 <div style="display: flex; flex-direction: column;">
                     <span style="font-size: 0.8rem; font-weight: 800; color: var(--primary);">
-                        {{ \Carbon\Carbon::parse($h->data)->translatedFormat('d \d\e F (D)') }}
+                        {{ \Carbon\Carbon::parse($h->data)->translatedFormat('d \d\e F') }}
                     </span>
-                    <span style="font-size: 0.75rem; color: #fff;">
-                        {{ $h->horario_inicio }} às {{ $h->horario_fim }}
-                    </span>
+                    <span style="font-size: 0.75rem; color: #fff;">{{ $h->horario_inicio }} às {{ $h->horario_fim }}</span>
                 </div>
                 <form action="{{ route('agendar.horario') }}" method="POST">
-                        @csrf
+                    @csrf
+                    <input type="hidden" name="personal_id" value="{{ $h->personal_id }}">
+                    <input type="hidden" name="data" value="{{ $h->data }}">
+                    <input type="hidden" name="horario_inicio" value="{{ $h->horario_inicio }}">
+                    <input type="hidden" name="horario_fim" value="{{ $h->horario_fim }}">
+                    <input type="hidden" name="academia_id" value="{{ $cliente->academia_id }}">
 
-                        <input type="hidden" name="personal_id" value="{{ $h->personal_id }}">
-                        <input type="hidden" name="data" value="{{ $h->data }}">
-                        <input type="hidden" name="horario_inicio" value="{{ $h->horario_inicio }}">
-                        <input type="hidden" name="horario_fim" value="{{ $h->horario_fim }}">
-
-                        
-                        <div style="margin-bottom:10px; max-width:200px;">
-                            <label>Academia</label>
-                            <div class="input-wrapper">
-                                <i class="fas fa-dumbbell"></i>
-                                <select name="academia_id" required>
-                                    <option value="">Escolha a academia</option>
-
-                                    @foreach($academias as $academia)
-                                        <option value="{{ $academia->id }}">
-                                            {{ $academia->nome }} - {{ $academia->cidade }}
-                                        </option>
-                                    @endforeach
-
-                                </select>
-                            </div>
-                        </div>
-
-                        <button type="submit" class="btn-action" style="width:auto; margin:0; padding: 8px 15px; font-size: 0.7rem;">
-                            Agendar
-                        </button>
-                    </form>
+                    <button type="submit" class="btn-action" style="width:auto; margin:0; padding: 8px 15px; font-size: 0.7rem;" 
+                            {{ !$cliente->academia_id ? 'disabled' : '' }}>
+                        {{ $cliente->academia_id ? 'Agendar' : 'Contrate uma academia primeiro' }}
+                    </button>
+                </form>
             </div>
-            @empty
-                <p style="text-align: center; color: var(--text-muted);">Sem horários.</p>
-            @endforelse
-            <p id="msgSemHorario" style="display: none; text-align: center; color: var(--text-muted); padding: 20px;">Sem horários livres para este profissional.</p>
+            @endforeach
+            <p id="msgSemHorario" style="display: none; text-align: center; color: var(--text-muted); padding: 20px;">Sem horários livres.</p>
         </div>
     </div>
 </div>
@@ -338,14 +332,10 @@
         const summary = document.getElementById('dashboardSummary');
         const form = document.getElementById('editFormContainer');
         const header = document.getElementById('mainHeader');
-        const menu = document.getElementById('dropdownMenu');
-        
         const isOpening = form.style.display === 'none' || form.style.display === '';
-        
         form.style.display = isOpening ? 'block' : 'none';
         summary.style.display = isOpening ? 'none' : 'block';
         header.style.display = isOpening ? 'none' : 'block';
-        menu.style.display = 'none'; // Fecha o menu ao abrir o form
     }
 
     function toggleMenu() {
@@ -355,12 +345,9 @@
 
     function abrirAgenda(id, nome) {
         document.getElementById('nomePersonalAgenda').innerText = nome;
-        const todosHorarios = document.querySelectorAll('.horario-item');
-        todosHorarios.forEach(h => h.style.display = 'none');
-
+        document.querySelectorAll('.horario-item').forEach(h => h.style.display = 'none');
         const filtrados = document.querySelectorAll('.personal-horario-' + id);
         const msgVazio = document.getElementById('msgSemHorario');
-
         if (filtrados.length > 0) {
             filtrados.forEach(h => h.style.display = 'flex');
             msgVazio.style.display = 'none';
@@ -370,15 +357,11 @@
         document.getElementById('agendaModal').style.display = 'flex';
     }
 
-    function fecharAgenda() {
-        document.getElementById('agendaModal').style.display = 'none';
-    }
+    function fecharAgenda() { document.getElementById('agendaModal').style.display = 'none'; }
 
     window.onclick = function(e) {
         if (e.target.className === 'modal-overlay') fecharAgenda();
-        if (!e.target.closest('.menu-container')) {
-            document.getElementById('dropdownMenu').style.display = 'none';
-        }
+        if (!e.target.closest('.menu-container')) document.getElementById('dropdownMenu').style.display = 'none';
     }
 </script>
 </body>

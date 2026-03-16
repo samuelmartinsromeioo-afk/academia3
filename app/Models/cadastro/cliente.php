@@ -18,6 +18,7 @@ class Cliente extends Model
         'nome',
         'id',
         'email',
+        'academia_id',
         'senha',
         'cep',
         'rua',
@@ -37,9 +38,5 @@ class Cliente extends Model
         public function personal() {
             return $this->belongsTo(\App\Models\cadastro\Personal::class, 'personal_id');
         }
-        /*public function academia()
-        {
-            return $this->belongsTo(\App\Models\cadastro\Academia::class, 'academia_id');
-        }*/
     use HasFactory;
 }

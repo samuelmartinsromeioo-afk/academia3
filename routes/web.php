@@ -34,7 +34,7 @@ Route::get('/cadastro/selecionar', [SelecaoController::class, 'index'])->name('c
 Route::get('/cadastro/ir-cadastro/{tipo}', [SelecaoController::class, 'redirecionar'])->name('cadastro.ir');
 
 
-// 3. As rotas dos formulários específicos 
+
 
 
 //rotas para direcionar ao cadastro do aluno
@@ -54,13 +54,22 @@ Route::get('/cliente', [ClienteController::class, 'index'])->name('cliente.index
 Route::put('/cliente/update/{id}', [ClienteController::class, 'update'])->name('cliente.update');
 //rota para que o aluno consiga agendar um horario 
 Route::post('/agendar', [ClienteController::class, 'reservarHorario'])->name('agendar.horario');
+// Listagem de todas as academias
+Route::get('/academias/explorar', [ClienteController::class, 'listarAcademias'])->name('academias.explorar');
+// Detalhes de uma academia específica
+Route::get('/academias/{id}/detalhes', [ClienteController::class, 'detalhesAcademia'])->name('academias.detalhes');
+// Ação de contratar (vincular)
+Route::post('/academias/contratar', [ClienteController::class, 'contratarAcademia'])->name('academias.contratar');
+// Rota para processar a contratação
+Route::post('/academias/contratar', [App\Http\Controllers\Cadastro\ClienteController::class, 'contratarAcademia'])->name('academias.contratar');
 
 //rotas para direcionar para a tela do personal
 Route::get('/personal/dashboard', [PersonalController::class, 'index'])->name('personal.dashboard');
 Route::put('/personal/update/{id}', [PersonalController::class, 'update'])->name('personal.update');
+Route::get('/personal/alunos', [PersonalController::class, 'meusAlunos'])->name('personal.alunos');
 
 //rota para deslogar da tela 
-Route::post('/logout', [App\Http\Controllers\loginController::class, 'logout'])->name('logout');
+Route::post('/logout', [App\Http\Controllers\loginController::class, 'logout'])->name('login.logout');
 
 //rota da agenda 
 Route::post('/agenda/store', [PersonalController::class, 'storeHorario'])->name('agenda.store');
@@ -73,5 +82,9 @@ Route::get('/personal/agenda/{data}', [PersonalController::class, 'getAgendaDia'
 Route::get('/personal/cliente', [PersonalController::class, 'listarAlunos'])->name('personal.alunos');
 
 //rota para a tela academia
-Route::get('/academia/dashboard', [AcademiaController::class, 'index'])->name('academia.dashboard');
+Route::get('/academia/dashboard', [AcademiaController::class, 'dashboard'])->name('academia.dashboard');
 Route::put('/academia/update/{id}', [AcademiaController::class, 'update'])->name('academia.update');
+Route::get('/academia/alunos', [AcademiaController::class, 'listarAlunos'])->name('academia.alunos');
+Route::get('/academia/planos', [AcademiaController::class, 'listarPlanos'])->name('academia.planos');
+Route::put('/academia/update/{id}', [AcademiaController::class, 'update'])->name('academia.update');
+Route::get('/academia/alunos', [AcademiaController::class, 'listarAlunos'])->name('academia.alunos');

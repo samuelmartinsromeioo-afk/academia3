@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use App\Models\cadastro\Personal; 
+use App\Models\cadastro\cliente; 
 
 class Agenda extends Model
 {
@@ -17,6 +18,7 @@ class Agenda extends Model
     protected $fillable = [
         'personal_id',
         'academia_id',
+        'cliente_id',
         'data',
         'hora_inicio',
         'hora_fim',
@@ -36,5 +38,10 @@ class Agenda extends Model
     public function academia()
     {
         return $this->belongsTo(\App\Models\cadastro\Academia::class, 'academia_id');
+    }
+    public function cliente()
+    {
+        
+        return $this->belongsTo(\App\Models\cadastro\Cliente::class, 'cliente_id');
     }
 }

@@ -168,17 +168,26 @@
             @csrf
 
             <div class="form-group">
-                <label for="email">E-mail</label>
-                <input type="email" name="email" class="form-control" required autofocus>
-                @error('email')
+                <label for="login">E-mail ou CNPJ</label>
+                <input type="text" name="login" id="login" 
+                       class="form-control" 
+                       placeholder="ex@email.com ou 00.000.000/0001-00"
+                       value="{{ old('login') }}" 
+                       required autofocus>
+                
+                @error('login')
                     <div class="error-message">{{ $message }}</div>
                 @enderror
             </div>
 
             <div class="form-group">
                 <label for="password">Senha</label>
-                <input type="password" name="senha" class="form-control" required>
-                @error('password')
+                <input type="password" name="senha" id="password" 
+                       class="form-control" 
+                       placeholder="Sua senha secreta"
+                       required>
+                
+                @error('senha')
                     <div class="error-message">{{ $message }}</div>
                 @enderror
             </div>

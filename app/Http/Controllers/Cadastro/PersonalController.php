@@ -207,16 +207,20 @@ class PersonalController extends Controller
     //função criada para mostrar o resumo dia 
     public function getAgendaDia($data)
     {
-        $agendas = Agenda::with('academia')->where('personal_id', session('personal_id'))
+        // Adicionamos as relações. 
+        // Certifique-se de que no Model Agenda existe public function cliente()
+        $agendas = Agenda::with(['academia', 'cliente']) 
+            ->where('personal_id', session('personal_id'))
             ->where('data', $data)
             ->where('cancelado', false)
             ->orderBy('hora_inicio', 'asc')
             ->get();
-            
+
+        // Debug opcional: se quiser testar se o nome está vindo, descomente a linha abaixo temporariamente:
+        // dd($agendas->toArray()); 
 
         return response()->json($agendas);
     }
-
     public function listarAlunos()
     {
         // Busca o personal logado
@@ -226,8 +230,22 @@ class PersonalController extends Controller
         // Se você tiver o relacionamento configurado no Model, use: $personal->alunos
         $alunos = Cliente::where('personal_id', $personal->id)->get();
 
-        return view('personal.alunos', compact('personal', 'alunos'));
+        return view('personal.clientes', compact('personal', 'alunos'));
     }
+
+    public function meusAlunos()
+{
+    // Pega o ID do personal logado na sessão
+    $personalId = session('personal_id'); 
+
+    // Busca os agendamentos e os dados dos clientes vinculados
+    $meusAlunos = Agenda::with('cliente')
+        ->where('personal_id', $personalId)
+        ->get()
+        ->unique('cliente_id'); 
+
+    return view('personal.meus-alunos', compact('meusAlunos'));
+}
 
    
 }
