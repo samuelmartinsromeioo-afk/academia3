@@ -226,10 +226,16 @@
                 <span>Altura</span>
                 <h2>{{ $cliente->altura ?? '--' }} <small style="font-size: 0.8rem;">cm</small></h2>
             </div>
+            @php
+            use Carbon\Carbon;
+            @endphp
+
             <div class="stat-card">
                 <i class="fas fa-fire"></i>
                 <span>Idade</span>
-                <h2>{{ $cliente->idade ?? '--' }} <small style="font-size: 0.8rem;">anos</small></h2>
+                <h2>{{ Carbon::parse($cliente->idade)->age ?? '--' }} 
+                    <small style="font-size: 0.8rem;">anos</small>
+                </h2>
             </div>
         </div>
 
@@ -289,13 +295,35 @@
                     </span>
                 </div>
                 <form action="{{ route('agendar.horario') }}" method="POST">
-                    @csrf
-                    <input type="hidden" name="personal_id" value="{{ $h->personal_id }}">
-                    <input type="hidden" name="data" value="{{ $h->data }}">
-                    <input type="hidden" name="horario_inicio" value="{{ $h->horario_inicio }}">
-                    <input type="hidden" name="horario_fim" value="{{ $h->horario_fim }}">
-                    <button type="submit" class="btn-action" style="width:auto; margin:0; padding: 8px 15px; font-size: 0.7rem;">Agendar</button>
-                </form>
+                        @csrf
+
+                        <input type="hidden" name="personal_id" value="{{ $h->personal_id }}">
+                        <input type="hidden" name="data" value="{{ $h->data }}">
+                        <input type="hidden" name="horario_inicio" value="{{ $h->horario_inicio }}">
+                        <input type="hidden" name="horario_fim" value="{{ $h->horario_fim }}">
+
+                        
+                        <div style="margin-bottom:10px; max-width:200px;">
+                            <label>Academia</label>
+                            <div class="input-wrapper">
+                                <i class="fas fa-dumbbell"></i>
+                                <select name="academia_id" required>
+                                    <option value="">Escolha a academia</option>
+
+                                    @foreach($academias as $academia)
+                                        <option value="{{ $academia->id }}">
+                                            {{ $academia->nome }} - {{ $academia->cidade }}
+                                        </option>
+                                    @endforeach
+
+                                </select>
+                            </div>
+                        </div>
+
+                        <button type="submit" class="btn-action" style="width:auto; margin:0; padding: 8px 15px; font-size: 0.7rem;">
+                            Agendar
+                        </button>
+                    </form>
             </div>
             @empty
                 <p style="text-align: center; color: var(--text-muted);">Sem horários.</p>

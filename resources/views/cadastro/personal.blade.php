@@ -228,6 +228,14 @@
                 </div>
             </div>
 
+            <div class="form-group">
+                <label>Foto do Profissional (IMG)</label>
+                <div class="input-wrapper">
+                    <i class="fa-solid fa-image"></i>
+                    <input type="file" name="foto" required>
+                </div>
+            </div>
+
             <input type="hidden" name="rua" id="rua" value="{{ old('rua') }}">
             <input type="hidden" name="bairro" id="bairro" value="{{ old('bairro') }}">
             <input type="hidden" name="cidade" id="cidade" value="{{ old('cidade') }}">

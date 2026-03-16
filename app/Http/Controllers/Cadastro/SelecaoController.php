@@ -1,5 +1,5 @@
 <?php
-namespace App\Http\Controllers\cadastro;
+namespace App\Http\Controllers\Cadastro;
 use Illuminate\Http\Request;
 
 class SelecaoController extends \App\Http\Controllers\Controller

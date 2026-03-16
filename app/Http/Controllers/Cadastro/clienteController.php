@@ -1,11 +1,14 @@
 <?php
 
-namespace App\Http\Controllers\cadastro;
+namespace App\Http\Controllers\Cadastro;
 
 
 use App\Http\Controllers\Controller;
 use App\Models\cadastro\Cliente;
-
+use App\Models\cadastro\Personal;
+use App\Models\cadastro\academia;
+use App\Models\Agenda;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 
@@ -21,11 +24,13 @@ class ClienteController extends Controller
 
     $cliente = \App\Models\cadastro\Cliente::find($id);
     $personals = \App\Models\cadastro\Personal::all();
+    $academias = \App\Models\cadastro\academia::all();
 
-    $meusAgendamentos = \App\Models\Agenda::where('cliente_id', $id)
-                        ->with('personal')
-                        ->orderBy('data', 'asc')
-                        ->get();
+   $meusAgendamentos = \App\Models\Agenda::where('cliente_id', $id)
+                    ->with(['personal', 'academia'])
+                    ->orderBy('data', 'asc')
+                    ->get();
+
 
     $horariosDisponiveis = collect();
     $diasParaFrente = 7; // Vamos mostrar os próximos 7 dias para não carregar demais
@@ -71,7 +76,8 @@ class ClienteController extends Controller
         }
     }
 
-    return view('cliente.index', compact('cliente', 'personals', 'meusAgendamentos', 'horariosDisponiveis'));
+    return view('cliente.index', compact('cliente', 'personals', 'meusAgendamentos', 'horariosDisponiveis', 
+    'academias'));
 }
 
     public function update(Request $request, $id)
@@ -131,7 +137,7 @@ class ClienteController extends Controller
         
         // Criptografar senha
         $validated['senha'] = Hash::make($validated['senha']);
-
+        
         Cliente::create($validated);
 
         return redirect()->route('login.index')
@@ -142,22 +148,39 @@ class ClienteController extends Controller
 {
     $clienteId = session('cliente_id');
 
-    // Verifique se o cliente está logado
     if (!$clienteId) {
         return redirect()->route('login.index')->with('erro', 'Sessão expirada.');
     }
 
-    // Cria a agenda direto no banco
+    $request->validate([
+        'personal_id' => 'required|exists:personals,id',
+        'academia_id' => 'required|exists:academias,id',
+        'data' => 'required|date',
+        'horario_inicio' => 'required',
+        'horario_fim' => 'required'
+    ]);
+
     \App\Models\Agenda::create([
         'cliente_id'  => $clienteId,
         'personal_id' => $request->personal_id,
+        'academia_id' => $request->academia_id,
         'data'        => $request->data,
-        'hora_inicio' => $request->horario_inicio, 
+        'hora_inicio' => $request->horario_inicio,
         'hora_fim'    => $request->horario_fim,
         'cancelado'   => false
     ]);
 
     return redirect()->back()->with('sucesso', 'Horário agendado com sucesso!');
+}
+public function escolherAcademia(Request $request)
+{
+    $request->validate([
+        'academia_id' => 'required|exists:academias,id'
+    ]);
+
+    session(['academia_id' => $request->academia_id]);
+
+    return redirect()->route('cliente.index');
 }
 
 }

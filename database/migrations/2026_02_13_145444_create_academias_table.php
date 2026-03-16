@@ -22,11 +22,11 @@ return new class extends Migration
             $table->string('cidade');
             $table->string('estado');
             $table->string('complemento');
+            $table->string('endereco');
             $table->decimal('valor_mensalidade', 10, 2); // Ex: 1500.50
 
             $table->string('email')->unique();
             $table->string('senha');
-            $table->string('endereco');
             $table->text('descricao');
             $table->string('cnpj');
             $table->text('tipos_aulas');

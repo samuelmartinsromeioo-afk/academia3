@@ -71,3 +71,7 @@ Route::get('/personal/agenda/{data}', [PersonalController::class, 'getAgendaDia'
 
 //rota para listar os alunos que o personal possui 
 Route::get('/personal/cliente', [PersonalController::class, 'listarAlunos'])->name('personal.alunos');
+
+//rota para a tela academia
+Route::get('/academia/dashboard', [AcademiaController::class, 'index'])->name('academia.dashboard');
+Route::put('/academia/update/{id}', [AcademiaController::class, 'update'])->name('academia.update');

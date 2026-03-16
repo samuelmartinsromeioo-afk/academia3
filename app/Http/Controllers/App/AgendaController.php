@@ -7,7 +7,7 @@ use App\Models\cadastro\Personal;
 use App\Models\Agenda;  
 use Carbon\Carbon;
 
-class PersonalController extends Controller
+class AgendaController extends Controller
 {
     /**
      * Atualiza os dados do perfil do Personal

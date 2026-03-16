@@ -21,8 +21,10 @@ class Academia extends Model
         'cidade',
         'estado',
         'complemento',
+        'endereco',
         'valor_mensalidade',
         'descricao',
+        'email',
         'senha',
         'cnpj',
         'tipos_aulas'

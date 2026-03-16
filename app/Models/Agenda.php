@@ -16,6 +16,7 @@ class Agenda extends Model
     // Campos que podem ser preenchidos em massa (essenciais para o storeHorario)
     protected $fillable = [
         'personal_id',
+        'academia_id',
         'data',
         'hora_inicio',
         'hora_fim',
@@ -31,5 +32,9 @@ class Agenda extends Model
     public function personal()
     {
         return $this->belongsTo(Personal::class, 'personal_id');
+    }
+    public function academia()
+    {
+        return $this->belongsTo(\App\Models\cadastro\Academia::class, 'academia_id');
     }
 }

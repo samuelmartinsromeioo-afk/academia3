@@ -207,7 +207,7 @@ class PersonalController extends Controller
     //função criada para mostrar o resumo dia 
     public function getAgendaDia($data)
     {
-        $agendas = Agenda::where('personal_id', session('personal_id'))
+        $agendas = Agenda::with('academia')->where('personal_id', session('personal_id'))
             ->where('data', $data)
             ->where('cancelado', false)
             ->orderBy('hora_inicio', 'asc')

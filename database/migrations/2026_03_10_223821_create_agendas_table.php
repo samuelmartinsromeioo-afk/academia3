@@ -14,6 +14,7 @@ return new class extends Migration
     Schema::create('agendas', function (Blueprint $table) {
         $table->id();
         $table->foreignId('personal_id')->constrained('personals')->onDelete('cascade');
+        $table->foreignId('academia_id')->constrained('academias')->onDelete('cascade');
         $table->date('data');
         $table->time('hora_inicio');
         $table->time('hora_fim');
