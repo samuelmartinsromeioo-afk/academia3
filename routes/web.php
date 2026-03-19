@@ -9,8 +9,9 @@ use App\Http\Controllers\Cadastro\AcademiaController;
 use App\Http\Controllers\Cadastro\ClienteController;
 use App\Http\Controllers\App\MapaController;
 use App\Http\Controllers\App\FotoController;
-use App\Models\cadastro\Plano;
 use App\Http\Controllers\App\AgendaController;
+use App\Http\Controllers\RecuperarSenhaController;
+use App\Models\cadastro\Plano;
 use App\Models\Agenda;
 
 /*
@@ -23,11 +24,19 @@ use App\Models\Agenda;
 | be assigned to the "web" middleware group. Make something great!
 |
 */
+
 //tela inicial
 Route::get('/', [LoginController::class, 'index'])->name('login.index');
 //tela login
 Route::post('/login', [LoginController::class, 'store'])->name('login.store');
 Route::get('/login',[LoginController::class,'create'])->name('login.create');
+
+// Recuperação de senha
+Route::get('/recuperar-senha', [RecuperarSenhaController::class, 'showSolicitarForm'])->name('senha.solicitar.form');
+Route::post('/recuperar-senha', [RecuperarSenhaController::class, 'enviarLink'])->name('senha.solicitar');
+Route::get('/nova-senha', [RecuperarSenhaController::class, 'showResetarForm'])->name('senha.resetar.form');
+Route::post('/nova-senha', [RecuperarSenhaController::class, 'resetar'])->name('senha.resetar');
+
 Route::get('/mapa', [MapaController::class, 'index'])->name('mapa.index');
 Route::get('/mapa/dados', [MapaController::class, 'dados'])->name('mapa.dados');
 Route::post('/academia/planos', [AcademiaController::class, 'storePlano'])->name('academia.planos.store');
@@ -38,16 +47,10 @@ Route::post('/academia/fotos', [FotoController::class, 'storeAcademia'])->name('
 Route::delete('/fotos/{id}', [FotoController::class, 'destroy'])->name('fotos.destroy');
 
 
-
-
 // 1. Tela com os 3 botões de escolha
 Route::get('/cadastro/selecionar', [SelecaoController::class, 'index'])->name('cadastro.SelecaoCadastro');
 // 2. Rota que processa a escolha e redireciona
-
 Route::get('/cadastro/ir-cadastro/{tipo}', [SelecaoController::class, 'redirecionar'])->name('cadastro.ir');
-
-
-
 
 
 //rotas para direcionar ao cadastro do aluno
@@ -62,18 +65,16 @@ Route::post('/cadastro/personal', [PersonalController::class, 'store'])->name('p
 Route::get('/cadastro/academia', [AcademiaController::class, 'create'])->name('form.academia');
 Route::post('/cadastro/academia', [AcademiaController::class, 'store'])->name('academia.store');
 
-//rotas para direcionar para a tela do aluno 
+//rotas para direcionar para a tela do aluno
 Route::get('/cliente', [ClienteController::class, 'index'])->name('cliente.index');
 Route::put('/cliente/update/{id}', [ClienteController::class, 'update'])->name('cliente.update');
-//rota para que o aluno consiga agendar um horario 
+//rota para que o aluno consiga agendar um horario
 Route::post('/agendar', [ClienteController::class, 'reservarHorario'])->name('agendar.horario');
 // Listagem de todas as academias
 Route::get('/academias/explorar', [ClienteController::class, 'listarAcademias'])->name('academias.explorar');
 // Detalhes de uma academia específica
 Route::get('/academias/{id}/detalhes', [ClienteController::class, 'detalhesAcademia'])->name('academias.detalhes');
 // Ação de contratar (vincular)
-Route::post('/academias/contratar', [ClienteController::class, 'contratarAcademia'])->name('academias.contratar');
-// Rota para processar a contratação
 Route::post('/academias/contratar', [App\Http\Controllers\Cadastro\ClienteController::class, 'contratarAcademia'])->name('academias.contratar');
 
 //rotas para direcionar para a tela do personal
@@ -81,19 +82,18 @@ Route::get('/personal/dashboard', [PersonalController::class, 'index'])->name('p
 Route::put('/personal/update/{id}', [PersonalController::class, 'update'])->name('personal.update');
 Route::get('/personal/alunos', [PersonalController::class, 'meusAlunos'])->name('personal.alunos');
 
-//rota para deslogar da tela 
+//rota para deslogar da tela
 Route::post('/logout', [App\Http\Controllers\loginController::class, 'logout'])->name('login.logout');
 
-//rota da agenda 
+//rota da agenda
 Route::post('/agenda/store', [PersonalController::class, 'storeHorario'])->name('agenda.store');
-Route::put('/personal/update/{id}', [PersonalController::class, 'update'])->name('personal.update');
 Route::put('/agenda/cancelar/{id}', [PersonalController::class, 'cancelarAula'])->name('agenda.cancelar');
 Route::post('/personal/horario', [PersonalController::class, 'storeHorario'])->name('personal.storeHorario');
 Route::get('/personal/agenda/{data}', [PersonalController::class, 'getAgendaDia'])->name('personal.getAgenda');
 Route::post('/personal/cancelar-dia', [PersonalController::class, 'cancelarDia'])->name('personal.cancelarDia');
 Route::post('/personal/bloquear-fixo', [PersonalController::class, 'bloquearHorarioFixo'])->name('personal.bloquearFixo');
 
-//rota para listar os alunos que o personal possui 
+//rota para listar os alunos que o personal possui
 Route::get('/personal/cliente', [PersonalController::class, 'listarAlunos'])->name('personal.alunos');
 
 //rota para a tela academia
@@ -101,5 +101,3 @@ Route::get('/academia/dashboard', [AcademiaController::class, 'dashboard'])->nam
 Route::put('/academia/update/{id}', [AcademiaController::class, 'update'])->name('academia.update');
 Route::get('/academia/alunos', [AcademiaController::class, 'listarAlunos'])->name('academia.alunos');
 Route::get('/academia/planos', [AcademiaController::class, 'listarPlanos'])->name('academia.planos');
-Route::put('/academia/update/{id}', [AcademiaController::class, 'update'])->name('academia.update');
-Route::get('/academia/alunos', [AcademiaController::class, 'listarAlunos'])->name('academia.alunos');
