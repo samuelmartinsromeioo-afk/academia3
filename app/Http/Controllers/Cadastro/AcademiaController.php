@@ -8,6 +8,7 @@ use App\Models\cadastro\Cliente;
 use App\Models\cadastro\Personal;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use App\Models\cadastro\Plano;
 
 class AcademiaController extends Controller
 {
@@ -92,13 +93,16 @@ class AcademiaController extends Controller
             ->take(5)
             ->get();
 
+        $planos = Plano::where('academia_id', $academia_id)->orderBy('valor')->get();    
+
         return view('academia.dashboard', compact(
             'academia',
             'totalAlunos',
             'planosAtivos',
             'faturamento',
             'personals',
-            'alunos'
+            'alunos',
+            'planos',
         ));
     }
    public function listarAlunos()
@@ -112,5 +116,60 @@ class AcademiaController extends Controller
         // Buscamos TODOS os alunos 
         $todosAlunos = Cliente::where('academia_id', $academia_id)->orderBy('nome', 'asc')->get();
         return $this->dashboard($todosAlunos);
+    }
+
+        public function storePlano(Request $request)
+    {
+        $request->validate([
+            'nome'          => 'required|string|max:255',
+            'valor'         => 'required|numeric|min:0',
+            'duracao_meses' => 'required|integer|min:1',
+            'descricao'     => 'nullable|string|max:500',
+        ]);
+
+        Plano::create([
+            'academia_id'   => session('academia_id'),
+            'nome'          => $request->nome,
+            'valor'         => $request->valor,
+            'duracao_meses' => $request->duracao_meses,
+            'descricao'     => $request->descricao,
+            'ativo'         => true,
+        ]);
+
+        return redirect()->back()->with('success', 'Plano criado com sucesso!');
+    }
+
+    public function updatePlano(Request $request, $id)
+    {
+        $plano = Plano::where('id', $id)
+            ->where('academia_id', session('academia_id'))
+            ->firstOrFail();
+
+        $request->validate([
+            'nome'          => 'required|string|max:255',
+            'valor'         => 'required|numeric|min:0',
+            'duracao_meses' => 'required|integer|min:1',
+            'descricao'     => 'nullable|string|max:500',
+        ]);
+
+        $plano->update([
+            'nome'          => $request->nome,
+            'valor'         => $request->valor,
+            'duracao_meses' => $request->duracao_meses,
+            'descricao'     => $request->descricao,
+            'ativo'         => $request->has('ativo'),
+        ]);
+
+        return redirect()->back()->with('success', 'Plano atualizado com sucesso!');
+    }
+
+    public function destroyPlano($id)
+    {
+        Plano::where('id', $id)
+            ->where('academia_id', session('academia_id'))
+            ->firstOrFail()
+            ->delete();
+
+        return redirect()->back()->with('success', 'Plano removido com sucesso!');
     }
 }

@@ -19,8 +19,8 @@ class ClienteController extends Controller
         if (!$id) return redirect()->route('login.index');
 
         $cliente = Cliente::find($id);
-        $personals = Personal::all();
-        $academias = Academia::all();
+        $personals = Personal::with('fotos')->get();
+        $academias = Academia::with('fotos')->get();
 
         $meusAgendamentos = Agenda::where('cliente_id', $id)
             ->with(['personal', 'academia'])
@@ -63,7 +63,13 @@ class ClienteController extends Controller
             }
         }
 
-        return view('cliente.index', compact('cliente', 'personals', 'meusAgendamentos', 'horariosDisponiveis', 'academias'));
+        $historico = Agenda::where('cliente_id', $id)
+        ->with(['personal', 'academia'])
+        ->where('data', '<', now()->format('Y-m-d'))
+        ->orderBy('data', 'desc')
+        ->get();
+
+        return view('cliente.index', compact('cliente', 'personals', 'meusAgendamentos', 'horariosDisponiveis', 'academias', 'historico'));
     }
 
     // MÉTODO UPDATE CORRIGIDO

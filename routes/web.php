@@ -8,6 +8,8 @@ use App\Http\Controllers\Cadastro\PersonalController;
 use App\Http\Controllers\Cadastro\AcademiaController;
 use App\Http\Controllers\Cadastro\ClienteController;
 use App\Http\Controllers\App\MapaController;
+use App\Http\Controllers\App\FotoController;
+use App\Models\cadastro\Plano;
 use App\Http\Controllers\App\AgendaController;
 use App\Models\Agenda;
 
@@ -28,6 +30,14 @@ Route::post('/login', [LoginController::class, 'store'])->name('login.store');
 Route::get('/login',[LoginController::class,'create'])->name('login.create');
 Route::get('/mapa', [MapaController::class, 'index'])->name('mapa.index');
 Route::get('/mapa/dados', [MapaController::class, 'dados'])->name('mapa.dados');
+Route::post('/academia/planos', [AcademiaController::class, 'storePlano'])->name('academia.planos.store');
+Route::put('/academia/planos/{id}', [AcademiaController::class, 'updatePlano'])->name('academia.planos.update');
+Route::delete('/academia/planos/{id}', [AcademiaController::class, 'destroyPlano'])->name('academia.planos.destroy');
+Route::post('/personal/fotos', [FotoController::class, 'storePersonal'])->name('personal.fotos.store');
+Route::post('/academia/fotos', [FotoController::class, 'storeAcademia'])->name('academia.fotos.store');
+Route::delete('/fotos/{id}', [FotoController::class, 'destroy'])->name('fotos.destroy');
+
+
 
 
 // 1. Tela com os 3 botões de escolha

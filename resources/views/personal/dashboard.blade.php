@@ -40,9 +40,7 @@
             backdrop-filter: blur(10px);
         }
 
-        .menu-container {
-            position: relative;
-        }
+        .menu-container { position: relative; }
 
         .dots-btn {
             background: var(--card-bg);
@@ -57,11 +55,7 @@
             justify-content: center;
             transition: 0.3s;
         }
-
-        .dots-btn:hover {
-            background: var(--primary);
-            color: #000;
-        }
+        .dots-btn:hover { background: var(--primary); color: #000; }
 
         .dropdown-menu {
             display: none;
@@ -84,25 +78,9 @@
             text-align: center;
         }
 
-        .stars-row {
-            color: var(--primary);
-            margin-bottom: 5px;
-            font-size: 0.9rem;
-        }
-
-        .rating-number {
-            font-size: 1.5rem;
-            font-weight: 900;
-            display: block;
-            color: #fff;
-        }
-
-        .rating-label {
-            font-size: 0.7rem;
-            color: var(--text-muted);
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
+        .stars-row { color: var(--primary); margin-bottom: 5px; font-size: 0.9rem; }
+        .rating-number { font-size: 1.5rem; font-weight: 900; display: block; color: #fff; }
+        .rating-label { font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; }
 
         .dropdown-menu button {
             display: flex;
@@ -110,7 +88,6 @@
             gap: 12px;
             padding: 15px 20px;
             color: #fff;
-            text-decoration: none;
             font-size: 14px;
             width: 100%;
             text-align: left;
@@ -119,17 +96,9 @@
             cursor: pointer;
             transition: 0.2s;
         }
+        .dropdown-menu button:hover { background: rgba(255, 255, 255, 0.05); color: var(--primary); }
 
-        .dropdown-menu button:hover {
-            background: rgba(255, 255, 255, 0.05);
-            color: var(--primary);
-        }
-
-        .profile-header {
-            display: flex;
-            align-items: center;
-            gap: 20px;
-        }
+        .profile-header { display: flex; align-items: center; gap: 20px; }
 
         .avatar-img {
             width: 65px;
@@ -140,11 +109,7 @@
             background: #222;
         }
 
-        .container {
-            max-width: 1200px;
-            margin: 30px auto;
-            padding: 0 20px;
-        }
+        .container { max-width: 1200px; margin: 30px auto; padding: 0 20px; }
 
         .calendar-nav {
             display: flex;
@@ -163,11 +128,7 @@
             font-size: 0.8rem;
             transition: 0.3s;
         }
-
-        .nav-link:hover {
-            border-color: var(--primary);
-            color: var(--primary);
-        }
+        .nav-link:hover { border-color: var(--primary); color: var(--primary); }
 
         .agenda-section {
             display: grid;
@@ -204,22 +165,9 @@
             justify-content: center;
             position: relative;
         }
-
-        .day-col:hover {
-            background: rgba(212, 255, 0, 0.05);
-            border-color: rgba(212, 255, 0, 0.3);
-        }
-
-        .day-col.active {
-            background: var(--primary);
-            border-color: var(--primary);
-            color: #000;
-        }
-
-        .day-col.active .day-name,
-        .day-col.active .day-number {
-            color: #000;
-        }
+        .day-col:hover { background: rgba(212, 255, 0, 0.05); border-color: rgba(212, 255, 0, 0.3); }
+        .day-col.active { background: var(--primary); border-color: var(--primary); color: #000; }
+        .day-col.active .day-name, .day-col.active .day-number { color: #000; }
 
         .has-event::after {
             content: '';
@@ -261,17 +209,8 @@
             cursor: pointer;
             transition: 0.3s;
         }
-
-        .btn-delete-agenda:hover:not(:disabled) {
-            background: var(--error);
-            color: #fff;
-        }
-
-        .btn-delete-agenda:disabled {
-            opacity: 0.2;
-            cursor: not-allowed;
-            filter: grayscale(1);
-        }
+        .btn-delete-agenda:hover:not(:disabled) { background: var(--error); color: #fff; }
+        .btn-delete-agenda:disabled { opacity: 0.2; cursor: not-allowed; filter: grayscale(1); }
 
         .modal-overlay {
             display: none;
@@ -305,22 +244,10 @@
             margin-bottom: 20px;
         }
 
-        .finance-value {
-            font-size: 2rem;
-            font-weight: 900;
-            color: var(--primary);
-            display: block;
-        }
+        .finance-value { font-size: 2rem; font-weight: 900; color: var(--primary); display: block; }
 
-        .form-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 15px;
-        }
-
-        .full-width {
-            grid-column: span 2;
-        }
+        .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        .full-width { grid-column: span 2; }
 
         .input-wrapper {
             display: flex;
@@ -331,7 +258,6 @@
             padding: 0 12px;
             margin-top: 5px;
         }
-
         .input-wrapper input {
             flex: 1;
             background: transparent;
@@ -341,12 +267,7 @@
             outline: none;
             font-size: 0.9rem;
         }
-
-        .input-wrapper i {
-            color: var(--primary);
-            width: 20px;
-            text-align: center;
-        }
+        .input-wrapper i { color: var(--primary); width: 20px; text-align: center; }
 
         label {
             font-size: 0.65rem;
@@ -371,28 +292,52 @@
             transition: 0.3s;
             margin-top: 20px;
         }
+        .btn-save:hover { filter: brightness(1.1); transform: translateY(-2px); }
+        .btn-cancel { background: rgba(255, 255, 255, 0.05); color: #fff; }
 
-        .btn-save:hover {
-            filter: brightness(1.1);
-            transform: translateY(-2px);
-        }
+        .alunos-list::-webkit-scrollbar { width: 6px; }
+        .alunos-list::-webkit-scrollbar-track { background: rgba(255,255,255,0.02); }
+        .alunos-list::-webkit-scrollbar-thumb { background: var(--primary); border-radius: 10px; }
 
-        .btn-cancel {
-            background: rgba(255, 255, 255, 0.05);
-            color: #fff;
+        /* Galeria */
+        .galeria-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-top: 15px;
         }
-
-        /* Scrollbar customizada para a lista de alunos */
-        .alunos-list::-webkit-scrollbar {
-            width: 6px;
+        .galeria-item {
+            position: relative;
+            aspect-ratio: 1;
+            border-radius: 12px;
+            overflow: hidden;
+            border: 1px solid var(--border);
         }
-        .alunos-list::-webkit-scrollbar-track {
-            background: rgba(255,255,255,0.02);
+        .galeria-item img { width: 100%; height: 100%; object-fit: cover; display: block; }
+        .galeria-item-overlay {
+            position: absolute; inset: 0;
+            background: rgba(0,0,0,0.6);
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            gap: 5px;
+            opacity: 0; transition: 0.2s;
         }
-        .alunos-list::-webkit-scrollbar-thumb {
-            background: var(--primary);
-            border-radius: 10px;
+        .galeria-item:hover .galeria-item-overlay { opacity: 1; }
+        .galeria-item-legenda { font-size: 0.7rem; color: #fff; text-align: center; padding: 0 8px; }
+        .galeria-upload-slot {
+            aspect-ratio: 1;
+            border-radius: 12px;
+            border: 1px dashed rgba(212,255,0,0.4);
+            background: rgba(212,255,0,0.05);
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            gap: 5px; cursor: pointer;
+            color: var(--primary); font-size: 0.7rem;
+            font-weight: 700; text-transform: uppercase;
+            transition: 0.2s;
         }
+        .galeria-upload-slot:hover { background: rgba(212,255,0,0.1); }
+        .galeria-upload-slot i { font-size: 1.2rem; }
     </style>
 </head>
 
@@ -410,17 +355,18 @@
                     <span class="rating-number">{{ number_format($media, 1) }}</span>
                     <div class="stars-row">
                         @for ($i = 1; $i <= 5; $i++)
-                            @if ($i <=$media) <i class="fas fa-star"></i>
+                            @if ($i <= $media) <i class="fas fa-star"></i>
                             @elseif ($i - 0.5 <= $media) <i class="fas fa-star-half-alt"></i>
-                                @else <i class="far fa-star"></i>
-                                @endif
-                                @endfor
+                            @else <i class="far fa-star"></i>
+                            @endif
+                        @endfor
                     </div>
                     <span class="rating-label">{{ $totalAvals }} Avaliações</span>
                 </div>
                 <button type="button" id="btnOpenUpdate"><i class="fas fa-user-edit"></i> Meu Perfil</button>
                 <button type="button" id="btnOpenAlunos"><i class="fas fa-users"></i> Meus Alunos</button>
                 <button type="button" id="btnOpenFinance"><i class="fas fa-wallet" style="color: var(--success)"></i> Minhas Finanças</button>
+                <button type="button" id="btnOpenGaleria"><i class="fas fa-images"></i> Minha Galeria</button>
                 <form action="{{ route('login.logout') }}" method="POST"> @csrf <button type="submit" style="color: var(--error)"><i class="fas fa-power-off"></i> Sair</button></form>
             </div>
         </div>
@@ -491,33 +437,28 @@
 
     <input type="hidden" name="_token" value="{{ csrf_token() }}">
 
+    {{-- MODAL ALUNOS --}}
     <div id="modalAlunos" class="modal-overlay">
         <div class="modal-content" style="max-width: 600px;">
             <h2 style="color: var(--primary); font-size: 1.4rem; margin-top: 0; font-weight: 900; display: flex; align-items: center; gap: 10px;">
                 <i class="fas fa-users"></i> MEUS ALUNOS
             </h2>
-            
             <div class="alunos-list" style="display: flex; flex-direction: column; gap: 15px; max-height: 400px; overflow-y: auto; padding-right: 10px;">
                 @php
-                    // Busca todos os agendamentos do personal, traz os clientes junto e filtra para não repetir alunos
                     $meusAlunos = \App\Models\Agenda::with('cliente')
                         ->where('personal_id', session('personal_id'))
                         ->where('cancelado', false)
                         ->get()
-                        ->filter(function($agenda) {
-                            return $agenda->cliente != null; // Garante que tem cliente vinculado
-                        })
+                        ->filter(fn($agenda) => $agenda->cliente != null)
                         ->unique('cliente_id');
                 @endphp
-
                 @forelse($meusAlunos as $agendamento)
-                    <div style="background: rgba(255,255,255,0.03); border: 1px solid var(--border); padding: 15px; border-radius: 16px; display: flex; align-items: center; gap: 15px; transition: 0.3s;">
-                        <img src="https://ui-avatars.com/api/?name={{ urlencode($agendamento->cliente->nome ?? $agendamento->cliente->name ?? 'Aluno') }}&background=d4ff00&color=000" 
-                             style="width: 50px; height: 50px; border-radius: 50%;">
+                    <div style="background: rgba(255,255,255,0.03); border: 1px solid var(--border); padding: 15px; border-radius: 16px; display: flex; align-items: center; gap: 15px;">
+                        <img src="https://ui-avatars.com/api/?name={{ urlencode($agendamento->cliente->nome ?? 'Aluno') }}&background=d4ff00&color=000" style="width: 50px; height: 50px; border-radius: 50%;">
                         <div style="flex: 1;">
-                            <h3 style="margin: 0 0 5px 0; font-size: 1.1rem; color: #fff;">{{ $agendamento->cliente->nome ?? $agendamento->cliente->name ?? 'Aluno Sem Nome' }}</h3>
+                            <h3 style="margin: 0 0 5px 0; font-size: 1.1rem; color: #fff;">{{ $agendamento->cliente->nome ?? 'Aluno Sem Nome' }}</h3>
                             <p style="margin: 0; font-size: 0.8rem; color: var(--text-muted);">
-                                <i class="fas fa-bullseye" style="color: var(--primary);"></i> 
+                                <i class="fas fa-bullseye" style="color: var(--primary);"></i>
                                 {{ $agendamento->cliente->resumo_objetivo ?? 'Objetivo não informado' }}
                             </p>
                         </div>
@@ -529,11 +470,11 @@
                     </div>
                 @endforelse
             </div>
-            
             <button type="button" onclick="closeModalAlunos()" class="btn-save">Fechar Relatório</button>
         </div>
     </div>
 
+    {{-- MODAL FINANCEIRO --}}
     <div id="modalFinance" class="modal-overlay">
         <div class="modal-content" style="max-width: 500px;">
             <h2 style="color: var(--primary); font-size: 1.4rem; margin-top: 0; font-weight: 900; text-align: center;">FINANCEIRO</h2>
@@ -542,15 +483,16 @@
                 @php
                 $agendasMes = \App\Models\Agenda::where('personal_id', session('personal_id'))
                 ->where('cancelado', false)
+                ->whereNotNull('cliente_id')
                 ->whereMonth('data', now()->month)
                 ->whereYear('data', now()->year)
                 ->get();
                 $faturamento = 0;
                 foreach($agendasMes as $ag) {
-                $start = \Carbon\Carbon::parse($ag->hora_inicio);
-                $end = \Carbon\Carbon::parse($ag->hora_fim);
-                $horas = $start->diffInMinutes($end) / 60;
-                $faturamento += ($horas * ($personal->valor_secao ?? 0));
+                    $start = \Carbon\Carbon::parse($ag->hora_inicio);
+                    $end = \Carbon\Carbon::parse($ag->hora_fim);
+                    $horas = $start->diffInMinutes($end) / 60;
+                    $faturamento += ($horas * ($personal->valor_secao ?? 0));
                 }
                 @endphp
                 <span class="finance-value">R$ {{ number_format($faturamento, 2, ',', '.') }}</span>
@@ -559,12 +501,12 @@
         </div>
     </div>
 
+    {{-- MODAL ATUALIZAR PERFIL --}}
     <div id="modalUpdate" class="modal-overlay">
         <div class="modal-content">
             <h2 style="color: var(--primary); font-size: 1.4rem; margin-top: 0; font-weight: 900;">ATUALIZAR MEUS DADOS</h2>
             <form action="{{ route('personal.update', $personal->id) }}" method="POST" enctype="multipart/form-data">
-                @csrf
-                @method('PUT')
+                @csrf @method('PUT')
                 <div class="form-grid">
                     <div class="full-width">
                         <label>Foto de Perfil</label>
@@ -587,6 +529,7 @@
         </div>
     </div>
 
+    {{-- MODAL BLOQUEAR HORÁRIO --}}
     <div id="modalHorario" class="modal-overlay">
         <div class="modal-content">
             <h2 style="color: var(--primary); font-size: 1.4rem; margin-top: 0; font-weight: 900;">BLOQUEAR HORÁRIO</h2>
@@ -610,68 +553,104 @@
         </div>
     </div>
 
+    {{-- MODAL GALERIA --}}
+    <div id="modalGaleria" class="modal-overlay">
+        <div class="modal-content" style="max-width: 600px;">
+            <h2 style="color: var(--primary); font-size: 1.4rem; margin-top: 0; font-weight: 900;">
+                <i class="fas fa-images"></i> MINHA GALERIA
+            </h2>
+            <p style="color: var(--text-muted); font-size: 0.8rem; margin-bottom: 15px;">
+                Até 5 fotos no seu perfil.
+                <span style="float: right; color: var(--primary); font-weight: 700;">
+                    {{ $personal->fotos->count() }}/5
+                </span>
+            </p>
+
+            <div class="galeria-grid">
+                @foreach($personal->fotos as $foto)
+                <div class="galeria-item">
+                    <img src="{{ asset('storage/' . $foto->path) }}" alt="{{ $foto->legenda }}">
+                    <div class="galeria-item-overlay">
+                        @if($foto->legenda)
+                            <span class="galeria-item-legenda">{{ $foto->legenda }}</span>
+                        @endif
+                        <form action="{{ route('fotos.destroy', $foto->id) }}" method="POST" onsubmit="return confirm('Remover esta foto?')">
+                            @csrf @method('DELETE')
+                            <button type="submit" style="background: var(--error); color: #fff; border: none; padding: 6px 12px; border-radius: 8px; cursor: pointer; font-size: 0.75rem;">
+                                <i class="fas fa-trash"></i> Remover
+                            </button>
+                        </form>
+                    </div>
+                </div>
+                @endforeach
+
+                @if($personal->fotos->count() < 5)
+                <label class="galeria-upload-slot" for="inputFotoGaleria">
+                    <i class="fas fa-plus-circle"></i>
+                    Adicionar
+                </label>
+                @endif
+            </div>
+
+            @if($personal->fotos->count() < 5)
+            <form action="{{ route('personal.fotos.store') }}" method="POST" enctype="multipart/form-data" id="formGaleriaPersonal" style="margin-top: 15px;">
+                @csrf
+                <input type="file" id="inputFotoGaleria" name="foto" accept="image/*" style="display: none;" onchange="document.getElementById('formGaleriaPersonal').submit()">
+                <label style="margin-top: 10px;">Legenda (opcional)</label>
+                <div class="input-wrapper">
+                    <i class="fas fa-pen"></i>
+                    <input type="text" name="legenda" placeholder="Ex: Treino funcional, Avaliação...">
+                </div>
+                <p style="color: var(--text-muted); font-size: 0.72rem; margin-top: 8px;">
+                    <i class="fas fa-info-circle"></i> Preencha a legenda antes de selecionar a foto.
+                </p>
+            </form>
+            @endif
+
+            <button type="button" onclick="closeModalGaleria()" class="btn-save">Fechar</button>
+        </div>
+    </div>
+
     <script>
         function toggleMenu() {
             const m = document.getElementById('dropdownMenu');
             m.style.display = m.style.display === 'block' ? 'none' : 'block';
         }
 
-        const modalUpdate = document.getElementById('modalUpdate');
+        const modalUpdate  = document.getElementById('modalUpdate');
         const modalHorario = document.getElementById('modalHorario');
         const modalFinance = document.getElementById('modalFinance');
-        const modalAlunos = document.getElementById('modalAlunos');
+        const modalAlunos  = document.getElementById('modalAlunos');
+        const modalGaleria = document.getElementById('modalGaleria');
 
-        document.getElementById('btnOpenUpdate').onclick = () => {
-            modalUpdate.style.display = 'block';
-            toggleMenu();
-        };
-        document.getElementById('btnOpenFinance').onclick = () => {
-            modalFinance.style.display = 'block';
-            toggleMenu();
-        };
-
-        // ALTERAÇÃO AQUI: Agora ele abre o modal em vez de ir para outra página
-        document.getElementById('btnOpenAlunos').onclick = () => {
-            modalAlunos.style.display = 'block';
-            toggleMenu();
-        };
+        document.getElementById('btnOpenUpdate').onclick  = () => { modalUpdate.style.display  = 'block'; toggleMenu(); };
+        document.getElementById('btnOpenFinance').onclick = () => { modalFinance.style.display = 'block'; toggleMenu(); };
+        document.getElementById('btnOpenAlunos').onclick  = () => { modalAlunos.style.display  = 'block'; toggleMenu(); };
+        document.getElementById('btnOpenGaleria').onclick = () => { modalGaleria.style.display = 'block'; toggleMenu(); };
 
         document.getElementById('btnOpenBloqueio').onclick = () => {
             document.getElementById('modal_data').value = new Date().toISOString().split('T')[0];
             modalHorario.style.display = 'block';
         };
 
-        function closeModalUpdate() {
-            modalUpdate.style.display = 'none';
-        }
-
-        function closeModalHorario() {
-            modalHorario.style.display = 'none';
-        }
-
-        function closeModalFinance() {
-            modalFinance.style.display = 'none';
-        }
-
-        // Função para fechar o Modal de Alunos
-        function closeModalAlunos() {
-            modalAlunos.style.display = 'none';
-        }
+        function closeModalUpdate()  { modalUpdate.style.display  = 'none'; }
+        function closeModalHorario() { modalHorario.style.display = 'none'; }
+        function closeModalFinance() { modalFinance.style.display = 'none'; }
+        function closeModalAlunos()  { modalAlunos.style.display  = 'none'; }
+        function closeModalGaleria() { modalGaleria.style.display = 'none'; }
 
         function cancelarComJustificativa(id) {
             const justificativa = prompt("Por favor, digite a justificativa para o cancelamento (mínimo 10 caracteres):");
-
             if (justificativa && justificativa.length >= 10) {
                 const form = document.createElement('form');
                 form.method = 'POST';
                 form.action = `/agenda/cancelar/${id}`;
                 const token = document.querySelector('input[name="_token"]').value;
-
                 form.innerHTML = `
-                <input type="hidden" name="_token" value="${token}">
-                <input type="hidden" name="_method" value="PUT">
-                <input type="hidden" name="justificativa" value="${justificativa}">
-            `;
+                    <input type="hidden" name="_token" value="${token}">
+                    <input type="hidden" name="_method" value="PUT">
+                    <input type="hidden" name="justificativa" value="${justificativa}">
+                `;
                 document.body.appendChild(form);
                 form.submit();
             } else if (justificativa) {
@@ -691,14 +670,11 @@
             fetch(`/personal/agenda/${dateStr}`)
                 .then(r => r.json())
                 .then(dados => {
-                    console.log("Dados recebidos do servidor:", dados); 
                     content.innerHTML = "";
-
                     if (!dados || dados.length === 0) {
                         content.innerHTML = `<div style="text-align:center; padding-top:40px; opacity:0.3;"><i class="fas fa-coffee" style="font-size:2rem;"></i><p>Nada para hoje! Horário livre.</p></div>`;
                         return;
                     }
-
                     dados.forEach(item => {
                         const agora = new Date();
                         const dataAula = new Date(item.data + 'T' + item.hora_inicio);
@@ -725,8 +701,8 @@
                                     ${item.academia ? (item.academia.nome || item.academia.name) : 'Local não informado'}
                                 </small>
                             </div>
-                            <button type="button" class="btn-delete-agenda" 
-                                onclick="cancelarComJustificativa(${item.id})" 
+                            <button type="button" class="btn-delete-agenda"
+                                onclick="cancelarComJustificativa(${item.id})"
                                 ${!podeCancelar ? 'disabled title="Mínimo 24h de antecedência"' : ''}>
                                 <i class="fas fa-trash-alt"></i>
                             </button>
@@ -734,22 +710,21 @@
                     });
                 })
                 .catch(err => {
-                    console.error("Erro na requisição:", err);
                     content.innerHTML = `<p style="color:var(--error); text-align:center;">Erro ao carregar dados.</p>`;
                 });
         }
 
         window.onclick = (e) => {
-            if (e.target == modalUpdate) closeModalUpdate();
+            if (e.target == modalUpdate)  closeModalUpdate();
             if (e.target == modalHorario) closeModalHorario();
             if (e.target == modalFinance) closeModalFinance();
-            if (e.target == modalAlunos) closeModalAlunos(); // Fecha se clicar fora do modal de alunos
+            if (e.target == modalAlunos)  closeModalAlunos();
+            if (e.target == modalGaleria) closeModalGaleria();
         }
 
         window.onload = () => {
             const todayStr = new Date().toISOString().split('T')[0];
             const todayElement = document.querySelector(`.day-col[onclick*="${todayStr}"]`);
-
             if (todayElement) {
                 todayElement.click();
             } else {
@@ -759,5 +734,4 @@
         }
     </script>
 </body>
-
 </html>
