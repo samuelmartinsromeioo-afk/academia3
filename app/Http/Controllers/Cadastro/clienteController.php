@@ -113,31 +113,30 @@ class ClienteController extends Controller
     {
         return view('cadastro.cliente');
     }
+public function store(Request $request)
+{
+    $validated = $request->validate([
+        'nome'        => 'required|string|max:255',
+        'email'       => 'required|email|max:255|unique:clientes,email',
+        'senha'       => 'required|string|min:6|max:255',
+        'sexo'        => 'required|in:Masculino,Feminino,Outro,masculino,feminino,outro',
+        'cep'         => 'required|string|max:9',
+        'rua'         => 'nullable|string|max:255',
+        'bairro'      => 'nullable|string|max:255',
+        'cidade'      => 'nullable|string|max:255',
+        'estado'      => 'nullable|string|max:255',
+        'complemento' => 'nullable|string|max:255',
+        'altura'      => 'nullable|numeric',
+        'peso'        => 'nullable|numeric',
+    ]);
 
-    public function store(Request $request)
-    {
-        $validated = $request->validate([
-            'nome' => 'required|string|max:255',
-            'email' => 'required|email|max:255|unique:clientes,email',
-            'senha' => 'required|string|min:6|max:255',
-            'sexo' => 'required|in:Masculino,Feminino,Outro',
-            // ... outras validações ...
-        ]);
+    $validated['sexo'] = strtolower($request->sexo);
+    $validated['senha'] = Hash::make($validated['senha']);
 
-        // Também aplica a correção no cadastro inicial
-        $validated['sexo'] = match($request->sexo) {
-            'Masculino' => 'M',
-            'Feminino'  => 'F',
-            'Outro'     => 'O',
-            default     => 'M'
-        };
+    Cliente::create($validated);
 
-        $validated['senha'] = Hash::make($validated['senha']);
-
-        Cliente::create($validated);
-
-        return redirect()->route('login.index')->with('success', 'Cliente cadastrado com sucesso!');
-    }
+    return redirect()->route('login.index')->with('success', 'Cliente cadastrado com sucesso!');
+}
 
     public function reservarHorario(Request $request)
     {
@@ -146,7 +145,7 @@ class ClienteController extends Controller
 
         $request->validate([
             'personal_id' => 'required|exists:personals,id',
-            'academia_id' => 'required|exists:academias,id',
+            'academia_id' => 'nullable|exists:academias,id',
             'data' => 'required|date',
             'horario_inicio' => 'required',
             'horario_fim' => 'required'
@@ -155,7 +154,7 @@ class ClienteController extends Controller
         Agenda::create([
             'cliente_id'  => $clienteId,
             'personal_id' => $request->personal_id,
-            'academia_id' => $request->academia_id,
+            'academia_id' => $request->academia_id ?? null,
             'data'        => $request->data,
             'hora_inicio' => $request->horario_inicio,
             'hora_fim'    => $request->horario_fim,

@@ -92,12 +92,16 @@
 </head>
 <body>
 
+
 <div class="top-bar">
     <div class="menu-container">
         <button class="dots-btn" onclick="toggleMenu()"><i class="fas fa-bars"></i></button>
         <div class="dropdown-menu" id="dropdownMenu">
             <button type="button" onclick="window.location.href='{{ route('cliente.index') }}'"><i class="fas fa-chart-line"></i> Menu Principal</button>
             <button type="button" onclick="toggleEditForm()"><i class="fas fa-user-edit"></i> Editar Perfil</button>
+            <button type="button" onclick="window.location.href='{{ route('mapa.index') }}'">
+            <i class="fas fa-map-marked-alt"></i> Ver Mapa
+            </button>
             <form action="{{ route('login.logout') }}" method="POST">
                 @csrf
                 <button type="submit" style="color: #ff4444;"><i class="fas fa-power-off"></i> Sair</button>
@@ -215,7 +219,15 @@
             <div class="stat-card">
                 <i class="fas fa-fire"></i>
                 <span>Status</span>
-                <h2 style="font-size: 1.1rem; color: var(--primary);">{{ $cliente->academia_id ? 'Ativo' : 'Sem Plano' }}</h2>
+                <h2 style="font-size: 1.1rem; color: var(--primary);">
+                    @if($cliente->academia_id)
+                        Com Academia
+                    @elseif(\App\Models\Agenda::where('cliente_id', $cliente->id)->where('cancelado', false)->exists())
+                        Personal Ativo
+                    @else
+                        Sem Treinos
+                    @endif
+                </h2>
             </div>
         </div>
 
@@ -240,6 +252,10 @@
 
         {{-- PERSONALS --}}
         <div class="section-title">Personals Disponíveis</div>
+        <p style="color: var(--text-muted); font-size: 0.8rem; margin: -10px 0 15px 0;">
+            <i class="fas fa-info-circle" style="color: var(--primary);"></i>
+            Você pode contratar um personal com ou sem vínculo com academia.
+        </p>
         <div class="dashboard-grid" style="grid-template-columns: repeat(2, 1fr);">
             @foreach($personals as $p)
             <div class="stat-card personal-card">
@@ -313,11 +329,11 @@
                     <input type="hidden" name="data" value="{{ $h->data }}">
                     <input type="hidden" name="horario_inicio" value="{{ $h->horario_inicio }}">
                     <input type="hidden" name="horario_fim" value="{{ $h->horario_fim }}">
-                    <input type="hidden" name="academia_id" value="{{ $cliente->academia_id }}">
+                    {{-- academia_id é opcional: usa a do cliente se tiver, senão envia vazio --}}
+                    <input type="hidden" name="academia_id" value="{{ $cliente->academia_id ?? '' }}">
 
-                    <button type="submit" class="btn-action" style="width:auto; margin:0; padding: 8px 15px; font-size: 0.7rem;" 
-                            {{ !$cliente->academia_id ? 'disabled' : '' }}>
-                        {{ $cliente->academia_id ? 'Agendar' : 'Contrate uma academia primeiro' }}
+                    <button type="submit" class="btn-action" style="width:auto; margin:0; padding: 8px 15px; font-size: 0.7rem;">
+                        <i class="fas fa-calendar-check"></i> Agendar
                     </button>
                 </form>
             </div>
