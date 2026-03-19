@@ -7,6 +7,7 @@ use App\Http\Controllers\Cadastro\SelecaoController;
 use App\Http\Controllers\Cadastro\PersonalController;
 use App\Http\Controllers\Cadastro\AcademiaController;
 use App\Http\Controllers\Cadastro\ClienteController;
+use App\Http\Controllers\App\MapaController;
 use App\Http\Controllers\App\AgendaController;
 use App\Models\Agenda;
 
@@ -25,6 +26,8 @@ Route::get('/', [LoginController::class, 'index'])->name('login.index');
 //tela login
 Route::post('/login', [LoginController::class, 'store'])->name('login.store');
 Route::get('/login',[LoginController::class,'create'])->name('login.create');
+Route::get('/mapa', [MapaController::class, 'index'])->name('mapa.index');
+Route::get('/mapa/dados', [MapaController::class, 'dados'])->name('mapa.dados');
 
 
 // 1. Tela com os 3 botões de escolha
@@ -77,6 +80,8 @@ Route::put('/personal/update/{id}', [PersonalController::class, 'update'])->name
 Route::put('/agenda/cancelar/{id}', [PersonalController::class, 'cancelarAula'])->name('agenda.cancelar');
 Route::post('/personal/horario', [PersonalController::class, 'storeHorario'])->name('personal.storeHorario');
 Route::get('/personal/agenda/{data}', [PersonalController::class, 'getAgendaDia'])->name('personal.getAgenda');
+Route::post('/personal/cancelar-dia', [PersonalController::class, 'cancelarDia'])->name('personal.cancelarDia');
+Route::post('/personal/bloquear-fixo', [PersonalController::class, 'bloquearHorarioFixo'])->name('personal.bloquearFixo');
 
 //rota para listar os alunos que o personal possui 
 Route::get('/personal/cliente', [PersonalController::class, 'listarAlunos'])->name('personal.alunos');

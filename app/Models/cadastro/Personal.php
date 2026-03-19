@@ -27,13 +27,16 @@ class Personal extends Model
         'complemento',
         'senha',
         'email',
-        'senha',
         'certificado',
         'resultados',
         'avaliacao',
         'valor_secao',
-        'idade'
+        'idade',
+        'academia_id',
+        'latitude',
+        'longitude',
     ];
+
 
 
 public function agendas() {

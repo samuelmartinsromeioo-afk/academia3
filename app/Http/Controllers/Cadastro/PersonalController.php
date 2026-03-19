@@ -54,7 +54,6 @@ class PersonalController extends Controller
         $dados['senha'] = Hash::make($request->senha);
         $dados['avaliacao'] = $dados['avaliacao'] ?? 'Aguardando avaliação inicial';
         $dados['resultados'] = $dados['resultados'] ?? 'Nenhum resultado registrado';
-        $dados['agenda'] = 'disponivel';
 
         Personal::create($dados);
 
@@ -157,7 +156,7 @@ class PersonalController extends Controller
             if ($personal->foto) {
                 Storage::disk('public')->delete($personal->foto);
             }
-            $dados['foto'] = $request->file('foto')->store('certificados', 'public');
+            $dados['foto'] = $request->file('foto')->store('personals', 'public');
         }
 
         // Atualizar Certificado
@@ -247,5 +246,89 @@ class PersonalController extends Controller
     return view('personal.meus-alunos', compact('meusAlunos'));
 }
 
-   
+    // Cancela todos os agendamentos de um dia inteiro
+    public function cancelarDia(Request $request)
+    {
+        $request->validate([
+            'data' => 'required|date',
+        ]);
+
+        $agendamentos = Agenda::where('personal_id', session('personal_id'))
+            ->where('data', $request->data)
+            ->where('cancelado', false)
+            ->get();
+
+        if ($agendamentos->isEmpty()) {
+            return redirect()->back()->with('error', 'Nenhum compromisso encontrado nesta data.');
+        }
+
+        $cancelados = 0;
+        foreach ($agendamentos as $ag) {
+            $dataAula = \Carbon\Carbon::parse($ag->data . ' ' . $ag->hora_inicio);
+            if (\Carbon\Carbon::now()->diffInHours($dataAula, false) >= 24) {
+                $ag->delete();
+                $cancelados++;
+            }
+        }
+
+        if ($cancelados === 0) {
+            return redirect()->back()->with('error', 'Nenhum horário pode ser cancelado. Verifique a regra de 24h de antecedência.');
+        }
+
+        return redirect()->back()->with('success', "Dia cancelado! $cancelados horário(s) liberado(s).");
+    }
+
+    // Bloqueia um horário fixo em todos os dias pelos próximos X dias
+    public function bloquearHorarioFixo(Request $request)
+    {
+        $request->validate([
+            'hora_inicio' => 'required',
+            'hora_fim'    => 'required',
+            'dias'        => 'required|integer|min:1|max:90',
+            'descricao'   => 'nullable|string|max:255',
+        ]);
+
+        $inicio = $request->hora_inicio;
+        $fim    = $request->hora_fim;
+
+        if ($inicio >= $fim) {
+            return back()->withErrors(['horario' => 'A hora de início deve ser anterior à hora de término.']);
+        }
+
+        $criados   = 0;
+        $conflitos = 0;
+
+        for ($i = 0; $i < $request->dias; $i++) {
+            $data = \Carbon\Carbon::now()->addDays($i)->format('Y-m-d');
+
+            $conflito = Agenda::where('personal_id', session('personal_id'))
+                ->where('data', $data)
+                ->where('cancelado', false)
+                ->where(function ($q) use ($inicio, $fim) {
+                    $q->where('hora_inicio', '<', $fim)
+                      ->where('hora_fim', '>', $inicio);
+                })->exists();
+
+            if (!$conflito) {
+                Agenda::create([
+                    'personal_id' => session('personal_id'),
+                    'data'        => $data,
+                    'hora_inicio' => $inicio,
+                    'hora_fim'    => $fim,
+                    'descricao'   => $request->descricao ?? 'Horário Fixo Bloqueado',
+                    'cancelado'   => false,
+                ]);
+                $criados++;
+            } else {
+                $conflitos++;
+            }
+        }
+
+        $msg = "Bloqueio fixo aplicado em $criados dia(s).";
+        if ($conflitos > 0) {
+            $msg .= " $conflitos dia(s) ignorado(s) por conflito de horário.";
+        }
+
+        return redirect()->back()->with('success', $msg);
+    }
 }

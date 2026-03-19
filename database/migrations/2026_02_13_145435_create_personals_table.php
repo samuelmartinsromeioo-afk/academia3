@@ -6,42 +6,39 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
         Schema::create('personals', function (Blueprint $table) {
             $table->id();
 
-            //dados pessoais
+            // Vínculo com academia (opcional)
+            $table->unsignedBigInteger('academia_id')->nullable();
+
+            // Dados Pessoais
             $table->string('nome');
             $table->string('cpf')->unique();
             $table->string('email')->unique();
+            $table->string('senha');
             $table->string('cep');
             $table->string('rua');
-            $table->string('foto');
             $table->string('bairro');
             $table->string('cidade');
             $table->string('estado');
             $table->string('complemento');
-            $table->string('senha');
+            $table->string('foto');
             $table->string('certificado');
-           $table->text('resultados')->nullable();
-            $table->text('avaliacao');
-            $table->decimal('valor_secao', 5, 2); 
-            $table->date('idade'); 
-            $table->timestamps();
+            $table->date('idade');
 
+            // Dados Profissionais
+            $table->decimal('valor_secao', 8, 2);
+            $table->text('avaliacao')->nullable();
+            $table->text('resultados')->nullable();
+            $table->timestamps();
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::dropIfExists('personals');
-
     }
 };
