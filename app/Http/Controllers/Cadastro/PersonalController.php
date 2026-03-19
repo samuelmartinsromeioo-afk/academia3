@@ -74,7 +74,7 @@ class PersonalController extends Controller
                 $inicioSemana->format('Y-m-d'),
                 $fimSemana->format('Y-m-d')
             ])->orderBy('hora_inicio');
-        }])->find($id);
+        },'fotos'])->find($id);
 
         return view('personal.dashboard', compact('personal', 'inicioSemana', 'dataRef'));
     }

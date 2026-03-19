@@ -5,7 +5,7 @@ namespace App\Models\cadastro;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-
+use App\Models\Foto;
 class Academia extends Model
 {
 
@@ -42,5 +42,10 @@ class Academia extends Model
         return $this->hasMany(Academia::class);
     }
    
+    public function fotos()
+    {
+        return $this->morphMany(Foto::class, 'fotavel');
+    }
+
     use HasFactory;
 }

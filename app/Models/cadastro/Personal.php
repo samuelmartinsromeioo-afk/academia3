@@ -5,7 +5,7 @@ namespace App\Models\cadastro;
 use App\Models\Agenda;
 use App\Models\Avaliacao;
 use Illuminate\Database\Eloquent\Model;
-
+use App\Models\Foto;
 class Personal extends Model
 {
 
@@ -42,6 +42,12 @@ class Personal extends Model
 public function agendas() {
     return $this->hasMany(Agenda::class);
 }
+
+public function fotos()
+{
+    return $this->morphMany(Foto::class, 'fotavel');
+}
+
 
 public function avaliacoes()
 {
