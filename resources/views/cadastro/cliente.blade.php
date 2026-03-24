@@ -212,7 +212,8 @@
                 <label>CEP</label>
                 <div class="input-wrapper">
                     <i class="fa-solid fa-map-pin"></i>
-                    <input type="text" name="cep" id="cep" maxlength="9" placeholder="00000-000" required>
+                    <input type="text" name="cep" id="cep" placeholder="00000-000" 
+                        oninput="this.value = mascaras.cep(this.value)" maxlength="9" required>
                 </div>
                 <div id="cep-loading" class="loading-text"><i class="fa-solid fa-spinner fa-spin"></i> Buscando endereço...</div>
             </div>
@@ -324,6 +325,40 @@
             .catch(() => console.error("Erro ao buscar CEP"))
             .finally(() => loading.style.display = 'none');
     });
+</script>
+<script>
+    const mascaras = {
+        cpf: function(value) {
+            return value
+                .replace(/\D/g, '') // Remove o que não é número
+                .replace(/(\d{3})(\d)/, '$1.$2') // Adiciona ponto após os 3 primeiros
+                .replace(/(\d{3})(\d)/, '$1.$2') // Adiciona ponto após os 6 primeiros
+                .replace(/(\d{3})(\d{1,2})/, '$1-$2') // Adiciona traço antes dos 2 últimos
+                .replace(/(-\d{2})\d+?$/, '$1'); // Limita o tamanho
+        },
+        cnpj: function(value) {
+            return value
+                .replace(/\D/g, '') // Remove o que não é número
+                .replace(/(\d{2})(\d)/, '$1.$2') // Adiciona ponto após os 2 primeiros
+                .replace(/(\d{3})(\d)/, '$1.$2') // Adiciona ponto após os 5 primeiros
+                .replace(/(\d{3})(\d)/, '$1/$2') // Adiciona a barra após os 8 primeiros
+                .replace(/(\d{4})(\d{1,2})/, '$1-$2') // Adiciona o traço antes dos 2 últimos
+                .replace(/(-\d{2})\d+?$/, '$1'); // Limita o tamanho
+        },
+        telefone: function(value) {
+            return value
+                .replace(/\D/g, '') 
+                .replace(/(\d{2})(\d)/, '($1) $2') // Coloca parênteses no DDD
+                .replace(/(\d{4,5})(\d{4})/, '$1-$2') // Coloca o traço no meio
+                .replace(/(-\d{4})\d+?$/, '$1'); // Limita o tamanho
+        },
+        cep: function(value) {
+            return value
+                .replace(/\D/g, '') 
+                .replace(/(\d{5})(\d)/, '$1-$2') // Coloca o traço após os 5 primeiros
+                .replace(/(-\d{3})\d+?$/, '$1'); // Limita o tamanho
+        }
+    }
 </script>
 
 </body>

@@ -6,6 +6,7 @@ use App\Models\Agenda;
 use App\Models\Avaliacao;
 use Illuminate\Database\Eloquent\Model;
 use App\Models\Foto;
+
 class Personal extends Model
 {
 
@@ -48,18 +49,16 @@ public function fotos()
     return $this->morphMany(Foto::class, 'fotavel');
 }
 
-
 public function avaliacoes()
 {
-    return $this->hasMany(Avaliacao::class);
+     return $this->hasMany(Avaliacao::class, 'personal_id');
 }
 
-// Método para pegar a média formatada 
 public function getMediaAvaliacaoAttribute()
 {
-    return number_format($this->avaliacoes()->avg('nota'), 1);
+    $media = $this->avaliacoes()->avg('nota');
+    return $media ? number_format($media, 1, '.', '') : '0.0';
 }
-
 
 public function getFaturamentoMensalAttribute()
 {

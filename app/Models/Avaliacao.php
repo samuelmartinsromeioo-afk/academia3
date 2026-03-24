@@ -1,56 +1,24 @@
 <?php
-
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use App\Models\cadastro\Personal; 
+use App\Models\cadastro\cliente; // Ou Cliente, dependendo de quem faz o login
 
 class Avaliacao extends Model
 {
     use HasFactory;
 
-    // Define o nome da tabela caso seja diferente do plural do model
     protected $table = 'avaliacoes';
+    protected $fillable = ['cliente_id', 'personal_id', 'academia_id', 'nota', 'comentario'];
 
-    // Campos que podem ser preenchidos em massa
-    protected $fillable = [
-        'personal_id',
-        'aluno_id',
-        'nota',
-        'comentario'
-    ];
-
-    
+    public function cliente()
+    {
+        return $this->belongsTo(\App\Models\cadastro\Cliente::class, 'cliente_id');
+    }
     public function personal()
     {
-        return $this->belongsTo(Personal::class);
+        return $this->belongsTo(Personal::class, 'personal_id');
     }
-
-  
-    public function aluno()
-    {
-        return $this->belongsTo(User::class, 'aluno_id');
-    }
-
-    /**
- * Relacionamento: Um personal tem muitas avaliações.
- */
-public function avaliacoes()
-{
-    return $this->hasMany(Avaliacao::class, 'personal_id');
-}
-
-/**
- * Acessador para calcular a média de estrelas automaticamente.
- * 
- */
-public function getMediaAvaliacaoAttribute()
-{
-    // Calcula a média 
-    $media = $this->avaliacoes()->avg('nota');
-
-    // Retorna a média 
-    return $media ? number_format($media, 1) : 0;
-}
 }

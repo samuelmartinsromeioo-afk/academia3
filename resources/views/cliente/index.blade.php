@@ -146,8 +146,12 @@
             <div class="form-grid">
                 <div class="col-2">
                     <label>CEP</label>
-                    <div class="input-wrapper"><i class="fas fa-map-marker-alt"></i><input type="text" name="cep" value="{{ $cliente->cep }}"></div>
-                </div>
+                    <div class="input-wrapper">
+                        <i class="fas fa-map-marker-alt"></i>
+                        <input type="text" name="cep" id="cep" placeholder="00000-000" 
+                            oninput="this.value = mascaras.cep(this.value)" maxlength="9" required>
+                    </div>
+                </div>  
                 <div class="col-4">
                     <label>Rua</label>
                     <div class="input-wrapper"><i class="fas fa-road"></i><input type="text" name="rua" value="{{ $cliente->rua }}"></div>
@@ -183,7 +187,7 @@
             <div class="stat-card">
                 <i class="fas fa-ruler-vertical"></i>
                 <span>Altura</span>
-                <h2>{{ $cliente->altura ?? '--' }} <small style="font-size: 0.8rem;">m</small></h2>
+                <h2>{{ $cliente->altura ?? '--' }} <small style="font-size: 0.8rem;">cm</small></h2>
             </div>
             <div class="stat-card">
                 <i class="fas fa-fire"></i>
@@ -220,60 +224,93 @@
         @endforelse
 
         {{-- PERSONALS --}}
-        <div class="section-title">Personals Disponíveis</div>
-        <p style="color: var(--text-muted); font-size: 0.8rem; margin: -10px 0 15px 0;">
-            <i class="fas fa-info-circle" style="color: var(--primary);"></i>
-            Você pode contratar um personal com ou sem vínculo com academia.
-        </p>
-        <div class="dashboard-grid" style="grid-template-columns: repeat(2, 1fr);">
-            @foreach($personals as $p)
-            <div class="stat-card personal-card">
-                <div style="display: flex; align-items: center; gap: 15px;">
-                    <img src="https://ui-avatars.com/api/?name={{ urlencode($p->nome) }}&background=000&color=d4ff00">
-                    <div>
-                        <h3 style="margin:0; font-size: 0.9rem;">{{ $p->nome }}</h3>
-                        <p style="margin:0; font-size: 0.6rem; color: var(--primary);">Ativo na plataforma</p>
-                    </div>
-                </div>
+       <div class="section-title">Personals Disponíveis</div>
+<p style="color: var(--text-muted); font-size: 0.8rem; margin: -10px 0 15px 0;">
+    <i class="fas fa-info-circle" style="color: var(--primary);"></i>
+    Você pode contratar um personal com ou sem vínculo com academia.
+</p>
 
-                {{-- Prévia das fotos --}}
-                @if($p->fotos->count() > 0)
-                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; margin-top: 12px;">
-                    @foreach($p->fotos->take(3) as $foto)
-                    <img src="{{ asset('storage/' . $foto->path) }}"
-                         onclick="abrirGaleria('personal', {{ $p->id }})"
-                         style="width:100%; aspect-ratio:1; object-fit:cover; border-radius:8px; border:1px solid var(--border); cursor:pointer; transition:0.2s;"
-                         onmouseover="this.style.borderColor='var(--primary)'"
-                         onmouseout="this.style.borderColor='var(--border)'">
-                    @endforeach
-                </div>
-                @if($p->fotos->count() > 3)
-                <p style="font-size:0.7rem; color:var(--text-muted); margin:5px 0 0; text-align:center;">
-                    +{{ $p->fotos->count() - 3 }} fotos
-                </p>
-                @endif
-                @endif
+<div class="dashboard-grid" style="grid-template-columns: repeat(2, 1fr);">
+    @foreach($personals as $p)
+    {{-- AQUI ESTÁ O SEGREDO 1: Adicionei position: relative e padding-top extra no card --}}
+    <div class="stat-card personal-card" style="position: relative; padding-top: 25px;">
+        
+        {{-- AQUI ESTÁ O SEGREDO 2: As estrelinhas agora estão soltas no topo do card --}}
+        <div onclick="abrirAvaliacao({{ $p->id }}, '{{ addslashes($p->nome) }}')" 
+             style="position: absolute; top: 10px; right: 10px; cursor: pointer; color: gold; font-size: 0.8rem; display: flex; align-items: center; gap: 5px; padding: 4px 10px; background: rgba(255, 215, 0, 0.1); border-radius: 20px; border: 1px solid rgba(255, 215, 0, 0.2); transition: 0.2s; box-shadow: 0 2px 4px rgba(0,0,0,0.1);"
+             onmouseover="this.style.background='rgba(255, 215, 0, 0.3)'"
+             onmouseout="this.style.background='rgba(255, 215, 0, 0.1)'"
+             title="Clique para avaliar {{ $p->nome }}">
+            <i class="fas fa-star"></i> 
+            <strong style="color: white; font-size: 0.9rem;">{{ $p->media_avaliacao }}</strong>
+        </div>
 
-                <div style="display: flex; gap: 8px; margin-top: 15px;">
-                    @if($p->fotos->count() > 0)
-                    <button onclick="abrirGaleria('personal', {{ $p->id }})" class="btn-action btn-outline" style="padding: 10px; font-size: 0.7rem; margin-top: 0;">
-                        <i class="fas fa-images"></i> Ver Fotos
-                    </button>
-                    @endif
-                    <button onclick="abrirAgenda('{{ $p->id }}', '{{ $p->nome }}')" class="btn-action btn-outline" style="padding: 10px; font-size: 0.7rem; margin-top: 0;">
-                        <i class="fas fa-calendar-check"></i> Ver Agenda
-                    </button>
-                </div>
+        <div style="display: flex; align-items: center; gap: 15px;">
+            {{-- AQUI FOI FEITA A ALTERAÇÃO DA FOTO --}}
+            @if($p->foto)
+                <img src="{{ asset('storage/' . $p->foto) }}" alt="Foto de {{ $p->nome }}" style="width: 50px; height: 50px; border-radius: 50%; object-fit: cover;">
+            @else
+                <img src="https://ui-avatars.com/api/?name={{ urlencode($p->nome) }}&background=000&color=d4ff00" alt="Iniciais de {{ $p->nome }}" style="width: 50px; height: 50px; border-radius: 50%;">
+            @endif
+
+            {{-- Informações do Personal (O botão das estrelinhas saiu daqui) --}}
+            <div>
+                <h3 style="margin:0; font-size: 0.9rem; padding-right: 40px;">{{ $p->nome }}</h3>
+                <p style="margin:0; font-size: 0.6rem; color: var(--primary);">Ativo na plataforma</p>
             </div>
+        </div>
+
+        {{-- Prévia das fotos da galeria (se tiver) --}}
+        @if($p->fotos && $p->fotos->count() > 0)
+        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; margin-top: 12px;">
+            @foreach($p->fotos->take(3) as $foto)
+            <img src="{{ asset('storage/' . $foto->path) }}"
+                 onclick="abrirGaleria('personal', {{ $p->id }})"
+                 style="width:100%; aspect-ratio:1; object-fit:cover; border-radius:8px; border:1px solid var(--border); cursor:pointer; transition:0.2s;"
+                 onmouseover="this.style.borderColor='var(--primary)'"
+                 onmouseout="this.style.borderColor='var(--border)'">
             @endforeach
         </div>
+        @if($p->fotos->count() > 3)
+        <p style="font-size:0.7rem; color:var(--text-muted); margin:5px 0 0; text-align:center;">
+            +{{ $p->fotos->count() - 3 }} fotos
+        </p>
+        @endif
+        @endif
+
+        {{-- Botões de Ação --}}
+        <div style="display: flex; gap: 8px; margin-top: 15px;">
+            @if($p->fotos && $p->fotos->count() > 0)
+            <button onclick="abrirGaleria('personal', {{ $p->id }})" class="btn-action btn-outline" style="padding: 10px; font-size: 0.7rem; margin-top: 0; width: 100%;">
+                <i class="fas fa-images"></i> Fotos
+            </button>
+            @endif
+            <button onclick="abrirAgenda('{{ $p->id }}', '{{ $p->nome }}')" class="btn-action btn-outline" style="padding: 10px; font-size: 0.7rem; margin-top: 0; width: 100%;">
+                <i class="fas fa-calendar-check"></i> Agenda
+            </button>
+        </div>
+    </div>
+    @endforeach
+</div>
 
         {{-- ACADEMIAS --}}
         <div class="section-title">Academias Parceiras (Contratar)</div>
         <div id="listaAcademias">
             @forelse($academias as $academia)
             <div class="list-item" style="flex-direction: column; align-items: flex-start; gap: 12px;">
-                <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+                
+                {{-- LINHA SUPERIOR: Foto + Info + Botão --}}
+                <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; gap: 15px;">
+                    
+                    {{-- FOTO PRINCIPAL OU ÍCONE PADRÃO --}}
+                    @if($academia->fotos && $academia->fotos->count() > 0)
+                        <img src="{{ asset('storage/' . $academia->fotos->first()->path) }}" alt="Foto de {{ $academia->nome }}" style="width: 60px; height: 60px; border-radius: 12px; border: 1px solid var(--primary); object-fit: cover; flex-shrink: 0;">
+                    @else
+                        <div style="width: 60px; height: 60px; border-radius: 12px; border: 1px solid var(--primary); background: rgba(212, 255, 0, 0.08); display: flex; align-items: center; justify-content: center; flex-shrink: 0; color: var(--primary); font-size: 1.5rem;">
+                            <i class="fas fa-dumbbell"></i>
+                        </div>
+                    @endif
+
                     <div style="flex: 1;">
                         <strong style="display: block; font-size: 1.1rem; color: var(--primary);">{{ $academia->nome }}</strong>
                         <span style="color: var(--text-muted); font-size: 0.8rem;">
@@ -283,22 +320,25 @@
                             Mensalidade: R$ {{ number_format($academia->valor_mensalidade, 2, ',', '.') }}
                         </div>
                     </div>
-                    @if($cliente->academia_id == $academia->id)
-                        <div class="badge-status" style="background: var(--primary); color: #000;">Meu Plano</div>
-                    @else
-                        <form action="{{ route('academias.contratar') }}" method="POST">
-                            @csrf
-                            <input type="hidden" name="academia_id" value="{{ $academia->id }}">
-                            <button type="submit" class="btn-action" style="margin:0; padding: 10px 20px; width: auto; font-size: 0.7rem;">
-                                Contratar
-                            </button>
-                        </form>
-                    @endif
+
+                    <div>
+                        @if($cliente->academia_id == $academia->id)
+                            <div class="badge-status" style="background: var(--primary); color: #000;">Meu Plano</div>
+                        @else
+                            <form action="{{ route('academias.contratar') }}" method="POST">
+                                @csrf
+                                <input type="hidden" name="academia_id" value="{{ $academia->id }}">
+                                <button type="submit" class="btn-action" style="margin:0; padding: 10px 20px; width: auto; font-size: 0.7rem;">
+                                    Contratar
+                                </button>
+                            </form>
+                        @endif
+                    </div>
                 </div>
 
-                {{-- Fotos da academia --}}
-                @if($academia->fotos->count() > 0)
-                <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; width: 100%;">
+                {{-- GALERIA DE FOTOS (Fica embaixo do nome) --}}
+                @if($academia->fotos && $academia->fotos->count() > 0)
+                <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; width: 100%; margin-top: 8px;">
                     @foreach($academia->fotos as $foto)
                     <img src="{{ asset('storage/' . $foto->path) }}"
                          onclick="abrirGaleria('academia', {{ $academia->id }})"
@@ -351,6 +391,60 @@
         @endforelse
     </div>
 </div>
+
+{{-- MODAL DE AVALIAÇÃO --}}
+<div id="avaliacaoModal" class="modal-overlay">
+    <div class="profile-card" style="width: 90%; max-width: 450px; border: 1px solid var(--primary);">
+        <i class="fas fa-times close-form" onclick="fecharAvaliacao()"></i>
+        <h2 id="nomePersonalAvaliacao" style="color: var(--primary); margin-bottom: 5px;">Avaliar Personal</h2>
+        <p style="color: var(--text-muted); font-size: 0.8rem; margin-bottom: 20px;">Como foi o seu treino com este profissional?</p>
+        
+        <form action="{{ route('avaliar.store') }}" method="POST">
+            @csrf
+            {{-- O ID do personal vai ser injetado aqui pelo JavaScript --}}
+            <input type="hidden" name="personal_id" id="personal_id_avaliacao" value="">
+            
+            <div style="text-align: center; margin-bottom: 15px;">
+                {{-- Sistema de Estrelas que acendem sozinhas com CSS --}}
+                <div class="star-rating" style="display: flex; justify-content: center; gap: 10px; font-size: 2.5rem; color: #444; cursor: pointer; flex-direction: row-reverse;">
+                    <input type="radio" name="nota" value="5" id="star5" style="display:none;" required>
+                    <label for="star5"><i class="fas fa-star"></i></label>
+                    
+                    <input type="radio" name="nota" value="4" id="star4" style="display:none;">
+                    <label for="star4"><i class="fas fa-star"></i></label>
+                    
+                    <input type="radio" name="nota" value="3" id="star3" style="display:none;">
+                    <label for="star3"><i class="fas fa-star"></i></label>
+                    
+                    <input type="radio" name="nota" value="2" id="star2" style="display:none;">
+                    <label for="star2"><i class="fas fa-star"></i></label>
+                    
+                    <input type="radio" name="nota" value="1" id="star1" style="display:none;">
+                    <label for="star1"><i class="fas fa-star"></i></label>
+                </div>
+            </div>
+
+            <label>Comentário (Opcional)</label>
+            <div class="input-wrapper" style="height: auto; margin-top: 5px;">
+                <i class="fas fa-comment-dots" style="align-self: flex-start; margin-top: 15px;"></i>
+                <textarea name="comentario" placeholder="Conte o que achou..." style="width: 100%; background: transparent; border: none; color: white; padding: 15px 10px; min-height: 80px; resize: none; outline: none;"></textarea>
+            </div>
+
+            <button type="submit" class="btn-action" style="margin-top: 20px;">Enviar Avaliação</button>
+        </form>
+    </div>
+</div>
+
+{{-- ESTILO DAS ESTRELINHAS MÁGICAS --}}
+<style>
+    .star-rating label { transition: color 0.2s; }
+    /* Quando passa o mouse ou seleciona, colore a estrela atual e todas as que vêm DEPOIS no HTML (que na tela aparecem antes, por causa do row-reverse) */
+    .star-rating label:hover,
+    .star-rating label:hover ~ label,
+    .star-rating input:checked ~ label {
+        color: gold; 
+    }
+</style>
 
 {{-- MODAL AGENDA --}}
 <div id="agendaModal" class="modal-overlay">
@@ -483,6 +577,57 @@
         if (e.target.id === 'agendaModal') fecharAgenda();
         if (e.target.id === 'modalGaleriaView') fecharGaleria();
         if (!e.target.closest('.menu-container')) document.getElementById('dropdownMenu').style.display = 'none';
+    }
+
+    function abrirAvaliacao(id, nome) {
+        
+    document.getElementById('nomePersonalAvaliacao').innerText = 'Avaliar ' + nome;
+    document.getElementById('personal_id_avaliacao').value = id;
+    document.getElementById('avaliacaoModal').style.display = 'flex';
+}
+
+function fecharAvaliacao() {
+    document.getElementById('avaliacaoModal').style.display = 'none';
+}
+
+window.addEventListener('click', function(e) {
+    if (e.target.id === 'avaliacaoModal') {
+        fecharAvaliacao();
+    }
+});
+</script>
+<script>
+    const mascaras = {
+        cpf: function(value) {
+            return value
+                .replace(/\D/g, '') // Remove o que não é número
+                .replace(/(\d{3})(\d)/, '$1.$2') // Adiciona ponto após os 3 primeiros
+                .replace(/(\d{3})(\d)/, '$1.$2') // Adiciona ponto após os 6 primeiros
+                .replace(/(\d{3})(\d{1,2})/, '$1-$2') // Adiciona traço antes dos 2 últimos
+                .replace(/(-\d{2})\d+?$/, '$1'); // Limita o tamanho
+        },
+        cnpj: function(value) {
+            return value
+                .replace(/\D/g, '') // Remove o que não é número
+                .replace(/(\d{2})(\d)/, '$1.$2') // Adiciona ponto após os 2 primeiros
+                .replace(/(\d{3})(\d)/, '$1.$2') // Adiciona ponto após os 5 primeiros
+                .replace(/(\d{3})(\d)/, '$1/$2') // Adiciona a barra após os 8 primeiros
+                .replace(/(\d{4})(\d{1,2})/, '$1-$2') // Adiciona o traço antes dos 2 últimos
+                .replace(/(-\d{2})\d+?$/, '$1'); // Limita o tamanho
+        },
+        telefone: function(value) {
+            return value
+                .replace(/\D/g, '') 
+                .replace(/(\d{2})(\d)/, '($1) $2') // Coloca parênteses no DDD
+                .replace(/(\d{4,5})(\d{4})/, '$1-$2') // Coloca o traço no meio
+                .replace(/(-\d{4})\d+?$/, '$1'); // Limita o tamanho
+        },
+        cep: function(value) {
+            return value
+                .replace(/\D/g, '') 
+                .replace(/(\d{5})(\d)/, '$1-$2') // Coloca o traço após os 5 primeiros
+                .replace(/(-\d{3})\d+?$/, '$1'); // Limita o tamanho
+        }
     }
 </script>
 </body>

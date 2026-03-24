@@ -143,7 +143,8 @@
                 <label>CPF</label>
                 <div class="input-wrapper">
                     <i class="fa-solid fa-id-card"></i>
-                    <input type="text" name="cpf" id="cpf" value="{{ old('cpf') }}" placeholder="000.000.000-00" required>
+                    <input type="text" name="cpf" placeholder="000.000.000-00" 
+                        oninput="this.value = mascaras.cpf(this.value)" maxlength="14" required>
                 </div>
             </div>
 
@@ -159,7 +160,8 @@
                 <label>CEP</label>
                 <div class="input-wrapper">
                     <i class="fa-solid fa-map-pin"></i>
-                    <input type="text" name="cep" id="cep" value="{{ old('cep') }}" maxlength="9" placeholder="00000-000" required>
+                    <input type="text" name="cep" id="cep" placeholder="00000-000" 
+                        oninput="this.value = mascaras.cep(this.value)" maxlength="9" required>
                 </div>
                 <div id="cep-loading" class="loading-cep"><i class="fa-solid fa-spinner fa-spin"></i> Buscando...</div>
             </div>
@@ -236,6 +238,8 @@
                 </div>
             </div>
 
+            <input type="hidden" name="latitude" id="latitude">
+            <input type="hidden" name="longitude" id="longitude">
             <input type="hidden" name="rua" id="rua" value="{{ old('rua') }}">
             <input type="hidden" name="bairro" id="bairro" value="{{ old('bairro') }}">
             <input type="hidden" name="cidade" id="cidade" value="{{ old('cidade') }}">
@@ -253,27 +257,91 @@
         const cep = this.value.replace(/\D/g, '');
         if (cep.length !== 8) return;
 
-        document.getElementById('cep-loading').style.display = 'block';
+        const loadingIcon = document.getElementById('cep-loading');
+        loadingIcon.style.display = 'block';
+        loadingIcon.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Buscando endereço...';
 
+        // 1. Busca o endereço pelo ViaCEP
         fetch(`https://viacep.com.br/ws/${cep}/json/`)
             .then(res => res.json())
             .then(data => {
                 if (!data.erro) {
-                    // Preenche os campos ocultos (que o Laravel valida)
+                    // Preenche os campos do formulário
                     document.getElementById('rua').value = data.logradouro;
                     document.getElementById('bairro').value = data.bairro;
                     document.getElementById('cidade').value = data.localidade;
                     document.getElementById('estado').value = data.uf;
 
-                    // Preenche o visual (que o usuário vê)
+                    // Preenche o visual
                     document.getElementById('display_rua_bairro').value = `${data.logradouro}, ${data.bairro}`;
                     document.getElementById('display_cidade_estado').value = `${data.localidade} - ${data.uf}`;
+
+                    loadingIcon.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Buscando localização no mapa...';
+
+                    // 2. Busca a Latitude e Longitude (OpenStreetMap)
+                    const enderecoQuery = `${data.logradouro}, ${data.localidade}, ${data.uf}, Brasil`;
+
+                    fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(enderecoQuery)}&format=json&limit=1`)
+                        .then(r => r.json())
+                        .then(results => {
+                            if (results.length > 0) {
+                                document.getElementById('latitude').value  = results[0].lat;
+                                document.getElementById('longitude').value = results[0].lon;
+
+                                loadingIcon.innerHTML = '<i class="fa-solid fa-check" style="color:#d4ff00"></i> Localização confirmada!';
+                            } else {
+                                loadingIcon.innerHTML = '<i class="fa-solid fa-triangle-exclamation" style="color:orange"></i> Endereço achado, mas sem GPS preciso.';
+                            }
+                        })
+                        .catch(() => {
+                            loadingIcon.innerHTML = '<i class="fa-solid fa-xmark" style="color:red"></i> Erro ao buscar GPS.';
+                        })
+                        .finally(() => {
+                            setTimeout(() => loadingIcon.style.display = 'none', 3000);
+                        });
+                } else {
+                    loadingIcon.style.display = 'none';
                 }
             })
-            .finally(() => {
-                document.getElementById('cep-loading').style.display = 'none';
+            .catch(err => {
+                console.error("Erro no CEP");
+                loadingIcon.style.display = 'none';
             });
     });
+</script>
+<script>
+    const mascaras = {
+        cpf: function(value) {
+            return value
+                .replace(/\D/g, '') // Remove o que não é número
+                .replace(/(\d{3})(\d)/, '$1.$2') // Adiciona ponto após os 3 primeiros
+                .replace(/(\d{3})(\d)/, '$1.$2') // Adiciona ponto após os 6 primeiros
+                .replace(/(\d{3})(\d{1,2})/, '$1-$2') // Adiciona traço antes dos 2 últimos
+                .replace(/(-\d{2})\d+?$/, '$1'); // Limita o tamanho
+        },
+        cnpj: function(value) {
+            return value
+                .replace(/\D/g, '') // Remove o que não é número
+                .replace(/(\d{2})(\d)/, '$1.$2') // Adiciona ponto após os 2 primeiros
+                .replace(/(\d{3})(\d)/, '$1.$2') // Adiciona ponto após os 5 primeiros
+                .replace(/(\d{3})(\d)/, '$1/$2') // Adiciona a barra após os 8 primeiros
+                .replace(/(\d{4})(\d{1,2})/, '$1-$2') // Adiciona o traço antes dos 2 últimos
+                .replace(/(-\d{2})\d+?$/, '$1'); // Limita o tamanho
+        },
+        telefone: function(value) {
+            return value
+                .replace(/\D/g, '') 
+                .replace(/(\d{2})(\d)/, '($1) $2') // Coloca parênteses no DDD
+                .replace(/(\d{4,5})(\d{4})/, '$1-$2') // Coloca o traço no meio
+                .replace(/(-\d{4})\d+?$/, '$1'); // Limita o tamanho
+        },
+        cep: function(value) {
+            return value
+                .replace(/\D/g, '') 
+                .replace(/(\d{5})(\d)/, '$1-$2') // Coloca o traço após os 5 primeiros
+                .replace(/(-\d{3})\d+?$/, '$1'); // Limita o tamanho
+        }
+    }
 </script>
 
 </body>

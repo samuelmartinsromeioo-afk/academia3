@@ -56,7 +56,8 @@
             <label>CNPJ (Somente números)</label>
             <div class="input-wrapper">
                 <i class="fa-solid fa-building"></i>
-                <input type="text" name="cnpj" id="cnpj" value="{{ old('cnpj') }}" placeholder="Ex: 12345678000199" required>
+                <input type="text" name="cnpj" placeholder="00.000.000/0000-00" 
+                        oninput="this.value = mascaras.cnpj(this.value)" maxlength="18" required>
             </div>
             <span id="cnpj-loading" class="loading"><i class="fa-solid fa-spinner fa-spin"></i> Consultando CNPJ...</span>
         </div>
@@ -73,7 +74,8 @@
             <label>CEP</label>
             <div class="input-wrapper">
                 <i class="fa-solid fa-map-location-dot"></i>
-                <input type="text" name="cep" id="cep" value="{{ old('cep') }}" placeholder="00000000" required>
+                <input type="text" name="cep" id="cep" placeholder="00000-000" 
+                        oninput="this.value = mascaras.cep(this.value)" maxlength="9" required>
             </div>
             <span id="cep-loading" class="loading"><i class="fa-solid fa-spinner fa-spin"></i> Buscando CEP...</span>
         </div>
@@ -167,6 +169,9 @@
             </div>
         </div>
 
+        <input type="hidden" name="latitude" id="latitude" value="{{ old('latitude') }}">
+        <input type="hidden" name="longitude" id="longitude" value="{{ old('longitude') }}">
+
         <button type="submit" class="btn-submit full-width">
             FINALIZAR CADASTRO <i class="fa-solid fa-paper-plane" style="margin-left: 10px;"></i>
         </button>
@@ -174,47 +179,86 @@
 </div>
 
 <script>
-    // --- LÓGICA DA BRASILAPI PARA CEP ---
-    document.getElementById('cep').addEventListener('blur', function() {
-        const cep = this.value.replace(/\D/g, '');
-        if (cep.length !== 8) return;
+document.getElementById('cep').addEventListener('blur', function() {
+    const cep = this.value.replace(/\D/g, '');
+    if (cep.length !== 8) return;
 
-        document.getElementById('cep-loading').style.display = 'block';
+    document.getElementById('cep-loading').style.display = 'block';
 
-        fetch(`https://brasilapi.com.br/api/cep/v1/${cep}`)
-            .then(res => res.json())
-            .then(data => {
-                if (!data.errors) {
-                    document.getElementById('rua').value = data.street || '';
-                    document.getElementById('bairro').value = data.neighborhood || '';
-                    document.getElementById('cidade').value = data.city || '';
-                    document.getElementById('estado').value = data.state || '';
-                    document.getElementById('endereco_completo').value = 
-                        `${data.street || ''}, ${data.neighborhood || ''} - ${data.city || ''}/${data.state || ''}`;
-                }
-            })
-            .catch(err => console.error("Erro ao buscar CEP"))
-            .finally(() => document.getElementById('cep-loading').style.display = 'none');
-    });
+    fetch(`https://brasilapi.com.br/api/cep/v1/${cep}`)
+        .then(res => res.json())
+        .then(data => {
+            if (!data.errors) {
+                document.getElementById('rua').value = data.street || '';
+                document.getElementById('bairro').value = data.neighborhood || '';
+                document.getElementById('cidade').value = data.city || '';
+                document.getElementById('estado').value = data.state || '';
+                document.getElementById('endereco_completo').value =
+                    `${data.street || ''}, ${data.neighborhood || ''} - ${data.city || ''}/${data.state || ''}`;
 
-    // --- LÓGICA DA BRASILAPI PARA CNPJ ---
-    document.getElementById('cnpj').addEventListener('blur', function() {
-        const cnpj = this.value.replace(/\D/g, '');
-        if (cnpj.length !== 14) return;
-
-        document.getElementById('cnpj-loading').style.display = 'block';
-
-        fetch(`https://brasilapi.com.br/api/cnpj/v1/${cnpj}`)
-            .then(res => res.json())
-            .then(data => {
-                if (!data.errors) {
-                    // Preenche o nome da academia com o Nome Fantasia ou Razão Social vindo da API
-                    document.getElementById('nome').value = data.nome_fantasia || data.razao_social || '';
-                }
-            })
-            .catch(err => console.error("Erro ao buscar CNPJ"))
-            .finally(() => document.getElementById('cnpj-loading').style.display = 'none');
-    });
+                // ✅ Busca coordenadas pelo endereço no Nominatim
+                const enderecoQuery = `${data.street || ''}, ${data.city || ''}, ${data.state || ''}, Brasil`;
+                fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(enderecoQuery)}&format=json&limit=1`)
+                    .then(r => r.json())
+                    .then(results => {
+                        if (results.length > 0) {
+                            document.getElementById('latitude').value  = results[0].lat;
+                            document.getElementById('longitude').value = results[0].lon;
+                            document.getElementById('cep-loading').innerHTML =
+                                '<i class="fa-solid fa-check" style="color:#d4ff00"></i> Localização encontrada!';
+                        }
+                    })
+                    .catch(() => {})
+                    .finally(() => {
+                        setTimeout(() => {
+                            document.getElementById('cep-loading').style.display = 'none';
+                            document.getElementById('cep-loading').innerHTML =
+                                '<i class="fa-solid fa-spinner fa-spin"></i> Buscando CEP...';
+                        }, 2000);
+                    });
+            } else {
+                document.getElementById('cep-loading').style.display = 'none';
+            }
+        })
+        .catch(err => {
+            console.error("Erro ao buscar CEP");
+            document.getElementById('cep-loading').style.display = 'none';
+        });
+});
+</script>
+<script>
+    const mascaras = {
+        cpf: function(value) {
+            return value
+                .replace(/\D/g, '') // Remove o que não é número
+                .replace(/(\d{3})(\d)/, '$1.$2') // Adiciona ponto após os 3 primeiros
+                .replace(/(\d{3})(\d)/, '$1.$2') // Adiciona ponto após os 6 primeiros
+                .replace(/(\d{3})(\d{1,2})/, '$1-$2') // Adiciona traço antes dos 2 últimos
+                .replace(/(-\d{2})\d+?$/, '$1'); // Limita o tamanho
+        },
+        cnpj: function(value) {
+            return value
+                .replace(/\D/g, '') // Remove o que não é número
+                .replace(/(\d{2})(\d)/, '$1.$2') // Adiciona ponto após os 2 primeiros
+                .replace(/(\d{3})(\d)/, '$1.$2') // Adiciona ponto após os 5 primeiros
+                .replace(/(\d{3})(\d)/, '$1/$2') // Adiciona a barra após os 8 primeiros
+                .replace(/(\d{4})(\d{1,2})/, '$1-$2') // Adiciona o traço antes dos 2 últimos
+                .replace(/(-\d{2})\d+?$/, '$1'); // Limita o tamanho
+        },
+        telefone: function(value) {
+            return value
+                .replace(/\D/g, '') 
+                .replace(/(\d{2})(\d)/, '($1) $2') // Coloca parênteses no DDD
+                .replace(/(\d{4,5})(\d{4})/, '$1-$2') // Coloca o traço no meio
+                .replace(/(-\d{4})\d+?$/, '$1'); // Limita o tamanho
+        },
+        cep: function(value) {
+            return value
+                .replace(/\D/g, '') 
+                .replace(/(\d{5})(\d)/, '$1-$2') // Coloca o traço após os 5 primeiros
+                .replace(/(-\d{3})\d+?$/, '$1'); // Limita o tamanho
+        }
+    }
 </script>
 
 </body>

@@ -39,7 +39,9 @@ class AcademiaController extends Controller
             'senha' => 'required|string|min:8|confirmed',
             'cnpj' => 'required|string|unique:academias,cnpj|max:18',
             'infraestrutura' => 'required|string|max:255',
-            'tipos_aulas' => 'required|string|max:255'
+            'tipos_aulas' => 'required|string|max:255',
+            'latitude' => 'nullable|numeric',
+            'longitude' => 'nullable|numeric',
         ]);
 
         $dados['senha'] = Hash::make($dados['senha']);

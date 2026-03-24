@@ -299,6 +299,11 @@
         .alunos-list::-webkit-scrollbar-track { background: rgba(255,255,255,0.02); }
         .alunos-list::-webkit-scrollbar-thumb { background: var(--primary); border-radius: 10px; }
 
+        /* Scrollbar avaliações */
+        .avals-list::-webkit-scrollbar { width: 6px; }
+        .avals-list::-webkit-scrollbar-track { background: rgba(255,255,255,0.02); }
+        .avals-list::-webkit-scrollbar-thumb { background: var(--primary); border-radius: 10px; }
+
         /* Galeria */
         .galeria-grid {
             display: grid;
@@ -338,6 +343,21 @@
         }
         .galeria-upload-slot:hover { background: rgba(212,255,0,0.1); }
         .galeria-upload-slot i { font-size: 1.2rem; }
+
+        /* Barra de progresso das notas */
+        .nota-bar-bg {
+            flex: 1;
+            height: 6px;
+            background: rgba(255,255,255,0.06);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        .nota-bar-fill {
+            height: 100%;
+            background: var(--primary);
+            border-radius: 10px;
+            transition: width 0.6s ease;
+        }
     </style>
 </head>
 
@@ -367,6 +387,8 @@
                 <button type="button" id="btnOpenAlunos"><i class="fas fa-users"></i> Meus Alunos</button>
                 <button type="button" id="btnOpenFinance"><i class="fas fa-wallet" style="color: var(--success)"></i> Minhas Finanças</button>
                 <button type="button" id="btnOpenGaleria"><i class="fas fa-images"></i> Minha Galeria</button>
+                {{-- NOVO BOTÃO AVALIAÇÕES --}}
+                <button type="button" id="btnOpenAvaliacoes"><i class="fas fa-star" style="color: var(--primary)"></i> Minhas Avaliações</button>
                 <form action="{{ route('login.logout') }}" method="POST"> @csrf <button type="submit" style="color: var(--error)"><i class="fas fa-power-off"></i> Sair</button></form>
             </div>
         </div>
@@ -611,33 +633,133 @@
         </div>
     </div>
 
+    {{-- MODAL AVALIAÇÕES --}}
+    <div id="modalAvaliacoes" class="modal-overlay">
+        <div class="modal-content" style="max-width: 600px;">
+            <h2 style="color: var(--primary); font-size: 1.4rem; margin-top: 0; font-weight: 900; display: flex; align-items: center; gap: 10px;">
+                <i class="fas fa-star"></i> MINHAS AVALIAÇÕES
+            </h2>
+
+            @php
+                $avaliacoes  = $personal->avaliacoes()->with('cliente')->latest()->get();
+                $mediaAval   = $avaliacoes->avg('nota') ?? 0;
+                $totalAval   = $avaliacoes->count();
+                $contNotas   = [5 => 0, 4 => 0, 3 => 0, 2 => 0, 1 => 0];
+                foreach ($avaliacoes as $av) {
+                    $contNotas[(int)$av->nota] = ($contNotas[(int)$av->nota] ?? 0) + 1;
+                }
+            @endphp
+
+            {{-- Resumo com média e distribuição --}}
+            <div style="display: grid; grid-template-columns: auto 1fr; gap: 25px; align-items: center; background: rgba(212,255,0,0.05); border: 1px solid rgba(212,255,0,0.2); border-radius: 16px; padding: 20px; margin-bottom: 20px;">
+
+                {{-- Média central --}}
+                <div style="text-align: center; min-width: 90px;">
+                    <span style="font-size: 3rem; font-weight: 900; color: var(--primary); line-height: 1;">{{ number_format($mediaAval, 1) }}</span>
+                    <div style="color: var(--primary); font-size: 0.8rem; margin: 6px 0 4px;">
+                        @for ($i = 1; $i <= 5; $i++)
+                            @if ($i <= $mediaAval) <i class="fas fa-star"></i>
+                            @elseif ($i - 0.5 <= $mediaAval) <i class="fas fa-star-half-alt"></i>
+                            @else <i class="far fa-star" style="opacity:0.3"></i>
+                            @endif
+                        @endfor
+                    </div>
+                    <span style="font-size: 0.7rem; color: var(--text-muted);">{{ $totalAval }} avaliação(ões)</span>
+                </div>
+
+                {{-- Barras de distribuição --}}
+                <div style="display: flex; flex-direction: column; gap: 6px;">
+                    @foreach ([5,4,3,2,1] as $estrela)
+                        @php
+                            $qtd = $contNotas[$estrela] ?? 0;
+                            $pct = $totalAval > 0 ? ($qtd / $totalAval) * 100 : 0;
+                        @endphp
+                        <div style="display: flex; align-items: center; gap: 8px; font-size: 0.75rem;">
+                            <span style="color: var(--text-muted); width: 10px; text-align: right;">{{ $estrela }}</span>
+                            <i class="fas fa-star" style="color: var(--primary); font-size: 0.65rem;"></i>
+                            <div class="nota-bar-bg">
+                                <div class="nota-bar-fill" style="width: {{ $pct }}%;"></div>
+                            </div>
+                            <span style="color: var(--text-muted); width: 20px;">{{ $qtd }}</span>
+                        </div>
+                    @endforeach
+                </div>
+            </div>
+
+            {{-- Lista de avaliações --}}
+            <div class="avals-list" style="display: flex; flex-direction: column; gap: 12px; max-height: 380px; overflow-y: auto; padding-right: 8px;">
+                @forelse($avaliacoes as $avaliacao)
+                    <div style="background: rgba(255,255,255,0.03); border: 1px solid var(--border); padding: 15px; border-radius: 16px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                            <div style="display: flex; align-items: center; gap: 10px;">
+                                <img src="https://ui-avatars.com/api/?name={{ urlencode($avaliacao->cliente->nome ?? 'Cliente') }}&background=d4ff00&color=000"
+                                    style="width: 38px; height: 38px; border-radius: 50%; flex-shrink:0;">
+                                <span style="font-weight: 700; font-size: 0.9rem;">
+                                    {{ $avaliacao->cliente->nome ?? 'Cliente' }}
+                                </span>
+                            </div>
+                            <div style="color: var(--primary); font-size: 0.8rem; flex-shrink:0;">
+                                @for ($i = 1; $i <= 5; $i++)
+                                    @if ($i <= $avaliacao->nota) <i class="fas fa-star"></i>
+                                    @else <i class="far fa-star" style="opacity: 0.25"></i>
+                                    @endif
+                                @endfor
+                            </div>
+                        </div>
+
+                        @if($avaliacao->comentario)
+                            <p style="margin: 0 0 8px 0; font-size: 0.82rem; color: var(--text-muted); line-height: 1.5; border-left: 3px solid var(--primary); padding-left: 10px;">
+                                "{{ $avaliacao->comentario }}"
+                            </p>
+                        @endif
+
+                        <small style="color: rgba(255,255,255,0.2); font-size: 0.7rem;">
+                            <i class="fas fa-clock"></i>
+                            {{ \Carbon\Carbon::parse($avaliacao->created_at)->format('d/m/Y') }}
+                        </small>
+                    </div>
+                @empty
+                    <div style="text-align: center; padding: 50px 20px; opacity: 0.4;">
+                        <i class="fas fa-star" style="font-size: 3rem; margin-bottom: 15px; color: var(--text-muted); display: block;"></i>
+                        <p style="color: var(--text-muted); margin: 0;">Você ainda não recebeu avaliações.</p>
+                    </div>
+                @endforelse
+            </div>
+
+            <button type="button" onclick="closeModalAvaliacoes()" class="btn-save" style="margin-top: 20px;">Fechar</button>
+        </div>
+    </div>
+
     <script>
         function toggleMenu() {
             const m = document.getElementById('dropdownMenu');
             m.style.display = m.style.display === 'block' ? 'none' : 'block';
         }
 
-        const modalUpdate  = document.getElementById('modalUpdate');
-        const modalHorario = document.getElementById('modalHorario');
-        const modalFinance = document.getElementById('modalFinance');
-        const modalAlunos  = document.getElementById('modalAlunos');
-        const modalGaleria = document.getElementById('modalGaleria');
+        const modalUpdate      = document.getElementById('modalUpdate');
+        const modalHorario     = document.getElementById('modalHorario');
+        const modalFinance     = document.getElementById('modalFinance');
+        const modalAlunos      = document.getElementById('modalAlunos');
+        const modalGaleria     = document.getElementById('modalGaleria');
+        const modalAvaliacoes  = document.getElementById('modalAvaliacoes');
 
-        document.getElementById('btnOpenUpdate').onclick  = () => { modalUpdate.style.display  = 'block'; toggleMenu(); };
-        document.getElementById('btnOpenFinance').onclick = () => { modalFinance.style.display = 'block'; toggleMenu(); };
-        document.getElementById('btnOpenAlunos').onclick  = () => { modalAlunos.style.display  = 'block'; toggleMenu(); };
-        document.getElementById('btnOpenGaleria').onclick = () => { modalGaleria.style.display = 'block'; toggleMenu(); };
+        document.getElementById('btnOpenUpdate').onclick      = () => { modalUpdate.style.display     = 'block'; toggleMenu(); };
+        document.getElementById('btnOpenFinance').onclick     = () => { modalFinance.style.display    = 'block'; toggleMenu(); };
+        document.getElementById('btnOpenAlunos').onclick      = () => { modalAlunos.style.display     = 'block'; toggleMenu(); };
+        document.getElementById('btnOpenGaleria').onclick     = () => { modalGaleria.style.display    = 'block'; toggleMenu(); };
+        document.getElementById('btnOpenAvaliacoes').onclick  = () => { modalAvaliacoes.style.display = 'block'; toggleMenu(); };
 
         document.getElementById('btnOpenBloqueio').onclick = () => {
             document.getElementById('modal_data').value = new Date().toISOString().split('T')[0];
             modalHorario.style.display = 'block';
         };
 
-        function closeModalUpdate()  { modalUpdate.style.display  = 'none'; }
-        function closeModalHorario() { modalHorario.style.display = 'none'; }
-        function closeModalFinance() { modalFinance.style.display = 'none'; }
-        function closeModalAlunos()  { modalAlunos.style.display  = 'none'; }
-        function closeModalGaleria() { modalGaleria.style.display = 'none'; }
+        function closeModalUpdate()      { modalUpdate.style.display     = 'none'; }
+        function closeModalHorario()     { modalHorario.style.display    = 'none'; }
+        function closeModalFinance()     { modalFinance.style.display    = 'none'; }
+        function closeModalAlunos()      { modalAlunos.style.display     = 'none'; }
+        function closeModalGaleria()     { modalGaleria.style.display    = 'none'; }
+        function closeModalAvaliacoes()  { modalAvaliacoes.style.display = 'none'; }
 
         function cancelarComJustificativa(id) {
             const justificativa = prompt("Por favor, digite a justificativa para o cancelamento (mínimo 10 caracteres):");
@@ -715,11 +837,12 @@
         }
 
         window.onclick = (e) => {
-            if (e.target == modalUpdate)  closeModalUpdate();
-            if (e.target == modalHorario) closeModalHorario();
-            if (e.target == modalFinance) closeModalFinance();
-            if (e.target == modalAlunos)  closeModalAlunos();
-            if (e.target == modalGaleria) closeModalGaleria();
+            if (e.target == modalUpdate)     closeModalUpdate();
+            if (e.target == modalHorario)    closeModalHorario();
+            if (e.target == modalFinance)    closeModalFinance();
+            if (e.target == modalAlunos)     closeModalAlunos();
+            if (e.target == modalGaleria)    closeModalGaleria();
+            if (e.target == modalAvaliacoes) closeModalAvaliacoes();
         }
 
         window.onload = () => {

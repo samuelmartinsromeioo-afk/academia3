@@ -1,24 +1,24 @@
 <?php
- 
+
 namespace App\Http\Controllers\Cadastro;
- 
+
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\cadastro\Personal;
 use App\Models\Agenda;
 use App\Models\cadastro\Cliente;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Storage; 
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Mail;
 use Carbon\Carbon;
- 
+
 class PersonalController extends Controller
 {
     public function create()
     {
         return view('cadastro.personal');
     }
- 
+
     public function store(Request $request)
     {
         $dados = $request->validate([
@@ -38,6 +38,8 @@ class PersonalController extends Controller
             'idade'         => 'required|date',
             'resultados'    => 'nullable|string',
             'avaliacao'     => 'nullable|string',
+            'latitude'      => 'nullable|numeric',
+            'longitude'     => 'nullable|numeric',
         ]);
  
         // pra guardar na pasta a foto do personal
