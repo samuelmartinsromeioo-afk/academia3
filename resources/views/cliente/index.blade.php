@@ -56,17 +56,122 @@
         .input-wrapper input, .input-wrapper select, .input-wrapper textarea { flex: 1; background: transparent; border: none; padding: 12px; color: #fff; outline: none; font-size: 0.9rem; font-family: inherit; }
         .input-wrapper textarea { resize: none; height: 80px; }
         .btn-action { background: var(--primary); color: #000; width: 100%; padding: 18px; border-radius: 12px; font-weight: 900; border: none; cursor: pointer; text-transform: uppercase; transition: 0.3s; font-size: 0.8rem; margin-top: 20px; }
+        .btn-action:disabled { opacity: 0.5; cursor: not-allowed; }
         .btn-outline { background: transparent; border: 1px solid var(--primary); color: var(--primary); }
-        .btn-action:hover { transform: translateY(-3px); box-shadow: 0 10px 20px rgba(212, 255, 0, 0.15); }
-        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 1001; display: none; justify-content: center; align-items: center; backdrop-filter: blur(8px); }
+        .btn-action:hover:not(:disabled) { transform: translateY(-3px); box-shadow: 0 10px 20px rgba(212, 255, 0, 0.15); }
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 1001; display: none; justify-content: center; align-items: center; backdrop-filter: blur(8px); overflow-y: auto; padding: 40px 0; }
         .horario-item { background: var(--input-bg); padding: 15px; border-radius: 12px; border: 1px solid var(--border); margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         @media (max-width: 768px) {
             .dashboard-grid { grid-template-columns: 1fr; }
             .col-3, .col-2, .col-4 { grid-column: span 6; }
         }
+
+        /* Estilos do Calendário */
+        #calendarGrid::-webkit-scrollbar { width: 6px; }
+        #calendarGrid::-webkit-scrollbar-track { background: rgba(255,255,255,0.02); border-radius: 10px; }
+        #calendarGrid::-webkit-scrollbar-thumb { background: var(--primary); border-radius: 10px; }
+
+        .dia-calendario {
+            aspect-ratio: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 0.75rem;
+            font-weight: 700;
+            user-select: none;
+        }
+
+        .dia-calendario.outro-mes {
+            color: var(--text-muted);
+            background: rgba(255,255,255,0.02);
+            cursor: not-allowed;
+        }
+
+        .dia-calendario.disponivel {
+            background: rgba(212, 255, 0, 0.08);
+            border-color: rgba(212, 255, 0, 0.2);
+            color: var(--primary);
+        }
+
+        .dia-calendario.disponivel:hover {
+            background: rgba(212, 255, 0, 0.15);
+            border-color: var(--primary);
+            transform: scale(1.05);
+        }
+
+        .dia-calendario.ocupado {
+            background: rgba(255, 68, 68, 0.08);
+            border-color: rgba(255, 68, 68, 0.2);
+            color: #ff6666;
+            cursor: not-allowed;
+        }
+
+        .dia-calendario.selecionado {
+            background: var(--primary);
+            border-color: var(--primary);
+            color: #000;
+            font-weight: 900;
+        }
+
+        .pacote-item {
+            background: var(--input-bg);
+            padding: 12px;
+            border-radius: 10px;
+            border: 2px solid transparent;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .pacote-item:hover {
+            border-color: rgba(212, 255, 0, 0.3);
+            background: rgba(212, 255, 0, 0.05);
+        }
+
+        .pacote-item.selecionado {
+            border-color: var(--primary);
+            background: rgba(212, 255, 0, 0.1);
+        }
+
+        .pacote-freq { color: #fff; font-weight: 800; font-size: 0.8rem; }
+        .pacote-valor { color: var(--primary); font-weight: 900; font-size: 0.9rem; }
+
+        .horario-selecionavel {
+            background: var(--input-bg);
+            padding: 12px;
+            border-radius: 10px;
+            border: 2px solid transparent;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .horario-selecionavel:hover {
+            border-color: var(--primary);
+            background: rgba(212, 255, 0, 0.05);
+            transform: translateX(5px);
+        }
+
+        /* Estilos da Paginação */
+        .pagination-container { display: flex; justify-content: center; align-items: center; gap: 8px; margin-top: 20px; margin-bottom: 20px; }
+        .pagination-btn { background: var(--input-bg); border: 1px solid var(--border); color: var(--primary); padding: 8px 12px; border-radius: 8px; cursor: pointer; font-weight: 700; transition: 0.2s; font-size: 0.75rem; }
+        .pagination-btn:hover:not(:disabled) { background: var(--primary); color: #000; }
+        .pagination-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        .pagination-btn.active { background: var(--primary); color: #000; }
+        .pagination-info { color: var(--text-muted); font-size: 0.75rem; margin: 0 10px; }
     </style>
 </head>
+
 <body>
 
 <div class="top-bar">
@@ -90,9 +195,27 @@
 
 <div class="container">
     @if(session('success'))
-        <div style="background: rgba(40,167,69,0.2); border: 1px solid var(--success); color: #fff; padding: 15px; border-radius: 12px; margin-bottom: 20px;">
+        <div id="avisoSucesso" style="background: rgba(40,167,69,0.2); border: 1px solid var(--success); color: #fff; padding: 15px; border-radius: 12px; margin-bottom: 20px;">
             {{ session('success') }}
         </div>
+        <script>
+            setTimeout(() => {
+                const aviso = document.getElementById('avisoSucesso');
+                if (aviso) aviso.style.display = 'none';
+            }, 7000);
+        </script>
+    @endif
+
+    @if(session('error'))
+        <div id="avisoErro" style="background: rgba(255,68,68,0.2); border: 1px solid var(--error); color: #ff6666; padding: 15px; border-radius: 12px; margin-bottom: 20px;">
+            {{ session('error') }}
+        </div>
+        <script>
+            setTimeout(() => {
+                const aviso = document.getElementById('avisoErro');
+                if (aviso) aviso.style.display = 'none';
+            }, 7000);
+        </script>
     @endif
 
     <header id="mainHeader" style="margin-bottom: 30px;">
@@ -101,7 +224,7 @@
     </header>
 
     {{-- FORMULÁRIO DE EDIÇÃO --}}
-    <div id="editFormContainer">
+    <div id="editFormContainer" style="display: none;">
         <form action="{{ route('cliente.update', $cliente->id) }}" method="POST" class="profile-card">
             @csrf @method('PUT')
             <i class="fas fa-times close-form" onclick="toggleEditForm()"></i>
@@ -204,105 +327,123 @@
             </div>
         </div>
 
-        {{-- AGENDA --}}
+        {{-- AGENDA COM PAGINAÇÃO --}}
         <div class="section-title">Minha Agenda de Treinos</div>
-        @forelse($meusAgendamentos as $agendamento)
-            <div class="list-item">
-                <div>
-                    <strong style="display: block; font-size: 1rem;">{{ $agendamento->personal->nome }}</strong>
-                    <span style="color: var(--text-muted); font-size: 0.8rem;">
-                        <i class="far fa-calendar-alt"></i> {{ \Carbon\Carbon::parse($agendamento->data)->format('d/m/Y') }}
-                        às {{ \Carbon\Carbon::parse($agendamento->hora_inicio)->format('H:i') }}
-                    </span>
+        <div id="agendaContainer">
+            @if($meusAgendamentos->count() > 0)
+                {{-- Dados para JavaScript --}}
+                <script>
+                    window.agendamentosData = {!! json_encode($meusAgendamentos->map(function($a) {
+                        return [
+                            'personal' => $a->personal->nome ?? 'N/A',
+                            'data' => \Carbon\Carbon::parse($a->data)->format('d/m/Y'),
+                            'hora' => \Carbon\Carbon::parse($a->hora_inicio)->format('H:i')
+                        ];
+                    })) !!};
+                </script>
+                
+                <div id="agendaItems" style="min-height: 250px;">
+                    {{-- Preenchido via JavaScript --}}
                 </div>
-                <div class="badge-status">Confirmado</div>
-            </div>
-        @empty
-            <div class="stat-card" style="padding: 20px; border-style: dashed;">
-                <p style="color: var(--text-muted); margin: 0; font-size: 0.85rem;">Você não possui treinos agendados.</p>
-            </div>
-        @endforelse
+
+                {{-- Paginação --}}
+                <div class="pagination-container">
+                    <button class="pagination-btn" onclick="irParaPaginaAgenda(1)" id="btnPrimeira">
+                        <i class="fas fa-angle-double-left"></i>
+                    </button>
+                    <button class="pagination-btn" onclick="paginaAnteriorAgenda()" id="btnAnterior">
+                        <i class="fas fa-angle-left"></i>
+                    </button>
+                    <div id="paginasBotoes"></div>
+                    <button class="pagination-btn" onclick="proximaPaginaAgenda()" id="btnProxima">
+                        <i class="fas fa-angle-right"></i>
+                    </button>
+                    <button class="pagination-btn" onclick="irParaPaginaAgenda(-1)" id="btnUltima">
+                        <i class="fas fa-angle-double-right"></i>
+                    </button>
+                    <span class="pagination-info"><span id="paginaAtualInfo">1</span> / <span id="totalPaginasInfo">1</span></span>
+                </div>
+            @else
+                <div class="stat-card" style="padding: 20px; border-style: dashed;">
+                    <p style="color: var(--text-muted); margin: 0; font-size: 0.85rem;">Você não possui treinos agendados.</p>
+                </div>
+            @endif
+        </div>
 
         {{-- PERSONALS --}}
-       <div class="section-title">Personals Disponíveis</div>
-<p style="color: var(--text-muted); font-size: 0.8rem; margin: -10px 0 15px 0;">
-    <i class="fas fa-info-circle" style="color: var(--primary);"></i>
-    Você pode contratar um personal com ou sem vínculo com academia.
-</p>
+        <div class="section-title">Personals Disponíveis</div>
+        <p style="color: var(--text-muted); font-size: 0.8rem; margin: -10px 0 15px 0;">
+            <i class="fas fa-info-circle" style="color: var(--primary);"></i>
+            Você pode contratar um personal com ou sem vínculo com academia.
+        </p>
 
-<div class="dashboard-grid" style="grid-template-columns: repeat(2, 1fr);">
-    @foreach($personals as $p)
-    {{-- AQUI ESTÁ O SEGREDO 1: Adicionei position: relative e padding-top extra no card --}}
-    <div class="stat-card personal-card" style="position: relative; padding-top: 25px;">
-        
-        {{-- AQUI ESTÁ O SEGREDO 2: As estrelinhas agora estão soltas no topo do card --}}
-        <div onclick="abrirAvaliacao({{ $p->id }}, '{{ addslashes($p->nome) }}')" 
-             style="position: absolute; top: 10px; right: 10px; cursor: pointer; color: gold; font-size: 0.8rem; display: flex; align-items: center; gap: 5px; padding: 4px 10px; background: rgba(255, 215, 0, 0.1); border-radius: 20px; border: 1px solid rgba(255, 215, 0, 0.2); transition: 0.2s; box-shadow: 0 2px 4px rgba(0,0,0,0.1);"
-             onmouseover="this.style.background='rgba(255, 215, 0, 0.3)'"
-             onmouseout="this.style.background='rgba(255, 215, 0, 0.1)'"
-             title="Clique para avaliar {{ $p->nome }}">
-            <i class="fas fa-star"></i> 
-            <strong style="color: white; font-size: 0.9rem;">{{ $p->media_avaliacao }}</strong>
-        </div>
+        <div class="dashboard-grid" style="grid-template-columns: repeat(2, 1fr);">
+            @foreach($personals as $p)
+            <div class="stat-card personal-card" style="position: relative; padding-top: 25px;">
+                
+                <div onclick="abrirAvaliacao({{ $p->id }}, '{{ addslashes($p->nome) }}')" 
+                     style="position: absolute; top: 10px; right: 10px; cursor: pointer; color: gold; font-size: 0.8rem; display: flex; align-items: center; gap: 5px; padding: 4px 10px; background: rgba(255, 215, 0, 0.1); border-radius: 20px; border: 1px solid rgba(255, 215, 0, 0.2); transition: 0.2s; box-shadow: 0 2px 4px rgba(0,0,0,0.1);"
+                     onmouseover="this.style.background='rgba(255, 215, 0, 0.3)'"
+                     onmouseout="this.style.background='rgba(255, 215, 0, 0.1)'"
+                     title="Clique para avaliar {{ $p->nome }}">
+                    <i class="fas fa-star"></i> 
+                    <strong style="color: white; font-size: 0.9rem;">{{ $p->media_avaliacao }}</strong>
+                </div>
 
-        <div style="display: flex; align-items: center; gap: 15px;">
-            {{-- AQUI FOI FEITA A ALTERAÇÃO DA FOTO --}}
-            @if($p->foto)
-                <img src="{{ asset('storage/' . $p->foto) }}" alt="Foto de {{ $p->nome }}" style="width: 50px; height: 50px; border-radius: 50%; object-fit: cover;">
-            @else
-                <img src="https://ui-avatars.com/api/?name={{ urlencode($p->nome) }}&background=000&color=d4ff00" alt="Iniciais de {{ $p->nome }}" style="width: 50px; height: 50px; border-radius: 50%;">
-            @endif
+                <div style="display: flex; align-items: center; gap: 15px;">
+                    @if($p->foto)
+                        <img src="{{ asset('storage/' . $p->foto) . '?t=' . time() }}" alt="Foto de {{ $p->nome }}" style="width: 50px; height: 50px; border-radius: 50%; object-fit: cover;">
+                    @else
+                        <img src="https://ui-avatars.com/api/?name={{ urlencode($p->nome) }}&background=000&color=d4ff00" alt="Iniciais de {{ $p->nome }}" style="width: 50px; height: 50px; border-radius: 50%;">
+                    @endif
 
-            {{-- Informações do Personal (O botão das estrelinhas saiu daqui) --}}
-            <div>
-                <h3 style="margin:0; font-size: 0.9rem; padding-right: 40px;">{{ $p->nome }}</h3>
-                <p style="margin:0; font-size: 0.6rem; color: var(--primary);">Ativo na plataforma</p>
+                    <div>
+                        <h3 style="margin:0; font-size: 0.9rem; padding-right: 40px;">{{ $p->nome }}</h3>
+                        <p style="margin:0; font-size: 0.6rem; color: var(--primary);">Ativo na plataforma</p>
+                    </div>
+                </div>
+
+                @if($p->fotos && $p->fotos->count() > 0)
+                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; margin-top: 12px;">
+                    @foreach($p->fotos->take(3) as $foto)
+                    <img src="{{ asset('storage/' . $foto->path) }}"
+                         onclick="abrirGaleria('personal', {{ $p->id }})"
+                         style="width:100%; aspect-ratio:1; object-fit:cover; border-radius:8px; border:1px solid var(--border); cursor:pointer; transition:0.2s;"
+                         onmouseover="this.style.borderColor='var(--primary)'"
+                         onmouseout="this.style.borderColor='var(--border)'">
+                    @endforeach
+                </div>
+                @if($p->fotos->count() > 3)
+                <p style="font-size:0.7rem; color:var(--text-muted); margin:5px 0 0; text-align:center;">
+                    +{{ $p->fotos->count() - 3 }} fotos
+                </p>
+                @endif
+                @endif
+
+                <div style="display: flex; gap: 8px; margin-top: 15px;">
+                    @if($p->fotos && $p->fotos->count() > 0)
+                    <button onclick="abrirGaleria('personal', {{ $p->id }})" class="btn-action btn-outline" style="padding: 10px; font-size: 0.7rem; margin-top: 0; width: 100%;">
+                        <i class="fas fa-images"></i> Fotos
+                    </button>
+                    @endif
+                    <button onclick="abrirAgenda('{{ $p->id }}', '{{ $p->nome }}')" class="btn-action btn-outline" style="padding: 10px; font-size: 0.7rem; margin-top: 0; width: 100%;">
+                        <i class="fas fa-calendar-check"></i> Aulas Avulsas
+                    </button>
+                    {{-- BOTÃO DE CONTRATAÇÃO DE PACOTE --}}
+                    <button onclick="abrirPacoteModal({{ $p->id }}, '{{ addslashes($p->nome) }}')" class="btn-action btn-outline" style="padding: 10px; font-size: 0.7rem; margin-top: 0; width: 100%;">
+                        <i class="fas fa-calendar-check"></i> Pacotes
+                    </button>
+                </div>
             </div>
-        </div>
-
-        {{-- Prévia das fotos da galeria (se tiver) --}}
-        @if($p->fotos && $p->fotos->count() > 0)
-        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; margin-top: 12px;">
-            @foreach($p->fotos->take(3) as $foto)
-            <img src="{{ asset('storage/' . $foto->path) }}"
-                 onclick="abrirGaleria('personal', {{ $p->id }})"
-                 style="width:100%; aspect-ratio:1; object-fit:cover; border-radius:8px; border:1px solid var(--border); cursor:pointer; transition:0.2s;"
-                 onmouseover="this.style.borderColor='var(--primary)'"
-                 onmouseout="this.style.borderColor='var(--border)'">
             @endforeach
         </div>
-        @if($p->fotos->count() > 3)
-        <p style="font-size:0.7rem; color:var(--text-muted); margin:5px 0 0; text-align:center;">
-            +{{ $p->fotos->count() - 3 }} fotos
-        </p>
-        @endif
-        @endif
-
-        {{-- Botões de Ação --}}
-        <div style="display: flex; gap: 8px; margin-top: 15px;">
-            @if($p->fotos && $p->fotos->count() > 0)
-            <button onclick="abrirGaleria('personal', {{ $p->id }})" class="btn-action btn-outline" style="padding: 10px; font-size: 0.7rem; margin-top: 0; width: 100%;">
-                <i class="fas fa-images"></i> Fotos
-            </button>
-            @endif
-            <button onclick="abrirAgenda('{{ $p->id }}', '{{ $p->nome }}')" class="btn-action btn-outline" style="padding: 10px; font-size: 0.7rem; margin-top: 0; width: 100%;">
-                <i class="fas fa-calendar-check"></i> Agenda
-            </button>
-        </div>
-    </div>
-    @endforeach
-</div>
 
         {{-- ACADEMIAS --}}
         <div class="section-title">Academias Parceiras (Contratar)</div>
         <div id="listaAcademias">
             @forelse($academias as $academia)
             <div class="list-item" style="flex-direction: column; align-items: flex-start; gap: 12px;">
-                
-                {{-- LINHA SUPERIOR: Foto + Info + Botão --}}
                 <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; gap: 15px;">
-                    
-                    {{-- FOTO PRINCIPAL OU ÍCONE PADRÃO --}}
                     @if($academia->fotos && $academia->fotos->count() > 0)
                         <img src="{{ asset('storage/' . $academia->fotos->first()->path) }}" alt="Foto de {{ $academia->nome }}" style="width: 60px; height: 60px; border-radius: 12px; border: 1px solid var(--primary); object-fit: cover; flex-shrink: 0;">
                     @else
@@ -336,7 +477,6 @@
                     </div>
                 </div>
 
-                {{-- GALERIA DE FOTOS (Fica embaixo do nome) --}}
                 @if($academia->fotos && $academia->fotos->count() > 0)
                 <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; width: 100%; margin-top: 8px;">
                     @foreach($academia->fotos as $foto)
@@ -397,28 +537,29 @@
     <div class="profile-card" style="width: 90%; max-width: 450px; border: 1px solid var(--primary);">
         <i class="fas fa-times close-form" onclick="fecharAvaliacao()"></i>
         <h2 id="nomePersonalAvaliacao" style="color: var(--primary); margin-bottom: 5px;">Avaliar Personal</h2>
+        
+        {{-- ✅ MENSAGEM DE AVISO --}}
+        <div id="avisoAvaliacao" style="background: rgba(255, 68, 68, 0.1); border: 1px solid rgba(255, 68, 68, 0.3); color: #ff6666; padding: 15px; border-radius: 12px; margin-bottom: 20px; font-size: 0.8rem; text-align: center; display: none;">
+            <i class="fas fa-exclamation-circle"></i> 
+            Você só pode avaliar após realizar uma aula com este personal.
+        </div>
+
         <p style="color: var(--text-muted); font-size: 0.8rem; margin-bottom: 20px;">Como foi o seu treino com este profissional?</p>
         
         <form action="{{ route('avaliar.store') }}" method="POST">
             @csrf
-            {{-- O ID do personal vai ser injetado aqui pelo JavaScript --}}
             <input type="hidden" name="personal_id" id="personal_id_avaliacao" value="">
             
             <div style="text-align: center; margin-bottom: 15px;">
-                {{-- Sistema de Estrelas que acendem sozinhas com CSS --}}
                 <div class="star-rating" style="display: flex; justify-content: center; gap: 10px; font-size: 2.5rem; color: #444; cursor: pointer; flex-direction: row-reverse;">
                     <input type="radio" name="nota" value="5" id="star5" style="display:none;" required>
                     <label for="star5"><i class="fas fa-star"></i></label>
-                    
                     <input type="radio" name="nota" value="4" id="star4" style="display:none;">
                     <label for="star4"><i class="fas fa-star"></i></label>
-                    
                     <input type="radio" name="nota" value="3" id="star3" style="display:none;">
                     <label for="star3"><i class="fas fa-star"></i></label>
-                    
                     <input type="radio" name="nota" value="2" id="star2" style="display:none;">
                     <label for="star2"><i class="fas fa-star"></i></label>
-                    
                     <input type="radio" name="nota" value="1" id="star1" style="display:none;">
                     <label for="star1"><i class="fas fa-star"></i></label>
                 </div>
@@ -435,10 +576,8 @@
     </div>
 </div>
 
-{{-- ESTILO DAS ESTRELINHAS MÁGICAS --}}
 <style>
     .star-rating label { transition: color 0.2s; }
-    /* Quando passa o mouse ou seleciona, colore a estrela atual e todas as que vêm DEPOIS no HTML (que na tela aparecem antes, por causa do row-reverse) */
     .star-rating label:hover,
     .star-rating label:hover ~ label,
     .star-rating input:checked ~ label {
@@ -479,6 +618,99 @@
     </div>
 </div>
 
+{{-- MODAL CONTRATAÇÃO DE PACOTE COM CALENDÁRIO E HORÁRIOS --}}
+<div id="pacoteModal" class="modal-overlay">
+    <div class="profile-card" style="width: 95%; max-width: 800px; border: 1px solid var(--primary); max-height: 90vh; overflow-y: auto;">
+        <i class="fas fa-times close-form" onclick="fecharPacoteModal()"></i>
+        
+        <h2 id="nomePacotePersonal" style="color: var(--primary); margin-bottom: 5px;">Contratar Pacote</h2>
+        <p style="color: var(--text-muted); font-size: 0.8rem; margin-bottom: 20px;">
+            <i class="fas fa-info-circle"></i> Selecione o pacote, os dias do mês e o horário desejado para agendar seus treinos
+        </p>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+            {{-- COLUNA ESQUERDA: PACOTES E SELEÇÃO --}}
+            <div>
+                <label style="display: block; margin-bottom: 15px;">
+                    <span style="color: var(--primary); font-weight: 900; text-transform: uppercase; font-size: 0.7rem;">Frequência Semanal</span>
+                </label>
+                
+                <div id="listaPacotes" style="display: flex; flex-direction: column; gap: 10px; max-height: 150px; overflow-y: auto; padding-right: 10px; margin-bottom: 20px;">
+                    <!-- Preenchido via JavaScript -->
+                </div>
+
+                <div style="background: rgba(212, 255, 0, 0.05); padding: 12px; border-radius: 10px; border: 1px solid var(--border); margin-bottom: 20px;">
+                    <p style="margin: 0 0 8px 0; font-size: 0.75rem; color: var(--text-muted);">
+                        <i class="fas fa-calendar"></i> <span style="color: var(--primary); font-weight: 900;" id="contadorDias">0</span> dia(s) selecionado(s)
+                    </p>
+                    <p style="margin: 0; font-size: 0.75rem; color: var(--text-muted);">
+                        <i class="fas fa-clock"></i> Horário: <span id="horarioSelecionado" style="color: var(--primary); font-weight: 900;">Nenhum</span>
+                    </p>
+                </div>
+
+                <form id="formContratacao" action="{{ route('pacotes.contratar') }}" method="POST">
+                    @csrf
+                    <input type="hidden" id="pacote_personal_id" name="personal_id">
+                    <input type="hidden" id="pacote_frequencia" name="frequencia_pacote">
+                    <input type="hidden" id="pacote_valor" name="valor_pacote">
+                    <input type="hidden" id="pacote_dias" name="dias_selecionados" value="[]">
+                    <input type="hidden" id="pacote_hora_inicio" name="hora_inicio" value="">
+                    <input type="hidden" id="pacote_hora_fim" name="hora_fim" value="">
+                    
+                    <button type="submit" class="btn-action" style="margin-top: 0;" id="btnConfirmarContratacao" disabled>
+                        <i class="fas fa-check-circle"></i> Confirmar Contratação
+                    </button>
+                </form>
+            </div>
+
+            {{-- COLUNA DIREITA: CALENDÁRIO --}}
+            <div>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                    <button type="button" onclick="mesAnterior()" class="btn-action btn-outline" style="padding: 8px 12px; margin: 0; width: auto; font-size: 0.7rem;">
+                        <i class="fas fa-chevron-left"></i>
+                    </button>
+                    <span id="mesSelecionado" style="color: var(--primary); font-weight: 900; text-transform: uppercase; font-size: 0.8rem; min-width: 150px; text-align: center;">
+                        Fevereiro 2025
+                    </span>
+                    <button type="button" onclick="mesProximo()" class="btn-action btn-outline" style="padding: 8px 12px; margin: 0; width: auto; font-size: 0.7rem;">
+                        <i class="fas fa-chevron-right"></i>
+                    </button>
+                </div>
+
+                {{-- Dias da semana --}}
+                <div style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; margin-bottom: 10px; text-align: center;">
+                    @foreach(['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'] as $dia)
+                        <div style="color: var(--primary); font-weight: 700; font-size: 0.65rem; padding: 8px 0;">
+                            {{ $dia }}
+                        </div>
+                    @endforeach
+                </div>
+
+                {{-- Calendário --}}
+                <div id="calendarGrid" style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; max-height: 280px; overflow-y: auto;">
+                    <!-- Preenchido via JavaScript -->
+                </div>
+
+                <p id="diasSelecionados" style="color: var(--text-muted); font-size: 0.75rem; margin-top: 15px; text-align: center;">
+                    Clique nos dias para selecionar
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+{{-- MODAL SELETOR DE HORÁRIOS --}}
+<div id="horarioModal" class="modal-overlay" style="display: none;">
+    <div class="profile-card" style="width: 90%; max-width: 450px; border: 1px solid var(--primary);">
+        <i class="fas fa-times close-form" onclick="fecharHorarioModal()"></i>
+        <h2 style="color: var(--primary); margin-bottom: 5px;" id="tituloHorarioModal">Selecione um Horário</h2>
+        <p style="color: var(--text-muted); font-size: 0.8rem; margin-bottom: 20px;">Escolha o horário desejado para este dia</p>
+        <div id="listaHorariosDisp" style="max-height: 400px; overflow-y: auto;">
+            <!-- Preenchido via JavaScript -->
+        </div>
+    </div>
+</div>
+
 {{-- MODAL GALERIA VISUALIZAÇÃO --}}
 <div id="modalGaleriaView" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.95); z-index:9999; justify-content:center; align-items:center; backdrop-filter:blur(8px);">
     <div style="background:var(--card-bg); border-radius:24px; padding:30px; width:90%; max-width:550px; border:1px solid var(--border); position:relative;">
@@ -494,6 +726,335 @@
 </div>
 
 <script>
+    // ============ PAGINAÇÃO DA AGENDA ============
+    let paginaAtualAgenda = 1;
+    const itensPorPagina = 5;
+    let totalPaginasAgenda = 1;
+
+    function inicializarPaginacaoAgenda() {
+        if (window.agendamentosData && window.agendamentosData.length > 0) {
+            totalPaginasAgenda = Math.ceil(window.agendamentosData.length / itensPorPagina);
+            exibirPaginaAgenda(1);
+            atualizarBotoesPaginacao();
+        }
+    }
+
+    function exibirPaginaAgenda(pagina) {
+        if (pagina < 1 || pagina > totalPaginasAgenda) return;
+        paginaAtualAgenda = pagina;
+
+        const inicio = (pagina - 1) * itensPorPagina;
+        const fim = inicio + itensPorPagina;
+        const itemsVistos = window.agendamentosData.slice(inicio, fim);
+
+        const container = document.getElementById('agendaItems');
+        container.innerHTML = itemsVistos.map(agendamento => `
+            <div class="list-item">
+                <div>
+                    <strong style="display: block; font-size: 1rem;">${agendamento.personal}</strong>
+                    <span style="color: var(--text-muted); font-size: 0.8rem;">
+                        <i class="far fa-calendar-alt"></i> ${agendamento.data}
+                        às ${agendamento.hora}
+                    </span>
+                </div>
+                <div class="badge-status">Confirmado</div>
+            </div>
+        `).join('');
+
+        atualizarBotoesPaginacao();
+    }
+
+    function atualizarBotoesPaginacao() {
+        document.getElementById('paginaAtualInfo').textContent = paginaAtualAgenda;
+        document.getElementById('totalPaginasInfo').textContent = totalPaginasAgenda;
+
+        document.getElementById('btnAnterior').disabled = paginaAtualAgenda === 1;
+        document.getElementById('btnProxima').disabled = paginaAtualAgenda === totalPaginasAgenda;
+        document.getElementById('btnPrimeira').disabled = paginaAtualAgenda === 1;
+        document.getElementById('btnUltima').disabled = paginaAtualAgenda === totalPaginasAgenda;
+
+        // Gera botões de página
+        const container = document.getElementById('paginasBotoes');
+        let botoesHTML = '';
+        for (let i = 1; i <= totalPaginasAgenda; i++) {
+            const classe = i === paginaAtualAgenda ? 'active' : '';
+            botoesHTML += `<button class="pagination-btn ${classe}" onclick="irParaPaginaAgenda(${i})">${i}</button>`;
+        }
+        container.innerHTML = botoesHTML;
+    }
+
+    function irParaPaginaAgenda(pagina) {
+        if (pagina === -1) pagina = totalPaginasAgenda;
+        exibirPaginaAgenda(pagina);
+    }
+
+    function paginaAnteriorAgenda() {
+        exibirPaginaAgenda(paginaAtualAgenda - 1);
+    }
+
+    function proximaPaginaAgenda() {
+        exibirPaginaAgenda(paginaAtualAgenda + 1);
+    }
+
+    // ============ DADOS GLOBAIS ============
+    window.pacotesPorPersonal = {
+        @foreach($personals as $p)
+        {{ $p->id }}: [
+            @php
+                $pacotesPersonal = \App\Models\cadastro\Pacote::where('personal_id', $p->id)->get();
+            @endphp
+            @foreach($pacotesPersonal as $pacote)
+            {
+                frequencia: {{ $pacote->frequencia }},
+                valor_mensal: {{ $pacote->valor_mensal }}
+            },
+            @endforeach
+        ],
+        @endforeach
+    };
+
+    window.diasOcupadosPorPersonal = {
+        @foreach($personals as $p)
+        {{ $p->id }}: [
+            @php
+                $diasOcupados = \App\Models\Agenda::where('personal_id', $p->id)
+                    ->where('cancelado', false)
+                    ->whereBetween('data', [
+                        now()->startOfMonth()->format('Y-m-d'),
+                        now()->addMonth()->endOfMonth()->format('Y-m-d')
+                    ])
+                    ->pluck('data')
+                    ->toArray();
+            @endphp
+            @foreach($diasOcupados as $dia)
+            '{{ $dia }}',
+            @endforeach
+        ],
+        @endforeach
+    };
+
+    // ============ VARIÁVEIS DO MODAL DE PACOTES ============
+    let dataAtual = new Date();
+    let mesModalAberto = new Date();
+    let pacoteSelecionado = null;
+    let diasSelecionados = [];
+    let horaInicio = null;
+    let horaFim = null;
+    let diaEmSelecao = null;
+
+    // ============ FUNÇÕES DO MODAL DE PACOTES ============
+    function abrirPacoteModal(personalId, personalNome) {
+        document.getElementById('nomePacotePersonal').innerText = 'Contratar Pacote - ' + personalNome;
+        document.getElementById('pacote_personal_id').value = personalId;
+        dataAtual = new Date();
+        mesModalAberto = new Date();
+        diasSelecionados = [];
+        pacoteSelecionado = null;
+        horaInicio = null;
+        horaFim = null;
+        
+        carregarPacotes(personalId);
+        atualizarCalendario();
+        atualizarBotao();
+        document.getElementById('pacoteModal').style.display = 'flex';
+    }
+
+    function fecharPacoteModal() {
+        document.getElementById('pacoteModal').style.display = 'none';
+        fecharHorarioModal();
+    }
+
+    function carregarPacotes(personalId) {
+        const pacotesData = window.pacotesPorPersonal?.[personalId] || [];
+        const container = document.getElementById('listaPacotes');
+        
+        if (pacotesData.length === 0) {
+            container.innerHTML = '<p style="color: var(--text-muted); font-size: 0.75rem;">Nenhum pacote disponível</p>';
+            return;
+        }
+
+        container.innerHTML = pacotesData.map((pacote, idx) => `
+            <div class="pacote-item" onclick="selecionarPacote(${pacote.frequencia}, ${pacote.valor_mensal}, ${idx})">
+                <span class="pacote-freq">${pacote.frequencia}x na semana</span>
+                <span class="pacote-valor">R$ ${(pacote.valor_mensal).toFixed(2).replace('.', ',')}</span>
+            </div>
+        `).join('');
+    }
+
+    function selecionarPacote(frequencia, valor, idx) {
+        document.querySelectorAll('.pacote-item').forEach(el => el.classList.remove('selecionado'));
+        document.querySelectorAll('.pacote-item')[idx].classList.add('selecionado');
+        
+        pacoteSelecionado = { frequencia, valor };
+        document.getElementById('pacote_frequencia').value = frequencia;
+        document.getElementById('pacote_valor').value = valor;
+
+        diasSelecionados = [];
+        horaInicio = null;
+        horaFim = null;
+        document.getElementById('contadorDias').textContent = '0';
+        document.getElementById('horarioSelecionado').textContent = 'Nenhum';
+        atualizarCalendario();
+        atualizarBotao();
+    }
+
+    function atualizarCalendario() {
+        const ano = mesModalAberto.getFullYear();
+        const mes = mesModalAberto.getMonth();
+        const primeiroDay = new Date(ano, mes, 1);
+        const ultimoDay = new Date(ano, mes + 1, 0);
+        const diasDoMes = ultimoDay.getDate();
+        const diaInicio = primeiroDay.getDay();
+
+        const meses = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
+                       'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+        document.getElementById('mesSelecionado').innerText = `${meses[mes]} ${ano}`;
+
+        const grid = document.getElementById('calendarGrid');
+        grid.innerHTML = '';
+
+        const diasMesAnterior = new Date(ano, mes, 0).getDate();
+        for (let i = diaInicio - 1; i >= 0; i--) {
+            const dia = diasMesAnterior - i;
+            const div = document.createElement('div');
+            div.className = 'dia-calendario outro-mes';
+            div.textContent = dia;
+            grid.appendChild(div);
+        }
+
+        for (let dia = 1; dia <= diasDoMes; dia++) {
+            const dataCompleta = new Date(ano, mes, dia);
+            const ehPassado = dataCompleta < new Date() && mes === new Date().getMonth() && ano === new Date().getFullYear();
+            const chaveData = `${ano}-${String(mes + 1).padStart(2, '0')}-${String(dia).padStart(2, '0')}`;
+            const personalId = document.getElementById('pacote_personal_id').value;
+            const estaOcupado = window.diasOcupadosPorPersonal?.[personalId]?.includes(chaveData) || false;
+            
+            const div = document.createElement('div');
+            div.className = 'dia-calendario';
+            div.textContent = dia;
+
+            if (ehPassado) {
+                div.classList.add('outro-mes');
+            } else if (estaOcupado) {
+                div.classList.add('ocupado');
+            } else {
+                div.classList.add('disponivel');
+                div.onclick = () => abrirSeletorHorario(dia, chaveData, personalId, ano, mes);
+            }
+
+            if (diasSelecionados.includes(dia + '_' + mes + '_' + ano)) {
+                div.classList.add('selecionado');
+            }
+
+            grid.appendChild(div);
+        }
+
+        const diasRestantes = 42 - (diaInicio + diasDoMes);
+        for (let dia = 1; dia <= diasRestantes; dia++) {
+            const div = document.createElement('div');
+            div.className = 'dia-calendario outro-mes';
+            div.textContent = dia;
+            grid.appendChild(div);
+        }
+    }
+
+    function abrirSeletorHorario(dia, chaveData, personalId, ano, mes) {
+        if (pacoteSelecionado === null) {
+            alert('Selecione um pacote primeiro!');
+            return;
+        }
+
+        const chaveComMes = dia + '_' + mes + '_' + ano;
+        const frequencia = pacoteSelecionado.frequencia;
+
+        if (diasSelecionados.includes(chaveComMes)) {
+            diasSelecionados = diasSelecionados.filter(d => d !== chaveComMes);
+            atualizarCalendario();
+            atualizarBotao();
+            return;
+        }
+
+        if (diasSelecionados.length >= frequencia) {
+            alert(`Você já selecionou ${frequencia} dia(s). O pacote permite apenas ${frequencia}x na semana.`);
+            return;
+        }
+
+        diaEmSelecao = dia;
+        const modal = document.getElementById('horarioModal');
+        const container = document.getElementById('listaHorariosDisp');
+        
+        document.getElementById('tituloHorarioModal').innerText = `Selecione um Horário - ${dia}/${(mes + 1)}/${ano}`;
+        container.innerHTML = '<p style="text-align:center; color: var(--text-muted);">Buscando horários disponíveis...</p>';
+        modal.style.display = 'flex';
+
+        fetch(`/horarios-disponiveis/${personalId}/${chaveData}`)
+            .then(r => r.json())
+            .then(horarios => {
+                if (horarios.length === 0) {
+                    container.innerHTML = '<p style="text-align:center; color: var(--text-muted);">Nenhum horário disponível neste dia.</p>';
+                    return;
+                }
+
+                container.innerHTML = horarios.map(h => `
+                    <div class="horario-selecionavel" onclick="selecionarHorario(${dia}, '${h.inicio}', '${h.fim}', ${ano}, ${mes})">
+                        <span style="font-weight: 700; color: var(--primary);">${h.label}</span>
+                        <i class="fas fa-check" style="color: var(--primary);"></i>
+                    </div>
+                `).join('');
+            })
+            .catch(err => {
+                container.innerHTML = '<p style="color: var(--error);">Erro ao buscar horários</p>';
+                console.error(err);
+            });
+    }
+
+    function selecionarHorario(dia, inicio, fim, ano, mes) {
+        const chaveComMes = dia + '_' + mes + '_' + ano;
+        
+        if (!diasSelecionados.includes(chaveComMes)) {
+            diasSelecionados.push(chaveComMes);
+        }
+        
+        horaInicio = inicio;
+        horaFim = fim;
+
+        document.getElementById('contadorDias').textContent = diasSelecionados.length;
+        document.getElementById('horarioSelecionado').textContent = `${inicio} - ${fim}`;
+        
+        const apenasNumeros = diasSelecionados.map(d => parseInt(d.split('_')[0]));
+        document.getElementById('pacote_dias').value = JSON.stringify(apenasNumeros);
+        document.getElementById('pacote_hora_inicio').value = horaInicio;
+        document.getElementById('pacote_hora_fim').value = horaFim;
+
+        fecharHorarioModal();
+        atualizarCalendario();
+        atualizarBotao();
+    }
+
+    function fecharHorarioModal() {
+        document.getElementById('horarioModal').style.display = 'none';
+    }
+
+    function atualizarBotao() {
+        const btn = document.getElementById('btnConfirmarContratacao');
+        const temPacote = pacoteSelecionado !== null;
+        const temDias = diasSelecionados.length > 0;
+        const temHorario = horaInicio !== null;
+        
+        btn.disabled = !(temPacote && temDias && temHorario);
+    }
+
+    function mesAnterior() {
+        mesModalAberto.setMonth(mesModalAberto.getMonth() - 1);
+        atualizarCalendario();
+    }
+
+    function mesProximo() {
+        mesModalAberto.setMonth(mesModalAberto.getMonth() + 1);
+        atualizarCalendario();
+    }
+
+    // ============ RESTO DO SCRIPT ORIGINAL ============
     function toggleEditForm() {
         const summary = document.getElementById('dashboardSummary');
         const form    = document.getElementById('editFormContainer');
@@ -525,7 +1086,6 @@
 
     function fecharAgenda() { document.getElementById('agendaModal').style.display = 'none'; }
 
-    // Dados das fotos gerados pelo Blade
     const fotosData = {
         @foreach($personals as $p)
         'personal_{{ $p->id }}': {
@@ -573,62 +1133,61 @@
     function abrirLightbox(url) { document.getElementById('lightboxImg').src = url; document.getElementById('lightbox').style.display = 'flex'; }
     function fecharLightbox() { document.getElementById('lightbox').style.display = 'none'; }
 
+    // ✅ FUNÇÃO MELHORADA DE AVALIAÇÃO COM VALIDAÇÃO
+    function abrirAvaliacao(id, nome) {
+        document.getElementById('nomePersonalAvaliacao').innerText = 'Avaliar ' + nome;
+        document.getElementById('personal_id_avaliacao').value = id;
+        
+        // ✅ VERIFICA SE PODE AVALIAR
+        fetch(`/cliente/pode-avaliar/${id}`)
+            .then(r => r.json())
+            .then(data => {
+                const avisoDiv = document.getElementById('avisoAvaliacao');
+                const formDiv = document.querySelector('#avaliacaoModal form');
+                
+                if (data.pode_avaliar) {
+                    avisoDiv.style.display = 'none';
+                    formDiv.style.display = 'block';
+                } else {
+                    avisoDiv.style.display = 'block';
+                    formDiv.style.display = 'none';
+                    
+                    // ✅ ESCONDE O AVISO APÓS 7 SEGUNDOS
+                    setTimeout(() => {
+                        avisoDiv.style.display = 'none';
+                        formDiv.style.display = 'block';
+                    }, 7000); // 7 segundos = 7000 milissegundos
+                }
+                
+                document.getElementById('avaliacaoModal').style.display = 'flex';
+            })
+            .catch(err => {
+                console.error('Erro ao verificar avaliação:', err);
+                document.getElementById('avaliacaoModal').style.display = 'flex';
+            });
+    }
+
+    function fecharAvaliacao() {
+        document.getElementById('avaliacaoModal').style.display = 'none';
+    }
+
     window.onclick = function(e) {
         if (e.target.id === 'agendaModal') fecharAgenda();
+        if (e.target.id === 'pacoteModal') fecharPacoteModal();
+        if (e.target.id === 'horarioModal') fecharHorarioModal();
         if (e.target.id === 'modalGaleriaView') fecharGaleria();
+        if (e.target.id === 'avaliacaoModal') fecharAvaliacao();
         if (!e.target.closest('.menu-container')) document.getElementById('dropdownMenu').style.display = 'none';
     }
 
-    function abrirAvaliacao(id, nome) {
-        
-    document.getElementById('nomePersonalAvaliacao').innerText = 'Avaliar ' + nome;
-    document.getElementById('personal_id_avaliacao').value = id;
-    document.getElementById('avaliacaoModal').style.display = 'flex';
-}
-
-function fecharAvaliacao() {
-    document.getElementById('avaliacaoModal').style.display = 'none';
-}
-
-window.addEventListener('click', function(e) {
-    if (e.target.id === 'avaliacaoModal') {
-        fecharAvaliacao();
-    }
-});
-</script>
-<script>
     const mascaras = {
-        cpf: function(value) {
-            return value
-                .replace(/\D/g, '') // Remove o que não é número
-                .replace(/(\d{3})(\d)/, '$1.$2') // Adiciona ponto após os 3 primeiros
-                .replace(/(\d{3})(\d)/, '$1.$2') // Adiciona ponto após os 6 primeiros
-                .replace(/(\d{3})(\d{1,2})/, '$1-$2') // Adiciona traço antes dos 2 últimos
-                .replace(/(-\d{2})\d+?$/, '$1'); // Limita o tamanho
-        },
-        cnpj: function(value) {
-            return value
-                .replace(/\D/g, '') // Remove o que não é número
-                .replace(/(\d{2})(\d)/, '$1.$2') // Adiciona ponto após os 2 primeiros
-                .replace(/(\d{3})(\d)/, '$1.$2') // Adiciona ponto após os 5 primeiros
-                .replace(/(\d{3})(\d)/, '$1/$2') // Adiciona a barra após os 8 primeiros
-                .replace(/(\d{4})(\d{1,2})/, '$1-$2') // Adiciona o traço antes dos 2 últimos
-                .replace(/(-\d{2})\d+?$/, '$1'); // Limita o tamanho
-        },
-        telefone: function(value) {
-            return value
-                .replace(/\D/g, '') 
-                .replace(/(\d{2})(\d)/, '($1) $2') // Coloca parênteses no DDD
-                .replace(/(\d{4,5})(\d{4})/, '$1-$2') // Coloca o traço no meio
-                .replace(/(-\d{4})\d+?$/, '$1'); // Limita o tamanho
-        },
         cep: function(value) {
-            return value
-                .replace(/\D/g, '') 
-                .replace(/(\d{5})(\d)/, '$1-$2') // Coloca o traço após os 5 primeiros
-                .replace(/(-\d{3})\d+?$/, '$1'); // Limita o tamanho
+            return value.replace(/\D/g, '').replace(/(\d{5})(\d)/, '$1-$2').replace(/(-\d{3})\d+?$/, '$1');
         }
     }
+
+    // Inicializa paginação ao carregar
+    document.addEventListener('DOMContentLoaded', inicializarPaginacaoAgenda);
 </script>
 </body>
 </html>

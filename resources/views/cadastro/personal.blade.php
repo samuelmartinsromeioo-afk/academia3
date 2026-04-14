@@ -67,9 +67,7 @@
         }
 
         .input-wrapper:focus-within { border-color: var(--primary); }
-
         .input-wrapper i { color: var(--text-dim); width: 20px; margin-right: 10px; }
-
         .input-wrapper input {
             flex: 1;
             background: transparent;
@@ -102,11 +100,76 @@
             cursor: pointer;
             text-transform: uppercase;
             margin-top: 15px;
+            transition: 0.3s;
+        }
+
+        .btn-register:hover {
+            filter: brightness(1.1);
+            transform: translateY(-2px);
         }
 
         .loading-cep { font-size: 0.7rem; color: var(--primary); display: none; margin-top: 4px; }
-        
         input[type="file"] { color: var(--text-dim); font-size: 0.8rem; }
+
+        /* --- NOVOS ESTILOS PARA PACOTES --- */
+        .packages-section {
+            grid-column: span 2;
+            margin-top: 10px;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.02);
+            border-radius: 16px;
+            border: 1px dashed rgba(212, 255, 0, 0.2);
+        }
+
+        .packages-title {
+            font-size: 0.75rem;
+            color: var(--primary);
+            font-weight: 800;
+            margin-bottom: 15px;
+            text-transform: uppercase;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .packages-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 10px;
+        }
+
+        .package-item {
+            background: var(--bg-dark);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            padding: 10px;
+        }
+
+        .package-item label {
+            font-size: 0.55rem !important;
+            color: var(--text-dim) !important;
+            margin-bottom: 4px !important;
+        }
+
+        .package-input-group {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .package-input-group span { color: var(--primary); font-weight: bold; font-size: 0.8rem; }
+        .package-input-group input {
+            background: transparent;
+            border: none;
+            color: #fff;
+            font-size: 0.85rem;
+            width: 100%;
+            outline: none;
+        }
+
+        @media (max-width: 600px) {
+            .packages-grid { grid-template-columns: repeat(2, 1fr); }
+        }
     </style>
 </head>
 <body>
@@ -230,12 +293,30 @@
                 </div>
             </div>
 
-            <div class="form-group">
+            <div class="form-group full-width">
                 <label>Foto do Profissional (IMG)</label>
                 <div class="input-wrapper">
                     <i class="fa-solid fa-image"></i>
                     <input type="file" name="foto" required>
                 </div>
+            </div>
+
+            <div class="packages-section">
+                <div class="packages-title">
+                    <i class="fa-solid fa-tags"></i> Definir Pacotes Mensais
+                </div>
+                <div class="packages-grid">
+                    @for ($i = 1; $i <= 5; $i++)
+                    <div class="package-item">
+                        <label>{{ $i }}x na Semana</label>
+                        <div class="package-input-group">
+                            <span>R$</span>
+                            <input type="number" step="0.01" name="precos[{{ $i }}]" placeholder="0,00" value="{{ old('precos.'.$i) }}">
+                        </div>
+                    </div>
+                    @endfor
+                </div>
+                <p style="font-size: 0.6rem; color: var(--text-dim); margin-top: 10px;">* Informe o valor total mensal para cada frequência.</p>
             </div>
 
             <input type="hidden" name="latitude" id="latitude">
@@ -261,24 +342,20 @@
         loadingIcon.style.display = 'block';
         loadingIcon.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Buscando endereço...';
 
-        // 1. Busca o endereço pelo ViaCEP
         fetch(`https://viacep.com.br/ws/${cep}/json/`)
             .then(res => res.json())
             .then(data => {
                 if (!data.erro) {
-                    // Preenche os campos do formulário
                     document.getElementById('rua').value = data.logradouro;
                     document.getElementById('bairro').value = data.bairro;
                     document.getElementById('cidade').value = data.localidade;
                     document.getElementById('estado').value = data.uf;
 
-                    // Preenche o visual
                     document.getElementById('display_rua_bairro').value = `${data.logradouro}, ${data.bairro}`;
                     document.getElementById('display_cidade_estado').value = `${data.localidade} - ${data.uf}`;
 
                     loadingIcon.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Buscando localização no mapa...';
 
-                    // 2. Busca a Latitude e Longitude (OpenStreetMap)
                     const enderecoQuery = `${data.logradouro}, ${data.localidade}, ${data.uf}, Brasil`;
 
                     fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(enderecoQuery)}&format=json&limit=1`)
@@ -287,7 +364,6 @@
                             if (results.length > 0) {
                                 document.getElementById('latitude').value  = results[0].lat;
                                 document.getElementById('longitude').value = results[0].lon;
-
                                 loadingIcon.innerHTML = '<i class="fa-solid fa-check" style="color:#d4ff00"></i> Localização confirmada!';
                             } else {
                                 loadingIcon.innerHTML = '<i class="fa-solid fa-triangle-exclamation" style="color:orange"></i> Endereço achado, mas sem GPS preciso.';
@@ -313,33 +389,33 @@
     const mascaras = {
         cpf: function(value) {
             return value
-                .replace(/\D/g, '') // Remove o que não é número
-                .replace(/(\d{3})(\d)/, '$1.$2') // Adiciona ponto após os 3 primeiros
-                .replace(/(\d{3})(\d)/, '$1.$2') // Adiciona ponto após os 6 primeiros
-                .replace(/(\d{3})(\d{1,2})/, '$1-$2') // Adiciona traço antes dos 2 últimos
-                .replace(/(-\d{2})\d+?$/, '$1'); // Limita o tamanho
+                .replace(/\D/g, '')
+                .replace(/(\d{3})(\d)/, '$1.$2')
+                .replace(/(\d{3})(\d)/, '$1.$2')
+                .replace(/(\d{3})(\d{1,2})/, '$1-$2')
+                .replace(/(-\d{2})\d+?$/, '$1');
         },
         cnpj: function(value) {
             return value
-                .replace(/\D/g, '') // Remove o que não é número
-                .replace(/(\d{2})(\d)/, '$1.$2') // Adiciona ponto após os 2 primeiros
-                .replace(/(\d{3})(\d)/, '$1.$2') // Adiciona ponto após os 5 primeiros
-                .replace(/(\d{3})(\d)/, '$1/$2') // Adiciona a barra após os 8 primeiros
-                .replace(/(\d{4})(\d{1,2})/, '$1-$2') // Adiciona o traço antes dos 2 últimos
-                .replace(/(-\d{2})\d+?$/, '$1'); // Limita o tamanho
+                .replace(/\D/g, '')
+                .replace(/(\d{2})(\d)/, '$1.$2')
+                .replace(/(\d{3})(\d)/, '$1.$2')
+                .replace(/(\d{3})(\d)/, '$1/$2')
+                .replace(/(\d{4})(\d{1,2})/, '$1-$2')
+                .replace(/(-\d{2})\d+?$/, '$1');
         },
         telefone: function(value) {
             return value
                 .replace(/\D/g, '') 
-                .replace(/(\d{2})(\d)/, '($1) $2') // Coloca parênteses no DDD
-                .replace(/(\d{4,5})(\d{4})/, '$1-$2') // Coloca o traço no meio
-                .replace(/(-\d{4})\d+?$/, '$1'); // Limita o tamanho
+                .replace(/(\d{2})(\d)/, '($1) $2')
+                .replace(/(\d{4,5})(\d{4})/, '$1-$2')
+                .replace(/(-\d{4})\d+?$/, '$1');
         },
         cep: function(value) {
             return value
                 .replace(/\D/g, '') 
-                .replace(/(\d{5})(\d)/, '$1-$2') // Coloca o traço após os 5 primeiros
-                .replace(/(-\d{3})\d+?$/, '$1'); // Limita o tamanho
+                .replace(/(\d{5})(\d)/, '$1-$2')
+                .replace(/(-\d{3})\d+?$/, '$1');
         }
     }
 </script>

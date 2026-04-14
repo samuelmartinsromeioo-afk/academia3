@@ -5,16 +5,14 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use App\Models\cadastro\Personal; 
-use App\Models\cadastro\cliente; 
+use App\Models\cadastro\Cliente; 
 
 class Agenda extends Model
 {
     use HasFactory;
 
-    // Define o nome da tabela (opcional se for o padrão 'agendas')
     protected $table = 'agendas';
 
-    // Campos que podem ser preenchidos em massa (essenciais para o storeHorario)
     protected $fillable = [
         'personal_id',
         'academia_id',
@@ -25,7 +23,19 @@ class Agenda extends Model
         'descricao',
         'cancelado',
         'justificativa_cancelamento',
-        'cancelado_em'
+        'cancelado_em',
+        'status',
+        'frequencia_pacote',
+        'data_inicio_pacote',
+        'data_fim_pacote',
+        'tipo_aula',      
+        'valor_aula'      
+    ];
+
+    protected $casts = [
+        'data' => 'date',
+        'cancelado_em' => 'datetime',
+        'valor_aula' => 'decimal:2',
     ];
 
     /**
@@ -35,13 +45,45 @@ class Agenda extends Model
     {
         return $this->belongsTo(Personal::class, 'personal_id');
     }
+
     public function academia()
     {
         return $this->belongsTo(\App\Models\cadastro\Academia::class, 'academia_id');
     }
+
     public function cliente()
     {
-        
         return $this->belongsTo(\App\Models\cadastro\Cliente::class, 'cliente_id');
+    }
+
+    
+    public function calcularValorAula()
+    {
+        if ($this->tipo_aula === 'pacote' && $this->frequencia_pacote) {
+            // Valor do pacote mensal ÷ quantidade de aulas do mês
+            // Exemplo: R$ 400 ÷ 4 aulas = R$ 100 por aula
+            $pacote = \App\Models\cadastro\Pacote::where('personal_id', $this->personal_id)
+                ->where('frequencia', $this->frequencia_pacote)
+                ->first();
+            
+            if ($pacote) {
+                // Calcula número de aulas no mês (frequencia × semanas do mês)
+                $semanasDoMes = ceil($this->data->daysInMonth / 7);
+                $totalAulasNoMes = $this->frequencia_pacote * $semanasDoMes;
+                
+                return $pacote->valor_mensal / $totalAulasNoMes;
+            }
+        }
+
+        // Se for avulsa, retorna o valor guardado ou o valor_secao do personal
+        return $this->valor_aula ?? $this->personal->valor_secao ?? 0;
+    }
+
+    /**
+     * ✅ NOVO: Accessor para exibir valor formatado
+     */
+    public function getValorFormatadoAttribute()
+    {
+        return 'R$ ' . number_format($this->calcularValorAula(), 2, ',', '.');
     }
 }

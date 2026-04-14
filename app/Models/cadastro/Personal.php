@@ -43,6 +43,9 @@ class Personal extends Model
 public function agendas() {
     return $this->hasMany(Agenda::class);
 }
+public function pacotes() {
+    return $this->hasMany(Pacote::class, 'personal_id');
+}
 
 public function fotos()
 {
