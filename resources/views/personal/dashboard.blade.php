@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="pt-br">
 
 <head>
@@ -344,7 +344,9 @@
             margin-top: 5px;
         }
 
-        .input-wrapper input {
+        .input-wrapper input,
+        .input-wrapper select,
+        .input-wrapper textarea {
             flex: 1;
             background: transparent;
             border: none;
@@ -519,6 +521,64 @@
             margin-bottom: 20px;
         }
 
+        .fichas-lista {
+            max-height: 400px;
+            overflow-y: auto;
+            padding-right: 10px;
+        }
+
+        .ficha-item {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--border);
+            padding: 15px;
+            border-radius: 12px;
+            margin-bottom: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .ficha-info {
+            flex: 1;
+        }
+
+        .ficha-dia {
+            color: var(--primary);
+            font-weight: 900;
+            font-size: 0.9rem;
+        }
+
+        .ficha-nome {
+            color: #fff;
+            font-weight: 700;
+            margin-top: 5px;
+        }
+
+        .btn-icon {
+            width: 35px;
+            height: 35px;
+            border-radius: 8px;
+            border: 1px solid;
+            background: transparent;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: 0.3s;
+            margin-left: 10px;
+        }
+
+        .btn-view {
+            background: rgba(212, 255, 0, 0.1);
+            color: var(--primary);
+            border-color: var(--primary);
+        }
+
+        .btn-view:hover {
+            background: var(--primary);
+            color: #000;
+        }
+
         @media (max-width: 600px) {
             .planos-grid {
                 grid-template-columns: 1fr;
@@ -652,7 +712,7 @@
                 $meusAlunos = \App\Models\Agenda::with('cliente')
                 ->where('personal_id', session('personal_id'))
                 ->where('cancelado', false)
-                ->where('descricao', 'like', '%Aula agendada%')
+                ->where('tipo_aula', '!=', 'bloqueio')
                 ->get()
                 ->unique('cliente_id');
                 @endphp
@@ -666,8 +726,18 @@
                             {{ $agendamento->cliente->resumo_objetivo ?? 'Objetivo não informado' }}
                         </p>
                     </div>
-                    <button type="button" onclick="abrirDetalhesAluno({{ $agendamento->cliente->id }})" style="background: var(--primary); color: #000; border: none; width: 40px; height: 40px; border-radius: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: 0.3s; font-weight: 900;">
+                    <button type="button" onclick="abrirDetalhesAluno({{ $agendamento->cliente->id }})" style="background: rgba(212,255,0,0.15); color: var(--primary); border: 1px solid rgba(212,255,0,0.4); width: 40px; height: 40px; border-radius: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: 0.3s; font-weight: 900;" title="Ver informações do aluno">
+                        <i class="fas fa-user-circle"></i>
+                    </button>
+                    <a href="{{ route('fichas-treino.aluno', $agendamento->cliente->id) }}" style="background: rgba(212,255,0,0.15); color: var(--primary); border: 1px solid rgba(212,255,0,0.4); width: 40px; height: 40px; border-radius: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: 0.3s; font-weight: 900; text-decoration: none;" title="Visualizar fichas">
                         <i class="fas fa-eye"></i>
+                    </a>
+                    <button type="button"
+                        data-cliente-id="{{ $agendamento->cliente->id }}"
+                        data-cliente-nome="{{ $agendamento->cliente->nome }}"
+                        onclick="abrirModalCriarFichaAluno(this.dataset.clienteId, this.dataset.clienteNome)"
+                        style="background: rgba(212,255,0,0.2); color: var(--primary); border: 1px solid var(--primary); width: 40px; height: 40px; border-radius: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: 0.3s; font-weight: 900;" title="Criar ficha de treino">
+                        <i class="fas fa-dumbbell"></i>
                     </button>
                 </div>
                 @empty
@@ -681,69 +751,94 @@
         </div>
     </div>
 
+
+    <div id="modalCriarFichaAluno" class="modal-overlay">
+        <div class="modal-content" style="max-width: 500px;">
+            <h2 style="color: var(--primary); font-size: 1.4rem; margin-top: 0; font-weight: 900;">
+                <i class="fas fa-plus"></i> CRIAR FICHA DE TREINO
+            </h2>
+            <p id="nomeAlunoModalFicha" style="color: var(--text-muted); margin-bottom: 20px;"></p>
+            
+            <form action="{{ route('fichas-treino.criar') }}" method="POST">
+                @csrf
+                <input type="hidden" id="clienteIdModalFicha" name="cliente_id" value="">
+
+                <label>Dia da Semana</label>
+                <div class="input-wrapper" style="padding: 0;">
+                    <select name="dia_semana" required style="flex: 1; background: transparent; border: none; padding: 12px; color: #fff; outline: none; font-size: 0.9rem;">
+                        <option value="">Selecione um dia</option>
+                        <option value="0">Domingo</option>
+                        <option value="1">Segunda</option>
+                        <option value="2">Terça</option>
+                        <option value="3">Quarta</option>
+                        <option value="4">Quinta</option>
+                        <option value="5">Sexta</option>
+                        <option value="6">Sábado</option>
+                    </select>
+                </div>
+
+                <label>Nome do Treino</label>
+                <div class="input-wrapper"><i class="fas fa-dumbbell"></i><input type="text" name="nome_treino" placeholder="Ex: Peito e Costas" required></div>
+
+                <label>Observações</label>
+                <div class="input-wrapper" style="padding: 12px; min-height: 80px;">
+                    <textarea name="observacoes" placeholder="Aquecimento, alongamento, etc" style="flex: 1; background: transparent; border: none; color: #fff; outline: none; font-size: 0.9rem; resize: vertical; min-height: 60px;"></textarea>
+                </div>
+
+                <div style="display: flex; gap: 10px;">
+                    <button type="button" onclick="fecharModalCriarFichaAluno()" class="btn-save btn-cancel" style="flex: 1; margin-top: 0;">CANCELAR</button>
+                    <button type="submit" class="btn-save" style="flex: 1; margin-top: 0;">CRIAR FICHA</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     {{-- MODAL FINANCEIRO --}}
     <div id="modalFinance" class="modal-overlay">
-        <div class="modal-content" style="max-width: 500px;">
+        <div class="modal-content" style="max-width: 550px;">
             <h2 style="color: var(--primary); font-size: 1.4rem; margin-top: 0; font-weight: 900; text-align: center;">FINANCEIRO</h2>
+            
+            @php
+            // ✅ RESULTADO JÁ VEM DO CONTROLLER
+            // Não precisa fazer nada aqui, $resultado já está disponível
+            @endphp
+
+            {{-- Total --}}
             <div class="finance-card">
-                <span style="font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase;">Previsão de Ganhos (Mês Atual)</span>
-                @php
-                // ✅ CORRIGIDO: Filtra por tipo_aula em vez de descricao
-                $agendasMes = \App\Models\Agenda::where('personal_id', session('personal_id'))
-                ->where('cancelado', false)
-                ->where(function($q) {
-                    $q->where('tipo_aula', 'avulsa')
-                      ->orWhere(function($q2) {
-                          $q2->where('frequencia_pacote', '!=', null);
-                      });
-                })
-                ->whereMonth('data', now()->month)
-                ->whereYear('data', now()->year)
-                ->get();
-
-                $faturamento = 0;
-                $pacotesProcessados = [];
-
-                foreach($agendasMes as $ag) {
-                    // Se tem frequencia_pacote, é aula de pacote
-                    if ($ag->frequencia_pacote) {
-                        // Busca o pacote uma única vez por frequência
-                        if (!isset($pacotesProcessados[$ag->frequencia_pacote])) {
-                            $pacote = \App\Models\cadastro\Pacote::where('personal_id', session('personal_id'))
-                                ->where('frequencia', $ag->frequencia_pacote)
-                                ->first();
-                            
-                            if ($pacote) {
-                                // Conta quantas aulas deste pacote tem no mês
-                                $aulasDoMesPacote = \App\Models\Agenda::where('personal_id', session('personal_id'))
-                                    ->where('cancelado', false)
-                                    ->where('frequencia_pacote', $ag->frequencia_pacote)
-                                    ->whereMonth('data', now()->month)
-                                    ->whereYear('data', now()->year)
-                                    ->count();
-
-                                // Valor por aula = valor_mensal / quantidade de aulas
-                                $valorPorAula = $aulasDoMesPacote > 0 ? $pacote->valor_mensal / $aulasDoMesPacote : 0;
-                                $pacotesProcessados[$ag->frequencia_pacote] = [
-                                    'valor_mensal' => $pacote->valor_mensal,
-                                    'aulasDoMes' => $aulasDoMesPacote,
-                                    'valorPorAula' => $valorPorAula
-                                ];
-                            }
-                        }
-
-                        if (isset($pacotesProcessados[$ag->frequencia_pacote])) {
-                            $faturamento += $pacotesProcessados[$ag->frequencia_pacote]['valorPorAula'];
-                        }
-                    } elseif ($ag->tipo_aula === 'avulsa') {
-                        // ✅ CORRIGIDO: Se é avulsa, usa valor_secao
-                        $duracao = \Carbon\Carbon::parse($ag->hora_inicio)->diffInMinutes(\Carbon\Carbon::parse($ag->hora_fim)) / 60;
-                        $faturamento += ($duracao * ($personal->valor_secao ?? 0));
-                    }
-                }
-                @endphp
-                <span class="finance-value">R$ {{ number_format($faturamento, 2, ',', '.') }}</span>
+                <span style="font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase;">Total do Mês Atual</span>
+                <span class="finance-value">R$ {{ number_format($resultado['total'] ?? 0, 2, ',', '.') }}</span>
             </div>
+
+            {{-- Pacotes --}}
+            <div class="finance-card" style="background: rgba(212, 255, 0, 0.08); border: 1px solid rgba(212, 255, 0, 0.3);">
+                <span style="font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase;">
+                    <i class="fas fa-dumbbell"></i> Pacotes Contratados
+                </span>
+                <span class="finance-value">R$ {{ number_format($resultado['pacotes'] ?? 0, 2, ',', '.') }}</span>
+                <small style="color: var(--text-muted); font-size: 0.7rem; margin-top: 8px; display: block;">
+                    {{ $resultado['detalhes']['quantidade_aulas_pacote'] ?? 0 }} aula(s) de pacote
+                </small>
+            </div>
+
+            {{-- Aulas Avulsas --}}
+            <div class="finance-card" style="background: rgba(0, 255, 136, 0.08); border: 1px solid rgba(0, 255, 136, 0.3);">
+                <span style="font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase;">
+                    <i class="fas fa-star"></i> Aulas Avulsas
+                </span>
+                <span class="finance-value" style="color: var(--success);">R$ {{ number_format($resultado['avulsas'] ?? 0, 2, ',', '.') }}</span>
+                <small style="color: var(--text-muted); font-size: 0.7rem; margin-top: 8px; display: block;">
+                    {{ $resultado['detalhes']['quantidade_aulas_avulsa'] ?? 0 }} aula(s) × R$ {{ number_format($resultado['detalhes']['valor_secao'] ?? 0, 2, ',', '.') }}/hora
+                </small>
+            </div>
+
+            {{-- Resumo --}}
+            <div style="background: rgba(255,255,255,0.02); border: 1px solid var(--border); border-radius: 16px; padding: 15px; margin-bottom: 20px; text-align: center;">
+                <p style="margin: 0; font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; margin-bottom: 8px;">Resumo do Mês</p>
+                <p style="margin: 0; font-size: 0.9rem; color: #fff;">
+                    <span style="color: var(--primary); font-weight: 900;">{{ ($resultado['detalhes']['quantidade_aulas_pacote'] ?? 0) + ($resultado['detalhes']['quantidade_aulas_avulsa'] ?? 0) }}</span> aula(s) total
+                </p>
+            </div>
+
             <button type="button" onclick="closeModalFinance()" class="btn-save">Fechar Relatório</button>
         </div>
     </div>
@@ -754,6 +849,9 @@
             <h2 style="color: var(--primary); font-size: 1.4rem; margin-top: 0; font-weight: 900;">ATUALIZAR MEUS DADOS</h2>
             <form action="{{ route('personal.update', $personal->id) }}" method="POST" enctype="multipart/form-data">
                 @csrf @method('PUT')
+                <input type="hidden" name="cep" value="{{ $personal->cep }}">
+                <input type="hidden" name="cidade" value="{{ $personal->cidade }}">
+                <input type="hidden" name="aceita_termos_update" value="1">
                 <div class="form-grid">
                     <div class="full-width">
                         <label>Foto de Perfil</label>
@@ -766,6 +864,10 @@
                     <div>
                         <label>Valor por Seção (R$)</label>
                         <div class="input-wrapper"><i class="fas fa-dollar-sign"></i><input type="number" step="0.01" name="valor_secao" value="{{ $personal->valor_secao }}"></div>
+                    </div>
+                    <div class="full-width">
+                        <label>Chave Pix</label>
+                        <div class="input-wrapper"><i class="fas fa-key"></i><input type="text" name="chave_pix" value="{{ $personal->chave_pix }}" placeholder="CPF, e-mail, telefone ou chave aleatória"></div>
                     </div>
                 </div>
                 <div style="display: flex; gap: 10px; margin-top: 20px;">
@@ -849,54 +951,54 @@
                 <i class="fas fa-images"></i> MINHA GALERIA
             </h2>
             <p style="color: var(--text-muted); font-size: 0.8rem; margin-bottom: 15px;">
-                Até 5 fotos no seu perfil.
-                <span style="float: right; color: var(--primary); font-weight: 700;">
-                    {{ $personal->fotos->count() }}/5
+                Fotos visíveis para clientes no seu perfil. Máximo 9 fotos.
+                <span id="galeriaContador" style="float: right; color: var(--primary); font-weight: 700;">
+                    {{ $personal->fotos->count() }}/9
                 </span>
             </p>
 
-            <div class="galeria-grid">
+            {{-- Mensagem de feedback --}}
+            <div id="galeriaMsg" style="display:none; padding: 10px 14px; border-radius: 10px; margin-bottom: 12px; font-size: 0.85rem;"></div>
+
+            {{-- Grid de fotos --}}
+            <div class="galeria-grid" id="galeriaGrid">
                 @foreach($personal->fotos as $foto)
-                <div class="galeria-item">
+                <div class="galeria-item" id="foto-{{ $foto->id }}">
                     <img src="{{ asset('storage/' . $foto->path) }}" alt="{{ $foto->legenda }}">
                     <div class="galeria-item-overlay">
                         @if($foto->legenda)
                         <span class="galeria-item-legenda">{{ $foto->legenda }}</span>
                         @endif
-                        <form action="{{ route('fotos.destroy', $foto->id) }}" method="POST" onsubmit="return confirm('Remover esta foto?')">
-                            @csrf @method('DELETE')
-                            <button type="submit" style="background: var(--error); color: #fff; border: none; padding: 6px 12px; border-radius: 8px; cursor: pointer; font-size: 0.75rem;">
-                                <i class="fas fa-trash"></i> Remover
-                            </button>
-                        </form>
+                        <button type="button"
+                            onclick="removerFoto({{ $foto->id }}, this)"
+                            style="background: var(--error); color: #fff; border: none; padding: 6px 12px; border-radius: 8px; cursor: pointer; font-size: 0.75rem;">
+                            <i class="fas fa-trash"></i> Remover
+                        </button>
                     </div>
                 </div>
                 @endforeach
 
-                @if($personal->fotos->count() < 5)
-                    <label class="galeria-upload-slot" for="inputFotoGaleria">
+                {{-- Slot de upload --}}
+                <div class="galeria-upload-slot" id="galeriaSlot" onclick="document.getElementById('inputFotoGaleria').click()"
+                     style="{{ $personal->fotos->count() >= 9 ? 'display:none' : '' }}">
                     <i class="fas fa-plus-circle"></i>
-                    Adicionar
-                    </label>
-                    @endif
+                    <span id="galeriaSlotLabel">Adicionar</span>
+                </div>
             </div>
 
-            @if($personal->fotos->count() < 5)
-                <form action="{{ route('personal.fotos.store') }}" method="POST" enctype="multipart/form-data" id="formGaleriaPersonal" style="margin-top: 15px;">
-                @csrf
-                <input type="file" id="inputFotoGaleria" name="foto" accept="image/*" style="display: none;" onchange="document.getElementById('formGaleriaPersonal').submit()">
-                <label style="margin-top: 10px;">Legenda (opcional)</label>
+            {{-- Inputs ocultos --}}
+            <input type="file" id="inputFotoGaleria" name="foto" accept="image/*" style="display:none;" onchange="uploadFoto(this)">
+
+            {{-- Campo de legenda --}}
+            <div id="galeriaLegendaArea" style="margin-top: 15px; {{ $personal->fotos->count() >= 9 ? 'display:none' : '' }}">
+                <label>Legenda (opcional — preencha antes de escolher a foto)</label>
                 <div class="input-wrapper">
                     <i class="fas fa-pen"></i>
-                    <input type="text" name="legenda" placeholder="Ex: Treino funcional, Avaliação...">
+                    <input type="text" id="galeriaLegenda" placeholder="Ex: Treino funcional, Avaliação...">
                 </div>
-                <p style="color: var(--text-muted); font-size: 0.72rem; margin-top: 8px;">
-                    <i class="fas fa-info-circle"></i> Preencha a legenda antes de selecionar a foto.
-                </p>
-                </form>
-                @endif
+            </div>
 
-                <button type="button" onclick="closeModalGaleria()" class="btn-save">Fechar</button>
+            <button type="button" onclick="closeModalGaleria()" class="btn-save" style="margin-top: 15px;">Fechar</button>
         </div>
     </div>
 
@@ -1007,6 +1109,7 @@
         const modalGaleria = document.getElementById('modalGaleria');
         const modalAvaliacoes = document.getElementById('modalAvaliacoes');
         const modalDetalhesAluno = document.getElementById('modalDetalhesAluno');
+        const modalCriarFichaAluno = document.getElementById('modalCriarFichaAluno');
 
         document.getElementById('btnOpenUpdate').onclick = () => {
             modalUpdate.style.display = 'block';
@@ -1070,6 +1173,28 @@
             modalDetalhesAluno.style.display = 'none';
         }
 
+        // ✅ CRIAR FICHA
+        function abrirModalCriarFichaAluno(clienteId, nomeAluno) {
+            document.getElementById('clienteIdModalFicha').value = clienteId;
+            const p = document.getElementById('nomeAlunoModalFicha');
+            p.textContent = 'Criando ficha para: ';
+            const strong = document.createElement('strong');
+            strong.style.color = 'var(--primary)';
+            strong.textContent = nomeAluno;
+            p.appendChild(strong);
+            modalCriarFichaAluno.style.display = 'block';
+        }
+
+        function fecharModalCriarFichaAluno() {
+            modalCriarFichaAluno.style.display = 'none';
+        }
+
+        function escHtml(str) {
+            const d = document.createElement('div');
+            d.textContent = String(str ?? '');
+            return d.innerHTML;
+        }
+
         function abrirDetalhesAluno(clienteId) {
             const content = document.getElementById('detalhesAlunoContent');
             content.innerHTML = '<p style="text-align: center; color: var(--text-muted);">Carregando...</p>';
@@ -1082,7 +1207,7 @@
                 })
                 .then(dados => {
                     if (dados.error) {
-                        content.innerHTML = `<p style="text-align: center; color: var(--error);">Erro: ${dados.error}</p>`;
+                        content.innerHTML = '<p style="text-align: center; color: var(--error);">Erro ao carregar dados.</p>';
                         return;
                     }
 
@@ -1095,13 +1220,15 @@
                             idade--;
                         }
 
-                        const pacoteInfo = dados.pacote ? `${dados.pacote.frequencia}x por semana - R$ ${dados.pacote.valor_mensal}` : 'Sem pacote ativo';
+                        const pacoteInfo = dados.pacote
+                            ? `${escHtml(dados.pacote.frequencia)}x por semana - R$ ${escHtml(dados.pacote.valor_mensal)}`
+                            : 'Sem pacote ativo';
 
                         content.innerHTML = `
                             <div style="background: rgba(255,255,255,0.03); border: 1px solid var(--border); border-radius: 16px; padding: 20px; text-align: center;">
-                                <img src="https://ui-avatars.com/api/?name=${encodeURIComponent(dados.nome)}&background=d4ff00&color=000" 
+                                <img src="https://ui-avatars.com/api/?name=${encodeURIComponent(dados.nome)}&background=d4ff00&color=000"
                                     style="width: 80px; height: 80px; border-radius: 50%; margin-bottom: 15px;">
-                                <h3 style="color: var(--primary); font-size: 1.3rem; margin: 0 0 20px 0;">${dados.nome}</h3>
+                                <h3 style="color: var(--primary); font-size: 1.3rem; margin: 0 0 20px 0;">${escHtml(dados.nome)}</h3>
                             </div>
 
                             <div style="background: rgba(212,255,0,0.05); border: 1px solid var(--primary); border-radius: 16px; padding: 15px;">
@@ -1109,7 +1236,7 @@
                                     <i class="fas fa-birthday-cake" style="color: var(--primary);"></i> Idade
                                 </p>
                                 <p style="margin: 0 0 15px 0; font-size: 1.4rem; color: var(--primary); font-weight: 900;">
-                                    ${idade} anos
+                                    ${escHtml(idade)} anos
                                 </p>
                             </div>
 
@@ -1118,7 +1245,7 @@
                                     <i class="fas fa-heart-pulse" style="color: var(--primary);"></i> Condição Clínica
                                 </p>
                                 <p style="margin: 0 0 15px 0; font-size: 0.95rem; color: #fff; line-height: 1.6;">
-                                    ${dados.condicao_clinica || 'Nenhuma condição registrada'}
+                                    ${escHtml(dados.condicao_clinica || 'Nenhuma condição registrada')}
                                 </p>
                             </div>
 
@@ -1262,6 +1389,7 @@
             if (e.target == modalGaleria) closeModalGaleria();
             if (e.target == modalAvaliacoes) closeModalAvaliacoes();
             if (e.target == modalDetalhesAluno) closeModalDetalhesAluno();
+            if (e.target == modalCriarFichaAluno) fecharModalCriarFichaAluno();
         }
 
         function adicionarBolinhasAmareladas() {
@@ -1278,15 +1406,11 @@
                         .then(r => r.json())
                         .then(dados => {
                             if (dados && dados.length > 0) {
-                                const temAula = dados.some(item => 
-                                    item.descricao && item.descricao.includes('Aula agendada')
-                                );
+                                const temAula = dados.some(item => {
+                                    return item.cliente && item.cliente.id;
+                                });
                                 
-                                const temCompromisso = dados.some(item => 
-                                    item.descricao && !item.descricao.includes('Aula agendada')
-                                );
-                                
-                                if (temAula || temCompromisso) {
+                                if (temAula) {
                                     dayEl.classList.add('has-compromise');
                                 }
                             }
@@ -1298,7 +1422,7 @@
 
         window.onload = () => {
             adicionarBolinhasAmareladas();
-            
+
             const todayStr = new Date().toISOString().split('T')[0];
             const todayElement = document.querySelector(`.day-col[onclick*="${todayStr}"]`);
             if (todayElement) {
@@ -1307,6 +1431,123 @@
                 const firstDay = document.querySelector('.day-col');
                 if (firstDay) firstDay.click();
             }
+        }
+
+        // ============ GALERIA AJAX ============
+
+        function galeriaMsg(texto, tipo) {
+            const el = document.getElementById('galeriaMsg');
+            el.style.display = 'block';
+            el.style.background = tipo === 'ok'
+                ? 'rgba(0,255,136,0.12)'
+                : 'rgba(255,68,68,0.12)';
+            el.style.border = tipo === 'ok'
+                ? '1px solid var(--success)'
+                : '1px solid var(--error)';
+            el.style.color = tipo === 'ok' ? 'var(--success)' : 'var(--error)';
+            el.innerHTML = texto;
+            setTimeout(() => el.style.display = 'none', 4000);
+        }
+
+        function atualizarContador(total) {
+            document.getElementById('galeriaContador').textContent = total + '/9';
+            const slot    = document.getElementById('galeriaSlot');
+            const legArea = document.getElementById('galeriaLegendaArea');
+            if (total >= 9) {
+                slot.style.display    = 'none';
+                legArea.style.display = 'none';
+            } else {
+                slot.style.display    = 'flex';
+                legArea.style.display = 'block';
+            }
+        }
+
+        function uploadFoto(input) {
+            if (!input.files || !input.files[0]) return;
+
+            const legenda = document.getElementById('galeriaLegenda').value;
+            const slot    = document.getElementById('galeriaSlot');
+            const label   = document.getElementById('galeriaSlotLabel');
+
+            label.textContent = 'Enviando...';
+            slot.style.opacity = '0.5';
+            slot.style.pointerEvents = 'none';
+
+            const formData = new FormData();
+            formData.append('foto', input.files[0]);
+            formData.append('legenda', legenda);
+            formData.append('_token', document.querySelector('input[name="_token"]').value);
+
+            fetch('{{ route("personal.fotos.store") }}', {
+                method: 'POST',
+                body: formData,
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.sucesso) {
+                    // Adiciona foto no grid antes do slot
+                    const grid = document.getElementById('galeriaGrid');
+                    const novoItem = document.createElement('div');
+                    novoItem.className = 'galeria-item';
+                    novoItem.id = 'foto-' + data.foto.id;
+                    novoItem.innerHTML = `
+                        <img src="${data.foto.url}" alt="${data.foto.legenda || ''}">
+                        <div class="galeria-item-overlay">
+                            ${data.foto.legenda ? `<span class="galeria-item-legenda">${data.foto.legenda}</span>` : ''}
+                            <button type="button" onclick="removerFoto(${data.foto.id}, this)"
+                                style="background:var(--error);color:#fff;border:none;padding:6px 12px;border-radius:8px;cursor:pointer;font-size:0.75rem;">
+                                <i class="fas fa-trash"></i> Remover
+                            </button>
+                        </div>`;
+                    grid.insertBefore(novoItem, slot);
+
+                    document.getElementById('galeriaLegenda').value = '';
+                    input.value = '';
+                    atualizarContador(data.total);
+                    galeriaMsg('<i class="fas fa-check-circle"></i> Foto adicionada com sucesso!', 'ok');
+                } else {
+                    galeriaMsg('<i class="fas fa-exclamation-circle"></i> ' + (data.erro || 'Erro ao enviar.'), 'err');
+                }
+            })
+            .catch(() => galeriaMsg('<i class="fas fa-exclamation-circle"></i> Erro de conexão ao enviar a foto.', 'err'))
+            .finally(() => {
+                label.textContent = 'Adicionar';
+                slot.style.opacity = '1';
+                slot.style.pointerEvents = 'auto';
+            });
+        }
+
+        function removerFoto(fotoId, btn) {
+            if (!confirm('Remover esta foto da galeria?')) return;
+            btn.disabled = true;
+            btn.innerHTML = '...';
+
+            fetch(`/fotos/${fotoId}`, {
+                method: 'DELETE',
+                headers: {
+                    'X-CSRF-TOKEN': document.querySelector('input[name="_token"]').value,
+                    'Accept': 'application/json',
+                },
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.sucesso) {
+                    const item = document.getElementById('foto-' + fotoId);
+                    if (item) item.remove();
+                    const total = document.querySelectorAll('#galeriaGrid .galeria-item').length;
+                    atualizarContador(total);
+                    galeriaMsg('<i class="fas fa-check-circle"></i> Foto removida.', 'ok');
+                } else {
+                    galeriaMsg('<i class="fas fa-exclamation-circle"></i> ' + (data.erro || 'Erro ao remover.'), 'err');
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="fas fa-trash"></i> Remover';
+                }
+            })
+            .catch(() => {
+                galeriaMsg('<i class="fas fa-exclamation-circle"></i> Erro de conexão.', 'err');
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-trash"></i> Remover';
+            });
         }
     </script>
 </body>

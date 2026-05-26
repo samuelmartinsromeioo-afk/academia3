@@ -11,6 +11,10 @@ class AvaliacaoController extends Controller
     public function store(Request $request)
     {
         $clienteId = session('cliente_id');
+        if (!$clienteId) {
+            return back()->with('error', 'Apenas clientes podem enviar avaliações.');
+        }
+
         $personalId = $request->personal_id;
 
         // ✅ VALIDAÇÃO 1: Verificar se é realmente aluno do personal

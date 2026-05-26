@@ -12,13 +12,38 @@ use App\Http\Controllers\Cadastro\AcademiaController;
 use App\Http\Controllers\App\MapaController;
 use App\Http\Controllers\cadastro\PacoteController;
 use App\Http\Controllers\App\FotoController;
+use App\Http\Controllers\Cadastro\FichaTreinoController;
 use App\Http\Controllers\AvaliacaoController;
+use App\Http\Controllers\AulaController;
+use App\Http\Controllers\AdminController;
+use App\Http\Controllers\PaymentController;
 
 /*
 |--------------------------------------------------------------------------
 | Web Routes
 |--------------------------------------------------------------------------
 */
+
+
+
+// ✅ ROTAS PROTEGIDAS DO ADMIN (com middleware)
+Route::middleware('check.admin')->group(function () {
+    // Dashboard
+    Route::get('/admin/dashboard', [AdminController::class, 'dashboard'])->name('admin.dashboard');
+    Route::post('/admin/personals/{id}/teste-aprovar', [AdminController::class, 'testeAprovar'])->name('admin.personals.teste-aprovar')->middleware('check.admin');
+    // Gerenciar Personals
+    Route::get('/admin/personals', [AdminController::class, 'listarPersonals'])->name('admin.personals.lista');
+    Route::get('/admin/personals/{id}/detalhes', [AdminController::class, 'verDetalhes'])->name('admin.personals.detalhes');
+    Route::post('/admin/personals/{id}/aprovar', [AdminController::class, 'aprovar'])->name('admin.personals.aprovar');
+    Route::post('/admin/personals/{id}/rejeitar', [AdminController::class, 'rejeitar'])->name('admin.personals.rejeitar');
+    Route::delete('/admin/personals/{id}', [AdminController::class, 'deletar'])->name('admin.personals.deletar');
+ 
+    // Relatórios Financeiros
+    Route::get('/admin/relatorio-financeiro', [AdminController::class, 'relatorioFinanceiro'])->name('admin.relatorio-financeiro');
+ 
+    // Logout
+    Route::post('/admin/logout', [AdminController::class, 'logout'])->name('admin.logout');
+});
 
 // ==========================================
 // AUTENTICAÇÃO E LOGIN
@@ -27,6 +52,17 @@ Route::get('/', [LoginController::class, 'index'])->name('login.index');
 Route::get('/login', [LoginController::class,'create'])->name('login.create');
 Route::post('/login', [LoginController::class, 'store'])->name('login.store');
 Route::post('/logout', [LoginController::class, 'logout'])->name('login.logout');
+
+// ==========================================
+// PÁGINAS PÚBLICAS - TERMOS E PRIVACIDADE
+// ==========================================
+Route::get('/termos', function () {
+    return view('termos');
+})->name('termos');
+
+Route::get('/privacidade', function () {
+    return view('privacidade');
+})->name('privacidade');
 
 // ==========================================
 // RECUPERAÇÃO DE SENHA
@@ -66,8 +102,7 @@ Route::post('/personal/fotos', [FotoController::class, 'storePersonal'])->name('
 Route::post('/academia/fotos', [FotoController::class, 'storeAcademia'])->name('academia.fotos.store');
 Route::delete('/fotos/{id}', [FotoController::class, 'destroy'])->name('fotos.destroy');
 
-// Nova Rota de Avaliação (sem middleware, pode ser acessada publicamente)
-Route::post('/avaliar', [AvaliacaoController::class, 'store'])->name('avaliar.store');
+Route::post('/avaliar', [AvaliacaoController::class, 'store'])->name('avaliar.store')->middleware('check.login');
 
 
 // ==========================================
@@ -76,8 +111,10 @@ Route::post('/avaliar', [AvaliacaoController::class, 'store'])->name('avaliar.st
 Route::middleware('check.login')->group(function () {
     Route::get('/horarios-disponiveis/{personalId}/{dia}', [ClienteController::class, 'buscarHorariosDisponiveis'])->name('horarios.disponiveis');
     Route::post('/pacotes/contratar', [ClienteController::class, 'contratarPacote'])->name('pacotes.contratar');
+    Route::get('/pagamento/sucesso', [PaymentController::class, 'pagarSucesso'])->name('payment.success');
     Route::get('/cliente', [ClienteController::class, 'index'])->name('cliente.index');
     Route::put('/cliente/update/{id}', [ClienteController::class, 'update'])->name('cliente.update');
+    // ✅ CORRIGIDO: Rota para agendamento de aula AVULSA do cliente
     Route::post('/agendar', [ClienteController::class, 'reservarHorario'])->name('agendar.horario');
     Route::get('/academias/explorar', [ClienteController::class, 'listarAcademias'])->name('academias.explorar');
     Route::get('/academias/{id}/detalhes', [ClienteController::class, 'detalhesAcademia'])->name('academias.detalhes');
@@ -109,6 +146,10 @@ Route::middleware('check.login')->group(function () {
     Route::post('/personal/cancelar-dia', [PersonalController::class, 'cancelarDia'])->name('personal.cancelarDia');
     Route::post('/personal/bloquear-fixo', [PersonalController::class, 'bloquearHorarioFixo'])->name('personal.bloquearFixo');
     Route::get('/cliente/{id}/detalhes', [PersonalController::class, 'detalhesAluno'])->name('cliente.detalhes');
+
+    // ✅ NOVO: Finalizar aula e notificar via WhatsApp
+    Route::post('/personal/aulas/{id}/finalizar', [PersonalController::class, 'finalizarAula'])->name('aulas.finalizar');
+    Route::post('/personal/aulas/{id}/concluir', [PersonalController::class, 'finalizarAula'])->name('aulas.concluir');
 });
 
 
@@ -131,4 +172,37 @@ Route::middleware('check.login')->group(function () {
 // ==========================================
 // PACOTES
 // ==========================================
-Route::post('/pacotes/salvar', [PacoteController::class, 'store'])->name('pacotes.store');
+Route::middleware('check.login')->group(function () {
+    Route::post('/pacotes/salvar', [PacoteController::class, 'store'])->name('pacotes.store');
+});
+
+// ==========================================
+// FICHAS DE TREINO
+// ==========================================
+
+// PERSONAL
+Route::middleware('check.login')->group(function () {
+    Route::get('/personal/fichas-treino', [FichaTreinoController::class, 'meusAlunos'])->name('fichas-treino.alunos');
+    Route::get('/personal/fichas-treino/{clienteId}', [FichaTreinoController::class, 'fichasDoAluno'])->name('fichas-treino.aluno');
+    Route::post('/personal/fichas-treino/criar', [FichaTreinoController::class, 'criarFicha'])->name('fichas-treino.criar');
+    Route::post('/personal/fichas-treino/{fichaId}/exercicio', [FichaTreinoController::class, 'adicionarExercicio'])->name('fichas-treino.exercicio.adicionar');
+    Route::put('/personal/fichas-treino/{fichaId}/editar', [FichaTreinoController::class, 'editarFicha'])->name('fichas-treino.editar');
+    Route::delete('/personal/fichas-treino/{fichaId}', [FichaTreinoController::class, 'deletarFicha'])->name('fichas-treino.deletar');
+    Route::delete('/personal/fichas-treino/exercicio/{exercicioId}', [FichaTreinoController::class, 'deletarExercicio'])->name('fichas-treino.exercicio.deletar');
+});
+
+// CLIENTE
+Route::middleware('check.login')->group(function () {
+    Route::get('/cliente/fichas-treino', [FichaTreinoController::class, 'minhasFichas'])->name('fichas-treino.minhas');
+    Route::post('/cliente/fichas-treino/{fichaId}/concluido', [FichaTreinoController::class, 'marcarConcluido'])->name('fichas-treino.concluido');
+    Route::post('/cliente/fichas-treino/{fichaId}/nao-concluido', [FichaTreinoController::class, 'desmarcarConcluido'])->name('fichas-treino.nao-concluido');
+    Route::get('/api/fichas-treino/{fichaId}/{data}', [FichaTreinoController::class, 'buscarFichaDia'])->name('fichas-treino.api.dia');
+});
+
+// ==========================================
+// API - AULAS
+// ==========================================
+Route::middleware('check.login')->group(function () {
+    Route::post('/aulas/{id}/fechar', [AulaController::class, 'fecharAula'])->name('aulas.fechar');
+    Route::post('/aulas/{id}/concluir', [AulaController::class, 'concluirAula'])->name('aulas.api.concluir');
+});

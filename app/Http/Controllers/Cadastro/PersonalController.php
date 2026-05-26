@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Mail;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
 class PersonalController extends Controller
@@ -41,6 +42,7 @@ class PersonalController extends Controller
             'avaliacao'     => 'nullable|string',
             'latitude'      => 'nullable|numeric',
             'longitude'     => 'nullable|numeric',
+            'academias' => 'nullable|string|max:1000',
         ]);
 
         if ($request->hasFile('foto')) {
@@ -56,10 +58,11 @@ class PersonalController extends Controller
         $dados['senha'] = Hash::make($request->senha);
         $dados['avaliacao'] = $dados['avaliacao'] ?? 'Aguardando avaliação inicial';
         $dados['resultados'] = $dados['resultados'] ?? 'Nenhum resultado registrado';
+        $dados['status'] = 'pendente';
 
         Personal::create($dados);
 
-        return redirect()->route('login.index')->with('sucesso', 'Personal cadastrado com sucesso!');
+        return redirect()->route('login.index')->with('sucesso', 'Personal cadastrado com sucesso! Aguarde a aprovação do administrador.');
     }
 
     public function index(Request $request)
@@ -67,19 +70,27 @@ class PersonalController extends Controller
         $id = session('personal_id');
         if (!$id) return redirect()->route('login.index');
 
+        $personal = Personal::find($id);
+
+        if (!$personal || $personal->status !== 'aprovado') {
+            session()->forget('personal_id');
+            return redirect()->route('login.index')->with('error', '⏳ Seu cadastro não foi aprovado ainda pelo administrador.');
+        }
+
         $dataRef = $request->query('data') ? Carbon::parse($request->query('data')) : now();
         $inicioSemana = $dataRef->copy()->startOfWeek(Carbon::SUNDAY);
-    $fimSemana = $dataRef->copy()->endOfWeek(Carbon::SUNDAY);
+        $fimSemana = $dataRef->copy()->endOfWeek(Carbon::SUNDAY);
 
-        // ✅ CORRIGIDO: Usa DATE_FORMAT para comparação correta
-        $personal = Personal::with(['agendas' => function ($query) use ($inicioSemana, $fimSemana) {
+        $personal = Personal::with(['fotos', 'agendas' => function ($query) use ($inicioSemana, $fimSemana) {
             $query->whereRaw("DATE_FORMAT(data, '%Y-%m-%d') BETWEEN ? AND ?", [
                 $inicioSemana->format('Y-m-d'),
                 $fimSemana->format('Y-m-d')
             ])->where('cancelado', false)->orderBy('hora_inicio');
         }])->find($id);
 
-        return view('personal.dashboard', compact('personal', 'inicioSemana', 'dataRef'));
+        $resultado = $this->calcularFinanceiroMes($id);
+
+        return view('personal.dashboard', compact('personal', 'inicioSemana', 'dataRef', 'resultado'));
     }
 
     public function storeHorario(Request $request)
@@ -129,6 +140,7 @@ class PersonalController extends Controller
             'hora_fim' => $fim,
             'descricao' => $request->descricao ?? 'Ocupado',
             'cancelado' => false,
+            'tipo_aula' => 'bloqueio',
         ]);
 
         return back()->with('success', 'Horário registrado com sucesso!');
@@ -136,17 +148,26 @@ class PersonalController extends Controller
 
     public function update(Request $request, $id)
     {
+        if ((int)$id !== (int)session('personal_id')) {
+            abort(403);
+        }
+
         $personal = Personal::findOrFail($id);
 
         $dados = $request->validate([
             'nome'        => 'required|string|max:255',
             'cep'         => 'required|string|max:9',
             'cidade'      => 'required|string',
+            'aceita_termos_update' => 'required|accepted', // ✅ Validação do checkbox
             'valor_secao' => 'required|numeric',
             'avaliacao'   => 'nullable|string',
             'certificado' => 'nullable|file|mimes:pdf,jpg,png|max:2048',
             'foto'        => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
-            'senha'       => 'nullable|string|min:8|confirmed'
+            'senha'       => 'nullable|string|min:8|confirmed',
+            'chave_pix'   => 'nullable|string|max:255'
+        ], [
+            'aceita_termos_update.required' => 'Você deve concordar com os Termos de Uso',
+            'aceita_termos_update.accepted' => 'Você deve concordar com os Termos de Uso',
         ]);
 
         if ($request->hasFile('foto')) {
@@ -167,6 +188,11 @@ class PersonalController extends Controller
             $dados['senha'] = Hash::make($request->senha);
         }
 
+        $dados['data_aceicao_termos_atualizacao'] = Carbon::now();
+        $dados['ip_aceicao_termos_atualizacao'] = $request->ip();
+
+        unset($dados['aceita_termos_update']);
+
         $personal->update($dados);
 
         return redirect()->back()->with('success', 'Perfil atualizado com sucesso!');
@@ -176,6 +202,10 @@ class PersonalController extends Controller
     {
         try {
             $agenda = Agenda::findOrFail($id);
+
+            if ($agenda->personal_id !== session('personal_id')) {
+                abort(403);
+            }
 
             $dataStr = $agenda->data instanceof \Carbon\Carbon ?
                 $agenda->data->format('Y-m-d') :
@@ -245,6 +275,7 @@ class PersonalController extends Controller
                 'hora_inicio' => $agenda->hora_inicio,
                 'hora_fim' => $agenda->hora_fim,
                 'descricao' => $agenda->descricao,
+                'tipo_aula' => $agenda->tipo_aula,
                 'cliente' => $agenda->cliente,
                 'academia' => $agenda->academia,
             ];
@@ -340,6 +371,7 @@ class PersonalController extends Controller
                 })->exists();
 
             if (!$conflito) {
+                // ✅ IMPORTANTE: Salvar tipo_aula = 'bloqueio'
                 Agenda::create([
                     'personal_id' => session('personal_id'),
                     'data'        => $data,
@@ -347,6 +379,7 @@ class PersonalController extends Controller
                     'hora_fim'    => $fim,
                     'descricao'   => $request->descricao ?? 'Horário Fixo Bloqueado',
                     'cancelado'   => false,
+                    'tipo_aula'   => 'bloqueio', // ✅ NOVO
                 ]);
                 $criados++;
             } else {
@@ -402,12 +435,25 @@ class PersonalController extends Controller
     // ✅ NOVO: Busca detalhes do aluno com pacote
     public function detalhesAluno($clienteId)
     {
+        $personalId = session('personal_id');
+        if (!$personalId) {
+            return response()->json(['error' => 'Não autorizado'], 403);
+        }
+
+        $temRelacao = Agenda::where('personal_id', $personalId)
+            ->where('cliente_id', $clienteId)
+            ->where('cancelado', false)
+            ->exists();
+
+        if (!$temRelacao) {
+            return response()->json(['error' => 'Não autorizado'], 403);
+        }
+
         try {
             $cliente = Cliente::findOrFail($clienteId);
-            
-            // Busca o pacote que este cliente usa com este personal
+
             $pacote = null;
-            $aulas = Agenda::where('personal_id', session('personal_id'))
+            $aulas = Agenda::where('personal_id', $personalId)
                 ->where('cliente_id', $clienteId)
                 ->where('cancelado', false)
                 ->where('frequencia_pacote', '!=', null)
@@ -421,7 +467,7 @@ class PersonalController extends Controller
 
             return response()->json([
                 'nome' => $cliente->nome,
-                'idade' => $cliente->idade, // data de nascimento
+                'idade' => $cliente->idade,
                 'condicao_clinica' => $cliente->condicao_clinica ?? 'Nenhuma condição registrada',
                 'pacote' => $pacote ? [
                     'frequencia' => $pacote->frequencia,
@@ -433,63 +479,141 @@ class PersonalController extends Controller
         }
     }
 
-    // ✅ NOVO: Calcula financeiro baseado em pacotes
-public function calcularFinanceiroMes($personalId, $mes = null, $ano = null)
-{
-    $mes = $mes ?? now()->month;
-    $ano = $ano ?? now()->year;
+    public function calcularFinanceiroMes($personalId, $mes = null, $ano = null)
+    {
+        $mes = $mes ?? now()->month;
+        $ano = $ano ?? now()->year;
 
-    // Busca todas as aulas do mês
-    $agendasMes = Agenda::where('personal_id', $personalId)
-        ->where('cancelado', false)
-        ->where('descricao', 'like', '%Aula agendada%') // ✅ FILTRA APENAS AULAS
-        ->whereMonth('data', $mes)
-        ->whereYear('data', $ano)
-        ->get();
+        $faturamentoPacotes = 0;
+        $pacotesProcessados = [];
 
-    $faturamento = 0;
-    $pacotesProcessados = [];
+        $aulasPackote = Agenda::where('personal_id', $personalId)
+            ->where('cancelado', false)
+            ->where('tipo_aula', 'pacote')
+            ->whereMonth('data', $mes)
+            ->whereYear('data', $ano)
+            ->get();
 
-    foreach ($agendasMes as $agenda) {
-        // Se tem frequência_pacote, é aula de pacote
-        if ($agenda->frequencia_pacote) {
-            // Busca o pacote uma única vez por frequência
-            if (!isset($pacotesProcessados[$agenda->frequencia_pacote])) {
+        foreach ($aulasPackote as $agenda) {
+            if ($agenda->frequencia_pacote && !isset($pacotesProcessados[$agenda->frequencia_pacote])) {
                 $pacote = \App\Models\cadastro\Pacote::where('personal_id', $personalId)
                     ->where('frequencia', $agenda->frequencia_pacote)
                     ->first();
-                
-                if ($pacote) {
-                    // Conta quantas aulas deste pacote tem no mês
-                    $aulasDoMesPacote = Agenda::where('personal_id', $personalId)
-                        ->where('cancelado', false)
-                        ->where('frequencia_pacote', $agenda->frequencia_pacote)
-                        ->where('descricao', 'like', '%Aula agendada%')
-                        ->whereMonth('data', $mes)
-                        ->whereYear('data', $ano)
-                        ->count();
 
-                    // Valor por aula = valor_mensal / quantidade de aulas
-                    $valorPorAula = $aulasDoMesPacote > 0 ? $pacote->valor_mensal / $aulasDoMesPacote : 0;
-                    $pacotesProcessados[$agenda->frequencia_pacote] = [
-                        'valor_mensal' => $pacote->valor_mensal,
-                        'aulasDoMes' => $aulasDoMesPacote,
-                        'valorPorAula' => $valorPorAula
-                    ];
+                if ($pacote) {
+                    $pacotesProcessados[$agenda->frequencia_pacote] = true;
+                    $faturamentoPacotes += $pacote->valor_mensal;
                 }
             }
+        }
 
-            if (isset($pacotesProcessados[$agenda->frequencia_pacote])) {
-                $faturamento += $pacotesProcessados[$agenda->frequencia_pacote]['valorPorAula'];
+        $faturamentoAvulsas = 0;
+        $aulasAvulsas = Agenda::where('personal_id', $personalId)
+            ->where('cancelado', false)
+            ->where('tipo_aula', 'avulsa')
+            ->whereMonth('data', $mes)
+            ->whereYear('data', $ano)
+            ->get();
+
+        $personal = Personal::find($personalId);
+
+        foreach ($aulasAvulsas as $agenda) {
+            $duracao = Carbon::parse($agenda->hora_inicio)
+                ->diffInMinutes(Carbon::parse($agenda->hora_fim)) / 60;
+            $faturamentoAvulsas += ($duracao * ($personal->valor_secao ?? 0));
+        }
+
+        return [
+            'pacotes' => $faturamentoPacotes,
+            'avulsas' => $faturamentoAvulsas,
+            'total' => $faturamentoPacotes + $faturamentoAvulsas,
+            'detalhes' => [
+                'quantidade_aulas_pacote' => $aulasPackote->count(),
+                'quantidade_aulas_avulsa' => $aulasAvulsas->count(),
+                'valor_secao' => $personal->valor_secao ?? 0,
+            ]
+        ];
+    }
+
+    public function finalizarAula(Request $request, $id)
+    {
+        try {
+            $aula = Agenda::findOrFail($id);
+
+            if ($aula->personal_id !== session('personal_id')) {
+                return redirect()->back()->with('error', 'Você não tem permissão para esta ação.');
             }
-        } else {
-            // ✅ CORRIGIDO: Se não é pacote, usa valor_secao (aula avulsa)
-            $personal = Personal::find($personalId);
-            $duracao = \Carbon\Carbon::parse($agenda->hora_inicio)->diffInMinutes(\Carbon\Carbon::parse($agenda->hora_fim)) / 60;
-            $faturamento += ($duracao * ($personal->valor_secao ?? 0));
+
+            $personal = Personal::find(session('personal_id'));
+            $cliente = $aula->cliente_id ? Cliente::find($aula->cliente_id) : null;
+
+            if (!$cliente) {
+                return redirect()->back()->with('error', 'Cliente não encontrado.');
+            }
+
+            $aula->update(['concluida' => true]);
+
+            if ($cliente->whatsapp) {
+                $this->notificarClienteWhatsApp(
+                    $cliente->nome,
+                    $aula->tipo_aula ?? 'aula',
+                    $cliente->whatsapp,
+                    $aula,
+                    $personal->nome
+                );
+            }
+
+            return redirect()->back()->with('success', '✅ Aula finalizada! Cliente foi notificado.');
+        } catch (\Exception $e) {
+            Log::error('Erro ao finalizar aula: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'Erro ao finalizar aula: ' . $e->getMessage());
         }
     }
 
-    return $faturamento;
-}
+    private function notificarClienteWhatsApp($nomeCliente, $tipoAula, $whatsappCliente, $aula, $nomePersonal)
+    {
+        try {
+            $apiToken = config('services.zenvia.token');
+            $from     = config('services.zenvia.from');
+
+            if (!$apiToken || !$from) {
+                Log::warning("Zenvia não configurado - notificação não enviada");
+                return;
+            }
+
+            $data = $aula->data instanceof \Carbon\Carbon ?
+                $aula->data->format('d/m/Y') :
+                \Carbon\Carbon::parse($aula->data)->format('d/m/Y');
+
+            $mensagem = "👋 Olá {$nomeCliente}!\n\n";
+            $mensagem .= "✅ Sua aula foi concluída com sucesso!\n\n";
+            $mensagem .= "👨‍🏫 Personal: {$nomePersonal}\n";
+            $mensagem .= "📅 Data: {$data}\n";
+            $mensagem .= "⏰ Horário: {$aula->hora_inicio} - {$aula->hora_fim}\n";
+
+            if ($tipoAula === 'pacote') {
+                $mensagem .= "📦 Tipo: Aula de Pacote\n";
+            } elseif ($tipoAula === 'avulsa') {
+                $mensagem .= "🎯 Tipo: Aula Avulsa\n";
+            }
+
+            $mensagem .= "\nObrigado por treinar conosco! 💪";
+
+            $phone = preg_replace('/\D/', '', $whatsappCliente);
+            if (!str_starts_with($phone, '55')) {
+                $phone = '55' . $phone;
+            }
+
+            $response = Http::withHeaders(['X-API-TOKEN' => $apiToken])
+                ->post('https://api.zenvia.com/v2/channels/whatsapp/messages', [
+                    'from'     => $from,
+                    'to'       => $phone,
+                    'contents' => [['type' => 'text', 'text' => $mensagem]],
+                ]);
+
+            Log::info('Notificação enviada ao cliente via Zenvia - id: ' . ($response->json('id') ?? 'n/a'));
+        } catch (\Exception $e) {
+            Log::error('Erro ao notificar cliente: ' . $e->getMessage());
+        }
+    }
 }
