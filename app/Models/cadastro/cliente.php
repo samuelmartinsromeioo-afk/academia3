@@ -20,6 +20,9 @@ class Cliente extends Model
         'email',
         'academia_id',
         'senha',
+        'aceita_termos',
+        'data_aceitacao_termos',
+        'ip_aceitacao_termos',
         'cep',
         'rua',
         'bairro',
@@ -32,8 +35,13 @@ class Cliente extends Model
         'sexo',
         'frequencia_semanal',
         'resumo_objetivo',
-        'condicao_clinica'
-        ];
+        'condicao_clinica',
+        'whatsapp',
+    ];
+    protected $casts = [
+        'aceita_termos' => 'boolean',
+        'data_aceitacao_termos' => 'datetime',
+    ];
 
         public function personal() {
             return $this->belongsTo(\App\Models\cadastro\Personal::class, 'personal_id');

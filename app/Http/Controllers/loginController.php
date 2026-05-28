@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\cadastro\academia as ModelsAcademia;
 use App\Models\cadastro\Cliente as ModelsCliente;
 use App\Models\cadastro\Personal as ModelsPersonal;
+use App\Models\Admin;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 
@@ -22,11 +23,8 @@ class loginController extends Controller
 
     public function store(Request $request)
     {
-        // 1. Validação Única
-        // Dica: Mudei o nome do campo de 'email' para 'login' para fazer sentido semanticamente.
-        // Certifique-se de alterar o atributo "name" no seu HTML (de name="email" para name="login").
         $validated = $request->validate([
-            'login' => 'required|string|max:255', // Removida a regra 'email'
+            'login' => 'required|string|max:255',
             'senha' => 'required|string|max:255',
         ], [
             'login.required' => 'O campo e-mail ou CNPJ é obrigatório.',
@@ -36,15 +34,30 @@ class loginController extends Controller
         $loginInput = $validated['login'];
         $senha = $validated['senha'];
 
-        // 2. Tentar PERSONAL (continua buscando por email)
+        // ✅ 0. PRIMEIRO: Tentar ADMIN (verificar antes dos outros)
+        $admin = Admin::where('email', $loginInput)->first();
+        if ($admin) {
+            if (Hash::check($senha, $admin->senha)) {
+                session(['admin_id' => $admin->id, 'admin_nome' => $admin->nome]);
+                session()->save();
+                return redirect()->route('admin.dashboard');
+            }
+        }
+
+        // ✅ 1. Tentar PERSONAL (com verificação de status de aprovação)
         $personal = ModelsPersonal::where('email', $loginInput)->first();
         if ($personal && Hash::check($senha, $personal->senha)) {
+            // ✅ NOVO: Verificar se foi aprovado
+            if ($personal->status !== 'aprovado') {
+                return back()->withErrors(['login' => '⏳ Seu cadastro ainda não foi aprovado pelo administrador. Aguarde a análise.'])->withInput();
+            }
+            
             session(['personal_id' => $personal->id]);
             session()->save();
             return redirect()->route('personal.dashboard');
         }
 
-        // 3. Tentar CLIENTE (continua buscando por email)
+        // 2. Tentar CLIENTE (continua buscando por email)
         $cliente = ModelsCliente::where('email', $loginInput)->first();
         if ($cliente && Hash::check($senha, $cliente->senha)) {
             session(['cliente_id' => $cliente->id]);
@@ -52,7 +65,7 @@ class loginController extends Controller
             return redirect()->route('cliente.index');
         }
 
-        // 4. Tentar ACADEMIA (busca por email OU cnpj)
+        // 3. Tentar ACADEMIA (busca por email OU cnpj)
         $academia = ModelsAcademia::where(function ($query) use ($loginInput) {
             $query->where('email', $loginInput)
                   ->orWhere('cnpj', $loginInput);
@@ -64,14 +77,14 @@ class loginController extends Controller
             return redirect()->route('academia.dashboard');
         }
 
-        // 5. Se não encontrou em nenhum lugar
+        // 4. Se não encontrou em nenhum lugar
         return back()->withErrors(['login' => 'E-mail, CNPJ ou senha incorretos.'])->withInput();
     }
     
     public function logout(Request $request)
     {
         // Limpa todas as possíveis sessões de login
-        session()->forget(['personal_id', 'cliente_id', 'academia_id']);
+        session()->forget(['admin_id', 'admin_nome', 'personal_id', 'cliente_id', 'academia_id']);
         return redirect()->route('login.index')->with('sucesso', 'Você saiu do sistema.');
     }
 }

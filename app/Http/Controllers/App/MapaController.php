@@ -27,6 +27,8 @@ class MapaController extends Controller
                 'tipo'      => 'academia',
                 'id'        => $a->id,
                 'nome'      => $a->nome,
+                'cidade'    => $a->cidade,
+                'estado'    => $a->estado,
                 'endereco'  => $a->endereco ?? "$a->cidade - $a->estado",
                 'info'      => 'Mensalidade: R$ ' . number_format($a->valor_mensalidade, 2, ',', '.'),
                 'latitude'  => (float) $a->latitude,
@@ -35,13 +37,16 @@ class MapaController extends Controller
 
         $personals = Personal::whereNotNull('latitude')
             ->whereNotNull('longitude')
+            ->where('status', 'aprovado')
             ->get(['id', 'nome', 'cidade', 'estado', 'valor_secao', 'foto', 'latitude', 'longitude'])
             ->map(fn($p) => [
                 'tipo'      => 'personal',
                 'id'        => $p->id,
                 'nome'      => $p->nome,
+                'cidade'    => $p->cidade,
+                'estado'    => $p->estado,
                 'endereco'  => "$p->cidade - $p->estado",
-                'info'      => 'Valor/sessão: R$ ' . number_format($p->valor_secao, 2, ',', '.'),
+                'info'      => 'Valor/sessão: R$ ' . number_format($p->valor_secao ?? 0, 2, ',', '.'),
                 'latitude'  => (float) $p->latitude,
                 'longitude' => (float) $p->longitude,
             ]);

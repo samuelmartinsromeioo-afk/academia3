@@ -169,6 +169,191 @@
         .pagination-btn:disabled { opacity: 0.5; cursor: not-allowed; }
         .pagination-btn.active { background: var(--primary); color: #000; }
         .pagination-info { color: var(--text-muted); font-size: 0.75rem; margin: 0 10px; }
+
+        /* ✅ NOVO: ESTILOS DO MODAL DE DETALHES */
+        .detalhes-personal-modal {
+            width: 95%;
+            max-width: 700px;
+            border: 1px solid var(--primary);
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .detalhes-header {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            margin-bottom: 25px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .detalhes-foto {
+            width: 100px;
+            height: 100px;
+            border-radius: 16px;
+            border: 2px solid var(--primary);
+            object-fit: cover;
+            flex-shrink: 0;
+        }
+
+        .detalhes-foto-placeholder {
+            width: 100px;
+            height: 100px;
+            border-radius: 16px;
+            border: 2px solid var(--primary);
+            background: rgba(212, 255, 0, 0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--primary);
+            font-size: 2.5rem;
+            flex-shrink: 0;
+        }
+
+        .detalhes-info-header h2 {
+            color: #fff;
+            font-size: 1.5rem;
+            margin: 0 0 5px 0;
+        }
+
+        .detalhes-info-header p {
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            margin: 0 0 10px 0;
+        }
+
+        .detalhes-avaliacao {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            background: rgba(255, 215, 0, 0.1);
+            border: 1px solid rgba(255, 215, 0, 0.3);
+            padding: 5px 12px;
+            border-radius: 20px;
+            color: gold;
+            font-size: 0.8rem;
+            font-weight: 700;
+        }
+
+        .detalhes-section {
+            margin-bottom: 25px;
+        }
+
+        .detalhes-section-title {
+            color: var(--primary);
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            font-weight: 800;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .detalhes-galeria {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+        }
+
+        .detalhes-galeria img {
+            width: 100%;
+            aspect-ratio: 1;
+            object-fit: cover;
+            border-radius: 10px;
+            border: 1px solid var(--border);
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        .detalhes-galeria img:hover {
+            border-color: var(--primary);
+            transform: scale(1.05);
+        }
+
+        .detalhes-academias {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+        }
+
+        .detalhes-academia-item {
+            background: rgba(212, 255, 0, 0.05);
+            border: 1px solid rgba(212, 255, 0, 0.2);
+            padding: 12px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .detalhes-academia-item i {
+            color: var(--primary);
+            font-size: 1rem;
+        }
+
+        .detalhes-academia-item span {
+            color: #fff;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+
+        .detalhes-resumo-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+        }
+
+        .detalhes-resumo-card {
+            background: var(--input-bg);
+            border: 1px solid var(--border);
+            padding: 15px;
+            border-radius: 12px;
+            text-align: center;
+        }
+
+        .detalhes-resumo-card i {
+            color: var(--primary);
+            font-size: 1.3rem;
+            margin-bottom: 5px;
+        }
+
+        .detalhes-resumo-card .label {
+            font-size: 0.6rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            font-weight: 700;
+            margin-bottom: 3px;
+        }
+
+        .detalhes-resumo-card .valor {
+            font-size: 1rem;
+            color: #fff;
+            font-weight: 800;
+        }
+
+        .detalhes-actions {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            padding-top: 20px;
+            border-top: 1px solid var(--border);
+            margin-top: 25px;
+        }
+
+        .detalhes-actions button {
+            margin-top: 0 !important;
+        }
+
+        @media (max-width: 600px) {
+            .detalhes-header { flex-direction: column; text-align: center; }
+            .detalhes-galeria { grid-template-columns: repeat(3, 1fr); }
+            .detalhes-academias { grid-template-columns: 1fr; }
+            .detalhes-resumo-grid { grid-template-columns: 1fr; }
+            .detalhes-actions { grid-template-columns: 1fr; }
+        }
     </style>
 </head>
 
@@ -180,6 +365,7 @@
         <div class="dropdown-menu" id="dropdownMenu">
             <button type="button" onclick="window.location.href='{{ route('cliente.index') }}'"><i class="fas fa-chart-line"></i> Menu Principal</button>
             <button type="button" onclick="toggleEditForm()"><i class="fas fa-user-edit"></i> Editar Perfil</button>
+            <button type="button" onclick="abrirHistoricoModal()"><i class="fas fa-history"></i> Ver Histórico</button>
             <button type="button" onclick="window.location.href='{{ route('mapa.index') }}'"><i class="fas fa-map-marked-alt"></i> Ver Mapa</button>
             <form action="{{ route('login.logout') }}" method="POST">
                 @csrf
@@ -213,6 +399,18 @@
         <script>
             setTimeout(() => {
                 const aviso = document.getElementById('avisoErro');
+                if (aviso) aviso.style.display = 'none';
+            }, 7000);
+        </script>
+    @endif
+
+    @if(request('payment') === 'cancelled')
+        <div id="avisoCancelado" style="background: rgba(255,68,68,0.2); border: 1px solid var(--error); color: #ff6666; padding: 15px; border-radius: 12px; margin-bottom: 20px;">
+            <i class="fas fa-times-circle"></i> Pagamento cancelado. Você pode tentar novamente quando quiser.
+        </div>
+        <script>
+            setTimeout(() => {
+                const aviso = document.getElementById('avisoCancelado');
                 if (aviso) aviso.style.display = 'none';
             }, 7000);
         </script>
@@ -301,39 +499,18 @@
     </div>
 
     <div id="dashboardSummary">
-        <div class="dashboard-grid">
-            <div class="stat-card">
-                <i class="fas fa-weight"></i>
-                <span>Peso</span>
-                <h2>{{ $cliente->peso ?? '--' }} <small style="font-size: 0.8rem;">kg</small></h2>
-            </div>
-            <div class="stat-card">
-                <i class="fas fa-ruler-vertical"></i>
-                <span>Altura</span>
-                <h2>{{ $cliente->altura ?? '--' }} <small style="font-size: 0.8rem;">cm</small></h2>
-            </div>
-            <div class="stat-card">
-                <i class="fas fa-fire"></i>
-                <span>Status</span>
-                <h2 style="font-size: 1.1rem; color: var(--primary);">
-                    @if($cliente->academia_id)
-                        Com Academia
-                    @elseif(\App\Models\Agenda::where('cliente_id', $cliente->id)->where('cancelado', false)->exists())
-                        Personal Ativo
-                    @else
-                        Sem Treinos
-                    @endif
-                </h2>
-            </div>
-        </div>
-
         {{-- AGENDA COM PAGINAÇÃO --}}
         <div class="section-title">Minha Agenda de Treinos</div>
         <div id="agendaContainer">
-            @if($meusAgendamentos->count() > 0)
-                {{-- Dados para JavaScript --}}
+            @php
+                $inicioSemana = now()->startOfWeek()->format('Y-m-d');
+                $fimSemana = now()->endOfWeek()->format('Y-m-d');
+                $agendadasSemana = $meusAgendamentos->whereBetween('data', [$inicioSemana, $fimSemana])->values();
+            @endphp
+            
+            @if($agendadasSemana->count() > 0)
                 <script>
-                    window.agendamentosData = {!! json_encode($meusAgendamentos->map(function($a) {
+                    window.agendamentosData = {!! json_encode($agendadasSemana->map(function($a) {
                         return [
                             'personal' => $a->personal->nome ?? 'N/A',
                             'data' => \Carbon\Carbon::parse($a->data)->format('d/m/Y'),
@@ -342,11 +519,8 @@
                     })) !!};
                 </script>
                 
-                <div id="agendaItems" style="min-height: 250px;">
-                    {{-- Preenchido via JavaScript --}}
-                </div>
+                <div id="agendaItems" style="min-height: 250px;"></div>
 
-                {{-- Paginação --}}
                 <div class="pagination-container">
                     <button class="pagination-btn" onclick="irParaPaginaAgenda(1)" id="btnPrimeira">
                         <i class="fas fa-angle-double-left"></i>
@@ -365,7 +539,7 @@
                 </div>
             @else
                 <div class="stat-card" style="padding: 20px; border-style: dashed;">
-                    <p style="color: var(--text-muted); margin: 0; font-size: 0.85rem;">Você não possui treinos agendados.</p>
+                    <p style="color: var(--text-muted); margin: 0; font-size: 0.85rem;">Você não possui treinos agendados para esta semana.</p>
                 </div>
             @endif
         </div>
@@ -405,33 +579,27 @@
 
                 @if($p->fotos && $p->fotos->count() > 0)
                 <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; margin-top: 12px;">
-                    @foreach($p->fotos->take(3) as $foto)
+                    @foreach($p->fotos->take(6) as $foto)
                     <img src="{{ asset('storage/' . $foto->path) }}"
-                         onclick="abrirGaleria('personal', {{ $p->id }})"
+                         onclick="abrirDetalhesPersonal({{ $p->id }})"
                          style="width:100%; aspect-ratio:1; object-fit:cover; border-radius:8px; border:1px solid var(--border); cursor:pointer; transition:0.2s;"
                          onmouseover="this.style.borderColor='var(--primary)'"
-                         onmouseout="this.style.borderColor='var(--border)'">
+                         onmouseout="this.style.borderColor='var(--border)'"
+                         title="{{ $foto->legenda }}">
                     @endforeach
                 </div>
-                @if($p->fotos->count() > 3)
-                <p style="font-size:0.7rem; color:var(--text-muted); margin:5px 0 0; text-align:center;">
-                    +{{ $p->fotos->count() - 3 }} fotos
+                @if($p->fotos->count() > 6)
+                <p style="font-size:0.7rem; color:var(--text-muted); margin:5px 0 0; text-align:center; cursor:pointer;"
+                   onclick="abrirDetalhesPersonal({{ $p->id }})">
+                    +{{ $p->fotos->count() - 6 }} fotos — ver todas
                 </p>
                 @endif
                 @endif
 
-                <div style="display: flex; gap: 8px; margin-top: 15px;">
-                    @if($p->fotos && $p->fotos->count() > 0)
-                    <button onclick="abrirGaleria('personal', {{ $p->id }})" class="btn-action btn-outline" style="padding: 10px; font-size: 0.7rem; margin-top: 0; width: 100%;">
-                        <i class="fas fa-images"></i> Fotos
-                    </button>
-                    @endif
-                    <button onclick="abrirAgenda('{{ $p->id }}', '{{ $p->nome }}')" class="btn-action btn-outline" style="padding: 10px; font-size: 0.7rem; margin-top: 0; width: 100%;">
-                        <i class="fas fa-calendar-check"></i> Aulas Avulsas
-                    </button>
-                    {{-- BOTÃO DE CONTRATAÇÃO DE PACOTE --}}
-                    <button onclick="abrirPacoteModal({{ $p->id }}, '{{ addslashes($p->nome) }}')" class="btn-action btn-outline" style="padding: 10px; font-size: 0.7rem; margin-top: 0; width: 100%;">
-                        <i class="fas fa-calendar-check"></i> Pacotes
+                {{-- ✅ BOTÃO: VER DETALHES --}}
+                <div style="text-align: center; margin-top: 12px;">
+                    <button onclick="abrirDetalhesPersonal({{ $p->id }})" class="btn-action" style="padding: 8px 16px; font-size: 0.65rem; margin-top: 0; width: auto; display: inline-flex; align-items: center; justify-content: center; gap: 6px;">
+                        <i class="fas fa-eye"></i> Ver Detalhes
                     </button>
                 </div>
             </div>
@@ -494,41 +662,69 @@
                 <p style="color: var(--text-muted); text-align: center;">Nenhuma academia disponível no momento.</p>
             @endforelse
         </div>
+    </div>
+</div>
 
-        {{-- HISTÓRICO --}}
-        <div class="section-title">Histórico de Treinos</div>
-        @forelse($historico as $treino)
-            <div class="list-item" style="border-left-color: var(--text-muted); opacity: 0.8;">
-                <div>
-                    <strong style="display: block; font-size: 1rem;">
-                        {{ $treino->personal->nome ?? 'Personal não encontrado' }}
-                    </strong>
-                    <span style="color: var(--text-muted); font-size: 0.8rem;">
-                        <i class="far fa-calendar-alt"></i>
-                        {{ \Carbon\Carbon::parse($treino->data)->format('d/m/Y') }}
-                        às {{ \Carbon\Carbon::parse($treino->hora_inicio)->format('H:i') }}
-                    </span>
-                    @if($treino->academia)
-                    <span style="display: block; color: var(--text-muted); font-size: 0.75rem; margin-top: 3px;">
-                        <i class="fas fa-dumbbell"></i> {{ $treino->academia->nome }}
-                    </span>
-                    @endif
-                </div>
-                <div style="text-align: right;">
-                    <div class="badge-status" style="background: rgba(160,160,160,0.1); color: var(--text-muted);">Concluído</div>
-                    <div style="font-size: 0.7rem; color: var(--text-muted); margin-top: 5px;">
-                        {{ \Carbon\Carbon::parse($treino->hora_inicio)->format('H:i') }} -
-                        {{ \Carbon\Carbon::parse($treino->hora_fim)->format('H:i') }}
-                    </div>
-                </div>
+{{-- ✅ NOVO: MODAL DE DETALHES DO PERSONAL --}}
+<div id="detalhesPersonalModal" class="modal-overlay">
+    <div class="profile-card detalhes-personal-modal">
+        <i class="fas fa-times close-form" onclick="fecharDetalhesPersonal()"></i>
+        
+        {{-- HEADER COM FOTO E NOME --}}
+        <div class="detalhes-header" id="detalhesHeader">
+            {{-- Preenchido via JavaScript --}}
+        </div>
+
+        {{-- GALERIA DE FOTOS --}}
+        <div class="detalhes-section" id="detalhesGaleriaSection" style="display: none;">
+            <div class="detalhes-section-title">
+                <i class="fas fa-images"></i> Galeria de Fotos
             </div>
-        @empty
-            <div class="stat-card" style="padding: 20px; border-style: dashed;">
-                <p style="color: var(--text-muted); margin: 0; font-size: 0.85rem;">
-                    <i class="fas fa-history"></i> Nenhum treino realizado ainda.
-                </p>
+            <div class="detalhes-galeria" id="detalhesGaleria">
+                {{-- Preenchido via JavaScript --}}
             </div>
-        @endforelse
+        </div>
+
+        {{-- ACADEMIAS ONDE ATUA --}}
+        <div class="detalhes-section" id="detalhesAcademiasSection" style="display: none;">
+            <div class="detalhes-section-title">
+                <i class="fas fa-building"></i> Academias onde atua
+            </div>
+            <div class="detalhes-academias" id="detalhesAcademias">
+                {{-- Preenchido via JavaScript --}}
+            </div>
+        </div>
+
+        {{-- RESUMO --}}
+        <div class="detalhes-section">
+            <div class="detalhes-section-title">
+                <i class="fas fa-chart-bar"></i> Resumo
+            </div>
+            <div class="detalhes-resumo-grid" id="detalhesResumo">
+                {{-- Preenchido via JavaScript --}}
+            </div>
+        </div>
+
+        {{-- AÇÕES: AULA AVULSA E PACOTE --}}
+        <div class="detalhes-actions">
+            <button onclick="abrirAgendaDoDetalhes()" class="btn-action btn-outline">
+                <i class="fas fa-calendar-day"></i> Aula Avulsa
+            </button>
+            <button onclick="abrirPacoteDoDetalhes()" class="btn-action">
+                <i class="fas fa-calendar-week"></i> Contratar Pacote
+            </button>
+        </div>
+    </div>
+</div>
+
+{{-- MODAL DE HISTÓRICO COMPLETO --}}
+<div id="historicoModal" class="modal-overlay">
+    <div class="profile-card" style="width: 90%; max-width: 600px; border: 1px solid var(--primary); max-height: 90vh; overflow-y: auto;">
+        <i class="fas fa-times close-form" onclick="fecharHistoricoModal()"></i>
+        <h2 style="color: var(--primary); margin-bottom: 5px;">Histórico Completo de Treinos</h2>
+        <p style="color: var(--text-muted); font-size: 0.8rem; margin-bottom: 20px;">Todos os treinos realizados</p>
+        
+        <div id="listaHistoricoCompleto"></div>
     </div>
 </div>
 
@@ -538,7 +734,6 @@
         <i class="fas fa-times close-form" onclick="fecharAvaliacao()"></i>
         <h2 id="nomePersonalAvaliacao" style="color: var(--primary); margin-bottom: 5px;">Avaliar Personal</h2>
         
-        {{-- ✅ MENSAGEM DE AVISO --}}
         <div id="avisoAvaliacao" style="background: rgba(255, 68, 68, 0.1); border: 1px solid rgba(255, 68, 68, 0.3); color: #ff6666; padding: 15px; border-radius: 12px; margin-bottom: 20px; font-size: 0.8rem; text-align: center; display: none;">
             <i class="fas fa-exclamation-circle"></i> 
             Você só pode avaliar após realizar uma aula com este personal.
@@ -618,7 +813,7 @@
     </div>
 </div>
 
-{{-- MODAL CONTRATAÇÃO DE PACOTE COM CALENDÁRIO E HORÁRIOS --}}
+{{-- MODAL CONTRATAÇÃO DE PACOTE --}}
 <div id="pacoteModal" class="modal-overlay">
     <div class="profile-card" style="width: 95%; max-width: 800px; border: 1px solid var(--primary); max-height: 90vh; overflow-y: auto;">
         <i class="fas fa-times close-form" onclick="fecharPacoteModal()"></i>
@@ -629,15 +824,12 @@
         </p>
 
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
-            {{-- COLUNA ESQUERDA: PACOTES E SELEÇÃO --}}
             <div>
                 <label style="display: block; margin-bottom: 15px;">
                     <span style="color: var(--primary); font-weight: 900; text-transform: uppercase; font-size: 0.7rem;">Frequência Semanal</span>
                 </label>
                 
-                <div id="listaPacotes" style="display: flex; flex-direction: column; gap: 10px; max-height: 150px; overflow-y: auto; padding-right: 10px; margin-bottom: 20px;">
-                    <!-- Preenchido via JavaScript -->
-                </div>
+                <div id="listaPacotes" style="display: flex; flex-direction: column; gap: 10px; max-height: 150px; overflow-y: auto; padding-right: 10px; margin-bottom: 20px;"></div>
 
                 <div style="background: rgba(212, 255, 0, 0.05); padding: 12px; border-radius: 10px; border: 1px solid var(--border); margin-bottom: 20px;">
                     <p style="margin: 0 0 8px 0; font-size: 0.75rem; color: var(--text-muted);">
@@ -656,14 +848,14 @@
                     <input type="hidden" id="pacote_dias" name="dias_selecionados" value="[]">
                     <input type="hidden" id="pacote_hora_inicio" name="hora_inicio" value="">
                     <input type="hidden" id="pacote_hora_fim" name="hora_fim" value="">
-                    
+                    <input type="hidden" id="pacote_id" name="pacote_id" value="">
+
                     <button type="submit" class="btn-action" style="margin-top: 0;" id="btnConfirmarContratacao" disabled>
                         <i class="fas fa-check-circle"></i> Confirmar Contratação
                     </button>
                 </form>
             </div>
 
-            {{-- COLUNA DIREITA: CALENDÁRIO --}}
             <div>
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
                     <button type="button" onclick="mesAnterior()" class="btn-action btn-outline" style="padding: 8px 12px; margin: 0; width: auto; font-size: 0.7rem;">
@@ -677,7 +869,6 @@
                     </button>
                 </div>
 
-                {{-- Dias da semana --}}
                 <div style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; margin-bottom: 10px; text-align: center;">
                     @foreach(['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'] as $dia)
                         <div style="color: var(--primary); font-weight: 700; font-size: 0.65rem; padding: 8px 0;">
@@ -686,10 +877,7 @@
                     @endforeach
                 </div>
 
-                {{-- Calendário --}}
-                <div id="calendarGrid" style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; max-height: 280px; overflow-y: auto;">
-                    <!-- Preenchido via JavaScript -->
-                </div>
+                <div id="calendarGrid" style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; max-height: 280px; overflow-y: auto;"></div>
 
                 <p id="diasSelecionados" style="color: var(--text-muted); font-size: 0.75rem; margin-top: 15px; text-align: center;">
                     Clique nos dias para selecionar
@@ -705,9 +893,7 @@
         <i class="fas fa-times close-form" onclick="fecharHorarioModal()"></i>
         <h2 style="color: var(--primary); margin-bottom: 5px;" id="tituloHorarioModal">Selecione um Horário</h2>
         <p style="color: var(--text-muted); font-size: 0.8rem; margin-bottom: 20px;">Escolha o horário desejado para este dia</p>
-        <div id="listaHorariosDisp" style="max-height: 400px; overflow-y: auto;">
-            <!-- Preenchido via JavaScript -->
-        </div>
+        <div id="listaHorariosDisp" style="max-height: 400px; overflow-y: auto;"></div>
     </div>
 </div>
 
@@ -726,6 +912,163 @@
 </div>
 
 <script>
+    // ============ DADOS DOS PERSONALS ============
+    window.personalsData = {
+        @foreach($personals as $p)
+        {{ $p->id }}: {
+            id: {{ $p->id }},
+            nome: '{{ addslashes($p->nome) }}',
+            foto: '{{ $p->foto ? asset("storage/" . $p->foto) : "" }}',
+            avaliacao: '{{ $p->media_avaliacao }}',
+            valor_secao: {{ $p->valor_secao ?? 0 }},
+            academias: '{{ addslashes($p->academias ?? "") }}',
+            fotos: [
+                @foreach($p->fotos ?? [] as $foto)
+                { url: '{{ asset("storage/" . $foto->path) }}', legenda: '{{ addslashes($foto->legenda ?? "") }}' },
+                @endforeach
+            ],
+            total_avaliacoes: {{ $p->avaliacoes->count() ?? 0 }}
+        },
+        @endforeach
+    };
+
+    let personalSelecionadoId = null;
+
+    // ============ MODAL DE DETALHES DO PERSONAL ============
+    function abrirDetalhesPersonal(personalId) {
+        const personal = window.personalsData[personalId];
+        if (!personal) return;
+
+        personalSelecionadoId = personalId;
+
+        // HEADER
+        const fotoHTML = personal.foto 
+            ? `<img src="${personal.foto}" alt="${personal.nome}" class="detalhes-foto">`
+            : `<div class="detalhes-foto-placeholder"><i class="fas fa-user"></i></div>`;
+
+        document.getElementById('detalhesHeader').innerHTML = `
+            ${fotoHTML}
+            <div class="detalhes-info-header">
+                <h2>${personal.nome}</h2>
+                <p>Personal Trainer Certificado</p>
+                <div class="detalhes-avaliacao">
+                    <i class="fas fa-star"></i> ${personal.avaliacao} 
+                    <span style="color: var(--text-muted); font-size: 0.7rem;">(${personal.total_avaliacoes} avaliações)</span>
+                </div>
+            </div>
+        `;
+
+        // GALERIA DE FOTOS
+        if (personal.fotos && personal.fotos.length > 0) {
+            document.getElementById('detalhesGaleriaSection').style.display = 'block';
+            document.getElementById('detalhesGaleria').innerHTML = personal.fotos.map(f => `
+                <img src="${f.url}" alt="Foto" onclick="abrirLightbox('${f.url}')">
+            `).join('');
+        } else {
+            document.getElementById('detalhesGaleriaSection').style.display = 'none';
+        }
+
+        // ACADEMIAS
+        if (personal.academias && personal.academias.trim()) {
+            document.getElementById('detalhesAcademiasSection').style.display = 'block';
+            const academiasArray = personal.academias.split('\n').filter(a => a.trim());
+            document.getElementById('detalhesAcademias').innerHTML = academiasArray.map(a => `
+                <div class="detalhes-academia-item">
+                    <i class="fas fa-building"></i>
+                    <span>${a.trim()}</span>
+                </div>
+            `).join('');
+        } else {
+            document.getElementById('detalhesAcademiasSection').style.display = 'none';
+        }
+
+        // RESUMO
+        const pacotes = window.pacotesPorPersonal?.[personalId] || [];
+        const menorPacote = pacotes.length > 0 ? Math.min(...pacotes.map(p => p.valor_mensal)) : 0;
+
+        document.getElementById('detalhesResumo').innerHTML = `
+            <div class="detalhes-resumo-card">
+                <i class="fas fa-dollar-sign"></i>
+                <div class="label">Aula Avulsa</div>
+                <div class="valor">R$ ${parseFloat(personal.valor_secao).toFixed(2).replace('.', ',')}</div>
+            </div>
+            <div class="detalhes-resumo-card">
+                <i class="fas fa-box"></i>
+                <div class="label">Pacote a partir de</div>
+                <div class="valor">${menorPacote > 0 ? 'R$ ' + parseFloat(menorPacote).toFixed(2).replace('.', ',') : '-'}</div>
+            </div>
+            <div class="detalhes-resumo-card">
+                <i class="fas fa-images"></i>
+                <div class="label">Fotos</div>
+                <div class="valor">${personal.fotos.length}</div>
+            </div>
+        `;
+
+        document.getElementById('detalhesPersonalModal').style.display = 'flex';
+    }
+
+    function fecharDetalhesPersonal() {
+        document.getElementById('detalhesPersonalModal').style.display = 'none';
+    }
+
+    function abrirAgendaDoDetalhes() {
+        const personal = window.personalsData[personalSelecionadoId];
+        fecharDetalhesPersonal();
+        abrirAgenda(personalSelecionadoId, personal.nome);
+    }
+
+    function abrirPacoteDoDetalhes() {
+        const personal = window.personalsData[personalSelecionadoId];
+        fecharDetalhesPersonal();
+        abrirPacoteModal(personalSelecionadoId, personal.nome);
+    }
+
+    // ============ HISTÓRICO ============
+    window.historicoData = {!! json_encode($historico->map(function($t) {
+        return [
+            'personal' => $t->personal->nome ?? 'N/A',
+            'academia' => $t->academia ? $t->academia->nome : null,
+            'data' => \Carbon\Carbon::parse($t->data)->format('d/m/Y'),
+            'hora_inicio' => \Carbon\Carbon::parse($t->hora_inicio)->format('H:i'),
+            'hora_fim' => \Carbon\Carbon::parse($t->hora_fim)->format('H:i')
+        ];
+    })) !!};
+
+    function abrirHistoricoModal() {
+        const container = document.getElementById('listaHistoricoCompleto');
+        
+        if (window.historicoData.length === 0) {
+            container.innerHTML = '<div class="stat-card" style="padding: 20px; border-style: dashed;"><p style="color: var(--text-muted); margin: 0; font-size: 0.85rem;"><i class="fas fa-history"></i> Nenhum treino realizado ainda.</p></div>';
+        } else {
+            container.innerHTML = window.historicoData.map(treino => `
+                <div class="list-item" style="border-left-color: var(--text-muted); opacity: 0.8; flex-direction: column; align-items: flex-start; gap: 10px;">
+                    <div style="width: 100%;">
+                        <strong style="display: block; font-size: 1rem; color: #fff;">
+                            ${treino.personal}
+                        </strong>
+                        <span style="color: var(--text-muted); font-size: 0.8rem;">
+                            <i class="far fa-calendar-alt"></i> ${treino.data}
+                            às ${treino.hora_inicio}
+                        </span>
+                        ${treino.academia ? `<span style="display: block; color: var(--text-muted); font-size: 0.75rem; margin-top: 3px;"><i class="fas fa-dumbbell"></i> ${treino.academia}</span>` : ''}
+                    </div>
+                    <div style="width: 100%; text-align: right;">
+                        <div class="badge-status" style="background: rgba(160,160,160,0.1); color: var(--text-muted); display: inline-block;">Concluído</div>
+                        <div style="font-size: 0.7rem; color: var(--text-muted); margin-top: 5px;">
+                            ${treino.hora_inicio} - ${treino.hora_fim}
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+        
+        document.getElementById('historicoModal').style.display = 'flex';
+    }
+
+    function fecharHistoricoModal() {
+        document.getElementById('historicoModal').style.display = 'none';
+    }
+
     // ============ PAGINAÇÃO DA AGENDA ============
     let paginaAtualAgenda = 1;
     const itensPorPagina = 5;
@@ -773,7 +1116,6 @@
         document.getElementById('btnPrimeira').disabled = paginaAtualAgenda === 1;
         document.getElementById('btnUltima').disabled = paginaAtualAgenda === totalPaginasAgenda;
 
-        // Gera botões de página
         const container = document.getElementById('paginasBotoes');
         let botoesHTML = '';
         for (let i = 1; i <= totalPaginasAgenda; i++) {
@@ -796,7 +1138,7 @@
         exibirPaginaAgenda(paginaAtualAgenda + 1);
     }
 
-    // ============ DADOS GLOBAIS ============
+    // ============ DADOS GLOBAIS DE PACOTES ============
     window.pacotesPorPersonal = {
         @foreach($personals as $p)
         {{ $p->id }}: [
@@ -805,6 +1147,7 @@
             @endphp
             @foreach($pacotesPersonal as $pacote)
             {
+                id: {{ $pacote->id }},
                 frequencia: {{ $pacote->frequencia }},
                 valor_mensal: {{ $pacote->valor_mensal }}
             },
@@ -842,7 +1185,6 @@
     let horaFim = null;
     let diaEmSelecao = null;
 
-    // ============ FUNÇÕES DO MODAL DE PACOTES ============
     function abrirPacoteModal(personalId, personalNome) {
         document.getElementById('nomePacotePersonal').innerText = 'Contratar Pacote - ' + personalNome;
         document.getElementById('pacote_personal_id').value = personalId;
@@ -874,20 +1216,21 @@
         }
 
         container.innerHTML = pacotesData.map((pacote, idx) => `
-            <div class="pacote-item" onclick="selecionarPacote(${pacote.frequencia}, ${pacote.valor_mensal}, ${idx})">
+            <div class="pacote-item" onclick="selecionarPacote(${pacote.frequencia}, ${pacote.valor_mensal}, ${idx}, ${pacote.id || 0})">
                 <span class="pacote-freq">${pacote.frequencia}x na semana</span>
                 <span class="pacote-valor">R$ ${(pacote.valor_mensal).toFixed(2).replace('.', ',')}</span>
             </div>
         `).join('');
     }
 
-    function selecionarPacote(frequencia, valor, idx) {
+    function selecionarPacote(frequencia, valor, idx, pacoteId) {
         document.querySelectorAll('.pacote-item').forEach(el => el.classList.remove('selecionado'));
         document.querySelectorAll('.pacote-item')[idx].classList.add('selecionado');
-        
-        pacoteSelecionado = { frequencia, valor };
+
+        pacoteSelecionado = { id: pacoteId, frequencia, valor };
         document.getElementById('pacote_frequencia').value = frequencia;
         document.getElementById('pacote_valor').value = valor;
+        document.getElementById('pacote_id').value = pacoteId;
 
         diasSelecionados = [];
         horaInicio = null;
@@ -1054,7 +1397,7 @@
         atualizarCalendario();
     }
 
-    // ============ RESTO DO SCRIPT ORIGINAL ============
+    // ============ FUNÇÕES GERAIS ============
     function toggleEditForm() {
         const summary = document.getElementById('dashboardSummary');
         const form    = document.getElementById('editFormContainer');
@@ -1133,12 +1476,10 @@
     function abrirLightbox(url) { document.getElementById('lightboxImg').src = url; document.getElementById('lightbox').style.display = 'flex'; }
     function fecharLightbox() { document.getElementById('lightbox').style.display = 'none'; }
 
-    // ✅ FUNÇÃO MELHORADA DE AVALIAÇÃO COM VALIDAÇÃO
     function abrirAvaliacao(id, nome) {
         document.getElementById('nomePersonalAvaliacao').innerText = 'Avaliar ' + nome;
         document.getElementById('personal_id_avaliacao').value = id;
         
-        // ✅ VERIFICA SE PODE AVALIAR
         fetch(`/cliente/pode-avaliar/${id}`)
             .then(r => r.json())
             .then(data => {
@@ -1152,11 +1493,10 @@
                     avisoDiv.style.display = 'block';
                     formDiv.style.display = 'none';
                     
-                    // ✅ ESCONDE O AVISO APÓS 7 SEGUNDOS
                     setTimeout(() => {
                         avisoDiv.style.display = 'none';
                         formDiv.style.display = 'block';
-                    }, 7000); // 7 segundos = 7000 milissegundos
+                    }, 7000);
                 }
                 
                 document.getElementById('avaliacaoModal').style.display = 'flex';
@@ -1177,6 +1517,8 @@
         if (e.target.id === 'horarioModal') fecharHorarioModal();
         if (e.target.id === 'modalGaleriaView') fecharGaleria();
         if (e.target.id === 'avaliacaoModal') fecharAvaliacao();
+        if (e.target.id === 'historicoModal') fecharHistoricoModal();
+        if (e.target.id === 'detalhesPersonalModal') fecharDetalhesPersonal();
         if (!e.target.closest('.menu-container')) document.getElementById('dropdownMenu').style.display = 'none';
     }
 
@@ -1186,8 +1528,113 @@
         }
     }
 
-    // Inicializa paginação ao carregar
     document.addEventListener('DOMContentLoaded', inicializarPaginacaoAgenda);
+
+    // ============ FLUXO DE PAGAMENTO PIX (Asaas) ============
+    let pixPollingInterval = null;
+
+    document.getElementById('formContratacao').addEventListener('submit', async function (e) {
+        e.preventDefault();
+
+        const btn = document.getElementById('btnConfirmarContratacao');
+        const originalHTML = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Gerando Pix...';
+
+        const payload = {
+            tipo:              'pacote',
+            personal_id:       document.getElementById('pacote_personal_id').value,
+            pacote_id:         document.getElementById('pacote_id').value,
+            frequencia:        document.getElementById('pacote_frequencia').value,
+            valor_pacote:      document.getElementById('pacote_valor').value,
+            dias_selecionados: document.getElementById('pacote_dias').value,
+            hora_inicio:       document.getElementById('pacote_hora_inicio').value,
+            hora_fim:          document.getElementById('pacote_hora_fim').value,
+        };
+
+        try {
+            const response = await fetch('/api/criar-pagamento', {
+                method:  'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}' },
+                body: JSON.stringify(payload),
+            });
+
+            const data = await response.json();
+            if (!response.ok) throw new Error(data.error || 'Erro ao gerar pagamento.');
+
+            // Exibe modal Pix
+            document.getElementById('pixQrCodeImg').src = data.pixQrCode;
+            document.getElementById('pixCopiaCola').value = data.pixPayload;
+            document.getElementById('pixValor').textContent = 'R$ ' + parseFloat(data.amount).toFixed(2).replace('.', ',');
+            document.getElementById('modalPix').style.display = 'flex';
+
+            // Inicia polling
+            pixPollingInterval = setInterval(async () => {
+                try {
+                    const statusRes  = await fetch('/api/pagamento/status/' + data.asaasPaymentId, {
+                        headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}' }
+                    });
+                    const statusData = await statusRes.json();
+                    if (statusData.confirmed) {
+                        clearInterval(pixPollingInterval);
+                        document.getElementById('pixStatusMsg').textContent  = '✅ Pagamento confirmado!';
+                        document.getElementById('pixStatusMsg').style.color  = 'var(--success)';
+                        document.getElementById('pixStatusMsg').style.display = 'block';
+                        setTimeout(() => { window.location.href = '/pagamento/sucesso'; }, 2000);
+                    }
+                } catch (_) {}
+            }, 4000);
+
+        } catch (error) {
+            alert('Erro ao iniciar pagamento: ' + error.message);
+            btn.disabled = false;
+            btn.innerHTML = originalHTML;
+            atualizarBotao();
+        }
+    });
+
+    function fecharModalPix() {
+        document.getElementById('modalPix').style.display = 'none';
+        clearInterval(pixPollingInterval);
+    }
+
+    function copiarPixCola() {
+        const input = document.getElementById('pixCopiaCola');
+        input.select();
+        document.execCommand('copy');
+        const btn = document.getElementById('btnCopiarPix');
+        btn.textContent = 'Copiado!';
+        setTimeout(() => { btn.textContent = 'Copiar código'; }, 2500);
+    }
 </script>
+
+{{-- MODAL PIX (Asaas) --}}
+<div id="modalPix" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.88); z-index:99999; flex-direction:column; justify-content:center; align-items:center; backdrop-filter:blur(6px); padding:20px;">
+    <div style="background:#16181d; border:1px solid rgba(255,255,255,0.08); border-radius:20px; padding:32px; max-width:420px; width:100%; text-align:center; position:relative;">
+        <button onclick="fecharModalPix()" style="position:absolute; top:16px; right:16px; background:none; border:none; color:#a0a0a0; font-size:1.2rem; cursor:pointer;">✕</button>
+
+        <h3 style="color:var(--primary); font-size:1.1rem; font-weight:900; margin:0 0 4px;">PAGAMENTO VIA PIX</h3>
+        <p id="pixValor" style="color:#fff; font-size:1.5rem; font-weight:700; margin:0 0 20px;"></p>
+
+        <img id="pixQrCodeImg" src="" alt="QR Code Pix" style="width:200px; height:200px; border-radius:12px; background:#fff; padding:8px; margin-bottom:16px;">
+
+        <p style="color:#a0a0a0; font-size:0.8rem; margin:0 0 8px;">Ou copie o código Pix:</p>
+        <div style="display:flex; gap:8px; margin-bottom:16px;">
+            <input id="pixCopiaCola" type="text" readonly style="flex:1; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); border-radius:8px; padding:8px 12px; color:#fff; font-size:0.75rem; outline:none;">
+            <button id="btnCopiarPix" onclick="copiarPixCola()" style="background:var(--primary); color:#000; border:none; border-radius:8px; padding:8px 14px; font-weight:700; font-size:0.8rem; cursor:pointer; white-space:nowrap;">Copiar código</button>
+        </div>
+
+        <div style="display:flex; align-items:center; gap:8px; justify-content:center; color:#a0a0a0; font-size:0.8rem; margin-bottom:12px;">
+            <div style="width:10px; height:10px; border:2px solid rgba(212,255,0,0.3); border-top-color:var(--primary); border-radius:50%; animation:spinPix 1s linear infinite;"></div>
+            Aguardando confirmação do pagamento...
+        </div>
+
+        <p id="pixStatusMsg" style="display:none; font-weight:700; font-size:0.9rem; margin:0;"></p>
+    </div>
+</div>
+<style>
+    @@keyframes spinPix { to { transform: rotate(360deg); } }
+</style>
+
 </body>
 </html>

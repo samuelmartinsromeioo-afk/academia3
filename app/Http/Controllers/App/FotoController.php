@@ -11,28 +11,40 @@ use Illuminate\Support\Facades\Storage;
 
 class FotoController extends Controller
 {
-    // Upload de foto para personal
+    // Upload de foto para personal (responde JSON para AJAX)
     public function storePersonal(Request $request)
     {
         $request->validate([
-            'foto' => 'required|image|mimes:jpeg,png,jpg,gif|max:2048',
+            'foto'    => 'required|image|mimes:jpeg,png,jpg,gif,webp|max:5120',
             'legenda' => 'nullable|string|max:255',
         ]);
 
         $personal = Personal::findOrFail(session('personal_id'));
 
-        if ($personal->fotos()->count() >= 5) {
-            return redirect()->back()->with('error', 'Limite de 5 fotos atingido. Remova uma antes de adicionar outra.');
+        if ($personal->fotos()->count() >= 9) {
+            return response()->json(['erro' => 'Limite de 9 fotos atingido.'], 422);
         }
 
         $path = $request->file('foto')->store('galeria/personals', 'public');
 
-        $personal->fotos()->create([
+        if (!$path) {
+            return response()->json(['erro' => 'Falha ao salvar o arquivo. Verifique as permissões do servidor.'], 500);
+        }
+
+        $foto = $personal->fotos()->create([
             'path'    => $path,
             'legenda' => $request->legenda,
         ]);
 
-        return redirect()->back()->with('success', 'Foto adicionada com sucesso!');
+        return response()->json([
+            'sucesso' => true,
+            'foto' => [
+                'id'      => $foto->id,
+                'url'     => asset('storage/' . $path),
+                'legenda' => $foto->legenda,
+            ],
+            'total' => $personal->fotos()->count(),
+        ]);
     }
 
     // Upload de foto para academia
@@ -59,12 +71,11 @@ class FotoController extends Controller
         return redirect()->back()->with('success', 'Foto adicionada com sucesso!');
     }
 
-    // Delete de foto (serve para personal e academia)
+    // Delete de foto — responde JSON para AJAX
     public function destroy($id)
     {
         $foto = Foto::findOrFail($id);
 
-        // Garante que só o dono pode deletar
         $personalId = session('personal_id');
         $academiaId = session('academia_id');
 
@@ -72,12 +83,12 @@ class FotoController extends Controller
                || ($academiaId && $foto->fotavel_type === 'App\\Models\\cadastro\\academia' && $foto->fotavel_id == $academiaId);
 
         if (!$ehDono) {
-            return redirect()->back()->with('error', 'Ação não permitida.');
+            return response()->json(['erro' => 'Ação não permitida.'], 403);
         }
 
         Storage::disk('public')->delete($foto->path);
         $foto->delete();
 
-        return redirect()->back()->with('success', 'Foto removida com sucesso!');
+        return response()->json(['sucesso' => true]);
     }
 }

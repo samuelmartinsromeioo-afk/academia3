@@ -30,5 +30,27 @@ return [
         'secret' => env('AWS_SECRET_ACCESS_KEY'),
         'region' => env('AWS_DEFAULT_REGION', 'us-east-1'),
     ],
+    
+    'zenvia' => [
+        'token'             => env('ZENVIA_API_TOKEN'),
+        'from'              => env('ZENVIA_FROM'),
+        'template_lembrete' => env('ZENVIA_TEMPLATE_LEMBRETE'),
+    ],
+
+    'stripe' => [
+        'key'            => env('STRIPE_PUBLIC_KEY'),
+        'secret'         => env('STRIPE_SECRET_KEY'),
+        'webhook_secret' => env('STRIPE_WEBHOOK_SECRET'),
+    ],
+
+    'admin' => [
+        'email' => env('ADMIN_EMAIL'),
+    ],
+
+    'asaas' => [
+        'key'            => env('ASAAS_API_KEY'),
+        'url'            => env('ASAAS_URL', 'https://sandbox.asaas.com/api/v3'),
+        'webhook_token'  => env('ASAAS_WEBHOOK_TOKEN'),
+    ],
 
 ];

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cadastro Cliente | FIT SYS</title>
+    <title>Cadastro Cliente | NR Fit</title>
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Syncopate:wght@700&family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
@@ -133,23 +133,71 @@
 
         .loading-text { font-size: 0.7rem; color: var(--primary); display: none; margin-top: 4px; }
 
+        /* ✅ NOVO: ESTILOS DO CHECKBOX DE TERMOS */
+        .terms-section {
+            grid-column: span 2;
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            margin: 25px 0;
+            padding: 15px;
+            background: rgba(212, 255, 0, 0.03);
+            border: 1px solid rgba(212, 255, 0, 0.2);
+            border-radius: 12px;
+        }
+
+        .terms-section input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            min-width: 20px;
+            margin-top: 2px;
+            cursor: pointer;
+            accent-color: var(--primary);
+        }
+
+        .terms-section label {
+            margin: 0;
+            font-size: 0.85rem;
+            color: var(--text-main);
+            text-transform: none;
+            font-weight: 400;
+            letter-spacing: normal;
+            line-height: 1.5;
+            cursor: pointer;
+        }
+
+        .terms-section a {
+            color: var(--primary);
+            text-decoration: none;
+            font-weight: 600;
+            transition: 0.2s;
+        }
+
+        .terms-section a:hover {
+            text-decoration: underline;
+        }
+
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
-        @media (max-width: 600px) { .form-grid { grid-template-columns: 1fr; } .full-width, .section-title { grid-column: span 1; } }
+        @media (max-width: 600px) { 
+            .form-grid { grid-template-columns: 1fr; } 
+            .full-width, .section-title { grid-column: span 1; }
+            .terms-section { flex-direction: column; }
+        }
     </style>
 </head>
 <body>
 
 <main class="auth-container">
     <div class="auth-header">
-        <span class="logo">FIT SYS</span>
+        <span class="logo">NR Fit</span>
         <p style="color:var(--text-dim); margin-top:5px; font-size: 0.9rem;">CADASTRO DE NOVO ALUNO</p>
     </div>
 
     <div class="auth-card">
         <form action="{{ route('cliente.store') }}" method="POST" class="form-grid">
                 @if ($errors->any())
-                    <div style="background: rgba(255,0,0,0.2); border: 1px solid #ff4444; color: #fff; padding: 15px; border-radius: 10px; margin-bottom: 20px;">
+                    <div style="background: rgba(255,0,0,0.2); border: 1px solid #ff4444; color: #fff; padding: 15px; border-radius: 10px; margin-bottom: 20px; grid-column: span 2;">
                         <strong>Erro ao cadastrar:</strong>
                         <ul>
                             @foreach ($errors->all() as $error)
@@ -288,6 +336,17 @@
                 </div>
             </div>
 
+            <!-- ✅ NOVO: CHECKBOX TERMOS DE USO -->
+            <div class="terms-section">
+                <input type="checkbox" id="termsCheckbox" name="aceita_termos" value="1" required>
+                <label for="termsCheckbox">
+                    Li e concordo com os
+                    <a href="{{ route('termos') }}" target="_blank">Termos de Uso</a>
+                    e a
+                    <a href="{{ route('privacidade') }}" target="_blank">Política de Privacidade</a>
+                </label>
+            </div>
+
             <button type="submit" class="btn-register">
                 Finalizar Cadastro <i class="fa-solid fa-arrow-right"></i>
             </button>
@@ -330,33 +389,33 @@
     const mascaras = {
         cpf: function(value) {
             return value
-                .replace(/\D/g, '') // Remove o que não é número
-                .replace(/(\d{3})(\d)/, '$1.$2') // Adiciona ponto após os 3 primeiros
-                .replace(/(\d{3})(\d)/, '$1.$2') // Adiciona ponto após os 6 primeiros
-                .replace(/(\d{3})(\d{1,2})/, '$1-$2') // Adiciona traço antes dos 2 últimos
-                .replace(/(-\d{2})\d+?$/, '$1'); // Limita o tamanho
+                .replace(/\D/g, '')
+                .replace(/(\d{3})(\d)/, '$1.$2')
+                .replace(/(\d{3})(\d)/, '$1.$2')
+                .replace(/(\d{3})(\d{1,2})/, '$1-$2')
+                .replace(/(-\d{2})\d+?$/, '$1');
         },
         cnpj: function(value) {
             return value
-                .replace(/\D/g, '') // Remove o que não é número
-                .replace(/(\d{2})(\d)/, '$1.$2') // Adiciona ponto após os 2 primeiros
-                .replace(/(\d{3})(\d)/, '$1.$2') // Adiciona ponto após os 5 primeiros
-                .replace(/(\d{3})(\d)/, '$1/$2') // Adiciona a barra após os 8 primeiros
-                .replace(/(\d{4})(\d{1,2})/, '$1-$2') // Adiciona o traço antes dos 2 últimos
-                .replace(/(-\d{2})\d+?$/, '$1'); // Limita o tamanho
+                .replace(/\D/g, '')
+                .replace(/(\d{2})(\d)/, '$1.$2')
+                .replace(/(\d{3})(\d)/, '$1.$2')
+                .replace(/(\d{3})(\d)/, '$1/$2')
+                .replace(/(\d{4})(\d{1,2})/, '$1-$2')
+                .replace(/(-\d{2})\d+?$/, '$1');
         },
         telefone: function(value) {
             return value
                 .replace(/\D/g, '') 
-                .replace(/(\d{2})(\d)/, '($1) $2') // Coloca parênteses no DDD
-                .replace(/(\d{4,5})(\d{4})/, '$1-$2') // Coloca o traço no meio
-                .replace(/(-\d{4})\d+?$/, '$1'); // Limita o tamanho
+                .replace(/(\d{2})(\d)/, '($1) $2')
+                .replace(/(\d{4,5})(\d{4})/, '$1-$2')
+                .replace(/(-\d{4})\d+?$/, '$1');
         },
         cep: function(value) {
             return value
                 .replace(/\D/g, '') 
-                .replace(/(\d{5})(\d)/, '$1-$2') // Coloca o traço após os 5 primeiros
-                .replace(/(-\d{3})\d+?$/, '$1'); // Limita o tamanho
+                .replace(/(\d{5})(\d)/, '$1-$2')
+                .replace(/(-\d{3})\d+?$/, '$1');
         }
     }
 </script>

@@ -300,6 +300,42 @@
             color: var(--text-muted);
             margin-left: auto;
         }
+
+        .cidade-select-wrapper {
+            margin-top: 10px;
+            position: relative;
+        }
+
+        .cidade-select-wrapper i {
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--personal-color);
+            font-size: 0.8rem;
+            pointer-events: none;
+        }
+
+        .cidade-select {
+            width: 100%;
+            padding: 10px 12px 10px 32px;
+            background: rgba(255,255,255,0.04);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            color: #fff;
+            font-size: 0.85rem;
+            outline: none;
+            cursor: pointer;
+            appearance: none;
+            -webkit-appearance: none;
+        }
+
+        .cidade-select:focus { border-color: var(--personal-color); }
+
+        .cidade-select option {
+            background: #1e2028;
+            color: #fff;
+        }
     </style>
 </head>
 <body>
@@ -319,7 +355,13 @@
         <div class="sidebar-header">
             <div class="search-wrapper">
                 <i class="fas fa-search"></i>
-                <input type="text" id="searchInput" placeholder="Buscar por nome ou cidade...">
+                <input type="text" id="searchInput" placeholder="Buscar por nome...">
+            </div>
+            <div class="cidade-select-wrapper">
+                <i class="fas fa-map-marker-alt"></i>
+                <select class="cidade-select" id="cidadeSelect">
+                    <option value="">Todas as cidades</option>
+                </select>
             </div>
             <div class="filter-tabs">
                 <button class="filter-tab active-todos" onclick="filtrar('todos', this)">
@@ -460,11 +502,13 @@
 
     function aplicarFiltros() {
         const busca = document.getElementById('searchInput').value.toLowerCase();
+        const cidadeSelecionada = document.getElementById('cidadeSelect').value;
 
         const filtrados = todosOsPins.filter(pin => {
             const tipoOk = filtroAtivo === 'todos' || pin.tipo === filtroAtivo;
-            const buscaOk = !busca || pin.nome.toLowerCase().includes(busca) || pin.endereco.toLowerCase().includes(busca);
-            return tipoOk && buscaOk;
+            const nomeOk = !busca || pin.nome.toLowerCase().includes(busca);
+            const cidadeOk = !cidadeSelecionada || pin.cidade === cidadeSelecionada;
+            return tipoOk && nomeOk && cidadeOk;
         });
 
         // Atualiza marcadores no mapa
@@ -515,6 +559,16 @@
                 ...data.personals,
             ];
 
+            // Popula o select de cidades com valores únicos, ordenados
+            const cidades = [...new Set(todosOsPins.map(p => p.cidade).filter(Boolean))].sort();
+            const sel = document.getElementById('cidadeSelect');
+            cidades.forEach(c => {
+                const opt = document.createElement('option');
+                opt.value = c;
+                opt.textContent = c;
+                sel.appendChild(opt);
+            });
+
             document.getElementById('loadingOverlay').style.display = 'none';
             aplicarFiltros();
         })
@@ -530,6 +584,7 @@
 
     // Busca em tempo real
     document.getElementById('searchInput').addEventListener('input', aplicarFiltros);
+    document.getElementById('cidadeSelect').addEventListener('change', aplicarFiltros);
 </script>
 </body>
 </html>

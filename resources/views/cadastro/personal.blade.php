@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cadastro Personal | FIT SYS</title>
+    <title>Cadastro Personal | NR Fit</title>
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Syncopate:wght@700&family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
@@ -78,6 +78,34 @@
             outline: none;
         }
 
+        /* Estilo para textarea de academias */
+        .textarea-wrapper {
+            background: var(--input-bg);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 15px;
+            display: flex;
+            gap: 10px;
+        }
+
+        .textarea-wrapper:focus-within { border-color: var(--primary); }
+        .textarea-wrapper i { color: var(--text-dim); flex-shrink: 0; margin-top: 5px; }
+        .textarea-wrapper textarea {
+            flex: 1;
+            background: transparent;
+            border: none;
+            color: #fff;
+            font-size: 0.9rem;
+            outline: none;
+            font-family: 'Inter', sans-serif;
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        .textarea-wrapper textarea::placeholder {
+            color: var(--text-dim);
+        }
+
         /* Estilo para erros do Laravel */
         .alert-error {
             background: rgba(255, 68, 68, 0.1);
@@ -110,6 +138,34 @@
 
         .loading-cep { font-size: 0.7rem; color: var(--primary); display: none; margin-top: 4px; }
         input[type="file"] { color: var(--text-dim); font-size: 0.8rem; }
+
+        /* --- NOVOS ESTILOS PARA ACADEMIAS --- */
+        .academias-section {
+            grid-column: span 2;
+            margin-top: 10px;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.02);
+            border-radius: 16px;
+            border: 1px dashed rgba(212, 255, 0, 0.2);
+        }
+
+        .academias-title {
+            font-size: 0.75rem;
+            color: var(--primary);
+            font-weight: 800;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .academias-hint {
+            font-size: 0.6rem;
+            color: var(--text-dim);
+            margin-bottom: 12px;
+            line-height: 1.4;
+        }
 
         /* --- NOVOS ESTILOS PARA PACOTES --- */
         .packages-section {
@@ -167,8 +223,54 @@
             outline: none;
         }
 
+        /* ✅ NOVO: ESTILOS DO CHECKBOX DE TERMOS */
+        .terms-section {
+            grid-column: span 2;
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            margin: 25px 0;
+            padding: 15px;
+            background: rgba(212, 255, 0, 0.03);
+            border: 1px solid rgba(212, 255, 0, 0.2);
+            border-radius: 12px;
+        }
+
+        .terms-section input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            min-width: 20px;
+            margin-top: 2px;
+            cursor: pointer;
+            accent-color: var(--primary);
+        }
+
+        .terms-section label {
+            margin: 0;
+            font-size: 0.85rem;
+            color: var(--text-main);
+            text-transform: none;
+            font-weight: 400;
+            letter-spacing: normal;
+            line-height: 1.5;
+            cursor: pointer;
+        }
+
+        .terms-section a {
+            color: var(--primary);
+            text-decoration: none;
+            font-weight: 600;
+            transition: 0.2s;
+        }
+
+        .terms-section a:hover {
+            text-decoration: underline;
+        }
+
         @media (max-width: 600px) {
             .packages-grid { grid-template-columns: repeat(2, 1fr); }
+            .terms-section { flex-direction: column; }
+            .textarea-wrapper { flex-direction: column; }
         }
     </style>
 </head>
@@ -176,7 +278,7 @@
 
 <main class="auth-container">
     <div class="auth-header">
-        <span class="logo">FIT SYS</span>
+        <span class="logo"> NR Fit</span>
         <p style="color:var(--text-dim); margin-top:5px; font-size: 0.8rem;">CADASTRO DE PERSONAL TRAINER</p>
     </div>
 
@@ -220,7 +322,7 @@
             </div>
 
             <div class="form-group">
-                <label>CEP</label>
+                <label>CEP (de uma das academias em que atua)</label>
                 <div class="input-wrapper">
                     <i class="fa-solid fa-map-pin"></i>
                     <input type="text" name="cep" id="cep" placeholder="00000-000" 
@@ -230,7 +332,7 @@
             </div>
 
             <div class="form-group">
-                <label>Cidade / Estado</label>
+                <label>Cidade / Estado (de uma das academias em que atua)</label>
                 <div class="input-wrapper">
                     <i class="fa-solid fa-city"></i>
                     <input type="text" id="display_cidade_estado" placeholder="Cidade - UF" readonly>
@@ -238,7 +340,7 @@
             </div>
 
             <div class="form-group full-width">
-                <label>Logradouro / Bairro</label>
+                <label>Logradouro / Bairro (de uma das academias em que atua)</label>
                 <div class="input-wrapper">
                     <i class="fa-solid fa-map-location-dot"></i>
                     <input type="text" id="display_rua_bairro" placeholder="Rua, Bairro" readonly>
@@ -246,7 +348,7 @@
             </div>
 
             <div class="form-group full-width">
-                <label>Número / Complemento</label>
+                <label>Número / Complemento (de uma das academias em que atua)</label>
                 <div class="input-wrapper">
                     <i class="fa-solid fa-house-user"></i>
                     <input type="text" name="complemento" value="{{ old('complemento') }}" placeholder="Ex: Casa 10 ou Apto 12 Bloco B" required>
@@ -301,6 +403,21 @@
                 </div>
             </div>
 
+            <!-- ✅ SEÇÃO DE ACADEMIAS -->
+            <div class="academias-section">
+                <div class="academias-title">
+                    <i class="fa-solid fa-building"></i> Academias onde você atua
+                </div>
+                <div class="academias-hint">
+                    <i class="fa-solid fa-info-circle"></i> Digite o nome de cada academia em uma linha separada. Máximo 10 academias. Não é necessário ser uma academia cadastrada na plataforma.
+                </div>
+                <div class="textarea-wrapper">
+                    <i class="fa-solid fa-pen-to-square"></i>
+                    <textarea name="academias" placeholder="Academia XYZ&#10;Fit Club Downtown&#10;Smart Fitness&#10;Strong Gym&#10;..." maxlength="1000">{{ old('academias') }}</textarea>
+                </div>
+            </div>
+
+            <!-- SEÇÃO DE PACOTES -->
             <div class="packages-section">
                 <div class="packages-title">
                     <i class="fa-solid fa-tags"></i> Definir Pacotes Mensais
@@ -317,6 +434,17 @@
                     @endfor
                 </div>
                 <p style="font-size: 0.6rem; color: var(--text-dim); margin-top: 10px;">* Informe o valor total mensal para cada frequência.</p>
+            </div>
+
+            <!-- CHECKBOX TERMOS DE USO -->
+            <div class="terms-section">
+                <input type="checkbox" id="termsCheckbox" name="aceita_termos" value="1" required>
+                <label for="termsCheckbox">
+                    Li e concordo com os
+                    <a href="{{ route('termos') }}" target="_blank">Termos de Uso</a>
+                    e a
+                    <a href="{{ route('privacidade') }}" target="_blank">Política de Privacidade</a>
+                </label>
             </div>
 
             <input type="hidden" name="latitude" id="latitude">

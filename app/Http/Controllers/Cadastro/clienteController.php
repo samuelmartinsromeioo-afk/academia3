@@ -5,13 +5,15 @@ namespace App\Http\Controllers\Cadastro;
 use App\Http\Controllers\Controller;
 use App\Models\cadastro\Cliente;
 use App\Models\cadastro\Personal;
-use App\Models\cadastro\academia as Academia; // Ajustado para evitar erro de caixa alta
+use App\Models\cadastro\academia as Academia;
 use App\Models\Agenda;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 
 class ClienteController extends Controller
 {
@@ -21,8 +23,10 @@ class ClienteController extends Controller
         if (!$id) return redirect()->route('login.index');
 
         $cliente = Cliente::find($id);
-        $personals = Personal::all();
-        $academias = Academia::all();
+        $personals = Personal::where('status', 'aprovado')
+            ->with(['fotos', 'avaliacoes'])
+            ->get();
+        $academias = Academia::with('fotos')->get();
 
         $meusAgendamentos = Agenda::where('cliente_id', $id)
             ->with(['personal', 'academia'])
@@ -74,9 +78,12 @@ class ClienteController extends Controller
         return view('cliente.index', compact('cliente', 'personals', 'meusAgendamentos', 'horariosDisponiveis', 'academias', 'historico'));
     }
 
-    // MÉTODO UPDATE CORRIGIDO
     public function update(Request $request, $id)
     {
+        if ((int)$id !== (int)session('cliente_id')) {
+            abort(403);
+        }
+
         $cliente = Cliente::find($id);
 
         if (!$cliente) {
@@ -97,23 +104,17 @@ class ClienteController extends Controller
             'complemento' => 'nullable|string|max:255',
         ]);
 
-        //   dados validados
-        $data = $request->all();
+        $data = $validated;
+        $data['sexo'] = strtolower($validated['sexo']);
 
-        //  Ajusta o sexo para o que está na sua Migration 
-        $data['sexo'] = strtolower($request->sexo);
-
-        //  Tratamento da senha
         if ($request->filled('senha')) {
             $data['senha'] = Hash::make($request->senha);
         } else {
             unset($data['senha']);
         }
 
-        //  Salva no banco
         $cliente->update($data);
 
-        //  Retorna com a mensagem de sucesso (ajustado para 'success' que é o que você usa na view)
         return redirect()->route('cliente.index')->with('success', 'Perfil atualizado com sucesso!');
     }
 
@@ -121,12 +122,14 @@ class ClienteController extends Controller
     {
         return view('cadastro.cliente');
     }
+
     public function store(Request $request)
     {
         $validated = $request->validate([
             'nome'        => 'required|string|max:255',
             'email'       => 'required|email|max:255|unique:clientes,email',
             'senha'       => 'required|string|min:6|max:255',
+            'idade'       => 'required|date',
             'sexo'        => 'required|in:Masculino,Feminino,Outro,masculino,feminino,outro',
             'cep'         => 'required|string|max:9',
             'rua'         => 'nullable|string|max:255',
@@ -136,10 +139,23 @@ class ClienteController extends Controller
             'complemento' => 'nullable|string|max:255',
             'altura'      => 'nullable|numeric',
             'peso'        => 'nullable|numeric',
+            'resumo_objetivo' => 'nullable|string',
+            'frequencia_semanal' => 'nullable|integer|min:1',
+            'condicao_clinica' => 'nullable|string',
+            'latitude'    => 'nullable|numeric',
+            'longitude'   => 'nullable|numeric',
+            'aceita_termos' => 'required|accepted',
+        ], [
+            'aceita_termos.required' => 'Você deve concordar com os Termos de Uso',
+            'aceita_termos.accepted' => 'Você deve concordar com os Termos de Uso',
         ]);
 
         $validated['sexo'] = strtolower($request->sexo);
         $validated['senha'] = Hash::make($validated['senha']);
+
+        $validated['aceita_termos'] = true;
+        $validated['data_aceitacao_termos'] = now();
+        $validated['ip_aceitacao_termos'] = $request->ip();
 
         Cliente::create($validated);
 
@@ -159,15 +175,24 @@ class ClienteController extends Controller
             'horario_fim' => 'required'
         ]);
 
-        Agenda::create([
+        $agenda = Agenda::create([
             'cliente_id'  => $clienteId,
             'personal_id' => $request->personal_id,
             'academia_id' => $request->academia_id ?? null,
             'data'        => $request->data,
             'hora_inicio' => $request->horario_inicio,
             'hora_fim'    => $request->horario_fim,
-            'cancelado'   => false
+            'cancelado'   => false,
+            'tipo_aula'   => 'avulsa',
         ]);
+
+        // ✅ NOVO: Notificar personal via WhatsApp automaticamente
+        $this->notificarPersonalWhatsApp(
+            $clienteId,
+            $request->personal_id,
+            'avulsa',
+            $agenda
+        );
 
         // Notifica o personal por e-mail
         $cliente  = Cliente::find($clienteId);
@@ -233,13 +258,9 @@ class ClienteController extends Controller
 
     public function verPrecos($id)
     {
-        // 1. Busca o Personal
         $personal = \App\Models\User::findOrFail($id);
-
-        // 2. Busca os preços dele
         $precos = \App\Models\cadastro\Pacote::where('personal_id', $id)->get();
 
-        // 3. Retorna a view (vamos criar ela abaixo)
         return view('cliente.precos', compact('personal', 'precos'));
     }
 
@@ -276,24 +297,19 @@ class ClienteController extends Controller
             return redirect()->back()->with('error', "Você selecionou " . count($diasSelecionados) . " dia(s), mas o pacote permite apenas {$frequencia}x na semana.");
         }
 
-        $horaInicio = $request->hora_inicio;  // "07:00"
-        $horaFim = $request->hora_fim;        // "08:00"
+        $horaInicio = $request->hora_inicio;
+        $horaFim = $request->hora_fim;
 
         $agendamentosCriados = 0;
 
         foreach ($diasSelecionados as $dia) {
-            // Cria data base com o dia selecionado
             $dataPrimeira = Carbon::create(now()->year, now()->month, (int)$dia);
 
-            // Se a data já passou, pula pra próximo mês
             if ($dataPrimeira < now()->startOfDay()) {
                 $dataPrimeira = $dataPrimeira->addMonth();
             }
 
-            // Identifica o dia da semana
             $diaDaSemana = $dataPrimeira->dayOfWeek;
-
-            // Encontra TODAS as datas com o mesmo dia da semana (mês atual e próximo)
             $datasComMesmoDia = [];
 
             // Mês atual
@@ -319,20 +335,17 @@ class ClienteController extends Controller
                 $dataAtual->addDay();
             }
 
-            // ✅ Cria agendamentos APENAS se o horário não estiver ocupado
             foreach ($datasComMesmoDia as $data) {
-                // Verifica conflito de horário ESPECÍFICO
                 $temConflito = Agenda::where('personal_id', $request->personal_id)
                     ->where('data', $data->format('Y-m-d'))
                     ->where('cancelado', false)
                     ->where(function ($query) use ($horaInicio, $horaFim) {
-                        // Se há sobreposição de horário
                         $query->whereRaw("hora_inicio < ? AND hora_fim > ?", [$horaFim, $horaInicio]);
                     })
                     ->exists();
 
                 if (!$temConflito) {
-                    Agenda::create([
+                    $agenda = Agenda::create([
                         'cliente_id' => $clienteId,
                         'personal_id' => $request->personal_id,
                         'academia_id' => $cliente->academia_id ?? null,
@@ -344,6 +357,7 @@ class ClienteController extends Controller
                         'frequencia_pacote' => $frequencia,
                         'data_inicio_pacote' => now()->startOfMonth(),
                         'data_fim_pacote' => now()->endOfMonth(),
+                        'tipo_aula' => 'pacote',
                     ]);
                     $agendamentosCriados++;
                 }
@@ -354,7 +368,17 @@ class ClienteController extends Controller
             return redirect()->back()->with('warning', 'Nenhum horário pôde ser agendado. Verifique conflitos de horários.');
         }
 
-        // Notifica personal
+        // ✅ NOVO: Notificar personal via WhatsApp sobre a contratação do pacote
+        $this->notificarPersonalWhatsApp(
+            $clienteId,
+            $request->personal_id,
+            'pacote',
+            null,
+            $frequencia,
+            $agendamentosCriados
+        );
+
+        // Notifica personal por email
         if ($personal && $personal->email) {
             try {
                 Mail::send('emails.pacote-contratado', [
@@ -380,7 +404,6 @@ class ClienteController extends Controller
         return redirect()->back()->with('success', "Pacote contratado com sucesso! {$agendamentosCriados} treino(s) agendado(s).");
     }
 
-    // ✅ MÉTODO BUSCAR HORÁRIOS - CORRIGIDO
     public function buscarHorariosDisponiveis($personalId, $dia)
     {
         $personal = Personal::find($personalId);
@@ -389,7 +412,6 @@ class ClienteController extends Controller
             return response()->json(['erro' => 'Personal não encontrado'], 404);
         }
 
-        // Validar formato da data
         if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $dia)) {
             return response()->json(['erro' => 'Formato de data inválido'], 400);
         }
@@ -409,7 +431,6 @@ class ClienteController extends Controller
             $horaInicioFormatted = $hora->format('H:i');
             $horaFimFormatted = $horaFim->format('H:i');
 
-            // ✅ Verifica se há CONFLITO DE HORÁRIO específico
             $temConflito = Agenda::where('personal_id', $personalId)
                 ->where('data', $dia)
                 ->where('cancelado', false)
@@ -428,5 +449,78 @@ class ClienteController extends Controller
         }
 
         return response()->json($horariosDisponiveis);
+    }
+
+    public function listarAcademias()
+    {
+        $cliente = Cliente::find(session('cliente_id'));
+        $academias = Academia::all();
+
+        return view('cliente.academias', compact('academias', 'cliente'));
+    }
+
+    public function detalhesAcademia($id)
+    {
+        $academia = Academia::findOrFail($id);
+
+        return view('cliente.academia-detalhes', compact('academia'));
+    }
+
+    // ✅ NOVA FUNÇÃO: Notificar Personal via WhatsApp (COM FIX SSL)
+    private function notificarPersonalWhatsApp($clienteId, $personalId, $tipo, $agenda = null, $frequencia = null, $diasTotal = null)
+    {
+        try {
+            $cliente = Cliente::find($clienteId);
+            $personal = Personal::find($personalId);
+
+            if (!$cliente || !$personal || !$personal->whatsapp) {
+                Log::warning("Não foi possível notificar. Cliente: {$clienteId}, Personal: {$personalId}");
+                return;
+            }
+
+            $apiToken = config('services.zenvia.token');
+            $from     = config('services.zenvia.from');
+
+            if (!$apiToken || !$from) {
+                Log::warning("Zenvia não configurado");
+                return;
+            }
+
+            if ($tipo === 'avulsa') {
+                $data = $agenda->data instanceof Carbon ?
+                    $agenda->data->format('d/m/Y') :
+                    Carbon::parse($agenda->data)->format('d/m/Y');
+
+                $mensagem = "📅 *Nova Aula Avulsa Agendada*\n\n";
+                $mensagem .= "👤 *Cliente:* {$cliente->nome}\n";
+                $mensagem .= "📅 *Data:* {$data}\n";
+                $mensagem .= "⏰ *Horário:* {$agenda->hora_inicio} - {$agenda->hora_fim}\n\n";
+                $mensagem .= "Acesse seu painel para confirmar se o cliente compareceu.";
+            } else {
+                $mensagem = "🎉 *Novo Pacote Contratado*\n\n";
+                $mensagem .= "👤 *Cliente:* {$cliente->nome}\n";
+                $mensagem .= "📦 *Frequência:* {$frequencia}x por semana\n";
+                $mensagem .= "🗓️ *Aulas Agendadas:* {$diasTotal} treino(s)\n\n";
+                $mensagem .= "Acesse seu painel para confirmar presença do cliente.";
+            }
+
+            $phone = preg_replace('/\D/', '', $personal->whatsapp);
+            if (!str_starts_with($phone, '55')) {
+                $phone = '55' . $phone;
+            }
+
+            $response = Http::withHeaders(['X-API-TOKEN' => $apiToken])
+                ->post('https://api.zenvia.com/v2/channels/whatsapp/messages', [
+                    'from'     => $from,
+                    'to'       => $phone,
+                    'contents' => [['type' => 'text', 'text' => $mensagem]],
+                ]);
+
+            Log::info("✅ WhatsApp enviado via Zenvia para personal {$personalId} - id: " . ($response->json('id') ?? 'n/a'));
+
+        } catch (\Exception $e) {
+            Log::error("❌ Erro ao notificar personal: " . $e->getMessage());
+            // Não bloqueia o fluxo
+        }
     }
 }
