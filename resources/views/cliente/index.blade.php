@@ -929,7 +929,7 @@
             foto: '{{ $p->foto ? asset("storage/" . $p->foto) : "" }}',
             avaliacao: '{{ $p->media_avaliacao }}',
             valor_secao: {{ $p->valor_secao ?? 0 }},
-            academias: '{{ addslashes($p->academias ?? "") }}',
+            academias: {!! json_encode($p->academias ?? '') !!},
             fotos: [
                 @foreach($p->fotos ?? [] as $foto)
                 { url: '{{ asset("storage/" . $foto->path) }}', legenda: '{{ addslashes($foto->legenda ?? "") }}' },
