@@ -787,16 +787,8 @@
         <h2 id="nomePersonalAgenda" style="color: var(--primary); margin-bottom: 5px;">Personal</h2>
         <p style="color: var(--text-muted); font-size: 0.8rem; margin-bottom: 15px;">Selecione um horário disponível:</p>
 
-        {{-- SELECT DE ACADEMIA --}}
-        <div id="academiaAvulsaContainer" style="margin-bottom: 15px; display: none;">
-            <label style="display: block; color: var(--primary); font-weight: 900; text-transform: uppercase; font-size: 0.7rem; margin-bottom: 6px;">
-                <i class="fas fa-map-marker-alt"></i> Academia / Local de Treino
-            </label>
-            <select id="academiaAvulsaSelect" onchange="atualizarAcademiaAvulsa(this.value)"
-                    style="width: 100%; background: var(--bg-card, #111); border: 1px solid var(--border, #333); color: #fff; padding: 10px 12px; border-radius: 10px; font-size: 0.85rem; outline: none; cursor: pointer;">
-                <option value="">Selecione uma academia</option>
-            </select>
-        </div>
+        {{-- SELECT DE ACADEMIA (preenchido via JS) --}}
+        <div id="academiaAvulsaContainer" style="margin-bottom: 15px;"></div>
 
         <div id="listaHorarios" style="max-height: 370px; overflow-y: auto;">
             @foreach($horariosDisponiveis as $h)
@@ -864,15 +856,7 @@
                     <input type="hidden" id="pacote_id" name="pacote_id" value="">
                     <input type="hidden" id="pacote_academia_nome" name="academia_nome" value="">
 
-                    <div id="pacoteAcademiaContainer" style="margin-bottom: 15px; display: none;">
-                        <label style="display: block; color: var(--primary); font-weight: 900; text-transform: uppercase; font-size: 0.7rem; margin-bottom: 6px;">
-                            <i class="fas fa-map-marker-alt"></i> Academia / Local de Treino
-                        </label>
-                        <select id="academiaPackSelect" onchange="document.getElementById('pacote_academia_nome').value = this.value; atualizarBotao();"
-                                style="width: 100%; background: var(--bg-card, #111); border: 1px solid var(--border, #333); color: #fff; padding: 10px 12px; border-radius: 10px; font-size: 0.85rem; outline: none; cursor: pointer;">
-                            <option value="">Selecione uma academia</option>
-                        </select>
-                    </div>
+                    <div id="pacoteAcademiaContainer" style="margin-bottom: 15px;"></div>
 
                     <button type="submit" class="btn-action" style="margin-top: 0;" id="btnConfirmarContratacao" disabled>
                         <i class="fas fa-check-circle"></i> Confirmar Contratação
@@ -1222,24 +1206,34 @@
         // Popula o select de academias do personal
         const personal = window.personalsData[personalId];
         const container = document.getElementById('pacoteAcademiaContainer');
-        const select = document.getElementById('academiaPackSelect');
         const academias = personal && personal.academias
             ? personal.academias.split('\n').map(a => a.trim()).filter(a => a.length > 0)
             : [];
 
+        container.style.display = 'block';
+        container.dataset.temAcademias = academias.length > 0 ? 'true' : 'false';
+        document.getElementById('pacote_academia_nome').value = '';
+
         if (academias.length > 0) {
-            select.innerHTML = '<option value="">Selecione uma academia</option>' +
-                academias.map(a => `<option value="${a}">${a}</option>`).join('');
+            container.innerHTML = `
+                <label style="display:block; color:var(--primary); font-weight:900; text-transform:uppercase; font-size:0.7rem; margin-bottom:6px;">
+                    <i class="fas fa-map-marker-alt"></i> Academia / Local de Treino
+                </label>
+                <select id="academiaPackSelect"
+                        onchange="document.getElementById('pacote_academia_nome').value = this.value; atualizarBotao();"
+                        style="width:100%; background:var(--bg-card,#111); border:1px solid var(--border,#333); color:#fff; padding:10px 12px; border-radius:10px; font-size:0.85rem; outline:none; cursor:pointer;">
+                    <option value="">Selecione uma academia</option>
+                    ${academias.map(a => `<option value="${a}">${a}</option>`).join('')}
+                </select>`;
             if (academias.length === 1) {
-                select.value = academias[0];
+                document.getElementById('academiaPackSelect').value = academias[0];
                 document.getElementById('pacote_academia_nome').value = academias[0];
-            } else {
-                document.getElementById('pacote_academia_nome').value = '';
             }
-            container.style.display = 'block';
         } else {
-            container.style.display = 'none';
-            document.getElementById('pacote_academia_nome').value = '';
+            container.innerHTML = `
+                <p style="color:var(--text-muted); font-size:0.8rem; padding:10px 12px; background:rgba(255,255,255,0.04); border-radius:10px; border:1px solid var(--border,#333); margin:0;">
+                    <i class="fas fa-info-circle"></i> O personal ainda não informou as academias em que trabalha.
+                </p>`;
         }
 
         carregarPacotes(personalId);
@@ -1432,8 +1426,8 @@
         const temHorario = horaInicio !== null;
 
         const container = document.getElementById('pacoteAcademiaContainer');
-        const temAcademia = container.style.display === 'none' ||
-            document.getElementById('pacote_academia_nome').value.trim() !== '';
+        const precisaAcademia = container.dataset.temAcademias === 'true';
+        const temAcademia = !precisaAcademia || document.getElementById('pacote_academia_nome').value.trim() !== '';
 
         btn.disabled = !(temPacote && temDias && temHorario && temAcademia);
     }
@@ -1479,21 +1473,32 @@
         // Popula o select de academias do personal
         const personal = window.personalsData[id];
         const container = document.getElementById('academiaAvulsaContainer');
-        const select = document.getElementById('academiaAvulsaSelect');
         const academias = personal && personal.academias
             ? personal.academias.split('\n').map(a => a.trim()).filter(a => a.length > 0)
             : [];
 
+        container.style.display = 'block';
         if (academias.length > 0) {
-            select.innerHTML = '<option value="">Selecione uma academia</option>' +
-                academias.map(a => `<option value="${a}">${a}</option>`).join('');
+            container.innerHTML = `
+                <label style="display:block; color:var(--primary); font-weight:900; text-transform:uppercase; font-size:0.7rem; margin-bottom:6px;">
+                    <i class="fas fa-map-marker-alt"></i> Academia / Local de Treino
+                </label>
+                <select id="academiaAvulsaSelect" onchange="atualizarAcademiaAvulsa(this.value)"
+                        style="width:100%; background:var(--bg-card,#111); border:1px solid var(--border,#333); color:#fff; padding:10px 12px; border-radius:10px; font-size:0.85rem; outline:none; cursor:pointer;">
+                    <option value="">Selecione uma academia</option>
+                    ${academias.map(a => `<option value="${a}">${a}</option>`).join('')}
+                </select>`;
             if (academias.length === 1) {
-                select.value = academias[0];
+                document.getElementById('academiaAvulsaSelect').value = academias[0];
                 atualizarAcademiaAvulsa(academias[0]);
+            } else {
+                atualizarAcademiaAvulsa('');
             }
-            container.style.display = 'block';
         } else {
-            container.style.display = 'none';
+            container.innerHTML = `
+                <p style="color:var(--text-muted); font-size:0.8rem; padding:10px 12px; background:rgba(255,255,255,0.04); border-radius:10px; border:1px solid var(--border,#333); margin:0;">
+                    <i class="fas fa-info-circle"></i> O personal ainda não informou as academias em que trabalha.
+                </p>`;
             atualizarAcademiaAvulsa('');
         }
 

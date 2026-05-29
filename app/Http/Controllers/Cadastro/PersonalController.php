@@ -158,13 +158,14 @@ class PersonalController extends Controller
             'nome'        => 'required|string|max:255',
             'cep'         => 'required|string|max:9',
             'cidade'      => 'required|string',
-            'aceita_termos_update' => 'required|accepted', // ✅ Validação do checkbox
+            'aceita_termos_update' => 'required|accepted',
             'valor_secao' => 'required|numeric',
             'avaliacao'   => 'nullable|string',
             'certificado' => 'nullable|file|mimes:pdf,jpg,png|max:2048',
             'foto'        => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
             'senha'       => 'nullable|string|min:8|confirmed',
-            'chave_pix'   => 'nullable|string|max:255'
+            'chave_pix'   => 'nullable|string|max:255',
+            'academias'   => 'nullable|string|max:2000',
         ], [
             'aceita_termos_update.required' => 'Você deve concordar com os Termos de Uso',
             'aceita_termos_update.accepted' => 'Você deve concordar com os Termos de Uso',

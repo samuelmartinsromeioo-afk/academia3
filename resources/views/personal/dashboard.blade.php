@@ -869,6 +869,18 @@
                         <label>Chave Pix</label>
                         <div class="input-wrapper"><i class="fas fa-key"></i><input type="text" name="chave_pix" value="{{ $personal->chave_pix }}" placeholder="CPF, e-mail, telefone ou chave aleatória"></div>
                     </div>
+                    <div class="full-width">
+                        <label>Academias em que atua</label>
+                        <p style="color: var(--text-muted); font-size: 0.73rem; margin: 3px 0 8px;">
+                            <i class="fas fa-info-circle"></i> Uma por linha. Não precisa ser uma academia cadastrada na plataforma.
+                        </p>
+                        <div class="input-wrapper" style="height: auto; align-items: flex-start; padding: 12px 15px;">
+                            <i class="fas fa-dumbbell" style="margin-top: 2px; flex-shrink: 0;"></i>
+                            <textarea name="academias" rows="4"
+                                      placeholder="Academia XYZ&#10;Smart Fitness&#10;Strong Gym&#10;..."
+                                      style="background: transparent; border: none; color: #fff; width: 100%; outline: none; resize: vertical; font-size: 0.9rem; line-height: 1.6;">{{ $personal->academias }}</textarea>
+                        </div>
+                    </div>
                 </div>
                 <div style="display: flex; gap: 10px; margin-top: 20px;">
                     <button type="button" onclick="closeModalUpdate()" class="btn-save btn-cancel">Cancelar</button>
