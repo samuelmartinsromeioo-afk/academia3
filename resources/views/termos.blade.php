@@ -271,7 +271,7 @@
 
     <div class="top-bar">
         <a href="/" class="logo">
-            <i class="fas fa-dumbbell"></i> NR Fit
+            <i class="fas fa-dumbbell"></i> SNR
         </a>
         <div style="display: flex; gap: 10px; align-items: center;">
             <button class="print-btn" onclick="window.print()">
@@ -314,7 +314,7 @@
             </div>
 
             <h2 id="secao-1">1. APRESENTAÇÃO E ACEITAÇÃO DOS TERMOS</h2>
-            <p>Bem-vindo ao <strong>NR Fit</strong>. Estes Termos de Uso ("Termos") regem o acesso e o uso da Plataforma e de todos os serviços, conteúdos e funcionalidades oferecidos por nossa empresa ("Nós", "Nossa", "Nossos" ou "Plataforma").</p>
+            <p>Bem-vindo ao <strong>SNR</strong>. Estes Termos de Uso ("Termos") regem o acesso e o uso da Plataforma e de todos os serviços, conteúdos e funcionalidades oferecidos por nossa empresa ("Nós", "Nossa", "Nossos" ou "Plataforma").</p>
             <p>Ao acessar, cadastrar-se, usar a Plataforma ou aceitar estes Termos, você ("Usuário" ou "Você") concorda integralmente com todas as disposições aqui contidas. Se você não concordar com qualquer parte destes Termos, não deve utilizar a Plataforma.</p>
 
             <h2 id="secao-2">2. DESCRIÇÃO DA PLATAFORMA</h2>

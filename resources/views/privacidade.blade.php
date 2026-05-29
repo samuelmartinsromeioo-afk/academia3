@@ -271,7 +271,7 @@
 
     <div class="top-bar">
         <a href="/" class="logo">
-            <i class="fas fa-dumbbell"></i> NR Fit
+            <i class="fas fa-dumbbell"></i> SNR
         </a>
         <div style="display: flex; gap: 10px; align-items: center;">
             <button class="print-btn" onclick="window.print()">
@@ -310,7 +310,7 @@
             </div>
 
             <h2 id="secao-1">1. INTRODUÇÃO</h2>
-            <p>A <strong>NR fit</strong> ("nós", "nossa" ou "Plataforma") é comprometida em proteger sua privacidade e garantir uma experiência segura. Esta Política de Privacidade explica como coletamos, usamos, divulgamos e salvaguardamos suas informações ao usar nossa Plataforma.</p>
+            <p>A <strong>SNR</strong> ("nós", "nossa" ou "Plataforma") é comprometida em proteger sua privacidade e garantir uma experiência segura. Esta Política de Privacidade explica como coletamos, usamos, divulgamos e salvaguardamos suas informações ao usar nossa Plataforma.</p>
             <p>Leia esta Política de Privacidade com cuidado. Se você não concordar com nossas práticas, não use a Plataforma.</p>
 
             <h2 id="secao-2">2. INFORMAÇÕES QUE COLETAMOS</h2>

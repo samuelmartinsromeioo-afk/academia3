@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cadastro Cliente | NR Fit</title>
+    <title>Cadastro Cliente | SNR</title>
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Syncopate:wght@700&family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
@@ -190,7 +190,7 @@
 
 <main class="auth-container">
     <div class="auth-header">
-        <span class="logo">NR Fit</span>
+        <span class="logo">SNR</span>
         <p style="color:var(--text-dim); margin-top:5px; font-size: 0.9rem;">CADASTRO DE NOVO ALUNO</p>
     </div>
 
