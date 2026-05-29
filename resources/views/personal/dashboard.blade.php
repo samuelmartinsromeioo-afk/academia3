@@ -1364,7 +1364,7 @@
                                     <p style="margin:5px 0 0 0; font-size:0.85rem;">${icone} ${nomeExibicao}</p>
                                     <small style="color:var(--text-muted); font-size:0.7rem; display:block; margin-top:5px;">
                                         <i class="fas fa-dumbbell"></i>
-                                        ${item.academia ? (item.academia.nome || item.academia.name) : 'Local não informado'}
+                                        ${item.academia_nome || (item.academia ? (item.academia.nome || item.academia.name) : 'Local não informado')}
                                     </small>
                                 </div>
                                 <button type="button" class="btn-delete-agenda"

@@ -47,6 +47,7 @@ class PaymentController extends Controller
             'dias_selecionados' => 'nullable|string',
             'hora_inicio'       => 'nullable|string|max:10',
             'hora_fim'          => 'nullable|string|max:10',
+            'academia_nome'     => 'nullable|string|max:255',
         ]);
 
         $cliente  = \App\Models\cadastro\cliente::findOrFail($clienteId);
@@ -72,6 +73,7 @@ class PaymentController extends Controller
             'dias_selecionados' => $validated['dias_selecionados'] ?? '[]',
             'hora_inicio'       => $validated['hora_inicio'] ?? null,
             'hora_fim'          => $validated['hora_fim'] ?? null,
+            'academia_nome'     => $validated['academia_nome'] ?? null,
         ];
 
         try {
@@ -199,6 +201,7 @@ class PaymentController extends Controller
                     'dias_selecionados' => $booking['dias_selecionados'],
                     'hora_inicio'       => $booking['hora_inicio'],
                     'hora_fim'          => $booking['hora_fim'],
+                    'academia_nome'     => $booking['academia_nome'] ?? null,
                 ]);
                 try {
                     app(\App\Http\Controllers\Cadastro\ClienteController::class)->contratarPacote($fakeReq);

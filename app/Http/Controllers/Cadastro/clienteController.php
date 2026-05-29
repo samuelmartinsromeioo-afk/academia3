@@ -170,20 +170,22 @@ class ClienteController extends Controller
         $request->validate([
             'personal_id' => 'required|exists:personals,id',
             'academia_id' => 'nullable|exists:academias,id',
+            'academia_nome' => 'nullable|string|max:255',
             'data' => 'required|date',
             'horario_inicio' => 'required',
             'horario_fim' => 'required'
         ]);
 
         $agenda = Agenda::create([
-            'cliente_id'  => $clienteId,
-            'personal_id' => $request->personal_id,
-            'academia_id' => $request->academia_id ?? null,
-            'data'        => $request->data,
-            'hora_inicio' => $request->horario_inicio,
-            'hora_fim'    => $request->horario_fim,
-            'cancelado'   => false,
-            'tipo_aula'   => 'avulsa',
+            'cliente_id'   => $clienteId,
+            'personal_id'  => $request->personal_id,
+            'academia_id'  => $request->academia_id ?? null,
+            'academia_nome' => $request->academia_nome ?? null,
+            'data'         => $request->data,
+            'hora_inicio'  => $request->horario_inicio,
+            'hora_fim'     => $request->horario_fim,
+            'cancelado'    => false,
+            'tipo_aula'    => 'avulsa',
         ]);
 
         // ✅ NOVO: Notificar personal via WhatsApp automaticamente
@@ -276,6 +278,7 @@ class ClienteController extends Controller
             'dias_selecionados' => 'required|json',
             'hora_inicio' => 'required|date_format:H:i',
             'hora_fim' => 'required|date_format:H:i',
+            'academia_nome' => 'nullable|string|max:255',
         ]);
 
         $cliente = Cliente::find($clienteId);
@@ -346,18 +349,19 @@ class ClienteController extends Controller
 
                 if (!$temConflito) {
                     $agenda = Agenda::create([
-                        'cliente_id' => $clienteId,
-                        'personal_id' => $request->personal_id,
-                        'academia_id' => $cliente->academia_id ?? null,
-                        'data' => $data->format('Y-m-d'),
-                        'hora_inicio' => $horaInicio,
-                        'hora_fim' => $horaFim,
-                        'cancelado' => false,
-                        'descricao' => "Aula agendada - {$cliente->nome}",
+                        'cliente_id'        => $clienteId,
+                        'personal_id'       => $request->personal_id,
+                        'academia_id'       => $cliente->academia_id ?? null,
+                        'academia_nome'     => $request->academia_nome ?? null,
+                        'data'              => $data->format('Y-m-d'),
+                        'hora_inicio'       => $horaInicio,
+                        'hora_fim'          => $horaFim,
+                        'cancelado'         => false,
+                        'descricao'         => "Aula agendada - {$cliente->nome}",
                         'frequencia_pacote' => $frequencia,
                         'data_inicio_pacote' => now()->startOfMonth(),
-                        'data_fim_pacote' => now()->endOfMonth(),
-                        'tipo_aula' => 'pacote',
+                        'data_fim_pacote'   => now()->endOfMonth(),
+                        'tipo_aula'         => 'pacote',
                     ]);
                     $agendamentosCriados++;
                 }

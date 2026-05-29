@@ -785,8 +785,20 @@
     <div class="profile-card" style="width: 90%; max-width: 450px; border: 1px solid var(--primary);">
         <i class="fas fa-times close-form" onclick="fecharAgenda()"></i>
         <h2 id="nomePersonalAgenda" style="color: var(--primary); margin-bottom: 5px;">Personal</h2>
-        <p style="color: var(--text-muted); font-size: 0.8rem; margin-bottom: 20px;">Selecione um horário disponível:</p>
-        <div id="listaHorarios" style="max-height: 400px; overflow-y: auto;">
+        <p style="color: var(--text-muted); font-size: 0.8rem; margin-bottom: 15px;">Selecione um horário disponível:</p>
+
+        {{-- SELECT DE ACADEMIA --}}
+        <div id="academiaAvulsaContainer" style="margin-bottom: 15px; display: none;">
+            <label style="display: block; color: var(--primary); font-weight: 900; text-transform: uppercase; font-size: 0.7rem; margin-bottom: 6px;">
+                <i class="fas fa-map-marker-alt"></i> Academia / Local de Treino
+            </label>
+            <select id="academiaAvulsaSelect" onchange="atualizarAcademiaAvulsa(this.value)"
+                    style="width: 100%; background: var(--bg-card, #111); border: 1px solid var(--border, #333); color: #fff; padding: 10px 12px; border-radius: 10px; font-size: 0.85rem; outline: none; cursor: pointer;">
+                <option value="">Selecione uma academia</option>
+            </select>
+        </div>
+
+        <div id="listaHorarios" style="max-height: 370px; overflow-y: auto;">
             @foreach($horariosDisponiveis as $h)
             <div class="horario-item personal-horario-{{ $h->personal_id }}" style="display: none;">
                 <div style="display: flex; flex-direction: column;">
@@ -802,6 +814,7 @@
                     <input type="hidden" name="horario_inicio" value="{{ $h->horario_inicio }}">
                     <input type="hidden" name="horario_fim" value="{{ $h->horario_fim }}">
                     <input type="hidden" name="academia_id" value="{{ $cliente->academia_id ?? '' }}">
+                    <input type="hidden" name="academia_nome" class="academia-nome-avulsa" value="">
                     <button type="submit" class="btn-action" style="width:auto; margin:0; padding: 8px 15px; font-size: 0.7rem;">
                         <i class="fas fa-calendar-check"></i> Agendar
                     </button>
@@ -849,6 +862,17 @@
                     <input type="hidden" id="pacote_hora_inicio" name="hora_inicio" value="">
                     <input type="hidden" id="pacote_hora_fim" name="hora_fim" value="">
                     <input type="hidden" id="pacote_id" name="pacote_id" value="">
+                    <input type="hidden" id="pacote_academia_nome" name="academia_nome" value="">
+
+                    <div id="pacoteAcademiaContainer" style="margin-bottom: 15px; display: none;">
+                        <label style="display: block; color: var(--primary); font-weight: 900; text-transform: uppercase; font-size: 0.7rem; margin-bottom: 6px;">
+                            <i class="fas fa-map-marker-alt"></i> Academia / Local de Treino
+                        </label>
+                        <select id="academiaPackSelect" onchange="document.getElementById('pacote_academia_nome').value = this.value; atualizarBotao();"
+                                style="width: 100%; background: var(--bg-card, #111); border: 1px solid var(--border, #333); color: #fff; padding: 10px 12px; border-radius: 10px; font-size: 0.85rem; outline: none; cursor: pointer;">
+                            <option value="">Selecione uma academia</option>
+                        </select>
+                    </div>
 
                     <button type="submit" class="btn-action" style="margin-top: 0;" id="btnConfirmarContratacao" disabled>
                         <i class="fas fa-check-circle"></i> Confirmar Contratação
@@ -1194,7 +1218,30 @@
         pacoteSelecionado = null;
         horaInicio = null;
         horaFim = null;
-        
+
+        // Popula o select de academias do personal
+        const personal = window.personalsData[personalId];
+        const container = document.getElementById('pacoteAcademiaContainer');
+        const select = document.getElementById('academiaPackSelect');
+        const academias = personal && personal.academias
+            ? personal.academias.split('\n').map(a => a.trim()).filter(a => a.length > 0)
+            : [];
+
+        if (academias.length > 0) {
+            select.innerHTML = '<option value="">Selecione uma academia</option>' +
+                academias.map(a => `<option value="${a}">${a}</option>`).join('');
+            if (academias.length === 1) {
+                select.value = academias[0];
+                document.getElementById('pacote_academia_nome').value = academias[0];
+            } else {
+                document.getElementById('pacote_academia_nome').value = '';
+            }
+            container.style.display = 'block';
+        } else {
+            container.style.display = 'none';
+            document.getElementById('pacote_academia_nome').value = '';
+        }
+
         carregarPacotes(personalId);
         atualizarCalendario();
         atualizarBotao();
@@ -1383,8 +1430,12 @@
         const temPacote = pacoteSelecionado !== null;
         const temDias = diasSelecionados.length > 0;
         const temHorario = horaInicio !== null;
-        
-        btn.disabled = !(temPacote && temDias && temHorario);
+
+        const container = document.getElementById('pacoteAcademiaContainer');
+        const temAcademia = container.style.display === 'none' ||
+            document.getElementById('pacote_academia_nome').value.trim() !== '';
+
+        btn.disabled = !(temPacote && temDias && temHorario && temAcademia);
     }
 
     function mesAnterior() {
@@ -1424,7 +1475,35 @@
         } else {
             msgVazio.style.display = 'block';
         }
+
+        // Popula o select de academias do personal
+        const personal = window.personalsData[id];
+        const container = document.getElementById('academiaAvulsaContainer');
+        const select = document.getElementById('academiaAvulsaSelect');
+        const academias = personal && personal.academias
+            ? personal.academias.split('\n').map(a => a.trim()).filter(a => a.length > 0)
+            : [];
+
+        if (academias.length > 0) {
+            select.innerHTML = '<option value="">Selecione uma academia</option>' +
+                academias.map(a => `<option value="${a}">${a}</option>`).join('');
+            if (academias.length === 1) {
+                select.value = academias[0];
+                atualizarAcademiaAvulsa(academias[0]);
+            }
+            container.style.display = 'block';
+        } else {
+            container.style.display = 'none';
+            atualizarAcademiaAvulsa('');
+        }
+
         document.getElementById('agendaModal').style.display = 'flex';
+    }
+
+    function atualizarAcademiaAvulsa(valor) {
+        document.querySelectorAll('.academia-nome-avulsa').forEach(input => {
+            input.value = valor;
+        });
     }
 
     function fecharAgenda() { document.getElementById('agendaModal').style.display = 'none'; }
@@ -1550,6 +1629,7 @@
             dias_selecionados: document.getElementById('pacote_dias').value,
             hora_inicio:       document.getElementById('pacote_hora_inicio').value,
             hora_fim:          document.getElementById('pacote_hora_fim').value,
+            academia_nome:     document.getElementById('pacote_academia_nome').value,
         };
 
         try {

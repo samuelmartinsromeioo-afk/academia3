@@ -270,14 +270,15 @@ class PersonalController extends Controller
         // ✅ FORMATA A DATA CORRETAMENTE
         $agendas = $agendas->map(function ($agenda) {
             return [
-                'id' => $agenda->id,
-                'data' => $agenda->data->format('Y-m-d'),
-                'hora_inicio' => $agenda->hora_inicio,
-                'hora_fim' => $agenda->hora_fim,
-                'descricao' => $agenda->descricao,
-                'tipo_aula' => $agenda->tipo_aula,
-                'cliente' => $agenda->cliente,
-                'academia' => $agenda->academia,
+                'id'           => $agenda->id,
+                'data'         => $agenda->data->format('Y-m-d'),
+                'hora_inicio'  => $agenda->hora_inicio,
+                'hora_fim'     => $agenda->hora_fim,
+                'descricao'    => $agenda->descricao,
+                'tipo_aula'    => $agenda->tipo_aula,
+                'cliente'      => $agenda->cliente,
+                'academia'     => $agenda->academia,
+                'academia_nome' => $agenda->academia_nome,
             ];
         });
 

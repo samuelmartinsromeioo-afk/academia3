@@ -28,8 +28,9 @@ class Agenda extends Model
         'frequencia_pacote',
         'data_inicio_pacote',
         'data_fim_pacote',
-        'tipo_aula',      
-        'valor_aula'      
+        'tipo_aula',
+        'valor_aula',
+        'academia_nome',
     ];
 
     protected $casts = [
