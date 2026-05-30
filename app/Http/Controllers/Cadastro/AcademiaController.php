@@ -206,11 +206,13 @@ class AcademiaController extends Controller
             'estado'      => 'required|string|max:100',
             'complemento' => 'nullable|string|max:255',
             'telefone'    => 'nullable|string|max:20',
+            'latitude'    => 'nullable|numeric',
+            'longitude'   => 'nullable|numeric',
         ]);
 
         Filial::create(array_merge(
             ['academia_id' => $academiaId],
-            $request->only(['nome', 'cep', 'rua', 'bairro', 'cidade', 'estado', 'complemento', 'telefone'])
+            $request->only(['nome', 'cep', 'rua', 'bairro', 'cidade', 'estado', 'complemento', 'telefone', 'latitude', 'longitude'])
         ));
 
         return redirect()->back()->with('success', 'Filial adicionada com sucesso!');
@@ -231,9 +233,11 @@ class AcademiaController extends Controller
             'estado'      => 'required|string|max:100',
             'complemento' => 'nullable|string|max:255',
             'telefone'    => 'nullable|string|max:20',
+            'latitude'    => 'nullable|numeric',
+            'longitude'   => 'nullable|numeric',
         ]);
 
-        $filial->update($request->only(['nome', 'cep', 'rua', 'bairro', 'cidade', 'estado', 'complemento', 'telefone']));
+        $filial->update($request->only(['nome', 'cep', 'rua', 'bairro', 'cidade', 'estado', 'complemento', 'telefone', 'latitude', 'longitude']));
 
         return redirect()->back()->with('success', 'Filial atualizada com sucesso!');
     }

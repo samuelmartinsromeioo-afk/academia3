@@ -196,7 +196,9 @@
                     '{{ addslashes($filial->cidade) }}',
                     '{{ addslashes($filial->estado) }}',
                     '{{ addslashes($filial->complemento ?? '') }}',
-                    '{{ addslashes($filial->telefone ?? '') }}'
+                    '{{ addslashes($filial->telefone ?? '') }}',
+                    '{{ $filial->latitude ?? '' }}',
+                    '{{ $filial->longitude ?? '' }}'
                 )">
                     <i class="fas fa-pen"></i> Editar
                 </button>
@@ -255,6 +257,8 @@
                     <div class="input-wrap"><i class="fas fa-info-circle"></i><input type="text" name="complemento"></div>
                 </div>
             </div>
+            <input type="hidden" id="nova_latitude" name="latitude">
+            <input type="hidden" id="nova_longitude" name="longitude">
             <div class="modal-actions">
                 <button type="button" class="btn-cancel-modal" onclick="document.getElementById('modalNovaFilial').classList.remove('active')">Cancelar</button>
                 <button type="submit" class="btn-submit-modal">Adicionar Filial</button>
@@ -303,6 +307,8 @@
                     <div class="input-wrap"><i class="fas fa-info-circle"></i><input type="text" id="e_complemento" name="complemento"></div>
                 </div>
             </div>
+            <input type="hidden" id="e_latitude" name="latitude">
+            <input type="hidden" id="e_longitude" name="longitude">
             <div class="modal-actions">
                 <button type="button" class="btn-cancel-modal" onclick="document.getElementById('modalEditarFilial').classList.remove('active')">Cancelar</button>
                 <button type="submit" class="btn-submit-modal">Salvar Alterações</button>
@@ -312,7 +318,7 @@
 </div>
 
 <script>
-    function abrirEditar(id, nome, cep, rua, bairro, cidade, estado, complemento, telefone) {
+    function abrirEditar(id, nome, cep, rua, bairro, cidade, estado, complemento, telefone, lat, lng) {
         document.getElementById('formEditarFilial').action = `/academia/filiais/${id}`;
         document.getElementById('e_nome').value        = nome;
         document.getElementById('e_cep').value         = cep;
@@ -322,30 +328,46 @@
         document.getElementById('e_estado').value      = estado;
         document.getElementById('e_complemento').value = complemento;
         document.getElementById('e_telefone').value    = telefone;
+        document.getElementById('e_latitude').value    = lat || '';
+        document.getElementById('e_longitude').value   = lng || '';
         document.getElementById('modalEditarFilial').classList.add('active');
     }
 
-    function mascaraCep(input) {
+    async function mascaraCep(input) {
         let v = input.value.replace(/\D/g, '').slice(0, 8);
         if (v.length > 5) v = v.slice(0, 5) + '-' + v.slice(5);
         input.value = v;
 
         if (v.replace('-', '').length === 8) {
-            fetch(`https://viacep.com.br/ws/${v.replace('-', '')}/json/`)
-                .then(r => r.json())
-                .then(d => {
-                    if (!d.erro) {
-                        const prefix = input.closest('.modal-overlay').id === 'modalNovaFilial' ? 'nova_' : 'e_';
-                        const rua    = document.getElementById(prefix + 'rua');
-                        const bairro = document.getElementById(prefix + 'bairro');
-                        const cidade = document.getElementById(prefix + 'cidade');
-                        const estado = document.getElementById(prefix + 'estado');
-                        if (rua)    rua.value    = d.logradouro || '';
-                        if (bairro) bairro.value = d.bairro     || '';
-                        if (cidade) cidade.value = d.localidade || '';
-                        if (estado) estado.value = d.uf         || '';
-                    }
-                }).catch(() => {});
+            const cepLimpo = v.replace('-', '');
+            const prefix   = input.closest('.modal-overlay').id === 'modalNovaFilial' ? 'nova_' : 'e_';
+
+            // 1. Preenche endereço via ViaCEP
+            try {
+                const res = await fetch(`https://viacep.com.br/ws/${cepLimpo}/json/`);
+                const d   = await res.json();
+                if (!d.erro) {
+                    const set = (id, val) => { const el = document.getElementById(id); if (el) el.value = val; };
+                    set(prefix + 'rua',    d.logradouro || '');
+                    set(prefix + 'bairro', d.bairro     || '');
+                    set(prefix + 'cidade', d.localidade || '');
+                    set(prefix + 'estado', d.uf         || '');
+                }
+            } catch (_) {}
+
+            // 2. Geocodifica coordenadas via Nominatim
+            try {
+                const geo = await fetch(
+                    `https://nominatim.openstreetmap.org/search?postalcode=${cepLimpo}&country=BR&format=json&limit=1`,
+                    { headers: { 'Accept-Language': 'pt-BR' } }
+                );
+                const geoData = await geo.json();
+                if (geoData.length > 0) {
+                    const set = (id, val) => { const el = document.getElementById(id); if (el) el.value = val; };
+                    set(prefix + 'latitude',  geoData[0].lat);
+                    set(prefix + 'longitude', geoData[0].lon);
+                }
+            } catch (_) {}
         }
     }
 

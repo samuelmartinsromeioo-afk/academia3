@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\App;
 
 use App\Http\Controllers\Controller;
+use App\Models\Cadastro\Filial;
 use App\Models\Cadastro\Personal;
 use App\Models\Cadastro\Academia as Academia;
 
@@ -51,9 +52,26 @@ class MapaController extends Controller
                 'longitude' => (float) $p->longitude,
             ]);
 
+        $filiais = Filial::whereNotNull('latitude')
+            ->whereNotNull('longitude')
+            ->with('academia:id,nome')
+            ->get()
+            ->map(fn($f) => [
+                'tipo'      => 'filial',
+                'id'        => $f->id,
+                'nome'      => $f->nome,
+                'cidade'    => $f->cidade,
+                'estado'    => $f->estado,
+                'endereco'  => "{$f->rua}, {$f->bairro} — {$f->cidade}/{$f->estado}",
+                'info'      => 'Filial de ' . ($f->academia->nome ?? 'Academia'),
+                'latitude'  => (float) $f->latitude,
+                'longitude' => (float) $f->longitude,
+            ]);
+
         return response()->json([
             'academias' => $academias,
             'personals' => $personals,
+            'filiais'   => $filiais,
         ]);
     }
 }

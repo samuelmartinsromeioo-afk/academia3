@@ -18,6 +18,7 @@
             --border: rgba(255, 255, 255, 0.08);
             --academia-color: #d4ff00;
             --personal-color: #00c8ff;
+            --filial-color: #ff9500;
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -118,6 +119,12 @@
             color: var(--personal-color);
         }
 
+        .filter-tab.active-filial {
+            background: rgba(255, 149, 0, 0.1);
+            border-color: var(--filial-color);
+            color: var(--filial-color);
+        }
+
         .filter-tab.active-todos {
             background: rgba(255, 255, 255, 0.05);
             border-color: rgba(255, 255, 255, 0.3);
@@ -183,6 +190,7 @@
 
         .pin-icon.academia { background: rgba(212,255,0,0.12); color: var(--academia-color); }
         .pin-icon.personal { background: rgba(0,200,255,0.12); color: var(--personal-color); }
+        .pin-icon.filial   { background: rgba(255,149,0,0.12); color: var(--filial-color); }
 
         .pin-info h4 { font-size: 0.85rem; font-weight: 700; margin-bottom: 3px; }
         .pin-info p { font-size: 0.72rem; color: var(--text-muted); margin: 0; }
@@ -197,6 +205,7 @@
 
         .badge-academia { background: rgba(212,255,0,0.1); color: var(--academia-color); }
         .badge-personal { background: rgba(0,200,255,0.1); color: var(--personal-color); }
+        .badge-filial   { background: rgba(255,149,0,0.1); color: var(--filial-color); }
 
         .empty-state {
             text-align: center;
@@ -373,6 +382,9 @@
                 <button class="filter-tab" onclick="filtrar('personal', this)">
                     <i class="fas fa-user"></i> Personais
                 </button>
+                <button class="filter-tab" onclick="filtrar('filial', this)">
+                    <i class="fas fa-map-marker-alt"></i> Filiais
+                </button>
             </div>
         </div>
         <div class="sidebar-list" id="sidebarList">
@@ -393,6 +405,10 @@
             <div class="legend-item">
                 <div class="legend-dot" style="background: var(--personal-color);"></div>
                 <span>Personal</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-dot" style="background: var(--filial-color);"></div>
+                <span>Filial</span>
             </div>
         </div>
         <div class="loading-overlay" id="loadingOverlay">
@@ -418,8 +434,10 @@
 
     // Ícones customizados
     function criarIcone(tipo) {
-        const cor = tipo === 'academia' ? '#d4ff00' : '#00c8ff';
-        const icone = tipo === 'academia' ? '🏋️' : '👤';
+        const cores  = { academia: '#d4ff00', personal: '#00c8ff', filial: '#ff9500' };
+        const icones = { academia: '🏋️', personal: '👤', filial: '📍' };
+        const cor   = cores[tipo]  || '#ffffff';
+        const icone = icones[tipo] || '📌';
         return L.divIcon({
             className: '',
             html: `
@@ -457,15 +475,18 @@
             return;
         }
 
+        const tipoLabel = { academia: 'Academia', personal: 'Personal', filial: 'Filial' };
+        const tipoIcon  = { academia: 'dumbbell', personal: 'user', filial: 'map-marker-alt' };
+
         lista.innerHTML = pins.map((pin, i) => `
             <div class="pin-card" id="card-${i}" onclick="focarPin(${pin.latitude}, ${pin.longitude}, ${i})">
                 <div class="pin-icon ${pin.tipo}">
-                    <i class="fas fa-${pin.tipo === 'academia' ? 'dumbbell' : 'user'}"></i>
+                    <i class="fas fa-${tipoIcon[pin.tipo] || 'map-pin'}"></i>
                 </div>
                 <div class="pin-info" style="flex: 1; min-width: 0;">
                     <h4 style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${pin.nome}</h4>
-                    <p>${pin.endereco}</p>
-                    <span class="badge-${pin.tipo}">${pin.tipo === 'academia' ? 'Academia' : 'Personal'}</span>
+                    <p>${pin.tipo === 'filial' ? pin.info + '<br>' : ''}${pin.endereco}</p>
+                    <span class="badge-${pin.tipo}">${tipoLabel[pin.tipo] || pin.tipo}</span>
                 </div>
             </div>
         `).join('');
@@ -516,12 +537,19 @@
         marcadores = [];
 
         filtrados.forEach((pin, i) => {
+            const popupColors = { academia: '212,255,0', personal: '0,200,255', filial: '255,149,0' };
+            const popupVars   = { academia: 'var(--academia-color)', personal: 'var(--personal-color)', filial: 'var(--filial-color)' };
+            const popupEmoji  = { academia: '🏋️ Academia', personal: '👤 Personal', filial: '📍 Filial' };
+            const rgbColor    = popupColors[pin.tipo] || '255,255,255';
+            const cssColor    = popupVars[pin.tipo]   || '#fff';
+            const badgeLabel  = popupEmoji[pin.tipo]  || pin.tipo;
+
             const marker = L.marker([pin.latitude, pin.longitude], { icon: criarIcone(pin.tipo) })
                 .addTo(map)
                 .bindPopup(`
                     <div class="popup-content">
-                        <span class="popup-badge" style="background: rgba(${pin.tipo === 'academia' ? '212,255,0' : '0,200,255'},0.15); color: ${pin.tipo === 'academia' ? 'var(--academia-color)' : 'var(--personal-color)'};">
-                            ${pin.tipo === 'academia' ? '🏋️ Academia' : '👤 Personal'}
+                        <span class="popup-badge" style="background: rgba(${rgbColor},0.15); color: ${cssColor};">
+                            ${badgeLabel}
                         </span>
                         <h3>${pin.nome}</h3>
                         <p><i class="fas fa-map-marker-alt" style="color: var(--primary);"></i> ${pin.endereco}</p>
@@ -557,6 +585,7 @@
             todosOsPins = [
                 ...data.academias,
                 ...data.personals,
+                ...(data.filiais || []),
             ];
 
             // Popula o select de cidades com valores únicos, ordenados
