@@ -3,11 +3,11 @@
 namespace App\Http\Controllers\Cadastro;
 
 use App\Http\Controllers\Controller;
-use App\Models\cadastro\FichaTreino;
-use App\Models\cadastro\ExercicioFicha;
-use App\Models\cadastro\TreinoConcluido;
-use App\Models\cadastro\Personal;
-use App\Models\cadastro\Cliente;
+use App\Models\Cadastro\FichaTreino;
+use App\Models\Cadastro\ExercicioFicha;
+use App\Models\Cadastro\TreinoConcluido;
+use App\Models\Cadastro\Personal;
+use App\Models\Cadastro\Cliente;
 use App\Models\Agenda;
 use Illuminate\Http\Request;
 use Carbon\Carbon;

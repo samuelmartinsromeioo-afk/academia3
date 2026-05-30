@@ -2,7 +2,7 @@
 
 namespace App\Mail;
 
-use App\Models\cadastro\Personal;
+use App\Models\Cadastro\Personal;
 use App\Models\TrainerPayout;
 use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;

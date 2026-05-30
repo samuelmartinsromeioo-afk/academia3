@@ -4,9 +4,9 @@ namespace App\Http\Controllers\Cadastro;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
-use App\Models\cadastro\Personal;
+use App\Models\Cadastro\Personal;
 use App\Models\Agenda;
-use App\Models\cadastro\Cliente;
+use App\Models\Cadastro\Cliente;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Mail;
@@ -424,7 +424,7 @@ class PersonalController extends Controller
 
         foreach ($request->precos as $frequencia => $valor) {
             if ($valor) {
-                \App\Models\cadastro\Pacote::updateOrCreate(
+                \App\Models\Cadastro\Pacote::updateOrCreate(
                     ['personal_id' => session('personal_id'), 'frequencia' => $frequencia],
                     ['valor_mensal' => $valor]
                 );
@@ -462,7 +462,7 @@ class PersonalController extends Controller
                 ->first();
 
             if ($aulas && $aulas->frequencia_pacote) {
-                $pacote = \App\Models\cadastro\Pacote::where('personal_id', session('personal_id'))
+                $pacote = \App\Models\Cadastro\Pacote::where('personal_id', session('personal_id'))
                     ->where('frequencia', $aulas->frequencia_pacote)
                     ->first();
             }
@@ -498,7 +498,7 @@ class PersonalController extends Controller
 
         foreach ($aulasPackote as $agenda) {
             if ($agenda->frequencia_pacote && !isset($pacotesProcessados[$agenda->frequencia_pacote])) {
-                $pacote = \App\Models\cadastro\Pacote::where('personal_id', $personalId)
+                $pacote = \App\Models\Cadastro\Pacote::where('personal_id', $personalId)
                     ->where('frequencia', $agenda->frequencia_pacote)
                     ->first();
 

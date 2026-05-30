@@ -3,8 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Mail\PaymentSuccessfulMail;
-use App\Models\cadastro\Pacote;
-use App\Models\cadastro\Personal;
+use App\Models\Cadastro\Pacote;
+use App\Models\Cadastro\Personal;
 use App\Models\MembershipConfirmation;
 use App\Models\Payment;
 use App\Models\TrainerPayout;
@@ -50,7 +50,7 @@ class PaymentController extends Controller
             'academia_nome'     => 'nullable|string|max:255',
         ]);
 
-        $cliente  = \App\Models\cadastro\cliente::findOrFail($clienteId);
+        $cliente  = \App\Models\Cadastro\Cliente::findOrFail($clienteId);
         $personal = Personal::findOrFail($validated['personal_id']);
 
         if ($validated['tipo'] === 'pacote') {
@@ -204,7 +204,7 @@ class PaymentController extends Controller
                     'academia_nome'     => $booking['academia_nome'] ?? null,
                 ]);
                 try {
-                    app(\App\Http\Controllers\Cadastro\ClienteController::class)->contratarPacote($fakeReq);
+                    app(\App\Http\Controllers\Cadastro\ClienteController::class)->agendarAulasInterno($fakeReq);
                 } catch (\Exception $e) {
                     Log::error('processarPagamentoConfirmado: contratarPacote falhou', [
                         'error'   => $e->getMessage(),
@@ -294,7 +294,7 @@ class PaymentController extends Controller
             ]
         );
 
-        \App\Models\cadastro\cliente::where('id', $payment->user_id)->update([
+        \App\Models\Cadastro\Cliente::where('id', $payment->user_id)->update([
             'plano'       => $payment->membership_id,
             'plano_ativo' => true,
         ]);
@@ -307,7 +307,7 @@ class PaymentController extends Controller
 
         $this->transferirParaPersonal($payout, $payment);
 
-        $cliente  = \App\Models\cadastro\cliente::find($payment->user_id);
+        $cliente  = \App\Models\Cadastro\Cliente::find($payment->user_id);
         $personal = Personal::find($payment->trainer_id);
 
         if ($cliente) {
@@ -373,7 +373,7 @@ class PaymentController extends Controller
         }
     }
 
-    private function obterOuCriarClienteAsaas(\App\Models\cadastro\cliente $cliente): string
+    private function obterOuCriarClienteAsaas(\App\Models\Cadastro\Cliente $cliente): string
     {
         $search = Http::withHeaders($this->asaasHeaders())
             ->get($this->asaas() . '/customers', ['email' => $cliente->email]);

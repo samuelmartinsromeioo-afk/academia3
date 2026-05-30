@@ -4,8 +4,8 @@ namespace App\Http\Controllers\App;
 
 use App\Http\Controllers\Controller;
 use App\Models\Foto;
-use App\Models\cadastro\Personal;
-use App\Models\cadastro\academia as Academia;
+use App\Models\Cadastro\Personal;
+use App\Models\Cadastro\Academia as Academia;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 

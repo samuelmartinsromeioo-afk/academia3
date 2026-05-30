@@ -3,8 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Http\Controllers\Controller;
-use App\Models\cadastro\Personal;
-use App\Models\cadastro\Cliente;
+use App\Models\Cadastro\Personal;
+use App\Models\Cadastro\Cliente;
 use App\Models\Admin;
 use App\Models\Agenda;
 use Illuminate\Http\Request;
@@ -237,7 +237,7 @@ class AdminController extends Controller
         }
 
         // Deletar pacotes
-        \App\Models\cadastro\Pacote::where('personal_id', $id)->delete();
+        \App\Models\Cadastro\Pacote::where('personal_id', $id)->delete();
 
         // Deletar fotos adicionais
         if (method_exists($personal, 'fotos')) {
@@ -339,7 +339,7 @@ class AdminController extends Controller
 
         foreach ($aulasPackote as $agenda) {
             if ($agenda->frequencia_pacote && !isset($pacotesProcessados[$agenda->frequencia_pacote])) {
-                $pacote = \App\Models\cadastro\Pacote::where('personal_id', $personalId)
+                $pacote = \App\Models\Cadastro\Pacote::where('personal_id', $personalId)
                     ->where('frequencia', $agenda->frequencia_pacote)
                     ->first();
 

@@ -38,17 +38,17 @@ class Payment extends Model
 
     public function cliente()
     {
-        return $this->belongsTo(\App\Models\cadastro\cliente::class, 'user_id');
+        return $this->belongsTo(\App\Models\Cadastro\Cliente::class, 'user_id');
     }
 
     public function personal()
     {
-        return $this->belongsTo(\App\Models\cadastro\Personal::class, 'trainer_id');
+        return $this->belongsTo(\App\Models\Cadastro\Personal::class, 'trainer_id');
     }
 
     public function pacote()
     {
-        return $this->belongsTo(\App\Models\cadastro\Pacote::class, 'membership_id');
+        return $this->belongsTo(\App\Models\Cadastro\Pacote::class, 'membership_id');
     }
 
     public function confirmation()

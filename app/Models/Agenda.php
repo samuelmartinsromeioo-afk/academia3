@@ -4,8 +4,8 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use App\Models\cadastro\Personal; 
-use App\Models\cadastro\Cliente; 
+use App\Models\Cadastro\Personal; 
+use App\Models\Cadastro\Cliente; 
 
 class Agenda extends Model
 {
@@ -49,12 +49,12 @@ class Agenda extends Model
 
     public function academia()
     {
-        return $this->belongsTo(\App\Models\cadastro\Academia::class, 'academia_id');
+        return $this->belongsTo(\App\Models\Cadastro\Academia::class, 'academia_id');
     }
 
     public function cliente()
     {
-        return $this->belongsTo(\App\Models\cadastro\Cliente::class, 'cliente_id');
+        return $this->belongsTo(\App\Models\Cadastro\Cliente::class, 'cliente_id');
     }
 
     
@@ -63,7 +63,7 @@ class Agenda extends Model
         if ($this->tipo_aula === 'pacote' && $this->frequencia_pacote) {
             // Valor do pacote mensal ÷ quantidade de aulas do mês
             // Exemplo: R$ 400 ÷ 4 aulas = R$ 100 por aula
-            $pacote = \App\Models\cadastro\Pacote::where('personal_id', $this->personal_id)
+            $pacote = \App\Models\Cadastro\Pacote::where('personal_id', $this->personal_id)
                 ->where('frequencia', $this->frequencia_pacote)
                 ->first();
             

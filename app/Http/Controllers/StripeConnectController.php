@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\cadastro\Personal;
+use App\Models\Cadastro\Personal;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Stripe\Account;

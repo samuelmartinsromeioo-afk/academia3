@@ -73,8 +73,8 @@ class StripeWebhookController extends Controller
             'retry_count'     => $payment->retry_count + 1,
         ]);
 
-        $cliente  = \App\Models\cadastro\cliente::find($payment->user_id);
-        $personal = \App\Models\cadastro\Personal::find($payment->trainer_id);
+        $cliente  = \App\Models\Cadastro\Cliente::find($payment->user_id);
+        $personal = \App\Models\Cadastro\Personal::find($payment->trainer_id);
 
         if ($cliente) {
             try {

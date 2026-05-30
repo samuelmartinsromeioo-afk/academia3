@@ -3,8 +3,8 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use App\Models\cadastro\Personal; 
-use App\Models\cadastro\cliente; // Ou Cliente, dependendo de quem faz o login
+use App\Models\Cadastro\Personal; 
+use App\Models\Cadastro\Cliente; // Ou Cliente, dependendo de quem faz o login
 
 class Avaliacao extends Model
 {
@@ -15,7 +15,7 @@ class Avaliacao extends Model
 
     public function cliente()
     {
-        return $this->belongsTo(\App\Models\cadastro\Cliente::class, 'cliente_id');
+        return $this->belongsTo(\App\Models\Cadastro\Cliente::class, 'cliente_id');
     }
     public function personal()
     {

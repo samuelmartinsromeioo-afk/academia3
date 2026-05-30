@@ -3,10 +3,10 @@
 namespace App\Http\Controllers\Cadastro;
 
 use App\Http\Controllers\Controller;
-use App\Models\cadastro\Academia;
-use App\Models\cadastro\Cliente;
-use App\Models\cadastro\Personal;
-use App\Models\cadastro\Plano;
+use App\Models\Cadastro\Academia;
+use App\Models\Cadastro\Cliente;
+use App\Models\Cadastro\Personal;
+use App\Models\Cadastro\Plano;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 

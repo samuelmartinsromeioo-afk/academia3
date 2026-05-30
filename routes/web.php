@@ -10,7 +10,7 @@ use App\Http\Controllers\Cadastro\ClienteController;
 use App\Http\Controllers\Cadastro\PersonalController;
 use App\Http\Controllers\Cadastro\AcademiaController;
 use App\Http\Controllers\App\MapaController;
-use App\Http\Controllers\cadastro\PacoteController;
+use App\Http\Controllers\Cadastro\PacoteController;
 use App\Http\Controllers\App\FotoController;
 use App\Http\Controllers\Cadastro\FichaTreinoController;
 use App\Http\Controllers\AvaliacaoController;

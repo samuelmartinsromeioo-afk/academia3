@@ -22,6 +22,6 @@ class TrainerPayout extends Model
 
     public function personal()
     {
-        return $this->belongsTo(\App\Models\cadastro\Personal::class, 'trainer_id');
+        return $this->belongsTo(\App\Models\Cadastro\Personal::class, 'trainer_id');
     }
 }

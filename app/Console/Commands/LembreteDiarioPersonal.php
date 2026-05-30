@@ -4,7 +4,7 @@ namespace App\Console\Commands;
 
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
-use App\Models\cadastro\Personal;
+use App\Models\Cadastro\Personal;
 use App\Models\Agenda;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Http;

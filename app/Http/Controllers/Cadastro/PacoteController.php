@@ -1,10 +1,10 @@
 <?php
 
-namespace App\Http\Controllers\cadastro;
+namespace App\Http\Controllers\Cadastro;
 
 use App\Http\Controllers\Controller;
-use App\Models\cadastro\Pacote;
-use App\Models\cadastro\Personal;
+use App\Models\Cadastro\Pacote;
+use App\Models\Cadastro\Personal;
 use App\Models\User;
 use Illuminate\Http\Request;
 

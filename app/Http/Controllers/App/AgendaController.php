@@ -3,7 +3,7 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use App\Models\cadastro\Personal;
+use App\Models\Cadastro\Personal;
 use App\Models\Agenda;
 use Carbon\Carbon;
 

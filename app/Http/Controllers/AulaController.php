@@ -4,8 +4,8 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\Agenda;
-use App\Models\cadastro\Cliente;
-use App\Models\cadastro\Personal;
+use App\Models\Cadastro\Cliente;
+use App\Models\Cadastro\Personal;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 

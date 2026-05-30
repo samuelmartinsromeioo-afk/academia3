@@ -908,7 +908,7 @@
                 <div class="planos-grid">
                     @php
                     $personalId = session('personal_id') ?? $personal->id;
-                    $precosSalvos = \App\Models\cadastro\Pacote::where('personal_id', $personalId)
+                    $precosSalvos = \App\Models\Cadastro\Pacote::where('personal_id', $personalId)
                     ->pluck('valor_mensal', 'frequencia')
                     ->toArray();
                     @endphp

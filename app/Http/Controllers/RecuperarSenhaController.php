@@ -2,9 +2,9 @@
  
 namespace App\Http\Controllers;
  
-use App\Models\cadastro\Academia;
-use App\Models\cadastro\Cliente;
-use App\Models\cadastro\Personal;
+use App\Models\Cadastro\Academia;
+use App\Models\Cadastro\Cliente;
+use App\Models\Cadastro\Personal;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;

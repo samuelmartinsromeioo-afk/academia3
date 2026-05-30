@@ -1151,7 +1151,7 @@
         @foreach($personals as $p)
         {{ $p->id }}: [
             @php
-                $pacotesPersonal = \App\Models\cadastro\Pacote::where('personal_id', $p->id)->get();
+                $pacotesPersonal = \App\Models\Cadastro\Pacote::where('personal_id', $p->id)->get();
             @endphp
             @foreach($pacotesPersonal as $pacote)
             {
@@ -1648,7 +1648,7 @@
             if (!response.ok) throw new Error(data.error || 'Erro ao gerar pagamento.');
 
             // Exibe modal Pix
-            document.getElementById('pixQrCodeImg').src = data.pixQrCode;
+            document.getElementById('pixQrCodeImg').src = 'data:image/png;base64,' + data.pixQrCode;
             document.getElementById('pixCopiaCola').value = data.pixPayload;
             document.getElementById('pixValor').textContent = 'R$ ' + parseFloat(data.amount).toFixed(2).replace('.', ',');
             document.getElementById('modalPix').style.display = 'flex';

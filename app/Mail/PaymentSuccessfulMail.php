@@ -3,8 +3,8 @@
 namespace App\Mail;
 
 use App\Models\Payment;
-use App\Models\cadastro\cliente;
-use App\Models\cadastro\Personal;
+use App\Models\Cadastro\Cliente;
+use App\Models\Cadastro\Personal;
 use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Content;
