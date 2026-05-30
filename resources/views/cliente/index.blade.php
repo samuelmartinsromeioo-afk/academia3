@@ -365,6 +365,7 @@
         <div class="dropdown-menu" id="dropdownMenu">
             <button type="button" onclick="window.location.href='{{ route('cliente.index') }}'"><i class="fas fa-chart-line"></i> Menu Principal</button>
             <button type="button" onclick="toggleEditForm()"><i class="fas fa-user-edit"></i> Editar Perfil</button>
+            <button type="button" onclick="window.location.href='{{ route('fichas-treino.minhas') }}'"><i class="fas fa-dumbbell"></i> Minha Ficha</button>
             <button type="button" onclick="abrirHistoricoModal()"><i class="fas fa-history"></i> Ver Histórico</button>
             <button type="button" onclick="window.location.href='{{ route('mapa.index') }}'"><i class="fas fa-map-marked-alt"></i> Ver Mapa</button>
             <form action="{{ route('login.logout') }}" method="POST">
