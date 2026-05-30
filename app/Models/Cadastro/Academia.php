@@ -6,6 +6,8 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use App\Models\Foto;
+use App\Models\Cadastro\Plano;
+use App\Models\Cadastro\Filial;
 class Academia extends Model
 {
 
@@ -45,6 +47,16 @@ class Academia extends Model
     public function fotos()
     {
         return $this->morphMany(Foto::class, 'fotavel');
+    }
+
+    public function planos(): HasMany
+    {
+        return $this->hasMany(Plano::class);
+    }
+
+    public function filiais(): HasMany
+    {
+        return $this->hasMany(Filial::class);
     }
 
     use HasFactory;

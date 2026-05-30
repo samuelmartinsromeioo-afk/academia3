@@ -13,6 +13,8 @@ class Payment extends Model
         'user_id',
         'trainer_id',
         'membership_id',
+        'academia_id',
+        'plano_id',
         'amount_total',
         'company_fee',
         'trainer_amount',
@@ -49,6 +51,16 @@ class Payment extends Model
     public function pacote()
     {
         return $this->belongsTo(\App\Models\Cadastro\Pacote::class, 'membership_id');
+    }
+
+    public function academia()
+    {
+        return $this->belongsTo(\App\Models\Cadastro\Academia::class, 'academia_id');
+    }
+
+    public function plano()
+    {
+        return $this->belongsTo(\App\Models\Cadastro\Plano::class, 'plano_id');
     }
 
     public function confirmation()

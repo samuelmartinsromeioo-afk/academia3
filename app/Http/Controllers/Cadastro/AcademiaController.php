@@ -4,7 +4,8 @@ namespace App\Http\Controllers\Cadastro;
 
 use App\Http\Controllers\Controller;
 use App\Models\Cadastro\Academia;
-use App\Models\Cadastro\Cliente; 
+use App\Models\Cadastro\Cliente;
+use App\Models\Cadastro\Filial;
 use App\Models\Cadastro\Personal;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -129,6 +130,11 @@ class AcademiaController extends Controller
             'descricao'     => 'nullable|string|max:500',
         ]);
 
+        $count = Plano::where('academia_id', session('academia_id'))->count();
+        if ($count >= 5) {
+            return redirect()->back()->with('error', 'Limite de 5 planos atingido. Exclua um plano antes de adicionar outro.');
+        }
+
         Plano::create([
             'academia_id'   => session('academia_id'),
             'nome'          => $request->nome,
@@ -173,5 +179,72 @@ class AcademiaController extends Controller
             ->delete();
 
         return redirect()->back()->with('success', 'Plano removido com sucesso!');
+    }
+
+    public function filiais()
+    {
+        $academiaId = session('academia_id');
+        if (!$academiaId) return redirect()->route('login.index');
+
+        $academia = Academia::findOrFail($academiaId);
+        $filiais  = Filial::where('academia_id', $academiaId)->orderBy('nome')->get();
+
+        return view('academia.filiais', compact('academia', 'filiais'));
+    }
+
+    public function storeFilial(Request $request)
+    {
+        $academiaId = session('academia_id');
+        if (!$academiaId) return redirect()->route('login.index');
+
+        $request->validate([
+            'nome'        => 'required|string|max:255',
+            'cep'         => 'required|string|max:9',
+            'rua'         => 'required|string|max:300',
+            'bairro'      => 'required|string|max:200',
+            'cidade'      => 'required|string|max:200',
+            'estado'      => 'required|string|max:100',
+            'complemento' => 'nullable|string|max:255',
+            'telefone'    => 'nullable|string|max:20',
+        ]);
+
+        Filial::create(array_merge(
+            ['academia_id' => $academiaId],
+            $request->only(['nome', 'cep', 'rua', 'bairro', 'cidade', 'estado', 'complemento', 'telefone'])
+        ));
+
+        return redirect()->back()->with('success', 'Filial adicionada com sucesso!');
+    }
+
+    public function updateFilial(Request $request, $id)
+    {
+        $filial = Filial::where('id', $id)
+            ->where('academia_id', session('academia_id'))
+            ->firstOrFail();
+
+        $request->validate([
+            'nome'        => 'required|string|max:255',
+            'cep'         => 'required|string|max:9',
+            'rua'         => 'required|string|max:300',
+            'bairro'      => 'required|string|max:200',
+            'cidade'      => 'required|string|max:200',
+            'estado'      => 'required|string|max:100',
+            'complemento' => 'nullable|string|max:255',
+            'telefone'    => 'nullable|string|max:20',
+        ]);
+
+        $filial->update($request->only(['nome', 'cep', 'rua', 'bairro', 'cidade', 'estado', 'complemento', 'telefone']));
+
+        return redirect()->back()->with('success', 'Filial atualizada com sucesso!');
+    }
+
+    public function destroyFilial($id)
+    {
+        Filial::where('id', $id)
+            ->where('academia_id', session('academia_id'))
+            ->firstOrFail()
+            ->delete();
+
+        return redirect()->back()->with('success', 'Filial removida com sucesso!');
     }
 }

@@ -13,6 +13,7 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 // Chamadas AJAX do Blade devem incluir o header X-CSRF-TOKEN.
 Route::middleware(['web'])->group(function () {
     Route::post('/criar-pagamento', [PaymentController::class, 'criarPagamento']);
+    Route::post('/criar-pagamento-academia', [PaymentController::class, 'criarPagamentoAcademia']);
     Route::get('/pagamento/status/{asaasPaymentId}', [PaymentController::class, 'verificarStatusPagamento']);
     Route::get('/payments/history', [PaymentController::class, 'listPaymentHistory']);
     Route::get('/trainer/payouts', [PaymentController::class, 'listPayouts']);

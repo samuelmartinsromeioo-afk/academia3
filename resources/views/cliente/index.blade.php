@@ -635,13 +635,10 @@
                         @if($cliente->academia_id == $academia->id)
                             <div class="badge-status" style="background: var(--primary); color: #000;">Meu Plano</div>
                         @else
-                            <form action="{{ route('academias.contratar') }}" method="POST">
-                                @csrf
-                                <input type="hidden" name="academia_id" value="{{ $academia->id }}">
-                                <button type="submit" class="btn-action" style="margin:0; padding: 10px 20px; width: auto; font-size: 0.7rem;">
-                                    Contratar
-                                </button>
-                            </form>
+                            <button class="btn-action" style="margin:0; padding: 10px 20px; width: auto; font-size: 0.7rem;"
+                                onclick="abrirPlanosAcademia({{ $academia->id }}, '{{ addslashes($academia->nome) }}', {!! json_encode($academia->planos->map(fn($p) => ['id'=>$p->id,'nome'=>$p->nome,'valor'=>$p->valor,'duracao'=>$p->duracao_meses,'descricao'=>$p->descricao])) !!})">
+                                <i class="fas fa-tags"></i> Ver Planos
+                            </button>
                         @endif
                     </div>
                 </div>
@@ -1721,6 +1718,140 @@
 <style>
     @@keyframes spinPix { to { transform: rotate(360deg); } }
 </style>
+
+{{-- MODAL PLANOS DA ACADEMIA --}}
+<div id="modalPlanosAcademia" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.88); z-index:99998; flex-direction:column; justify-content:center; align-items:center; backdrop-filter:blur(6px); padding:20px;">
+    <div style="background:#16181d; border:1px solid rgba(255,255,255,0.08); border-radius:20px; padding:32px; max-width:500px; width:100%; position:relative; max-height:90vh; overflow-y:auto;">
+        <button onclick="fecharPlanosAcademia()" style="position:absolute; top:16px; right:16px; background:none; border:none; color:#a0a0a0; font-size:1.2rem; cursor:pointer;">✕</button>
+        <h3 id="planosAcademiaNome" style="color:#d4ff00; font-size:1.1rem; font-weight:900; margin:0 0 6px;"></h3>
+        <p style="color:#a0a0a0; font-size:0.8rem; margin:0 0 20px;">Selecione um plano e pague via PIX para se associar.</p>
+        <div id="planosAcademiaLista"></div>
+    </div>
+</div>
+
+{{-- MODAL PIX — ACADEMIA --}}
+<div id="modalPixAcademia" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.88); z-index:99999; flex-direction:column; justify-content:center; align-items:center; backdrop-filter:blur(6px); padding:20px;">
+    <div style="background:#16181d; border:1px solid rgba(255,255,255,0.08); border-radius:20px; padding:32px; max-width:420px; width:100%; text-align:center; position:relative;">
+        <button onclick="fecharModalPixAcademia()" style="position:absolute; top:16px; right:16px; background:none; border:none; color:#a0a0a0; font-size:1.2rem; cursor:pointer;">✕</button>
+        <h3 style="color:#d4ff00; font-size:1.1rem; font-weight:900; margin:0 0 4px;">PAGAMENTO VIA PIX</h3>
+        <p id="pixAcademiaDescricao" style="color:#a0a0a0; font-size:0.8rem; margin:0 0 8px;"></p>
+        <p id="pixAcademiaValor" style="color:#fff; font-size:1.5rem; font-weight:700; margin:0 0 20px;"></p>
+        <img id="pixAcademiaQr" src="" alt="QR Code" style="width:200px; height:200px; border-radius:12px; background:#fff; padding:8px; margin-bottom:16px;">
+        <p style="color:#a0a0a0; font-size:0.8rem; margin:0 0 8px;">Ou copie o código Pix:</p>
+        <div style="display:flex; gap:8px; margin-bottom:16px;">
+            <input id="pixAcademiaCopia" type="text" readonly style="flex:1; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); border-radius:8px; padding:8px 12px; color:#fff; font-size:0.75rem; outline:none;">
+            <button onclick="copiarPixAcademia()" style="background:#d4ff00; color:#000; border:none; border-radius:8px; padding:8px 14px; font-weight:700; font-size:0.8rem; cursor:pointer; white-space:nowrap;">Copiar código</button>
+        </div>
+        <div style="display:flex; align-items:center; gap:8px; justify-content:center; color:#a0a0a0; font-size:0.8rem; margin-bottom:12px;">
+            <div style="width:10px; height:10px; border:2px solid rgba(212,255,0,0.3); border-top-color:#d4ff00; border-radius:50%; animation:spinPix 1s linear infinite;"></div>
+            Aguardando confirmação do pagamento...
+        </div>
+        <p id="pixAcademiaStatus" style="display:none; font-weight:700; font-size:0.9rem; margin:0;"></p>
+    </div>
+</div>
+
+<script>
+    let pixAcademiaPolling = null;
+
+    function abrirPlanosAcademia(academiaId, academiaNome, planos) {
+        document.getElementById('planosAcademiaNome').textContent = academiaNome;
+        const lista = document.getElementById('planosAcademiaLista');
+
+        if (!planos || planos.length === 0) {
+            lista.innerHTML = '<p style="color:#a0a0a0; text-align:center; padding:20px;">Esta academia ainda não possui planos disponíveis.</p>';
+        } else {
+            lista.innerHTML = planos.map(p => `
+                <div style="background:rgba(255,255,255,0.03); border:1px solid rgba(212,255,0,0.2); border-radius:14px; padding:16px; margin-bottom:12px;">
+                    <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:10px;">
+                        <div>
+                            <div style="font-weight:800; font-size:1rem; color:#d4ff00; margin-bottom:4px;">${p.nome}</div>
+                            <div style="font-size:0.8rem; color:#a0a0a0;">
+                                <i class="fas fa-calendar-alt"></i> ${p.duracao} ${p.duracao === 1 ? 'mês' : 'meses'}
+                                ${p.descricao ? `<br><i class="fas fa-list-ul"></i> ${p.descricao}` : ''}
+                            </div>
+                        </div>
+                        <div style="text-align:right; flex-shrink:0;">
+                            <div style="font-size:1.2rem; font-weight:900; color:#fff;">R$ ${parseFloat(p.valor).toFixed(2).replace('.', ',')}</div>
+                            <small style="color:#a0a0a0;">/mês</small>
+                        </div>
+                    </div>
+                    <button onclick="pagarPlanoAcademia(${academiaId}, ${p.id}, '${p.nome}', '${academiaNome}', ${p.valor})"
+                        style="width:100%; margin-top:12px; background:#d4ff00; color:#000; border:none; border-radius:8px; padding:10px; font-weight:900; font-size:0.8rem; cursor:pointer; transition:0.2s;"
+                        onmouseover="this.style.background='#e8ff40'" onmouseout="this.style.background='#d4ff00'">
+                        <i class="fas fa-qrcode"></i> Pagar via PIX
+                    </button>
+                </div>
+            `).join('');
+        }
+        document.getElementById('modalPlanosAcademia').style.display = 'flex';
+    }
+
+    function fecharPlanosAcademia() {
+        document.getElementById('modalPlanosAcademia').style.display = 'none';
+    }
+
+    async function pagarPlanoAcademia(academiaId, planoId, planoNome, academiaNome, valor) {
+        fecharPlanosAcademia();
+
+        document.getElementById('pixAcademiaDescricao').textContent = `Plano ${planoNome} — ${academiaNome}`;
+        document.getElementById('pixAcademiaValor').textContent = 'Gerando QR Code...';
+        document.getElementById('pixAcademiaQr').src = '';
+        document.getElementById('pixAcademiaCopia').value = '';
+        document.getElementById('pixAcademiaStatus').style.display = 'none';
+        document.getElementById('modalPixAcademia').style.display = 'flex';
+
+        try {
+            const res = await fetch('/api/criar-pagamento-academia', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}' },
+                body: JSON.stringify({ academia_id: academiaId, plano_id: planoId }),
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || 'Erro ao gerar pagamento.');
+
+            document.getElementById('pixAcademiaQr').src = 'data:image/png;base64,' + data.pixQrCode;
+            document.getElementById('pixAcademiaCopia').value = data.pixPayload;
+            document.getElementById('pixAcademiaValor').textContent = 'R$ ' + parseFloat(data.amount).toFixed(2).replace('.', ',');
+
+            pixAcademiaPolling = setInterval(async () => {
+                try {
+                    const sr = await fetch('/api/pagamento/status/' + data.asaasPaymentId, {
+                        headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}' }
+                    });
+                    const sd = await sr.json();
+                    if (sd.confirmed) {
+                        clearInterval(pixAcademiaPolling);
+                        const msg = document.getElementById('pixAcademiaStatus');
+                        msg.textContent = '✅ Pagamento confirmado! Bem-vindo à academia!';
+                        msg.style.color = 'var(--success)';
+                        msg.style.display = 'block';
+                        setTimeout(() => { window.location.reload(); }, 2500);
+                    }
+                } catch (_) {}
+            }, 4000);
+
+        } catch (err) {
+            alert('Erro ao iniciar pagamento: ' + err.message);
+            fecharModalPixAcademia();
+        }
+    }
+
+    function fecharModalPixAcademia() {
+        document.getElementById('modalPixAcademia').style.display = 'none';
+        if (pixAcademiaPolling) { clearInterval(pixAcademiaPolling); pixAcademiaPolling = null; }
+    }
+
+    function copiarPixAcademia() {
+        const input = document.getElementById('pixAcademiaCopia');
+        input.select();
+        document.execCommand('copy');
+    }
+
+    window.addEventListener('click', e => {
+        if (e.target === document.getElementById('modalPlanosAcademia')) fecharPlanosAcademia();
+        if (e.target === document.getElementById('modalPixAcademia')) fecharModalPixAcademia();
+    });
+</script>
 
 </body>
 </html>

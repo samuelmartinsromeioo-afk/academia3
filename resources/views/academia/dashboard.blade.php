@@ -306,6 +306,9 @@
             <button type="button" onclick="document.getElementById('modalUpdate').style.display='block'; toggleMenu();">
                 <i class="fas fa-building"></i> Meu Perfil
             </button>
+            <button type="button" onclick="window.location.href='{{ route('academia.filiais') }}'">
+                <i class="fas fa-map-marker-alt"></i> Filiais
+            </button>
             <button type="button" onclick="document.getElementById('modalGaleriaAcademia').style.display='block'; toggleMenu();">
                 <i class="fas fa-images"></i> Galeria de Fotos
             </button>
@@ -363,7 +366,17 @@
         </div>
     </div>
 
-    <div class="section-title"><i class="fas fa-tags"></i> Meus Planos</div>
+    <div class="section-title">
+        <i class="fas fa-tags"></i> Meus Planos
+        <span style="font-size: 0.75rem; font-weight: 700; color: {{ $planos->count() >= 5 ? 'var(--error)' : 'var(--primary)' }}; margin-left: 8px;">
+            {{ $planos->count() }}/5
+        </span>
+    </div>
+    @if(session('error'))
+    <div style="background: rgba(255,68,68,0.1); color: var(--error); padding: 12px 16px; border-radius: 10px; border: 1px solid var(--error); margin-bottom: 15px; font-size: 0.85rem;">
+        <i class="fas fa-exclamation-circle"></i> {{ session('error') }}
+    </div>
+    @endif
     <div class="planos-grid">
         @forelse($planos as $plano)
         <div class="plano-card {{ !$plano->ativo ? 'inativo' : '' }}">
@@ -394,10 +407,12 @@
         </div>
         @empty
         @endforelse
+        @if($planos->count() < 5)
         <button class="btn-novo-plano" onclick="document.getElementById('modalNovoPLano').style.display='block'">
             <i class="fas fa-plus-circle"></i>
             Novo Plano
         </button>
+        @endif
     </div>
 
     <div class="section-title"><i class="fas fa-users"></i> Últimos Alunos Cadastrados</div>

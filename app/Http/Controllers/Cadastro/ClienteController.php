@@ -26,7 +26,7 @@ class ClienteController extends Controller
         $personals = Personal::where('status', 'aprovado')
             ->with(['fotos', 'avaliacoes'])
             ->get();
-        $academias = Academia::with('fotos')->get();
+        $academias = Academia::with(['fotos', 'planos' => fn($q) => $q->where('ativo', true)->orderBy('valor')])->get();
 
         $meusAgendamentos = Agenda::where('cliente_id', $id)
             ->with(['personal', 'academia'])

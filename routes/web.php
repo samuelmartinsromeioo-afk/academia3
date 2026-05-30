@@ -166,6 +166,12 @@ Route::middleware('check.login')->group(function () {
     Route::post('/academia/planos', [AcademiaController::class, 'storePlano'])->name('academia.planos.store');
     Route::put('/academia/planos/{id}', [AcademiaController::class, 'updatePlano'])->name('academia.planos.update');
     Route::delete('/academia/planos/{id}', [AcademiaController::class, 'destroyPlano'])->name('academia.planos.destroy');
+
+    // Gestão de Filiais da Academia
+    Route::get('/academia/filiais', [AcademiaController::class, 'filiais'])->name('academia.filiais');
+    Route::post('/academia/filiais', [AcademiaController::class, 'storeFilial'])->name('academia.filiais.store');
+    Route::put('/academia/filiais/{id}', [AcademiaController::class, 'updateFilial'])->name('academia.filiais.update');
+    Route::delete('/academia/filiais/{id}', [AcademiaController::class, 'destroyFilial'])->name('academia.filiais.destroy');
 });
 
 

@@ -192,6 +192,24 @@ class PaymentController extends Controller
         if (!empty($payment->booking_data)) {
             $booking = json_decode($payment->booking_data, true);
 
+            if (($booking['tipo'] ?? '') === 'academia') {
+                try {
+                    $cliente = \App\Models\Cadastro\Cliente::find($booking['cliente_id']);
+                    if ($cliente) {
+                        $cliente->update([
+                            'academia_id' => $booking['academia_id'],
+                            'plano'       => $booking['plano_id'],
+                            'plano_ativo' => true,
+                        ]);
+                    }
+                } catch (\Exception $e) {
+                    Log::error('processarPagamentoConfirmado: academia falhou', [
+                        'error'   => $e->getMessage(),
+                        'booking' => $booking,
+                    ]);
+                }
+            }
+
             if (($booking['tipo'] ?? '') === 'pacote') {
                 $fakeReq = new \Illuminate\Http\Request();
                 $fakeReq->replace([
@@ -389,6 +407,99 @@ class PaymentController extends Controller
             ]);
 
         return $create->json()['id'];
+    }
+
+    // ─────────────────────────────────────────────
+    // CRIAR PAGAMENTO PIX — ACADEMIA
+    // ─────────────────────────────────────────────
+    public function criarPagamentoAcademia(Request $request)
+    {
+        $clienteId = session('cliente_id');
+        if (!$clienteId) {
+            return response()->json(['error' => 'Não autenticado.'], 401);
+        }
+
+        $validated = $request->validate([
+            'academia_id' => 'required|integer|exists:academias,id',
+            'plano_id'    => 'required|integer|exists:planos,id',
+        ]);
+
+        $cliente  = \App\Models\Cadastro\Cliente::findOrFail($clienteId);
+        $academia = \App\Models\Cadastro\Academia::findOrFail($validated['academia_id']);
+        $plano    = \App\Models\Cadastro\Plano::findOrFail($validated['plano_id']);
+
+        if ((int) $plano->academia_id !== (int) $validated['academia_id']) {
+            return response()->json(['error' => 'Plano inválido para esta academia.'], 422);
+        }
+
+        $amount      = (float) $plano->valor;
+        $description = "Plano {$plano->nome} — {$academia->nome}";
+
+        try {
+            $asaasCustomerId = $this->obterOuCriarClienteAsaas($cliente);
+
+            $paymentRes = Http::withHeaders($this->asaasHeaders())
+                ->post($this->asaas() . '/payments', [
+                    'customer'          => $asaasCustomerId,
+                    'billingType'       => 'PIX',
+                    'value'             => $amount,
+                    'dueDate'           => now()->addDay()->format('Y-m-d'),
+                    'description'       => $description,
+                    'externalReference' => 'aca_' . $clienteId . '_' . $validated['academia_id'] . '_' . time(),
+                ]);
+
+            if ($paymentRes->failed()) {
+                Log::error('Asaas academia: falha ao criar pagamento', ['body' => $paymentRes->json()]);
+                return response()->json(['error' => 'Falha ao gerar cobrança. Tente novamente.'], 500);
+            }
+
+            $asaasPayment   = $paymentRes->json();
+            $asaasPaymentId = $asaasPayment['id'];
+
+            $qrRes  = Http::withHeaders($this->asaasHeaders())
+                ->get($this->asaas() . "/payments/{$asaasPaymentId}/pixQrCode");
+            $qrData = $qrRes->json();
+
+            $payment = Payment::create([
+                'user_id'                  => $clienteId,
+                'trainer_id'               => null,
+                'membership_id'            => null,
+                'academia_id'              => $validated['academia_id'],
+                'plano_id'                 => $validated['plano_id'],
+                'amount_total'             => $amount,
+                'company_fee'              => 0,
+                'trainer_amount'           => 0,
+                'stripe_payment_intent_id' => $asaasPaymentId,
+                'status'                   => 'pending',
+                'payment_method'           => 'pix',
+                'idempotency_key'          => 'aca_' . $asaasPaymentId,
+                'booking_data'             => json_encode([
+                    'tipo'        => 'academia',
+                    'academia_id' => $validated['academia_id'],
+                    'plano_id'    => $validated['plano_id'],
+                    'cliente_id'  => $clienteId,
+                ]),
+            ]);
+
+            Log::info('Asaas academia: pagamento Pix criado', [
+                'payment_id'      => $payment->id,
+                'asaas_payment_id' => $asaasPaymentId,
+                'academia_id'     => $validated['academia_id'],
+                'cliente_id'      => $clienteId,
+            ]);
+
+            return response()->json([
+                'paymentId'      => $payment->id,
+                'asaasPaymentId' => $asaasPaymentId,
+                'pixPayload'     => $qrData['payload']      ?? '',
+                'pixQrCode'      => $qrData['encodedImage'] ?? '',
+                'amount'         => $amount,
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Asaas academia: exception', ['error' => $e->getMessage()]);
+            return response()->json(['error' => 'Erro interno. Tente novamente.'], 500);
+        }
     }
 
     private function detectarTipoChavePix(string $chave): string
