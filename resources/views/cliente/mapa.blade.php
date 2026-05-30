@@ -17,8 +17,10 @@
             --success: #00ff88;
             --border: rgba(255, 255, 255, 0.08);
             --academia-color: #d4ff00;
-            --personal-color: #00c8ff;
+            --personal-color: #1a5fd4;
             --filial-color: #ff9500;
+            --filial-contorno-color: #00c8ff;
+            --filial-pratique-color: #ff4444;
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -125,6 +127,12 @@
             color: var(--filial-color);
         }
 
+        .filter-tab.active-personal {
+            background: rgba(26, 95, 212, 0.15);
+            border-color: var(--personal-color);
+            color: var(--personal-color);
+        }
+
         .filter-tab.active-todos {
             background: rgba(255, 255, 255, 0.05);
             border-color: rgba(255, 255, 255, 0.3);
@@ -188,9 +196,11 @@
             flex-shrink: 0;
         }
 
-        .pin-icon.academia { background: rgba(212,255,0,0.12); color: var(--academia-color); }
-        .pin-icon.personal { background: rgba(0,200,255,0.12); color: var(--personal-color); }
-        .pin-icon.filial   { background: rgba(255,149,0,0.12); color: var(--filial-color); }
+        .pin-icon.academia         { background: rgba(212,255,0,0.12);   color: var(--academia-color); }
+        .pin-icon.personal         { background: rgba(26,95,212,0.15);   color: var(--personal-color); }
+        .pin-icon.filial-contorno  { background: rgba(0,200,255,0.12);   color: var(--filial-contorno-color); }
+        .pin-icon.filial-pratique  { background: rgba(255,68,68,0.12);   color: var(--filial-pratique-color); }
+        .pin-icon.filial           { background: rgba(255,149,0,0.12);   color: var(--filial-color); }
 
         .pin-info h4 { font-size: 0.85rem; font-weight: 700; margin-bottom: 3px; }
         .pin-info p { font-size: 0.72rem; color: var(--text-muted); margin: 0; }
@@ -203,9 +213,11 @@
             margin-top: 4px;
         }
 
-        .badge-academia { background: rgba(212,255,0,0.1); color: var(--academia-color); }
-        .badge-personal { background: rgba(0,200,255,0.1); color: var(--personal-color); }
-        .badge-filial   { background: rgba(255,149,0,0.1); color: var(--filial-color); }
+        .badge-academia        { background: rgba(212,255,0,0.1);  color: var(--academia-color); }
+        .badge-personal        { background: rgba(26,95,212,0.15); color: var(--personal-color); }
+        .badge-filial-contorno { background: rgba(0,200,255,0.1);  color: var(--filial-contorno-color); }
+        .badge-filial-pratique { background: rgba(255,68,68,0.1);  color: var(--filial-pratique-color); }
+        .badge-filial          { background: rgba(255,149,0,0.1);  color: var(--filial-color); }
 
         .empty-state {
             text-align: center;
@@ -407,8 +419,16 @@
                 <span>Personal</span>
             </div>
             <div class="legend-item">
+                <div class="legend-dot" style="background: var(--filial-contorno-color);"></div>
+                <span>Filial Contorno</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-dot" style="background: var(--filial-pratique-color);"></div>
+                <span>Filial Pratique</span>
+            </div>
+            <div class="legend-item">
                 <div class="legend-dot" style="background: var(--filial-color);"></div>
-                <span>Filial</span>
+                <span>Filial (outras)</span>
             </div>
         </div>
         <div class="loading-overlay" id="loadingOverlay">
@@ -433,10 +453,31 @@
     }).addTo(map);
 
     // Ícones customizados
-    function criarIcone(tipo) {
-        const cores  = { academia: '#d4ff00', personal: '#00c8ff', filial: '#ff9500' };
+    function getFilialCor(pin) {
+        const nome = (pin.academia_nome || '').toLowerCase();
+        if (nome.includes('contorno')) return '#00c8ff';
+        if (nome.includes('pratique')) return '#ff4444';
+        return '#ff9500';
+    }
+
+    function getPinCor(pin) {
+        if (pin.tipo === 'academia') return '#d4ff00';
+        if (pin.tipo === 'personal') return '#1a5fd4';
+        if (pin.tipo === 'filial')   return getFilialCor(pin);
+        return '#ffffff';
+    }
+
+    function getFilialClass(pin) {
+        const nome = (pin.academia_nome || '').toLowerCase();
+        if (nome.includes('contorno')) return 'filial-contorno';
+        if (nome.includes('pratique')) return 'filial-pratique';
+        return 'filial';
+    }
+
+    function criarIcone(pin) {
+        const tipo  = typeof pin === 'string' ? pin : pin.tipo;
+        const cor   = typeof pin === 'string' ? (pin === 'academia' ? '#d4ff00' : pin === 'personal' ? '#1a5fd4' : '#ff9500') : getPinCor(pin);
         const icones = { academia: '🏋️', personal: '👤', filial: '📍' };
-        const cor   = cores[tipo]  || '#ffffff';
         const icone = icones[tipo] || '📌';
         return L.divIcon({
             className: '',
@@ -475,21 +516,25 @@
             return;
         }
 
-        const tipoLabel = { academia: 'Academia', personal: 'Personal', filial: 'Filial' };
-        const tipoIcon  = { academia: 'dumbbell', personal: 'user', filial: 'map-marker-alt' };
+        const tipoIcon = { academia: 'dumbbell', personal: 'user', filial: 'map-marker-alt' };
 
-        lista.innerHTML = pins.map((pin, i) => `
+        lista.innerHTML = pins.map((pin, i) => {
+            const cssClass  = pin.tipo === 'filial' ? getFilialClass(pin) : pin.tipo;
+            const badgeText = pin.tipo === 'academia' ? 'Academia'
+                            : pin.tipo === 'personal' ? 'Personal'
+                            : pin.info;
+            return `
             <div class="pin-card" id="card-${i}" onclick="focarPin(${pin.latitude}, ${pin.longitude}, ${i})">
-                <div class="pin-icon ${pin.tipo}">
+                <div class="pin-icon ${cssClass}">
                     <i class="fas fa-${tipoIcon[pin.tipo] || 'map-pin'}"></i>
                 </div>
                 <div class="pin-info" style="flex: 1; min-width: 0;">
                     <h4 style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${pin.nome}</h4>
-                    <p>${pin.tipo === 'filial' ? pin.info + '<br>' : ''}${pin.endereco}</p>
-                    <span class="badge-${pin.tipo}">${tipoLabel[pin.tipo] || pin.tipo}</span>
+                    <p>${pin.endereco}</p>
+                    <span class="badge-${cssClass}">${badgeText}</span>
                 </div>
-            </div>
-        `).join('');
+            </div>`;
+        }).join('');
     }
 
     function focarPin(lat, lng, index) {
@@ -537,18 +582,16 @@
         marcadores = [];
 
         filtrados.forEach((pin, i) => {
-            const popupColors = { academia: '212,255,0', personal: '0,200,255', filial: '255,149,0' };
-            const popupVars   = { academia: 'var(--academia-color)', personal: 'var(--personal-color)', filial: 'var(--filial-color)' };
-            const popupEmoji  = { academia: '🏋️ Academia', personal: '👤 Personal', filial: '📍 Filial' };
-            const rgbColor    = popupColors[pin.tipo] || '255,255,255';
-            const cssColor    = popupVars[pin.tipo]   || '#fff';
-            const badgeLabel  = popupEmoji[pin.tipo]  || pin.tipo;
+            const pinColor   = getPinCor(pin);
+            const badgeLabel = pin.tipo === 'academia' ? '🏋️ Academia'
+                             : pin.tipo === 'personal' ? '👤 Personal'
+                             : `📍 ${pin.info}`;
 
-            const marker = L.marker([pin.latitude, pin.longitude], { icon: criarIcone(pin.tipo) })
+            const marker = L.marker([pin.latitude, pin.longitude], { icon: criarIcone(pin) })
                 .addTo(map)
                 .bindPopup(`
                     <div class="popup-content">
-                        <span class="popup-badge" style="background: rgba(${rgbColor},0.15); color: ${cssColor};">
+                        <span class="popup-badge" style="background: ${pinColor}22; color: ${pinColor};">
                             ${badgeLabel}
                         </span>
                         <h3>${pin.nome}</h3>

@@ -57,15 +57,16 @@ class MapaController extends Controller
             ->with('academia:id,nome')
             ->get()
             ->map(fn($f) => [
-                'tipo'      => 'filial',
-                'id'        => $f->id,
-                'nome'      => $f->nome,
-                'cidade'    => $f->cidade,
-                'estado'    => $f->estado,
-                'endereco'  => "{$f->rua}, {$f->bairro} — {$f->cidade}/{$f->estado}",
-                'info'      => 'Filial de ' . ($f->academia->nome ?? 'Academia'),
-                'latitude'  => (float) $f->latitude,
-                'longitude' => (float) $f->longitude,
+                'tipo'          => 'filial',
+                'id'            => $f->id,
+                'nome'          => $f->nome,
+                'academia_nome' => $f->academia->nome ?? '',
+                'cidade'        => $f->cidade,
+                'estado'        => $f->estado,
+                'endereco'      => "{$f->rua}, {$f->bairro} — {$f->cidade}/{$f->estado}",
+                'info'          => 'Filial de ' . ($f->academia->nome ?? 'Academia'),
+                'latitude'      => (float) $f->latitude,
+                'longitude'     => (float) $f->longitude,
             ]);
 
         return response()->json([
