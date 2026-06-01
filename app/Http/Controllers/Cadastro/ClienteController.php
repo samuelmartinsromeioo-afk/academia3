@@ -86,21 +86,30 @@ class ClienteController extends Controller
         if (!$cliente) return redirect()->back()->with('error', 'Cliente não encontrado.');
 
         $validated = $request->validate([
-            'nome' => 'required|string|max:255',
-            'email' => 'required|email|max:255|unique:clientes,email,' . $id,
-            'sexo' => 'required|in:Masculino,Feminino,Outro,masculino,feminino,outro',
-            'cep' => 'nullable|string|max:9',
-            'altura' => 'nullable|numeric',
-            'peso' => 'nullable|numeric',
-            'rua' => 'nullable|string|max:255',
-            'bairro' => 'nullable|string|max:255',
-            'cidade' => 'nullable|string|max:255',
-            'estado' => 'nullable|string|max:255',
+            'nome'        => 'required|string|max:255',
+            'email'       => 'required|email|max:255|unique:clientes,email,' . $id,
+            'sexo'        => 'required|in:Masculino,Feminino,Outro,masculino,feminino,outro',
+            'cep'         => 'nullable|string|max:9',
+            'altura'      => 'nullable|numeric',
+            'peso'        => 'nullable|numeric',
+            'rua'         => 'nullable|string|max:255',
+            'bairro'      => 'nullable|string|max:255',
+            'cidade'      => 'nullable|string|max:255',
+            'estado'      => 'nullable|string|max:255',
             'complemento' => 'nullable|string|max:255',
+            'foto'        => 'nullable|file|mimes:jpeg,jpg,png,gif,webp,heic,heif|max:10240',
         ]);
 
         $data = $validated;
         $data['sexo'] = strtolower($validated['sexo']);
+        unset($data['foto']);
+
+        if ($request->hasFile('foto')) {
+            if ($cliente->foto) {
+                \Illuminate\Support\Facades\Storage::disk('public')->delete($cliente->foto);
+            }
+            $data['foto'] = $request->file('foto')->store('clientes', 'public');
+        }
 
         if ($request->filled('senha')) {
             $data['senha'] = Hash::make($request->senha);

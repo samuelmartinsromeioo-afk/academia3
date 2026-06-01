@@ -37,6 +37,9 @@ class Cliente extends Model
         'resumo_objetivo',
         'condicao_clinica',
         'whatsapp',
+        'foto',
+        'plano',
+        'plano_ativo',
     ];
     protected $casts = [
         'aceita_termos' => 'boolean',

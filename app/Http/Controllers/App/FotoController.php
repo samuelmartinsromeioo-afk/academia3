@@ -15,7 +15,7 @@ class FotoController extends Controller
     public function storePersonal(Request $request)
     {
         $request->validate([
-            'foto'    => 'required|image|mimes:jpeg,png,jpg,gif,webp|max:5120',
+            'foto'    => 'required|file|mimes:jpeg,jpg,png,gif,webp,heic,heif|max:10240',
             'legenda' => 'nullable|string|max:255',
         ]);
 
@@ -51,7 +51,7 @@ class FotoController extends Controller
     public function storeAcademia(Request $request)
     {
         $request->validate([
-            'foto' => 'required|image|mimes:jpeg,png,jpg,gif|max:2048',
+            'foto'    => 'required|file|mimes:jpeg,jpg,png,gif,webp,heic,heif|max:10240',
             'legenda' => 'nullable|string|max:255',
         ]);
 

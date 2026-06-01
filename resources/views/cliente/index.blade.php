@@ -376,7 +376,11 @@
     </div>
     <div class="profile-header">
         <span style="font-weight: 700; font-size: 0.85rem;">{{ $cliente->nome }}</span>
-        <img src="https://ui-avatars.com/api/?name={{ urlencode($cliente->nome) }}&background=d4ff00&color=000" class="avatar-img">
+        @if($cliente->foto)
+            <img src="{{ asset('storage/' . $cliente->foto) }}?t={{ time() }}" class="avatar-img" style="object-fit:cover;">
+        @else
+            <img src="https://ui-avatars.com/api/?name={{ urlencode($cliente->nome) }}&background=d4ff00&color=000" class="avatar-img">
+        @endif
     </div>
 </div>
 
@@ -424,7 +428,7 @@
 
     {{-- FORMULÁRIO DE EDIÇÃO --}}
     <div id="editFormContainer" style="display: none;">
-        <form action="{{ route('cliente.update', $cliente->id) }}" method="POST" class="profile-card">
+        <form action="{{ route('cliente.update', $cliente->id) }}" method="POST" class="profile-card" enctype="multipart/form-data">
             @csrf @method('PUT')
             <i class="fas fa-times close-form" onclick="toggleEditForm()"></i>
             <div class="section-title">Dados de Acesso</div>
@@ -495,6 +499,23 @@
                     <div class="input-wrapper"><i class="fas fa-info-circle"></i><input type="text" name="complemento" value="{{ $cliente->complemento }}"></div>
                 </div>
             </div>
+            <div class="section-title">Foto de Perfil</div>
+            <div class="form-grid">
+                <div class="col-6" style="display:flex; align-items:center; gap:16px;">
+                    @if($cliente->foto)
+                        <img src="{{ asset('storage/' . $cliente->foto) }}?t={{ time() }}"
+                            style="width:64px; height:64px; border-radius:50%; object-fit:cover; border:2px solid var(--primary); flex-shrink:0;">
+                    @else
+                        <img src="https://ui-avatars.com/api/?name={{ urlencode($cliente->nome) }}&background=d4ff00&color=000"
+                            style="width:64px; height:64px; border-radius:50%; flex-shrink:0;">
+                    @endif
+                    <div class="input-wrapper" style="flex:1;">
+                        <i class="fas fa-camera"></i>
+                        <input type="file" name="foto" accept="image/*" style="padding:8px 12px;">
+                    </div>
+                </div>
+            </div>
+
             <button type="submit" class="btn-action">Atualizar Perfil Completo</button>
         </form>
     </div>
