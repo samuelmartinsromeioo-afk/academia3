@@ -79,15 +79,21 @@ class PaymentController extends Controller
         try {
             $asaasCustomerId = $this->obterOuCriarClienteAsaas($cliente);
 
+            $pixPayload = [
+                'customer'          => $asaasCustomerId,
+                'billingType'       => 'PIX',
+                'value'             => $amount,
+                'dueDate'           => now()->addDay()->format('Y-m-d'),
+                'description'       => $description,
+                'externalReference' => 'cli_' . $clienteId . '_' . time(),
+            ];
+
+            if ($personal->asaas_wallet_id) {
+                $pixPayload['split'] = [['walletId' => $personal->asaas_wallet_id, 'percentualValue' => 90]];
+            }
+
             $paymentRes = Http::withHeaders($this->asaasHeaders())
-                ->post($this->asaas() . '/payments', [
-                    'customer'          => $asaasCustomerId,
-                    'billingType'       => 'PIX',
-                    'value'             => $amount,
-                    'dueDate'           => now()->addDay()->format('Y-m-d'),
-                    'description'       => $description,
-                    'externalReference' => 'cli_' . $clienteId . '_' . time(),
-                ]);
+                ->post($this->asaas() . '/payments', $pixPayload);
 
             if ($paymentRes->failed()) {
                 Log::error('Asaas: falha ao criar pagamento', ['body' => $paymentRes->json()]);
@@ -271,6 +277,101 @@ class PaymentController extends Controller
     }
 
     // ─────────────────────────────────────────────
+    // CARTEIRA DO PERSONAL — SALDO E SAQUE
+    // ─────────────────────────────────────────────
+    public function saldoPersonal(Request $request)
+    {
+        $personalId = session('personal_id');
+        if (!$personalId) {
+            return response()->json(['error' => 'Não autenticado.'], 401);
+        }
+
+        $personal = Personal::find($personalId);
+
+        if (!$personal?->asaas_api_key) {
+            return response()->json(['saldo' => 0, 'sem_conta' => true]);
+        }
+
+        $res = Http::withHeaders([
+            'access_token' => $personal->asaas_api_key,
+            'Content-Type' => 'application/json',
+        ])->get($this->asaas() . '/finance/balance');
+
+        if ($res->failed()) {
+            Log::error('Asaas saldo: falha', ['personal_id' => $personalId, 'body' => $res->json()]);
+            return response()->json(['error' => 'Não foi possível consultar o saldo.'], 500);
+        }
+
+        return response()->json([
+            'saldo'     => $res->json()['balance']             ?? 0,
+            'sem_conta' => false,
+            'tem_pix'   => !empty($personal->chave_pix),
+        ]);
+    }
+
+    public function sacarPersonal(Request $request)
+    {
+        $personalId = session('personal_id');
+        if (!$personalId) {
+            return response()->json(['error' => 'Não autenticado.'], 401);
+        }
+
+        $personal = Personal::find($personalId);
+
+        if (!$personal?->asaas_api_key) {
+            return response()->json(['error' => 'Sua conta Asaas ainda não foi configurada.'], 422);
+        }
+
+        if (!$personal->chave_pix) {
+            return response()->json(['error' => 'Cadastre sua chave PIX no perfil antes de sacar.'], 422);
+        }
+
+        $validated = $request->validate([
+            'valor' => 'required|numeric|min:0.01',
+        ]);
+
+        $res = Http::withHeaders([
+            'access_token' => $personal->asaas_api_key,
+            'Content-Type' => 'application/json',
+        ])->post($this->asaas() . '/transfers', [
+            'operationType'     => 'PIX',
+            'value'             => (float) $validated['valor'],
+            'pixAddressKey'     => $personal->chave_pix,
+            'pixAddressKeyType' => $this->detectarTipoChavePix($personal->chave_pix),
+            'description'       => 'Saque FitSys',
+        ]);
+
+        $data = $res->json();
+
+        if (!empty($data['errors'])) {
+            $errMsg = $data['errors'][0]['description'] ?? 'Falha ao processar saque.';
+            Log::error('Asaas saque: falha', ['personal_id' => $personalId, 'body' => $data]);
+            return response()->json(['error' => $errMsg], 422);
+        }
+
+        if ($res->failed()) {
+            Log::error('Asaas saque: http error', ['personal_id' => $personalId, 'body' => $data]);
+            return response()->json(['error' => 'Falha ao processar saque. Tente novamente.'], 500);
+        }
+
+        TrainerPayout::where('trainer_id', $personalId)
+            ->where('status', 'in_wallet')
+            ->update(['status' => 'paid', 'stripe_payout_id' => $data['id'] ?? null]);
+
+        Log::info('Asaas saque realizado', [
+            'personal_id' => $personalId,
+            'valor'       => $validated['valor'],
+            'transfer_id' => $data['id'] ?? null,
+        ]);
+
+        return response()->json([
+            'success'     => true,
+            'transfer_id' => $data['id'] ?? null,
+            'valor'       => $validated['valor'],
+        ]);
+    }
+
+    // ─────────────────────────────────────────────
     // HELPERS
     // ─────────────────────────────────────────────
     public function calculateSplit(float $amountTotal): array
@@ -317,13 +418,17 @@ class PaymentController extends Controller
             'plano_ativo' => true,
         ]);
 
+        $personal = Personal::find($payment->trainer_id);
+
         $payout = TrainerPayout::create([
             'trainer_id' => $payment->trainer_id,
             'amount'     => $payment->trainer_amount,
-            'status'     => 'pending',
+            'status'     => $personal?->asaas_wallet_id ? 'in_wallet' : 'pending',
         ]);
 
-        $this->transferirParaPersonal($payout, $payment);
+        if (!$personal?->asaas_wallet_id) {
+            $this->transferirParaPersonal($payout, $payment);
+        }
 
         $cliente  = \App\Models\Cadastro\Cliente::find($payment->user_id);
         $personal = Personal::find($payment->trainer_id);
@@ -567,30 +672,36 @@ class PaymentController extends Controller
             $cep        = preg_replace('/\D/', '', $validated['cep']);
             $telefone   = preg_replace('/\D/', '', $validated['telefone']);
 
+            $ccPayload = [
+                'customer'          => $asaasCustomerId,
+                'billingType'       => 'CREDIT_CARD',
+                'value'             => $amount,
+                'dueDate'           => now()->format('Y-m-d'),
+                'description'       => $description,
+                'externalReference' => 'cli_cc_' . $clienteId . '_' . time(),
+                'creditCard'        => [
+                    'holderName'  => $validated['card_holder'],
+                    'number'      => $cardNumber,
+                    'expiryMonth' => $validated['card_expiry_month'],
+                    'expiryYear'  => $validated['card_expiry_year'],
+                    'ccv'         => $validated['card_ccv'],
+                ],
+                'creditCardHolderInfo' => [
+                    'name'          => $validated['card_holder'],
+                    'email'         => $cliente->email,
+                    'cpfCnpj'       => $cpf,
+                    'postalCode'    => $cep,
+                    'addressNumber' => $validated['numero'],
+                    'phone'         => $telefone,
+                ],
+            ];
+
+            if ($personal->asaas_wallet_id) {
+                $ccPayload['split'] = [['walletId' => $personal->asaas_wallet_id, 'percentualValue' => 90]];
+            }
+
             $paymentRes = Http::withHeaders($this->asaasHeaders())
-                ->post($this->asaas() . '/payments', [
-                    'customer'          => $asaasCustomerId,
-                    'billingType'       => 'CREDIT_CARD',
-                    'value'             => $amount,
-                    'dueDate'           => now()->format('Y-m-d'),
-                    'description'       => $description,
-                    'externalReference' => 'cli_cc_' . $clienteId . '_' . time(),
-                    'creditCard'        => [
-                        'holderName'  => $validated['card_holder'],
-                        'number'      => $cardNumber,
-                        'expiryMonth' => $validated['card_expiry_month'],
-                        'expiryYear'  => $validated['card_expiry_year'],
-                        'ccv'         => $validated['card_ccv'],
-                    ],
-                    'creditCardHolderInfo' => [
-                        'name'          => $validated['card_holder'],
-                        'email'         => $cliente->email,
-                        'cpfCnpj'       => $cpf,
-                        'postalCode'    => $cep,
-                        'addressNumber' => $validated['numero'],
-                        'phone'         => $telefone,
-                    ],
-                ]);
+                ->post($this->asaas() . '/payments', $ccPayload);
 
             $asaasData = $paymentRes->json();
 

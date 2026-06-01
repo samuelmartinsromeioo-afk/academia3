@@ -19,6 +19,8 @@ Route::middleware(['web'])->group(function () {
     Route::get('/pagamento/status/{asaasPaymentId}', [PaymentController::class, 'verificarStatusPagamento']);
     Route::get('/payments/history', [PaymentController::class, 'listPaymentHistory']);
     Route::get('/trainer/payouts', [PaymentController::class, 'listPayouts']);
+    Route::get('/personal/saldo', [PaymentController::class, 'saldoPersonal']);
+    Route::post('/personal/sacar', [PaymentController::class, 'sacarPersonal']);
 });
 
 // Webhook Asaas — sem sessão/CSRF; autenticidade verificada pelo IP/token Asaas.

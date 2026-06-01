@@ -613,6 +613,7 @@
                 <button type="button" id="btnOpenPlanos"><i class="fas fa-tags" style="color: var(--primary);"></i> Meus Pacotes</button>
                 <button type="button" id="btnOpenAlunos"><i class="fas fa-users"></i> Meus Alunos</button>
                 <button type="button" id="btnOpenFinance"><i class="fas fa-wallet" style="color: var(--success)"></i> Minhas Finanças</button>
+                <button type="button" id="btnOpenCarteira"><i class="fas fa-piggy-bank" style="color: var(--primary)"></i> Minha Carteira</button>
                 <button type="button" id="btnOpenGaleria"><i class="fas fa-images"></i> Minha Galeria</button>
                 <button type="button" id="btnOpenAvaliacoes"><i class="fas fa-star" style="color: var(--primary)"></i> Minhas Avaliações</button>
                 <form action="{{ route('login.logout') }}" method="POST"> @csrf <button type="submit" style="color: var(--error)"><i class="fas fa-power-off"></i> Sair</button></form>
@@ -840,6 +841,61 @@
             </div>
 
             <button type="button" onclick="closeModalFinance()" class="btn-save">Fechar Relatório</button>
+        </div>
+    </div>
+
+    {{-- MODAL CARTEIRA ASAAS --}}
+    <div id="modalCarteira" class="modal-overlay" style="display:none;">
+        <div class="modal-content" style="max-width:480px;">
+            <h2 style="color:var(--primary); font-size:1.4rem; margin-top:0; font-weight:900; text-align:center;">
+                <i class="fas fa-piggy-bank"></i> MINHA CARTEIRA
+            </h2>
+
+            <div id="carteiraLoading" style="text-align:center; padding:30px 0; color:#a0a0a0;">
+                <i class="fas fa-spinner fa-spin fa-2x"></i><br><br>Consultando saldo...
+            </div>
+
+            <div id="carteiraConteudo" style="display:none;">
+                <div style="background:rgba(212,255,0,0.07); border:1px solid rgba(212,255,0,0.3); border-radius:16px; padding:24px; text-align:center; margin-bottom:20px;">
+                    <p style="margin:0; color:#a0a0a0; font-size:0.75rem; text-transform:uppercase; margin-bottom:8px;">Saldo disponível</p>
+                    <p id="carteiraValor" style="margin:0; color:#fff; font-size:2rem; font-weight:900;">R$ 0,00</p>
+                </div>
+
+                <div id="carteiraSemPix" style="display:none; background:rgba(255,165,0,0.1); border:1px solid rgba(255,165,0,0.3); border-radius:12px; padding:14px; margin-bottom:16px; font-size:0.82rem; color:#ffa500; text-align:center;">
+                    <i class="fas fa-exclamation-triangle"></i> Cadastre sua chave PIX no perfil para poder sacar.
+                </div>
+
+                <div id="carteiraSaqueForm">
+                    <label style="color:#a0a0a0; font-size:0.75rem; display:block; margin-bottom:6px;">Valor a sacar (R$)</label>
+                    <div style="display:flex; gap:10px; margin-bottom:16px;">
+                        <input id="carteiraValorSaque" type="number" min="0.01" step="0.01" placeholder="0,00"
+                            style="flex:1; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.12); border-radius:10px; padding:11px 14px; color:#fff; font-size:1rem; outline:none;">
+                        <button onclick="sacarTudo()" style="background:rgba(255,255,255,0.07); color:#fff; border:1px solid rgba(255,255,255,0.15); border-radius:10px; padding:10px 14px; font-size:0.8rem; cursor:pointer; white-space:nowrap;">
+                            Tudo
+                        </button>
+                    </div>
+
+                    <p id="carteiraSaqueErro" style="display:none; color:#ff6b6b; font-size:0.82rem; background:rgba(255,107,107,0.1); border:1px solid rgba(255,107,107,0.3); border-radius:8px; padding:10px 14px; margin-bottom:14px;"></p>
+                    <p id="carteiraSaqueSucesso" style="display:none; color:#4caf50; font-weight:700; text-align:center; padding:8px 0; font-size:0.9rem;">✅ Saque solicitado! O valor chegará via PIX em instantes.</p>
+
+                    <button id="btnSacar" onclick="confirmarSaque()"
+                        style="width:100%; background:var(--primary); color:#000; border:none; border-radius:12px; padding:14px; font-weight:900; font-size:0.95rem; cursor:pointer;">
+                        <i class="fas fa-arrow-down"></i> Sacar via PIX
+                    </button>
+                </div>
+
+                <p style="color:#a0a0a0; font-size:0.7rem; text-align:center; margin-top:14px; margin-bottom:0;">
+                    O valor é transferido direto para a chave PIX cadastrada no seu perfil.
+                </p>
+            </div>
+
+            <div id="carteiraSemConta" style="display:none; text-align:center; padding:20px 0; color:#a0a0a0; font-size:0.85rem;">
+                <i class="fas fa-info-circle fa-2x" style="margin-bottom:12px; display:block;"></i>
+                Sua conta de repasse ainda está sendo configurada.<br>
+                Os saques estarão disponíveis em breve.
+            </div>
+
+            <button type="button" onclick="fecharCarteira()" class="btn-save" style="margin-top:16px;">Fechar</button>
         </div>
     </div>
 
@@ -1135,6 +1191,10 @@
             modalFinance.style.display = 'block';
             toggleMenu();
         };
+        document.getElementById('btnOpenCarteira').onclick = () => {
+            abrirCarteira();
+            toggleMenu();
+        };
         document.getElementById('btnOpenAlunos').onclick = () => {
             modalAlunos.style.display = 'block';
             toggleMenu();
@@ -1167,6 +1227,86 @@
 
         function closeModalFinance() {
             modalFinance.style.display = 'none';
+        }
+
+        // ── CARTEIRA ASAAS ──────────────────────────────
+        let carteiraSaldoAtual = 0;
+
+        async function abrirCarteira() {
+            const modal = document.getElementById('modalCarteira');
+            modal.style.display = 'block';
+            document.getElementById('carteiraLoading').style.display = 'block';
+            document.getElementById('carteiraConteudo').style.display = 'none';
+            document.getElementById('carteiraSemConta').style.display = 'none';
+            document.getElementById('carteiraSaqueErro').style.display = 'none';
+            document.getElementById('carteiraSaqueSucesso').style.display = 'none';
+
+            try {
+                const res  = await fetch('/api/personal/saldo', {
+                    headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}' }
+                });
+                const data = await res.json();
+
+                document.getElementById('carteiraLoading').style.display = 'none';
+
+                if (data.sem_conta) {
+                    document.getElementById('carteiraSemConta').style.display = 'block';
+                    return;
+                }
+
+                carteiraSaldoAtual = parseFloat(data.saldo) || 0;
+                document.getElementById('carteiraValor').textContent = 'R$ ' + carteiraSaldoAtual.toFixed(2).replace('.', ',');
+                document.getElementById('carteiraValorSaque').value = carteiraSaldoAtual > 0 ? carteiraSaldoAtual.toFixed(2) : '';
+                document.getElementById('carteiraSemPix').style.display = data.tem_pix ? 'none' : 'block';
+                document.getElementById('carteiraSaqueForm').style.display = data.tem_pix ? 'block' : 'none';
+                document.getElementById('carteiraConteudo').style.display = 'block';
+            } catch (_) {
+                document.getElementById('carteiraLoading').style.display = 'none';
+                document.getElementById('carteiraSemConta').style.display = 'block';
+            }
+        }
+
+        function fecharCarteira() {
+            document.getElementById('modalCarteira').style.display = 'none';
+        }
+
+        function sacarTudo() {
+            document.getElementById('carteiraValorSaque').value = carteiraSaldoAtual > 0 ? carteiraSaldoAtual.toFixed(2) : '';
+        }
+
+        async function confirmarSaque() {
+            const valor = parseFloat(document.getElementById('carteiraValorSaque').value);
+            if (!valor || valor <= 0) {
+                document.getElementById('carteiraSaqueErro').textContent = 'Informe um valor válido.';
+                document.getElementById('carteiraSaqueErro').style.display = 'block';
+                return;
+            }
+
+            const btn = document.getElementById('btnSacar');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processando...';
+            document.getElementById('carteiraSaqueErro').style.display = 'none';
+
+            try {
+                const res  = await fetch('/api/personal/sacar', {
+                    method:  'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}' },
+                    body:    JSON.stringify({ valor }),
+                });
+                const data = await res.json();
+
+                if (!res.ok) throw new Error(data.error || 'Erro ao processar saque.');
+
+                document.getElementById('carteiraSaqueSucesso').style.display = 'block';
+                document.getElementById('carteiraSaqueForm').style.display = 'none';
+                carteiraSaldoAtual = 0;
+                document.getElementById('carteiraValor').textContent = 'R$ 0,00';
+            } catch (err) {
+                document.getElementById('carteiraSaqueErro').textContent = err.message;
+                document.getElementById('carteiraSaqueErro').style.display = 'block';
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-arrow-down"></i> Sacar via PIX';
+            }
         }
 
         function closeModalAlunos() {
@@ -1402,6 +1542,7 @@
             if (e.target == modalAvaliacoes) closeModalAvaliacoes();
             if (e.target == modalDetalhesAluno) closeModalDetalhesAluno();
             if (e.target == modalCriarFichaAluno) fecharModalCriarFichaAluno();
+            if (e.target == document.getElementById('modalCarteira')) fecharCarteira();
         }
 
         function adicionarBolinhasAmareladas() {

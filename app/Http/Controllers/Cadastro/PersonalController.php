@@ -55,12 +55,18 @@ class PersonalController extends Controller
             $dados['certificado'] = $pathCert;
         }
 
-        $dados['senha'] = Hash::make($request->senha);
+        $dados['senha']     = Hash::make($request->senha);
         $dados['avaliacao'] = $dados['avaliacao'] ?? 'Aguardando avaliação inicial';
         $dados['resultados'] = $dados['resultados'] ?? 'Nenhum resultado registrado';
-        $dados['status'] = 'pendente';
+        $dados['status']    = 'pendente';
 
-        Personal::create($dados);
+        if ($request->filled('whatsapp')) {
+            $dados['whatsapp'] = $request->whatsapp;
+        }
+
+        $personal = Personal::create($dados);
+
+        $this->criarSubcontaAsaas($personal);
 
         return redirect()->route('login.index')->with('sucesso', 'Personal cadastrado com sucesso! Aguarde a aprovação do administrador.');
     }
@@ -569,6 +575,57 @@ class PersonalController extends Controller
         } catch (\Exception $e) {
             Log::error('Erro ao finalizar aula: ' . $e->getMessage());
             return redirect()->back()->with('error', 'Erro ao finalizar aula: ' . $e->getMessage());
+        }
+    }
+
+    private function criarSubcontaAsaas(Personal $personal): void
+    {
+        try {
+            $payload = [
+                'name'          => $personal->nome,
+                'email'         => $personal->email,
+                'cpfCnpj'       => preg_replace('/\D/', '', $personal->cpf),
+                'birthDate'     => $personal->idade,
+                'address'       => $personal->rua,
+                'addressNumber' => 'S/N',
+                'province'      => $personal->bairro,
+                'postalCode'    => preg_replace('/\D/', '', $personal->cep),
+                'complement'    => $personal->complemento,
+                'personType'    => 'FISICA',
+            ];
+
+            if ($personal->whatsapp) {
+                $payload['mobilePhone'] = preg_replace('/\D/', '', $personal->whatsapp);
+            }
+
+            $res = Http::withHeaders([
+                'access_token' => config('services.asaas.key'),
+                'Content-Type' => 'application/json',
+            ])->post(config('services.asaas.url') . '/accounts', $payload);
+
+            $data = $res->json();
+
+            if ($res->successful() && !empty($data['walletId'])) {
+                $personal->update([
+                    'asaas_account_id' => $data['id']        ?? null,
+                    'asaas_wallet_id'  => $data['walletId']  ?? null,
+                    'asaas_api_key'    => $data['apiKey']    ?? null,
+                ]);
+                Log::info('Asaas: subconta criada para personal', [
+                    'personal_id' => $personal->id,
+                    'wallet_id'   => $data['walletId'],
+                ]);
+            } else {
+                Log::warning('Asaas: subconta não criada', [
+                    'personal_id' => $personal->id,
+                    'response'    => $data,
+                ]);
+            }
+        } catch (\Exception $e) {
+            Log::error('Asaas: exceção ao criar subconta', [
+                'personal_id' => $personal->id,
+                'error'       => $e->getMessage(),
+            ]);
         }
     }
 

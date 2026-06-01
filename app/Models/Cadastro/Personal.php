@@ -43,6 +43,9 @@ class Personal extends Model
         'stripe_account_id',
         'stripe_onboarding_complete',
         'whatsapp',
+        'asaas_account_id',
+        'asaas_wallet_id',
+        'asaas_api_key',
     ];
 
     public function agendas() {
