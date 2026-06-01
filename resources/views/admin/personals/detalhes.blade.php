@@ -463,6 +463,19 @@
 </div>
 
 <div class="container">
+
+    @if(session('success'))
+        <div style="background: rgba(40,167,69,0.15); border: 1px solid rgba(40,167,69,0.4); border-radius: 12px; padding: 14px 18px; margin-bottom: 20px; color: #4caf50; font-weight: 700;">
+            <i class="fas fa-check-circle"></i> {{ session('success') }}
+        </div>
+    @endif
+
+    @if(session('error'))
+        <div style="background: rgba(255,68,68,0.1); border: 1px solid rgba(255,68,68,0.3); border-radius: 12px; padding: 14px 18px; margin-bottom: 20px; color: #ff6b6b; font-weight: 700;">
+            <i class="fas fa-exclamation-circle"></i> {{ session('error') }}
+        </div>
+    @endif
+
     {{-- CABEÇALHO COM FOTO E INFO BÁSICA --}}
     <div class="header-card">
         <div class="photo-container">
@@ -615,10 +628,52 @@
             </p>
         </div>
     @else
-        <div style="background: rgba(40, 167, 69, 0.1); padding: 20px; border-radius: 12px; border: 1px solid rgba(40, 167, 69, 0.2);">
+        <h2 class="section-title">Ações</h2>
+
+        <div style="background: rgba(40, 167, 69, 0.1); padding: 16px 20px; border-radius: 12px; border: 1px solid rgba(40, 167, 69, 0.2); margin-bottom: 16px;">
             <p style="color: var(--success); margin: 0; font-weight: 700;">
                 <i class="fas fa-check-circle"></i> Este personal foi aprovado
             </p>
+        </div>
+
+        {{-- Status da conta Asaas --}}
+        @if($personal->asaas_wallet_id)
+            <div style="background: rgba(212, 255, 0, 0.07); padding: 16px 20px; border-radius: 12px; border: 1px solid rgba(212, 255, 0, 0.3); margin-bottom: 16px; display: flex; align-items: center; gap: 12px;">
+                <i class="fas fa-check-circle" style="color: var(--primary); font-size: 1.2rem;"></i>
+                <div>
+                    <p style="margin: 0; font-weight: 700; color: #fff; font-size: 0.9rem;">Conta Asaas configurada</p>
+                    <p style="margin: 0; color: #a0a0a0; font-size: 0.75rem;">Split de pagamentos ativo — 90% vai direto para a carteira deste personal.</p>
+                    <p style="margin: 4px 0 0; color: #a0a0a0; font-size: 0.72rem; font-family: monospace;">Wallet ID: {{ $personal->asaas_wallet_id }}</p>
+                </div>
+            </div>
+        @else
+            <div style="background: rgba(255, 165, 0, 0.08); padding: 16px 20px; border-radius: 12px; border: 1px solid rgba(255, 165, 0, 0.3); margin-bottom: 16px; display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;">
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <i class="fas fa-exclamation-triangle" style="color: #ffa500; font-size: 1.2rem;"></i>
+                    <div>
+                        <p style="margin: 0; font-weight: 700; color: #fff; font-size: 0.9rem;">Conta Asaas não configurada</p>
+                        <p style="margin: 0; color: #a0a0a0; font-size: 0.75rem;">Os repasses estão sendo feitos manualmente via PIX.</p>
+                    </div>
+                </div>
+                <form method="POST" action="{{ route('admin.personals.criar-asaas', $personal->id) }}"
+                    onsubmit="return confirm('Criar conta Asaas para {{ $personal->nome }}? Os dados serão enviados à Asaas agora.');">
+                    @csrf
+                    <button type="submit" style="background: #ffa500; color: #000; border: none; border-radius: 10px; padding: 10px 18px; font-weight: 900; font-size: 0.82rem; cursor: pointer; white-space: nowrap;">
+                        <i class="fas fa-plus-circle"></i> Criar Conta Asaas
+                    </button>
+                </form>
+            </div>
+        @endif
+
+        <div class="action-buttons" style="margin-top: 8px;">
+            <form method="POST" action="{{ route('admin.personals.deletar', $personal->id) }}"
+                onsubmit="return confirm('Tem certeza? Esta ação é irreversível!');" style="margin-left: auto;">
+                @csrf
+                @method('DELETE')
+                <button type="submit" class="btn-delete">
+                    <i class="fas fa-trash"></i> Deletar Personal
+                </button>
+            </form>
         </div>
     @endif
 </div>

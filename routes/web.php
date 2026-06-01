@@ -37,6 +37,7 @@ Route::middleware('check.admin')->group(function () {
     Route::post('/admin/personals/{id}/aprovar', [AdminController::class, 'aprovar'])->name('admin.personals.aprovar');
     Route::post('/admin/personals/{id}/rejeitar', [AdminController::class, 'rejeitar'])->name('admin.personals.rejeitar');
     Route::delete('/admin/personals/{id}', [AdminController::class, 'deletar'])->name('admin.personals.deletar');
+    Route::post('/admin/personals/{id}/criar-asaas', [AdminController::class, 'criarSubcontaAsaas'])->name('admin.personals.criar-asaas');
  
     // Relatórios Financeiros
     Route::get('/admin/relatorio-financeiro', [AdminController::class, 'relatorioFinanceiro'])->name('admin.relatorio-financeiro');

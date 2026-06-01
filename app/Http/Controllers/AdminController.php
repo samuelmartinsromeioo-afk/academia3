@@ -9,6 +9,7 @@ use App\Models\Admin;
 use App\Models\Agenda;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Carbon\Carbon;
 
@@ -300,6 +301,69 @@ class AdminController extends Controller
     {
         session()->forget(['admin_id', 'admin_nome']);
         return redirect()->route('login.index')->with('sucesso', 'Você saiu da conta.');
+    }
+
+    // ✅ CRIAR SUBCONTA ASAAS PARA PERSONAL EXISTENTE
+    public function criarSubcontaAsaas($id)
+    {
+        if (!session('admin_id')) {
+            return redirect()->route('admin.login');
+        }
+
+        $personal = Personal::findOrFail($id);
+
+        if ($personal->asaas_wallet_id) {
+            return redirect()->back()->with('success', "Personal '{$personal->nome}' já possui conta Asaas configurada.");
+        }
+
+        try {
+            $payload = [
+                'name'          => $personal->nome,
+                'email'         => $personal->email,
+                'cpfCnpj'       => preg_replace('/\D/', '', $personal->cpf),
+                'birthDate'     => $personal->idade,
+                'address'       => $personal->rua,
+                'addressNumber' => 'S/N',
+                'province'      => $personal->bairro,
+                'postalCode'    => preg_replace('/\D/', '', $personal->cep),
+                'complement'    => $personal->complemento,
+                'personType'    => 'FISICA',
+            ];
+
+            if ($personal->whatsapp) {
+                $payload['mobilePhone'] = preg_replace('/\D/', '', $personal->whatsapp);
+            }
+
+            $res  = Http::withHeaders([
+                'access_token' => config('services.asaas.key'),
+                'Content-Type' => 'application/json',
+            ])->post(config('services.asaas.url') . '/accounts', $payload);
+
+            $data = $res->json();
+
+            if ($res->successful() && !empty($data['walletId'])) {
+                $personal->update([
+                    'asaas_account_id' => $data['id']       ?? null,
+                    'asaas_wallet_id'  => $data['walletId'] ?? null,
+                    'asaas_api_key'    => $data['apiKey']   ?? null,
+                ]);
+
+                Log::info("Admin: subconta Asaas criada para personal", [
+                    'personal_id' => $personal->id,
+                    'wallet_id'   => $data['walletId'],
+                ]);
+
+                return redirect()->back()->with('success', "Conta Asaas criada com sucesso para '{$personal->nome}'! Split de pagamentos ativado.");
+            }
+
+            $errMsg = $data['errors'][0]['description'] ?? 'Resposta inesperada da Asaas.';
+            Log::warning("Admin: falha ao criar subconta Asaas", ['personal_id' => $personal->id, 'response' => $data]);
+            return redirect()->back()->with('error', "Falha ao criar conta Asaas: {$errMsg}");
+
+        } catch (\Exception $e) {
+            Log::error("Admin: exceção ao criar subconta Asaas", ['personal_id' => $personal->id, 'error' => $e->getMessage()]);
+            return redirect()->back()->with('error', "Erro ao criar conta Asaas: {$e->getMessage()}");
+        }
     }
 
     // ==========================================
