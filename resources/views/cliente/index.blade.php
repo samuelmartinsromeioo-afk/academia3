@@ -856,9 +856,14 @@
 
                     <div id="pacoteAcademiaContainer" style="margin-bottom: 15px;"></div>
 
-                    <button type="submit" class="btn-action" style="margin-top: 0;" id="btnConfirmarContratacao" disabled>
-                        <i class="fas fa-check-circle"></i> Confirmar Contratação
-                    </button>
+                    <div style="display:flex; gap:10px; margin-top:0;">
+                        <button type="submit" class="btn-action" style="margin-top:0; flex:1;" id="btnConfirmarContratacao" disabled>
+                            <i class="fas fa-qrcode"></i> Pagar via PIX
+                        </button>
+                        <button type="button" class="btn-action" style="margin-top:0; flex:1; background:rgba(255,255,255,0.08); color:#fff; border:1px solid rgba(255,255,255,0.15);" id="btnPagarCartao" disabled onclick="abrirCartaoPacote()">
+                            <i class="fas fa-credit-card"></i> Pagar com Cartão
+                        </button>
+                    </div>
                 </form>
             </div>
 
@@ -1418,16 +1423,19 @@
     }
 
     function atualizarBotao() {
-        const btn = document.getElementById('btnConfirmarContratacao');
-        const temPacote = pacoteSelecionado !== null;
-        const temDias = diasSelecionados.length > 0;
+        const btn        = document.getElementById('btnConfirmarContratacao');
+        const btnCartao  = document.getElementById('btnPagarCartao');
+        const temPacote  = pacoteSelecionado !== null;
+        const temDias    = diasSelecionados.length > 0;
         const temHorario = horaInicio !== null;
 
-        const container = document.getElementById('pacoteAcademiaContainer');
+        const container       = document.getElementById('pacoteAcademiaContainer');
         const precisaAcademia = container.dataset.temAcademias === 'true';
-        const temAcademia = !precisaAcademia || document.getElementById('pacote_academia_nome').value.trim() !== '';
+        const temAcademia     = !precisaAcademia || document.getElementById('pacote_academia_nome').value.trim() !== '';
 
-        btn.disabled = !(temPacote && temDias && temHorario && temAcademia);
+        const habilitado = temPacote && temDias && temHorario && temAcademia;
+        btn.disabled       = !habilitado;
+        btnCartao.disabled = !habilitado;
     }
 
     function mesAnterior() {
@@ -1775,11 +1783,18 @@
                             <small style="color:#a0a0a0;">/mês</small>
                         </div>
                     </div>
-                    <button onclick="pagarPlanoAcademia(${academiaId}, ${p.id}, '${p.nome}', '${academiaNome}', ${p.valor})"
-                        style="width:100%; margin-top:12px; background:#d4ff00; color:#000; border:none; border-radius:8px; padding:10px; font-weight:900; font-size:0.8rem; cursor:pointer; transition:0.2s;"
-                        onmouseover="this.style.background='#e8ff40'" onmouseout="this.style.background='#d4ff00'">
-                        <i class="fas fa-qrcode"></i> Pagar via PIX
-                    </button>
+                    <div style="display:flex; gap:8px; margin-top:12px;">
+                        <button onclick="pagarPlanoAcademia(${academiaId}, ${p.id}, '${p.nome}', '${academiaNome}', ${p.valor})"
+                            style="flex:1; background:#d4ff00; color:#000; border:none; border-radius:8px; padding:10px; font-weight:900; font-size:0.8rem; cursor:pointer; transition:0.2s;"
+                            onmouseover="this.style.background='#e8ff40'" onmouseout="this.style.background='#d4ff00'">
+                            <i class="fas fa-qrcode"></i> PIX
+                        </button>
+                        <button onclick="abrirCartaoAcademia(${academiaId}, ${p.id}, '${p.nome}', '${academiaNome}', ${p.valor})"
+                            style="flex:1; background:rgba(255,255,255,0.08); color:#fff; border:1px solid rgba(255,255,255,0.2); border-radius:8px; padding:10px; font-weight:900; font-size:0.8rem; cursor:pointer; transition:0.2s;"
+                            onmouseover="this.style.background='rgba(255,255,255,0.15)'" onmouseout="this.style.background='rgba(255,255,255,0.08)'">
+                            <i class="fas fa-credit-card"></i> Cartão
+                        </button>
+                    </div>
                 </div>
             `).join('');
         }
@@ -1850,7 +1865,252 @@
     window.addEventListener('click', e => {
         if (e.target === document.getElementById('modalPlanosAcademia')) fecharPlanosAcademia();
         if (e.target === document.getElementById('modalPixAcademia')) fecharModalPixAcademia();
+        if (e.target === document.getElementById('modalCartao')) fecharModalCartao();
     });
+</script>
+
+{{-- MODAL CARTÃO DE CRÉDITO --}}
+<div id="modalCartao" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.88); z-index:99999; flex-direction:column; justify-content:center; align-items:center; backdrop-filter:blur(6px); padding:20px; overflow-y:auto;">
+    <div style="background:#16181d; border:1px solid rgba(255,255,255,0.08); border-radius:20px; padding:32px; max-width:460px; width:100%; position:relative; max-height:90vh; overflow-y:auto;">
+        <button onclick="fecharModalCartao()" style="position:absolute; top:16px; right:16px; background:none; border:none; color:#a0a0a0; font-size:1.2rem; cursor:pointer;">✕</button>
+
+        <h3 style="color:#fff; font-size:1.1rem; font-weight:900; margin:0 0 4px;"><i class="fas fa-credit-card" style="color:var(--primary);"></i> PAGAMENTO COM CARTÃO</h3>
+        <p id="cartaoDescricao" style="color:#a0a0a0; font-size:0.8rem; margin:0 0 4px;"></p>
+        <p id="cartaoValor" style="color:#fff; font-size:1.4rem; font-weight:700; margin:0 0 20px;"></p>
+
+        <form id="formCartao" onsubmit="submeterCartao(event)" autocomplete="off">
+
+            {{-- Número do cartão --}}
+            <div style="margin-bottom:14px;">
+                <label style="color:#a0a0a0; font-size:0.75rem; display:block; margin-bottom:6px;">Número do cartão</label>
+                <input id="cartaoNumero" type="text" inputmode="numeric" maxlength="19" placeholder="0000 0000 0000 0000"
+                    style="width:100%; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.12); border-radius:10px; padding:11px 14px; color:#fff; font-size:1rem; outline:none; letter-spacing:2px; box-sizing:border-box;"
+                    oninput="formatarNumeroCartao(this)" required>
+            </div>
+
+            {{-- Nome no cartão --}}
+            <div style="margin-bottom:14px;">
+                <label style="color:#a0a0a0; font-size:0.75rem; display:block; margin-bottom:6px;">Nome impresso no cartão</label>
+                <input id="cartaoNomeTitular" type="text" placeholder="NOME SOBRENOME" maxlength="100"
+                    style="width:100%; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.12); border-radius:10px; padding:11px 14px; color:#fff; font-size:0.9rem; outline:none; text-transform:uppercase; box-sizing:border-box;"
+                    oninput="this.value=this.value.toUpperCase()" required>
+            </div>
+
+            {{-- Validade + CVV --}}
+            <div style="display:flex; gap:12px; margin-bottom:14px;">
+                <div style="flex:1;">
+                    <label style="color:#a0a0a0; font-size:0.75rem; display:block; margin-bottom:6px;">Validade (MM/AA)</label>
+                    <input id="cartaoValidade" type="text" inputmode="numeric" maxlength="5" placeholder="MM/AA"
+                        style="width:100%; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.12); border-radius:10px; padding:11px 14px; color:#fff; font-size:0.9rem; outline:none; box-sizing:border-box;"
+                        oninput="formatarValidade(this)" required>
+                </div>
+                <div style="flex:1;">
+                    <label style="color:#a0a0a0; font-size:0.75rem; display:block; margin-bottom:6px;">CVV</label>
+                    <input id="cartaoCCV" type="text" inputmode="numeric" maxlength="4" placeholder="123"
+                        style="width:100%; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.12); border-radius:10px; padding:11px 14px; color:#fff; font-size:0.9rem; outline:none; box-sizing:border-box;"
+                        oninput="this.value=this.value.replace(/\D/g,'')" required>
+                </div>
+            </div>
+
+            <hr style="border:none; border-top:1px solid rgba(255,255,255,0.07); margin:4px 0 16px;">
+            <p style="color:#a0a0a0; font-size:0.72rem; margin:0 0 12px;">Dados do titular (necessários para antifraude)</p>
+
+            {{-- CPF --}}
+            <div style="margin-bottom:14px;">
+                <label style="color:#a0a0a0; font-size:0.75rem; display:block; margin-bottom:6px;">CPF do titular</label>
+                <input id="cartaoCPF" type="text" inputmode="numeric" maxlength="14" placeholder="000.000.000-00"
+                    style="width:100%; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.12); border-radius:10px; padding:11px 14px; color:#fff; font-size:0.9rem; outline:none; box-sizing:border-box;"
+                    oninput="formatarCPF(this)" required>
+            </div>
+
+            {{-- CEP + Número --}}
+            <div style="display:flex; gap:12px; margin-bottom:14px;">
+                <div style="flex:2;">
+                    <label style="color:#a0a0a0; font-size:0.75rem; display:block; margin-bottom:6px;">CEP</label>
+                    <input id="cartaoCEP" type="text" inputmode="numeric" maxlength="9" placeholder="00000-000"
+                        style="width:100%; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.12); border-radius:10px; padding:11px 14px; color:#fff; font-size:0.9rem; outline:none; box-sizing:border-box;"
+                        oninput="formatarCEP(this)" required>
+                </div>
+                <div style="flex:1;">
+                    <label style="color:#a0a0a0; font-size:0.75rem; display:block; margin-bottom:6px;">Número</label>
+                    <input id="cartaoNumeroEnd" type="text" maxlength="20" placeholder="277"
+                        style="width:100%; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.12); border-radius:10px; padding:11px 14px; color:#fff; font-size:0.9rem; outline:none; box-sizing:border-box;"
+                        required>
+                </div>
+            </div>
+
+            {{-- Telefone --}}
+            <div style="margin-bottom:20px;">
+                <label style="color:#a0a0a0; font-size:0.75rem; display:block; margin-bottom:6px;">Telefone / WhatsApp</label>
+                <input id="cartaoTelefone" type="text" inputmode="numeric" maxlength="15" placeholder="(11) 99999-9999"
+                    style="width:100%; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.12); border-radius:10px; padding:11px 14px; color:#fff; font-size:0.9rem; outline:none; box-sizing:border-box;"
+                    oninput="formatarTelefone(this)" required>
+            </div>
+
+            <p id="cartaoErro" style="display:none; color:#ff6b6b; font-size:0.82rem; background:rgba(255,107,107,0.1); border:1px solid rgba(255,107,107,0.3); border-radius:8px; padding:10px 14px; margin-bottom:14px;"></p>
+            <p id="cartaoSucesso" style="display:none; color:#4caf50; font-size:0.9rem; font-weight:700; text-align:center; padding:10px 0;">✅ Pagamento aprovado! Redirecionando...</p>
+
+            <button type="submit" id="btnSubmeterCartao"
+                style="width:100%; background:var(--primary); color:#000; border:none; border-radius:12px; padding:14px; font-weight:900; font-size:0.95rem; cursor:pointer;">
+                <i class="fas fa-lock"></i> Pagar com Segurança
+            </button>
+        </form>
+    </div>
+</div>
+
+<script>
+    let cartaoCtx = null;
+
+    function abrirCartaoPacote() {
+        cartaoCtx = {
+            modo: 'pacote',
+            payload: {
+                tipo:              'pacote',
+                personal_id:       document.getElementById('pacote_personal_id').value,
+                pacote_id:         document.getElementById('pacote_id').value,
+                frequencia:        document.getElementById('pacote_frequencia').value,
+                valor_pacote:      document.getElementById('pacote_valor').value,
+                dias_selecionados: document.getElementById('pacote_dias').value,
+                hora_inicio:       document.getElementById('pacote_hora_inicio').value,
+                hora_fim:          document.getElementById('pacote_hora_fim').value,
+                academia_nome:     document.getElementById('pacote_academia_nome').value,
+            }
+        };
+
+        const valorNum = parseFloat(document.getElementById('pacote_valor').value) || 0;
+        document.getElementById('cartaoDescricao').textContent = 'Pacote com personal';
+        document.getElementById('cartaoValor').textContent = 'R$ ' + valorNum.toFixed(2).replace('.', ',');
+        resetarFormCartao();
+        document.getElementById('cartaoTelefone').value = '{!! $cliente->whatsapp ?? '' !!}';
+        document.getElementById('cartaoCEP').value = '{{ $cliente->cep ?? '' }}';
+        document.getElementById('modalCartao').style.display = 'flex';
+    }
+
+    function abrirCartaoAcademia(academiaId, planoId, planoNome, academiaNome, valor) {
+        cartaoCtx = {
+            modo: 'academia',
+            payload: { academia_id: academiaId, plano_id: planoId }
+        };
+
+        document.getElementById('cartaoDescricao').textContent = `Plano ${planoNome} — ${academiaNome}`;
+        document.getElementById('cartaoValor').textContent = 'R$ ' + parseFloat(valor).toFixed(2).replace('.', ',');
+        resetarFormCartao();
+        document.getElementById('cartaoTelefone').value = '{!! $cliente->whatsapp ?? '' !!}';
+        document.getElementById('cartaoCEP').value = '{{ $cliente->cep ?? '' }}';
+        fecharPlanosAcademia();
+        document.getElementById('modalCartao').style.display = 'flex';
+    }
+
+    function fecharModalCartao() {
+        document.getElementById('modalCartao').style.display = 'none';
+        cartaoCtx = null;
+    }
+
+    function resetarFormCartao() {
+        document.getElementById('formCartao').reset();
+        document.getElementById('cartaoErro').style.display = 'none';
+        document.getElementById('cartaoSucesso').style.display = 'none';
+        const btn = document.getElementById('btnSubmeterCartao');
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-lock"></i> Pagar com Segurança';
+    }
+
+    async function submeterCartao(e) {
+        e.preventDefault();
+        if (!cartaoCtx) return;
+
+        const validade = document.getElementById('cartaoValidade').value.trim();
+        const parts    = validade.split('/');
+        if (parts.length !== 2 || parts[0].length !== 2 || parts[1].length !== 2) {
+            document.getElementById('cartaoErro').textContent = 'Validade inválida. Use o formato MM/AA.';
+            document.getElementById('cartaoErro').style.display = 'block';
+            return;
+        }
+
+        const cardData = {
+            card_holder:       document.getElementById('cartaoNomeTitular').value.trim(),
+            card_number:       document.getElementById('cartaoNumero').value.replace(/\s/g, ''),
+            card_expiry_month: parts[0],
+            card_expiry_year:  '20' + parts[1],
+            card_ccv:          document.getElementById('cartaoCCV').value.trim(),
+            cpf:               document.getElementById('cartaoCPF').value.replace(/\D/g, ''),
+            cep:               document.getElementById('cartaoCEP').value.replace(/\D/g, ''),
+            numero:            document.getElementById('cartaoNumeroEnd').value.trim(),
+            telefone:          document.getElementById('cartaoTelefone').value.replace(/\D/g, ''),
+        };
+
+        const endpoint = cartaoCtx.modo === 'academia'
+            ? '/api/criar-pagamento-cartao-academia'
+            : '/api/criar-pagamento-cartao';
+
+        const btn = document.getElementById('btnSubmeterCartao');
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processando...';
+        document.getElementById('cartaoErro').style.display = 'none';
+
+        try {
+            const res  = await fetch(endpoint, {
+                method:  'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}' },
+                body:    JSON.stringify({ ...cartaoCtx.payload, ...cardData }),
+            });
+            const data = await res.json();
+
+            if (!res.ok) throw new Error(data.error || 'Erro ao processar cartão.');
+
+            if (data.confirmed) {
+                document.getElementById('cartaoSucesso').style.display = 'block';
+                const modoAtual = cartaoCtx.modo;
+                setTimeout(() => {
+                    fecharModalCartao();
+                    if (modoAtual === 'academia') {
+                        window.location.reload();
+                    } else {
+                        window.location.href = '/pagamento/sucesso';
+                    }
+                }, 2000);
+            } else {
+                throw new Error('Pagamento não confirmado. Verifique os dados e tente novamente.');
+            }
+        } catch (err) {
+            document.getElementById('cartaoErro').textContent = err.message;
+            document.getElementById('cartaoErro').style.display = 'block';
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-lock"></i> Pagar com Segurança';
+        }
+    }
+
+    function formatarNumeroCartao(input) {
+        let v = input.value.replace(/\D/g, '').substring(0, 16);
+        input.value = v.replace(/(.{4})/g, '$1 ').trim();
+    }
+
+    function formatarValidade(input) {
+        let v = input.value.replace(/\D/g, '').substring(0, 4);
+        if (v.length >= 3) v = v.substring(0, 2) + '/' + v.substring(2);
+        input.value = v;
+    }
+
+    function formatarCPF(input) {
+        let v = input.value.replace(/\D/g, '').substring(0, 11);
+        v = v.replace(/(\d{3})(\d)/, '$1.$2');
+        v = v.replace(/(\d{3})(\d)/, '$1.$2');
+        v = v.replace(/(\d{3})(\d{1,2})$/, '$1-$2');
+        input.value = v;
+    }
+
+    function formatarCEP(input) {
+        let v = input.value.replace(/\D/g, '').substring(0, 8);
+        if (v.length > 5) v = v.substring(0, 5) + '-' + v.substring(5);
+        input.value = v;
+    }
+
+    function formatarTelefone(input) {
+        let v = input.value.replace(/\D/g, '').substring(0, 11);
+        if (v.length > 2)  v = '(' + v.substring(0, 2) + ') ' + v.substring(2);
+        if (v.length > 10) v = v.substring(0, 10) + '-' + v.substring(10);
+        input.value = v;
+    }
 </script>
 
 </body>

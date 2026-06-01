@@ -502,6 +502,281 @@ class PaymentController extends Controller
         }
     }
 
+    // ─────────────────────────────────────────────
+    // CRIAR PAGAMENTO CARTÃO — PERSONAL/PACOTE
+    // ─────────────────────────────────────────────
+    public function criarPagamentoCartao(Request $request)
+    {
+        $clienteId = session('cliente_id');
+        if (!$clienteId) {
+            return response()->json(['error' => 'Não autenticado.'], 401);
+        }
+
+        $validated = $request->validate([
+            'personal_id'       => 'required|integer|exists:personals,id',
+            'tipo'              => 'required|in:aula_avulsa,pacote',
+            'pacote_id'         => 'nullable|integer|exists:pacotes,id',
+            'frequencia'        => 'nullable|integer|min:1|max:7',
+            'valor_pacote'      => 'nullable|numeric',
+            'dias_selecionados' => 'nullable|string',
+            'hora_inicio'       => 'nullable|string|max:10',
+            'hora_fim'          => 'nullable|string|max:10',
+            'academia_nome'     => 'nullable|string|max:255',
+            'card_holder'       => 'required|string|max:100',
+            'card_number'       => 'required|string|min:13|max:19',
+            'card_expiry_month' => 'required|string|size:2',
+            'card_expiry_year'  => 'required|string|size:4',
+            'card_ccv'          => 'required|string|min:3|max:4',
+            'cpf'               => 'required|string|min:11|max:18',
+            'cep'               => 'required|string|min:8|max:9',
+            'numero'            => 'required|string|max:20',
+            'telefone'          => 'required|string|min:10|max:15',
+        ]);
+
+        $cliente  = \App\Models\Cadastro\Cliente::findOrFail($clienteId);
+        $personal = Personal::findOrFail($validated['personal_id']);
+
+        if ($validated['tipo'] === 'pacote') {
+            $pacote      = Pacote::findOrFail($validated['pacote_id']);
+            $amount      = (float) $pacote->valor_mensal;
+            $description = "Pacote {$pacote->frequencia}x/semana — {$personal->nome}";
+        } else {
+            $pacote      = null;
+            $amount      = (float) ($personal->valor_secao ?? 0);
+            $description = "Aula Avulsa — {$personal->nome}";
+        }
+
+        $bookingData = [
+            'cliente_id'        => $clienteId,
+            'personal_id'       => $validated['personal_id'],
+            'tipo'              => $validated['tipo'],
+            'pacote_id'         => $validated['pacote_id'] ?? null,
+            'frequencia_pacote' => $validated['frequencia'] ?? null,
+            'valor_pacote'      => $validated['valor_pacote'] ?? $amount,
+            'dias_selecionados' => $validated['dias_selecionados'] ?? '[]',
+            'hora_inicio'       => $validated['hora_inicio'] ?? null,
+            'hora_fim'          => $validated['hora_fim'] ?? null,
+            'academia_nome'     => $validated['academia_nome'] ?? null,
+        ];
+
+        try {
+            $asaasCustomerId = $this->obterOuCriarClienteAsaas($cliente);
+
+            $cardNumber = preg_replace('/\D/', '', $validated['card_number']);
+            $cpf        = preg_replace('/\D/', '', $validated['cpf']);
+            $cep        = preg_replace('/\D/', '', $validated['cep']);
+            $telefone   = preg_replace('/\D/', '', $validated['telefone']);
+
+            $paymentRes = Http::withHeaders($this->asaasHeaders())
+                ->post($this->asaas() . '/payments', [
+                    'customer'          => $asaasCustomerId,
+                    'billingType'       => 'CREDIT_CARD',
+                    'value'             => $amount,
+                    'dueDate'           => now()->format('Y-m-d'),
+                    'description'       => $description,
+                    'externalReference' => 'cli_cc_' . $clienteId . '_' . time(),
+                    'creditCard'        => [
+                        'holderName'  => $validated['card_holder'],
+                        'number'      => $cardNumber,
+                        'expiryMonth' => $validated['card_expiry_month'],
+                        'expiryYear'  => $validated['card_expiry_year'],
+                        'ccv'         => $validated['card_ccv'],
+                    ],
+                    'creditCardHolderInfo' => [
+                        'name'          => $validated['card_holder'],
+                        'email'         => $cliente->email,
+                        'cpfCnpj'       => $cpf,
+                        'postalCode'    => $cep,
+                        'addressNumber' => $validated['numero'],
+                        'phone'         => $telefone,
+                    ],
+                ]);
+
+            $asaasData = $paymentRes->json();
+
+            if (!empty($asaasData['errors'])) {
+                $errMsg = $asaasData['errors'][0]['description'] ?? 'Falha ao processar cartão.';
+                Log::error('Asaas cartão: falha', ['body' => $asaasData]);
+                return response()->json(['error' => $errMsg], 422);
+            }
+
+            if ($paymentRes->failed()) {
+                Log::error('Asaas cartão: http error', ['body' => $asaasData]);
+                return response()->json(['error' => 'Falha ao processar cartão. Tente novamente.'], 500);
+            }
+
+            $asaasPaymentId = $asaasData['id'];
+            $status         = $asaasData['status'] ?? 'PENDING';
+
+            $split   = $this->calculateSplit($amount);
+            $payment = Payment::create([
+                'user_id'                  => $clienteId,
+                'trainer_id'               => $validated['personal_id'],
+                'membership_id'            => $validated['pacote_id'] ?? null,
+                'amount_total'             => $split['amount_total'],
+                'company_fee'              => $split['company_fee'],
+                'trainer_amount'           => $split['trainer_amount'],
+                'stripe_payment_intent_id' => $asaasPaymentId,
+                'status'                   => 'pending',
+                'payment_method'           => 'credit_card',
+                'idempotency_key'          => 'cc_' . $asaasPaymentId,
+                'booking_data'             => json_encode($bookingData),
+            ]);
+
+            $confirmed = in_array($status, ['CONFIRMED', 'RECEIVED', 'RECEIVED_IN_CASH']);
+
+            if ($confirmed) {
+                $this->processarPagamentoConfirmado($payment);
+            }
+
+            Log::info('Asaas cartão: pagamento criado', [
+                'payment_id'       => $payment->id,
+                'asaas_payment_id' => $asaasPaymentId,
+                'status'           => $status,
+                'confirmed'        => $confirmed,
+            ]);
+
+            return response()->json([
+                'paymentId' => $payment->id,
+                'status'    => $status,
+                'confirmed' => $confirmed,
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Asaas cartão: exception', ['error' => $e->getMessage()]);
+            return response()->json(['error' => 'Erro interno. Tente novamente.'], 500);
+        }
+    }
+
+    // ─────────────────────────────────────────────
+    // CRIAR PAGAMENTO CARTÃO — ACADEMIA
+    // ─────────────────────────────────────────────
+    public function criarPagamentoCartaoAcademia(Request $request)
+    {
+        $clienteId = session('cliente_id');
+        if (!$clienteId) {
+            return response()->json(['error' => 'Não autenticado.'], 401);
+        }
+
+        $validated = $request->validate([
+            'academia_id'       => 'required|integer|exists:academias,id',
+            'plano_id'          => 'required|integer|exists:planos,id',
+            'card_holder'       => 'required|string|max:100',
+            'card_number'       => 'required|string|min:13|max:19',
+            'card_expiry_month' => 'required|string|size:2',
+            'card_expiry_year'  => 'required|string|size:4',
+            'card_ccv'          => 'required|string|min:3|max:4',
+            'cpf'               => 'required|string|min:11|max:18',
+            'cep'               => 'required|string|min:8|max:9',
+            'numero'            => 'required|string|max:20',
+            'telefone'          => 'required|string|min:10|max:15',
+        ]);
+
+        $cliente  = \App\Models\Cadastro\Cliente::findOrFail($clienteId);
+        $academia = \App\Models\Cadastro\Academia::findOrFail($validated['academia_id']);
+        $plano    = \App\Models\Cadastro\Plano::findOrFail($validated['plano_id']);
+
+        if ((int) $plano->academia_id !== (int) $validated['academia_id']) {
+            return response()->json(['error' => 'Plano inválido para esta academia.'], 422);
+        }
+
+        $amount      = (float) $plano->valor;
+        $description = "Plano {$plano->nome} — {$academia->nome}";
+
+        try {
+            $asaasCustomerId = $this->obterOuCriarClienteAsaas($cliente);
+
+            $cardNumber = preg_replace('/\D/', '', $validated['card_number']);
+            $cpf        = preg_replace('/\D/', '', $validated['cpf']);
+            $cep        = preg_replace('/\D/', '', $validated['cep']);
+            $telefone   = preg_replace('/\D/', '', $validated['telefone']);
+
+            $paymentRes = Http::withHeaders($this->asaasHeaders())
+                ->post($this->asaas() . '/payments', [
+                    'customer'          => $asaasCustomerId,
+                    'billingType'       => 'CREDIT_CARD',
+                    'value'             => $amount,
+                    'dueDate'           => now()->format('Y-m-d'),
+                    'description'       => $description,
+                    'externalReference' => 'aca_cc_' . $clienteId . '_' . $validated['academia_id'] . '_' . time(),
+                    'creditCard'        => [
+                        'holderName'  => $validated['card_holder'],
+                        'number'      => $cardNumber,
+                        'expiryMonth' => $validated['card_expiry_month'],
+                        'expiryYear'  => $validated['card_expiry_year'],
+                        'ccv'         => $validated['card_ccv'],
+                    ],
+                    'creditCardHolderInfo' => [
+                        'name'          => $validated['card_holder'],
+                        'email'         => $cliente->email,
+                        'cpfCnpj'       => $cpf,
+                        'postalCode'    => $cep,
+                        'addressNumber' => $validated['numero'],
+                        'phone'         => $telefone,
+                    ],
+                ]);
+
+            $asaasData = $paymentRes->json();
+
+            if (!empty($asaasData['errors'])) {
+                $errMsg = $asaasData['errors'][0]['description'] ?? 'Falha ao processar cartão.';
+                Log::error('Asaas cartão academia: falha', ['body' => $asaasData]);
+                return response()->json(['error' => $errMsg], 422);
+            }
+
+            if ($paymentRes->failed()) {
+                Log::error('Asaas cartão academia: http error', ['body' => $asaasData]);
+                return response()->json(['error' => 'Falha ao processar cartão. Tente novamente.'], 500);
+            }
+
+            $asaasPaymentId = $asaasData['id'];
+            $status         = $asaasData['status'] ?? 'PENDING';
+
+            $payment = Payment::create([
+                'user_id'                  => $clienteId,
+                'trainer_id'               => null,
+                'membership_id'            => null,
+                'academia_id'              => $validated['academia_id'],
+                'plano_id'                 => $validated['plano_id'],
+                'amount_total'             => $amount,
+                'company_fee'              => 0,
+                'trainer_amount'           => 0,
+                'stripe_payment_intent_id' => $asaasPaymentId,
+                'status'                   => 'pending',
+                'payment_method'           => 'credit_card',
+                'idempotency_key'          => 'aca_cc_' . $asaasPaymentId,
+                'booking_data'             => json_encode([
+                    'tipo'        => 'academia',
+                    'academia_id' => $validated['academia_id'],
+                    'plano_id'    => $validated['plano_id'],
+                    'cliente_id'  => $clienteId,
+                ]),
+            ]);
+
+            $confirmed = in_array($status, ['CONFIRMED', 'RECEIVED', 'RECEIVED_IN_CASH']);
+
+            if ($confirmed) {
+                $this->processarPagamentoConfirmado($payment);
+            }
+
+            Log::info('Asaas cartão academia: pagamento criado', [
+                'payment_id'       => $payment->id,
+                'asaas_payment_id' => $asaasPaymentId,
+                'status'           => $status,
+            ]);
+
+            return response()->json([
+                'paymentId' => $payment->id,
+                'status'    => $status,
+                'confirmed' => $confirmed,
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Asaas cartão academia: exception', ['error' => $e->getMessage()]);
+            return response()->json(['error' => 'Erro interno. Tente novamente.'], 500);
+        }
+    }
+
     private function detectarTipoChavePix(string $chave): string
     {
         if (filter_var($chave, FILTER_VALIDATE_EMAIL)) return 'EMAIL';
