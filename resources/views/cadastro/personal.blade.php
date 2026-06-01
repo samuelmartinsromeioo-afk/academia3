@@ -308,9 +308,14 @@
                 <label>CPF</label>
                 <div class="input-wrapper">
                     <i class="fa-solid fa-id-card"></i>
-                    <input type="text" name="cpf" placeholder="000.000.000-00" 
-                        oninput="this.value = mascaras.cpf(this.value)" maxlength="14" required>
+                    <input type="text" id="inputCpf" name="cpf" placeholder="000.000.000-00"
+                        oninput="this.value = mascaras.cpf(this.value)"
+                        onblur="validarCampoCpf(this)"
+                        maxlength="14" required>
                 </div>
+                <span id="erroCpf" style="display:none; color:#ff4444; font-size:0.78rem; margin-top:4px;">
+                    <i class="fas fa-exclamation-circle"></i> CPF inválido. Verifique os dígitos.
+                </span>
             </div>
 
             <div class="form-group">
@@ -514,6 +519,48 @@
     });
 </script>
 <script>
+    function validarCPF(cpf) {
+        cpf = cpf.replace(/\D/g, '');
+        if (cpf.length !== 11 || /^(\d)\1{10}$/.test(cpf)) return false;
+        for (let t = 9; t < 11; t++) {
+            let soma = 0;
+            for (let i = 0; i < t; i++) soma += parseInt(cpf[i]) * ((t + 1) - i);
+            let resto = (soma * 10) % 11;
+            if (resto === 10 || resto === 11) resto = 0;
+            if (resto !== parseInt(cpf[t])) return false;
+        }
+        return true;
+    }
+
+    function validarCampoCpf(input) {
+        const cpf = input.value.replace(/\D/g, '');
+        const erro = document.getElementById('erroCpf');
+        if (cpf.length === 11 && !validarCPF(cpf)) {
+            input.style.borderColor = '#ff4444';
+            if (erro) { erro.style.display = 'block'; }
+        } else {
+            input.style.borderColor = '';
+            if (erro) { erro.style.display = 'none'; }
+        }
+    }
+
+    // Bloqueia envio do form se CPF inválido
+    document.addEventListener('DOMContentLoaded', function () {
+        const form = document.querySelector('form.form-grid');
+        if (form) {
+            form.addEventListener('submit', function (e) {
+                const input = document.getElementById('inputCpf');
+                if (input && !validarCPF(input.value)) {
+                    e.preventDefault();
+                    input.style.borderColor = '#ff4444';
+                    const erro = document.getElementById('erroCpf');
+                    if (erro) { erro.style.display = 'block'; }
+                    input.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+            });
+        }
+    });
+
     const mascaras = {
         cpf: function(value) {
             return value

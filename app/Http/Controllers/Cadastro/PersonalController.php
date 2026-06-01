@@ -31,7 +31,11 @@ class PersonalController extends Controller
             'cidade'        => 'required|string|max:200',
             'estado'        => 'required|string|max:200',
             'complemento'   => 'required|string|min:1',
-            'cpf'           => 'required|unique:personals,cpf',
+            'cpf'           => ['required', 'unique:personals,cpf', function ($attribute, $value, $fail) {
+                if (!$this->validarCPF($value)) {
+                    $fail('O CPF informado é inválido.');
+                }
+            }],
             'email'         => 'required|email|unique:personals,email',
             'certificado'   => 'required|file|mimes:pdf,jpg,jpeg,png,heic,heif|max:10240',
             'foto'          => 'required|file|mimes:jpeg,jpg,png,gif,webp,heic,heif|max:10240',
@@ -576,6 +580,27 @@ class PersonalController extends Controller
             Log::error('Erro ao finalizar aula: ' . $e->getMessage());
             return redirect()->back()->with('error', 'Erro ao finalizar aula: ' . $e->getMessage());
         }
+    }
+
+    private function validarCPF(string $cpf): bool
+    {
+        $cpf = preg_replace('/\D/', '', $cpf);
+
+        if (strlen($cpf) !== 11 || preg_match('/^(\d)\1{10}$/', $cpf)) {
+            return false;
+        }
+
+        for ($t = 9; $t < 11; $t++) {
+            $soma = 0;
+            for ($i = 0; $i < $t; $i++) {
+                $soma += $cpf[$i] * (($t + 1) - $i);
+            }
+            $resto = ($soma * 10) % 11;
+            if ($resto === 10 || $resto === 11) $resto = 0;
+            if ($resto !== (int) $cpf[$t]) return false;
+        }
+
+        return true;
     }
 
     private function criarSubcontaAsaas(Personal $personal): void
