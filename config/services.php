@@ -31,10 +31,9 @@ return [
         'region' => env('AWS_DEFAULT_REGION', 'us-east-1'),
     ],
     
-    'zenvia' => [
-        'token'             => env('ZENVIA_API_TOKEN'),
-        'from'              => env('ZENVIA_FROM'),
-        'template_lembrete' => env('ZENVIA_TEMPLATE_LEMBRETE'),
+    'whatsapp' => [
+        'token'           => env('WHATSAPP_TOKEN'),
+        'phone_number_id' => env('WHATSAPP_PHONE_NUMBER_ID'),
     ],
 
     'stripe' => [

@@ -12,8 +12,8 @@ class Kernel extends ConsoleKernel
      */
     protected function schedule(Schedule $schedule): void
     {
-        // Lembrete diário de compromissos para cada personal às 7h da manhã
-        $schedule->command('personal:lembrete-diario')->dailyAt('07:00');
+        // Verifica a cada 5 min se algum personal tem compromisso em ~90 min (lógica de janela no comando)
+        $schedule->command('personal:lembrete-diario')->everyFiveMinutes();
     }
 
     /**

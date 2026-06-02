@@ -3,11 +3,13 @@
 namespace App\Console\Commands;
 
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use App\Models\Cadastro\Personal;
+use App\Models\Cadastro\Cliente;
 use App\Models\Agenda;
 use Carbon\Carbon;
-use Illuminate\Support\Facades\Http;
 
 class LembreteDiarioPersonal extends Command
 {
@@ -17,6 +19,7 @@ class LembreteDiarioPersonal extends Command
     public function handle(): int
     {
         $hoje = Carbon::today();
+        $agora = Carbon::now();
 
         $personais = Personal::whereNotNull('whatsapp')
             ->where('whatsapp', '!=', '')
@@ -28,12 +31,11 @@ class LembreteDiarioPersonal extends Command
             return self::SUCCESS;
         }
 
-        $apiToken   = config('services.zenvia.token');
-        $from       = config('services.zenvia.from');
-        $templateId = config('services.zenvia.template_lembrete');
+        $token         = config('services.whatsapp.token');
+        $phoneNumberId = config('services.whatsapp.phone_number_id');
 
-        if (!$apiToken || !$from) {
-            $this->error('Zenvia não configurado no .env (ZENVIA_API_TOKEN e ZENVIA_FROM).');
+        if (!$token || !$phoneNumberId) {
+            $this->error('Meta WhatsApp não configurado no .env (WHATSAPP_TOKEN e WHATSAPP_PHONE_NUMBER_ID).');
             return self::FAILURE;
         }
 
@@ -50,24 +52,39 @@ class LembreteDiarioPersonal extends Command
                 continue;
             }
 
+            // Só envia entre 80 e 100 minutos antes do primeiro compromisso do dia
+            $primeiraHora = Carbon::parse($hoje->format('Y-m-d') . ' ' . $agendas->first()->hora_inicio);
+            $minutosRestantes = $agora->diffInMinutes($primeiraHora, false);
+
+            if ($minutosRestantes < 80 || $minutosRestantes > 100) {
+                continue;
+            }
+
+            // Controle de duplicidade: não envia mais de uma vez por dia por personal
+            $cacheKey = "lembrete_enviado_{$personal->id}_{$hoje->format('Y-m-d')}";
+            if (Cache::has($cacheKey)) {
+                $this->line("↷ {$personal->nome} (já enviado hoje)");
+                continue;
+            }
+
             $phone = preg_replace('/\D/', '', $personal->whatsapp);
             if (!str_starts_with($phone, '55')) {
                 $phone = '55' . $phone;
             }
 
-            $contents = $templateId
-                ? $this->conteudoTemplate($templateId, $personal, $agendas, $hoje)
-                : $this->conteudoTexto($personal, $agendas, $hoje);
+            $mensagem = $this->montarMensagem($personal, $agendas, $hoje);
 
             try {
-                $response = Http::withHeaders(['X-API-TOKEN' => $apiToken])
-                    ->post('https://api.zenvia.com/v2/channels/whatsapp/messages', [
-                        'from'     => $from,
-                        'to'       => $phone,
-                        'contents' => $contents,
+                $response = Http::withToken($token)
+                    ->post("https://graph.facebook.com/v19.0/{$phoneNumberId}/messages", [
+                        'messaging_product' => 'whatsapp',
+                        'to'                => $phone,
+                        'type'              => 'text',
+                        'text'              => ['body' => $mensagem],
                     ]);
 
                 if ($response->successful()) {
+                    Cache::put($cacheKey, true, now()->addHours(2));
                     Log::info("Lembrete enviado ao personal {$personal->id} ({$personal->nome})");
                     $this->line("✓ {$personal->nome}");
                 } else {
@@ -78,7 +95,6 @@ class LembreteDiarioPersonal extends Command
                 $this->warn("✗ {$personal->nome}: " . $e->getMessage());
             }
 
-            // Respeita o rate limit entre disparos em massa
             usleep(500000);
         }
 
@@ -86,24 +102,7 @@ class LembreteDiarioPersonal extends Command
         return self::SUCCESS;
     }
 
-    private function conteudoTemplate(string $templateId, Personal $personal, $agendas, Carbon $hoje): array
-    {
-        $primeiroNome  = explode(' ', $personal->nome)[0];
-        $dataFormatada = $hoje->translatedFormat('l, d \d\e F');
-        $blocoAgendas  = $this->montarBlocoAgendas($agendas);
-
-        return [[
-            'type'       => 'template',
-            'templateId' => $templateId,
-            'fields'     => [
-                '1' => $primeiroNome,
-                '2' => $dataFormatada,
-                '3' => $blocoAgendas,
-            ],
-        ]];
-    }
-
-    private function conteudoTexto(Personal $personal, $agendas, Carbon $hoje): array
+    private function montarMensagem(Personal $personal, $agendas, Carbon $hoje): string
     {
         $primeiroNome  = explode(' ', $personal->nome)[0];
         $dataFormatada = $hoje->translatedFormat('l, d \d\e F');
@@ -112,9 +111,77 @@ class LembreteDiarioPersonal extends Command
         $texto  = "Bom dia, {$primeiroNome}! 🏋️‍♂️\n\n";
         $texto .= "Seus compromissos de hoje ({$dataFormatada}):\n\n";
         $texto .= $blocoAgendas;
+
+        $blocoAniversariantes = $this->montarBlocoAniversariantes($personal->id, $hoje);
+        if ($blocoAniversariantes) {
+            $texto .= "\n" . $blocoAniversariantes;
+        }
+
         $texto .= "\nBom trabalho hoje! 💪";
 
-        return [['type' => 'text', 'text' => $texto]];
+        return $texto;
+    }
+
+    private function montarBlocoAniversariantes(int $personalId, Carbon $hoje): string
+    {
+        $clienteIds = Agenda::where('personal_id', $personalId)
+            ->whereNotNull('cliente_id')
+            ->distinct()
+            ->pluck('cliente_id');
+
+        if ($clienteIds->isEmpty()) {
+            return '';
+        }
+
+        $clientes = Cliente::whereIn('id', $clienteIds)
+            ->whereNotNull('idade')
+            ->get();
+
+        $aniversariantesHoje  = [];
+        $aniversariantesProx7 = [];
+
+        foreach ($clientes as $cliente) {
+            try {
+                $nascimento  = Carbon::parse($cliente->idade);
+                $aniversario = Carbon::create($hoje->year, $nascimento->month, $nascimento->day)->startOfDay();
+
+                if ($aniversario->lt($hoje)) {
+                    $aniversario->addYear();
+                }
+
+                if ($aniversario->isSameDay($hoje)) {
+                    $aniversariantesHoje[] = $cliente->nome;
+                } else {
+                    $diff = $hoje->diffInDays($aniversario);
+                    if ($diff <= 7) {
+                        $aniversariantesProx7[] = [
+                            'nome' => $cliente->nome,
+                            'dias' => $diff,
+                            'data' => $aniversario,
+                        ];
+                    }
+                }
+            } catch (\Exception) {
+                continue;
+            }
+        }
+
+        if (empty($aniversariantesHoje) && empty($aniversariantesProx7)) {
+            return '';
+        }
+
+        $bloco = "🎂 *Aniversariantes*\n";
+
+        foreach ($aniversariantesHoje as $nome) {
+            $bloco .= "🎉 {$nome} — *hoje!*\n";
+        }
+
+        foreach ($aniversariantesProx7 as $item) {
+            $dataFmt = $item['data']->translatedFormat('d/m');
+            $bloco .= "📅 {$item['nome']} — {$dataFmt} (em {$item['dias']} dias)\n";
+        }
+
+        return $bloco;
     }
 
     private function montarBlocoAgendas($agendas): string
