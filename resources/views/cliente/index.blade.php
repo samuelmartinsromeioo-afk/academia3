@@ -566,6 +566,29 @@
             @endif
         </div>
 
+        {{-- CALENDÁRIO MENSAL — AULAS AVULSAS --}}
+        <div class="section-title" style="margin-top: 30px;">
+            <i class="fas fa-calendar-day" style="color: var(--primary);"></i> Calendário — Aulas Avulsas
+        </div>
+        <div class="stat-card" style="padding: 20px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                <button type="button" onclick="mesAnteriorAvulsa()" class="btn-action btn-outline" style="padding: 8px 12px; margin: 0; width: auto; font-size: 0.7rem;">
+                    <i class="fas fa-chevron-left"></i>
+                </button>
+                <span id="mesLabelAvulsa" style="color: var(--primary); font-weight: 900; text-transform: uppercase; font-size: 0.8rem; min-width: 150px; text-align: center;"></span>
+                <button type="button" onclick="mesProximoAvulsa()" class="btn-action btn-outline" style="padding: 8px 12px; margin: 0; width: auto; font-size: 0.7rem;">
+                    <i class="fas fa-chevron-right"></i>
+                </button>
+            </div>
+            <div style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; margin-bottom: 10px; text-align: center;">
+                @foreach(['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'] as $diaLabel)
+                    <div style="color: var(--primary); font-weight: 700; font-size: 0.65rem; padding: 8px 0;">{{ $diaLabel }}</div>
+                @endforeach
+            </div>
+            <div id="calendarioAvulsa" style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px;"></div>
+            <div id="infoAulasAvulsa" style="margin-top: 15px;"></div>
+        </div>
+
         {{-- PERSONALS --}}
         <div class="section-title">Personals Disponíveis</div>
         <p style="color: var(--text-muted); font-size: 0.8rem; margin: -10px 0 15px 0;">
@@ -826,9 +849,21 @@
                     <input type="hidden" name="horario_fim" value="{{ $h->horario_fim }}">
                     <input type="hidden" name="academia_id" value="{{ $cliente->academia_id ?? '' }}">
                     <input type="hidden" name="academia_nome" class="academia-nome-avulsa" value="">
-                    <button type="submit" class="btn-action" style="width:auto; margin:0; padding: 8px 15px; font-size: 0.7rem;">
-                        <i class="fas fa-calendar-check"></i> Agendar
-                    </button>
+                    <div style="display:flex; gap:5px; flex-wrap:wrap; justify-content:flex-end;">
+                        <button type="submit" class="btn-action" style="width:auto; margin:0; padding: 7px 10px; font-size: 0.65rem;">
+                            <i class="fas fa-calendar-check"></i> Agendar
+                        </button>
+                        <button type="button" class="btn-action"
+                                style="width:auto; margin:0; padding: 7px 10px; font-size: 0.65rem; background:rgba(212,255,0,0.1); border:1px solid var(--primary);"
+                                onclick="pagarPixAvulsa({{ $h->personal_id }}, '{{ $h->data }}', '{{ $h->horario_inicio }}', '{{ $h->horario_fim }}')">
+                            <i class="fas fa-qrcode"></i> PIX
+                        </button>
+                        <button type="button" class="btn-action"
+                                style="width:auto; margin:0; padding: 7px 10px; font-size: 0.65rem; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.15);"
+                                onclick="abrirCartaoAvulsa({{ $h->personal_id }}, '{{ $h->data }}', '{{ $h->horario_inicio }}', '{{ $h->horario_fim }}')">
+                            <i class="fas fa-credit-card"></i> Cartão
+                        </button>
+                    </div>
                 </form>
             </div>
             @endforeach
@@ -963,6 +998,23 @@
         },
         @endforeach
     };
+
+    window.aulasAvulsaData = {!! json_encode(
+        $meusAgendamentos
+            ->where('tipo_aula', 'avulsa')
+            ->map(function($a) {
+                return [
+                    'data'        => \Carbon\Carbon::parse($a->data)->format('Y-m-d'),
+                    'dia'         => (int)\Carbon\Carbon::parse($a->data)->format('j'),
+                    'mes'         => (int)\Carbon\Carbon::parse($a->data)->format('n'),
+                    'ano'         => (int)\Carbon\Carbon::parse($a->data)->format('Y'),
+                    'hora_inicio' => \Carbon\Carbon::parse($a->hora_inicio)->format('H:i'),
+                    'hora_fim'    => \Carbon\Carbon::parse($a->hora_fim)->format('H:i'),
+                    'personal'    => $a->personal->nome ?? 'N/A',
+                ];
+            })
+            ->values()
+    ) !!};
 
     let personalSelecionadoId = null;
 
@@ -2132,6 +2184,185 @@
         if (v.length > 10) v = v.substring(0, 10) + '-' + v.substring(10);
         input.value = v;
     }
+
+    // ============ PAGAMENTO AVULSA — PIX ============
+    async function pagarPixAvulsa(personalId, data, horaInicio, horaFim) {
+        const academiaNome = document.querySelector('.academia-nome-avulsa')?.value || '';
+        const valorSecao   = window.personalsData[personalId]?.valor_secao || 0;
+
+        document.getElementById('pixQrCodeImg').src = '';
+        document.getElementById('pixCopiaCola').value = '';
+        document.getElementById('pixValor').textContent = 'R$ ' + parseFloat(valorSecao).toFixed(2).replace('.', ',');
+        document.getElementById('pixStatusMsg').style.display = 'none';
+        document.getElementById('modalPix').style.display = 'flex';
+        clearInterval(pixPollingInterval);
+
+        try {
+            const res = await fetch('/api/criar-pagamento', {
+                method:  'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}' },
+                body: JSON.stringify({
+                    tipo:         'aula_avulsa',
+                    personal_id:  personalId,
+                    data:         data,
+                    hora_inicio:  horaInicio,
+                    hora_fim:     horaFim,
+                    academia_nome: academiaNome,
+                }),
+            });
+            const pix = await res.json();
+            if (!res.ok) throw new Error(pix.error || 'Erro ao gerar pagamento.');
+
+            document.getElementById('pixQrCodeImg').src = 'data:image/png;base64,' + pix.pixQrCode;
+            document.getElementById('pixCopiaCola').value = pix.pixPayload;
+            document.getElementById('pixValor').textContent = 'R$ ' + parseFloat(pix.amount).toFixed(2).replace('.', ',');
+
+            pixPollingInterval = setInterval(async () => {
+                try {
+                    const statusRes  = await fetch('/api/pagamento/status/' + pix.asaasPaymentId, {
+                        headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}' }
+                    });
+                    const statusData = await statusRes.json();
+                    if (statusData.confirmed) {
+                        clearInterval(pixPollingInterval);
+                        document.getElementById('pixStatusMsg').textContent  = '✅ Pagamento confirmado!';
+                        document.getElementById('pixStatusMsg').style.color  = 'var(--success)';
+                        document.getElementById('pixStatusMsg').style.display = 'block';
+                        setTimeout(() => { window.location.href = '/pagamento/sucesso'; }, 2000);
+                    }
+                } catch (_) {}
+            }, 4000);
+
+        } catch (err) {
+            fecharModalPix();
+            alert('Erro ao iniciar pagamento: ' + err.message);
+        }
+    }
+
+    // ============ PAGAMENTO AVULSA — CARTÃO ============
+    function abrirCartaoAvulsa(personalId, data, horaInicio, horaFim) {
+        const academiaNome = document.querySelector('.academia-nome-avulsa')?.value || '';
+        const valorSecao   = window.personalsData[personalId]?.valor_secao || 0;
+        const personalNome = window.personalsData[personalId]?.nome || 'Personal';
+
+        cartaoCtx = {
+            modo: 'avulsa',
+            payload: {
+                tipo:         'aula_avulsa',
+                personal_id:  personalId,
+                data:         data,
+                hora_inicio:  horaInicio,
+                hora_fim:     horaFim,
+                academia_nome: academiaNome,
+            }
+        };
+
+        document.getElementById('cartaoDescricao').textContent = 'Aula Avulsa — ' + personalNome;
+        document.getElementById('cartaoValor').textContent = 'R$ ' + parseFloat(valorSecao).toFixed(2).replace('.', ',');
+        resetarFormCartao();
+        document.getElementById('cartaoTelefone').value = '{!! $cliente->whatsapp ?? '' !!}';
+        document.getElementById('cartaoCEP').value = '{{ $cliente->cep ?? '' }}';
+        document.getElementById('modalCartao').style.display = 'flex';
+    }
+
+    // ============ CALENDÁRIO MENSAL — AULAS AVULSAS ============
+    let mesCalendarioAvulsa = new Date();
+
+    function renderizarCalendarioAvulsa() {
+        const ano = mesCalendarioAvulsa.getFullYear();
+        const mes = mesCalendarioAvulsa.getMonth();
+
+        const meses = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
+                       'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+        document.getElementById('mesLabelAvulsa').textContent = `${meses[mes]} ${ano}`;
+
+        const sessionsByDay = {};
+        (window.aulasAvulsaData || []).forEach(a => {
+            if (a.mes === (mes + 1) && a.ano === ano) {
+                sessionsByDay[a.dia] = a;
+            }
+        });
+
+        const grid         = document.getElementById('calendarioAvulsa');
+        const primeiroDay  = new Date(ano, mes, 1).getDay();
+        const diasDoMes    = new Date(ano, mes + 1, 0).getDate();
+        const diasAnterior = new Date(ano, mes, 0).getDate();
+        const hoje         = new Date();
+        grid.innerHTML     = '';
+
+        for (let i = primeiroDay - 1; i >= 0; i--) {
+            const div = document.createElement('div');
+            div.className = 'dia-calendario outro-mes';
+            div.textContent = diasAnterior - i;
+            grid.appendChild(div);
+        }
+
+        for (let dia = 1; dia <= diasDoMes; dia++) {
+            const div     = document.createElement('div');
+            const isToday = dia === hoje.getDate() && mes === hoje.getMonth() && ano === hoje.getFullYear();
+
+            if (sessionsByDay[dia]) {
+                const s = sessionsByDay[dia];
+                div.className = 'dia-calendario selecionado';
+                div.innerHTML = `<span>${dia}</span><span style="display:block;font-size:0.5rem;margin-top:1px;line-height:1;">${s.hora_inicio}</span>`;
+                div.title = `${s.personal} — ${s.hora_inicio} às ${s.hora_fim}`;
+            } else if (isToday) {
+                div.className = 'dia-calendario disponivel';
+                div.textContent = dia;
+                div.style.outline = '2px solid var(--primary)';
+                div.style.cursor = 'default';
+                div.onclick = null;
+            } else {
+                div.className = 'dia-calendario outro-mes';
+                div.textContent = dia;
+            }
+
+            grid.appendChild(div);
+        }
+
+        const diasRestantes = 42 - (primeiroDay + diasDoMes);
+        for (let dia = 1; dia <= diasRestantes; dia++) {
+            const div = document.createElement('div');
+            div.className = 'dia-calendario outro-mes';
+            div.textContent = dia;
+            grid.appendChild(div);
+        }
+
+        const sessionsList = Object.values(sessionsByDay);
+        const info = document.getElementById('infoAulasAvulsa');
+        if (sessionsList.length === 0) {
+            info.innerHTML = '<p style="color:var(--text-muted);font-size:0.8rem;text-align:center;margin:0;padding:10px 0;"><i class="fas fa-calendar-times"></i> Nenhuma aula avulsa agendada neste mês.</p>';
+        } else {
+            info.innerHTML = `
+                <p style="color:var(--text-muted);font-size:0.75rem;margin:0 0 10px;font-weight:700;text-transform:uppercase;">
+                    <i class="fas fa-calendar-check" style="color:var(--primary);"></i> ${sessionsList.length} aula(s) agendada(s)
+                </p>
+                ${sessionsList.map(s => `
+                    <div style="background:rgba(212,255,0,0.05);border:1px solid rgba(212,255,0,0.2);border-radius:10px;padding:10px 14px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;">
+                        <div>
+                            <strong style="color:#fff;font-size:0.85rem;">${s.personal}</strong>
+                            <span style="display:block;color:var(--text-muted);font-size:0.75rem;">
+                                <i class="far fa-calendar-alt"></i> ${String(s.dia).padStart(2,'0')}/${String(s.mes).padStart(2,'0')}/${s.ano}
+                            </span>
+                        </div>
+                        <span style="color:var(--primary);font-weight:700;font-size:0.8rem;">${s.hora_inicio} — ${s.hora_fim}</span>
+                    </div>
+                `).join('')}
+            `;
+        }
+    }
+
+    function mesAnteriorAvulsa() {
+        mesCalendarioAvulsa.setMonth(mesCalendarioAvulsa.getMonth() - 1);
+        renderizarCalendarioAvulsa();
+    }
+
+    function mesProximoAvulsa() {
+        mesCalendarioAvulsa.setMonth(mesCalendarioAvulsa.getMonth() + 1);
+        renderizarCalendarioAvulsa();
+    }
+
+    document.addEventListener('DOMContentLoaded', renderizarCalendarioAvulsa);
 </script>
 
 </body>

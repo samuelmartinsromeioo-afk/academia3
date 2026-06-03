@@ -14,7 +14,7 @@ class AsaasWebhookController extends Controller
     $event = $request->input('event');
 
     // Se for evento de autorização de saque
-    if ($event === 'TRANSFER_REQUEST' || $request->has('transfer')) {
+    if ($request->has('transfer') || in_array($event, ['TRANSFER_REQUEST', 'TRANSFER_CREATED', 'TRANSFER'])) {
         Log::info('Asaas: autorização de saque recebida', $request->all());
         return response()->json(['authorized' => true]);
     }

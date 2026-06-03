@@ -462,6 +462,57 @@ class ClienteController extends Controller
         ]);
     }
 
+    public function agendarAulaAvulsaInterno(array $booking): void
+    {
+        $clienteId    = $booking['cliente_id'];
+        $personalId   = $booking['personal_id'];
+        $data         = $booking['data'];
+        $horaInicio   = $booking['hora_inicio'];
+        $horaFim      = $booking['hora_fim'];
+        $academiaNome = $booking['academia_nome'] ?? null;
+
+        $cliente  = Cliente::find($clienteId);
+        $personal = Personal::find($personalId);
+
+        if (!$cliente || !$personal || !$data) {
+            Log::error('agendarAulaAvulsaInterno: dados inválidos', $booking);
+            return;
+        }
+
+        $temConflito = Agenda::where('personal_id', $personalId)
+            ->where('data', $data)
+            ->where('cancelado', false)
+            ->where(function ($q) use ($horaInicio, $horaFim) {
+                $q->whereRaw("hora_inicio < ? AND hora_fim > ?", [$horaFim, $horaInicio]);
+            })->exists();
+
+        if ($temConflito) {
+            Log::warning('agendarAulaAvulsaInterno: conflito de horário', $booking);
+            return;
+        }
+
+        $agenda = Agenda::create([
+            'cliente_id'    => $clienteId,
+            'personal_id'   => $personalId,
+            'academia_id'   => $cliente->academia_id ?? null,
+            'academia_nome' => $academiaNome,
+            'data'          => $data,
+            'hora_inicio'   => $horaInicio,
+            'hora_fim'      => $horaFim,
+            'cancelado'     => false,
+            'descricao'     => "Aula avulsa - {$cliente->nome}",
+            'tipo_aula'     => 'avulsa',
+        ]);
+
+        $this->notificarPersonalWhatsApp($clienteId, $personalId, 'avulsa', $agenda);
+
+        Log::info('agendarAulaAvulsaInterno: aula criada', [
+            'cliente_id'  => $clienteId,
+            'personal_id' => $personalId,
+            'data'        => $data,
+        ]);
+    }
+
     public function buscarHorariosDisponiveis($personalId, $dia)
     {
         $personal = Personal::find($personalId);

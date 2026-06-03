@@ -48,6 +48,7 @@ class PaymentController extends Controller
             'hora_inicio'       => 'nullable|string|max:10',
             'hora_fim'          => 'nullable|string|max:10',
             'academia_nome'     => 'nullable|string|max:255',
+            'data'              => 'nullable|date',
         ]);
 
         $cliente  = \App\Models\Cadastro\Cliente::findOrFail($clienteId);
@@ -74,6 +75,7 @@ class PaymentController extends Controller
             'hora_inicio'       => $validated['hora_inicio'] ?? null,
             'hora_fim'          => $validated['hora_fim'] ?? null,
             'academia_nome'     => $validated['academia_nome'] ?? null,
+            'data'              => $validated['data'] ?? null,
         ];
 
         try {
@@ -217,20 +219,37 @@ class PaymentController extends Controller
             }
 
             if (($booking['tipo'] ?? '') === 'pacote') {
-                $fakeReq = new \Illuminate\Http\Request();
-                $fakeReq->replace([
-                    'personal_id'       => $booking['personal_id'],
-                    'frequencia_pacote' => $booking['frequencia_pacote'],
-                    'valor_pacote'      => $booking['valor_pacote'],
-                    'dias_selecionados' => $booking['dias_selecionados'],
-                    'hora_inicio'       => $booking['hora_inicio'],
-                    'hora_fim'          => $booking['hora_fim'],
-                    'academia_nome'     => $booking['academia_nome'] ?? null,
-                ]);
                 try {
-                    app(\App\Http\Controllers\Cadastro\ClienteController::class)->agendarAulasInterno($fakeReq);
+                    app(\App\Http\Controllers\Cadastro\ClienteController::class)->agendarAulasInterno([
+                        'personal_id'       => $booking['personal_id'],
+                        'frequencia_pacote' => $booking['frequencia_pacote'],
+                        'valor_pacote'      => $booking['valor_pacote'],
+                        'dias_selecionados' => $booking['dias_selecionados'],
+                        'hora_inicio'       => $booking['hora_inicio'],
+                        'hora_fim'          => $booking['hora_fim'],
+                        'academia_nome'     => $booking['academia_nome'] ?? null,
+                        'cliente_id'        => $booking['cliente_id'] ?? null,
+                    ]);
                 } catch (\Exception $e) {
                     Log::error('processarPagamentoConfirmado: contratarPacote falhou', [
+                        'error'   => $e->getMessage(),
+                        'booking' => $booking,
+                    ]);
+                }
+            }
+
+            if (($booking['tipo'] ?? '') === 'aula_avulsa') {
+                try {
+                    app(\App\Http\Controllers\Cadastro\ClienteController::class)->agendarAulaAvulsaInterno([
+                        'cliente_id'    => $booking['cliente_id'],
+                        'personal_id'   => $booking['personal_id'],
+                        'data'          => $booking['data'],
+                        'hora_inicio'   => $booking['hora_inicio'],
+                        'hora_fim'      => $booking['hora_fim'],
+                        'academia_nome' => $booking['academia_nome'] ?? null,
+                    ]);
+                } catch (\Exception $e) {
+                    Log::error('processarPagamentoConfirmado: avulsa falhou', [
                         'error'   => $e->getMessage(),
                         'booking' => $booking,
                     ]);
@@ -627,6 +646,7 @@ class PaymentController extends Controller
             'hora_inicio'       => 'nullable|string|max:10',
             'hora_fim'          => 'nullable|string|max:10',
             'academia_nome'     => 'nullable|string|max:255',
+            'data'              => 'nullable|date',
             'card_holder'       => 'required|string|max:100',
             'card_number'       => 'required|string|min:13|max:19',
             'card_expiry_month' => 'required|string|size:2',
@@ -662,6 +682,7 @@ class PaymentController extends Controller
             'hora_inicio'       => $validated['hora_inicio'] ?? null,
             'hora_fim'          => $validated['hora_fim'] ?? null,
             'academia_nome'     => $validated['academia_nome'] ?? null,
+            'data'              => $validated['data'] ?? null,
         ];
 
         try {
