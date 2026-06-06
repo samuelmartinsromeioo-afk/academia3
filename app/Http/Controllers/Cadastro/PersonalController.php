@@ -618,6 +618,7 @@ class PersonalController extends Controller
                 'postalCode'    => preg_replace('/\D/', '', $personal->cep),
                 'complement'    => $personal->complemento,
                 'personType'    => 'FISICA',
+                'incomeValue'   => 5000,
             ];
 
             if ($personal->whatsapp) {
@@ -644,6 +645,7 @@ class PersonalController extends Controller
             } else {
                 Log::warning('Asaas: subconta não criada', [
                     'personal_id' => $personal->id,
+                    'status'      => $res->status(),
                     'response'    => $data,
                 ]);
             }

@@ -105,6 +105,8 @@ class PaymentController extends Controller
 
             if ($personal->asaas_wallet_id) {
                 $pixPayload['split'] = [['walletId' => $personal->asaas_wallet_id, 'percentualValue' => 90]];
+            } else {
+                Log::warning('Asaas: split não aplicado — personal sem walletId', ['personal_id' => $personal->id]);
             }
 
             $paymentRes = Http::withHeaders($this->asaasHeaders())
@@ -499,15 +501,11 @@ class PaymentController extends Controller
 
         $personal = Personal::find($payment->trainer_id);
 
-        $payout = TrainerPayout::create([
+        TrainerPayout::create([
             'trainer_id' => $payment->trainer_id,
             'amount'     => $payment->trainer_amount,
             'status'     => $personal?->asaas_wallet_id ? 'in_wallet' : 'pending',
         ]);
-
-        if (!$personal?->asaas_wallet_id) {
-            $this->transferirParaPersonal($payout, $payment);
-        }
 
         $cliente  = \App\Models\Cadastro\Cliente::find($payment->user_id);
         $personal = Personal::find($payment->trainer_id);
@@ -526,53 +524,6 @@ class PaymentController extends Controller
             'trainer_id' => $payment->trainer_id,
             'amount'     => $payment->amount_total,
         ]);
-    }
-
-    private function transferirParaPersonal(TrainerPayout $payout, Payment $payment): void
-    {
-        $personal = Personal::find($payment->trainer_id);
-
-        if (!$personal || !$personal->chave_pix) {
-            Log::warning('Asaas: repasse pendente — personal sem chave Pix', [
-                'trainer_id' => $payment->trainer_id,
-                'payout_id'  => $payout->id,
-            ]);
-            return;
-        }
-
-        try {
-            $res = Http::withHeaders($this->asaasHeaders())
-                ->post($this->asaas() . '/transfers', [
-                    'operationType'     => 'PIX',
-                    'value'             => (float) $payout->amount,
-                    'pixAddressKey'     => $personal->chave_pix,
-                    'pixAddressKeyType' => $this->detectarTipoChavePix($personal->chave_pix),
-                    'description'       => 'Repasse aula — ' . $personal->nome,
-                ]);
-
-            if ($res->successful()) {
-                $payout->update([
-                    'status'           => 'paid',
-                    'stripe_payout_id' => $res->json()['id'] ?? null,
-                ]);
-                Log::info('Asaas: repasse enviado', [
-                    'transfer_id' => $res->json()['id'] ?? null,
-                    'payout_id'   => $payout->id,
-                    'amount'      => $payout->amount,
-                    'chave_pix'   => $personal->chave_pix,
-                ]);
-            } else {
-                $payout->update(['status' => 'failed']);
-                Log::error('Asaas: repasse falhou', [
-                    'response'   => $res->json(),
-                    'payout_id'  => $payout->id,
-                    'trainer_id' => $payment->trainer_id,
-                ]);
-            }
-        } catch (\Exception $e) {
-            $payout->update(['status' => 'failed']);
-            Log::error('Asaas: repasse exception', ['error' => $e->getMessage(), 'payout_id' => $payout->id]);
-        }
     }
 
     private function notificarWhatsAppZenvia(string $telefone, string $mensagem): void
@@ -812,6 +763,8 @@ class PaymentController extends Controller
 
             if ($personal->asaas_wallet_id) {
                 $ccPayload['split'] = [['walletId' => $personal->asaas_wallet_id, 'percentualValue' => 90]];
+            } else {
+                Log::warning('Asaas: split não aplicado — personal sem walletId', ['personal_id' => $personal->id]);
             }
 
             $paymentRes = Http::withHeaders($this->asaasHeaders())
