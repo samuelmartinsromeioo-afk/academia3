@@ -613,4 +613,17 @@ class ClienteController extends Controller
             Log::error("❌ Erro ao notificar personal: " . $e->getMessage());
         }
     }
+
+    public function minhasSolicitacoesFicha()
+    {
+        $clienteId = session('cliente_id');
+        if (!$clienteId) return redirect()->route('login.index');
+
+        $solicitacoes = \App\Models\SolicitacaoFicha::where('cliente_id', $clienteId)
+            ->with('personal')
+            ->latest()
+            ->get();
+
+        return response()->json($solicitacoes);
+    }
 }

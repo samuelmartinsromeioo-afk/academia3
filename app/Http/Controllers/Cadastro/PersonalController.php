@@ -169,13 +169,14 @@ class PersonalController extends Controller
             'cep'         => 'required|string|max:9',
             'cidade'      => 'required|string',
             'aceita_termos_update' => 'required|accepted',
-            'valor_secao' => 'required|numeric',
-            'avaliacao'   => 'nullable|string',
-            'certificado' => 'nullable|file|mimes:pdf,jpg,jpeg,png,heic,heif|max:10240',
-            'foto'        => 'nullable|file|mimes:jpeg,jpg,png,gif,webp,heic,heif|max:10240',
-            'senha'       => 'nullable|string|min:8|confirmed',
-            'chave_pix'   => 'nullable|string|max:255',
-            'academias'   => 'nullable|string|max:2000',
+            'valor_secao'  => 'required|numeric',
+            'valor_ficha'  => 'nullable|numeric|min:0',
+            'avaliacao'    => 'nullable|string',
+            'certificado'  => 'nullable|file|mimes:pdf,jpg,jpeg,png,heic,heif|max:10240',
+            'foto'         => 'nullable|file|mimes:jpeg,jpg,png,gif,webp,heic,heif|max:10240',
+            'senha'        => 'nullable|string|min:8|confirmed',
+            'chave_pix'    => 'nullable|string|max:255',
+            'academias'    => 'nullable|string|max:2000',
         ], [
             'aceita_termos_update.required' => 'Você deve concordar com os Termos de Uso',
             'aceita_termos_update.accepted' => 'Você deve concordar com os Termos de Uso',
@@ -699,5 +700,73 @@ class PersonalController extends Controller
         } catch (\Exception $e) {
             Log::error('Erro ao notificar cliente: ' . $e->getMessage());
         }
+    }
+
+    // ─────────────────────────────────────────────
+    // SOLICITAÇÕES DE FICHA
+    // ─────────────────────────────────────────────
+    public function listarSolicitacoesFicha()
+    {
+        $personalId = session('personal_id');
+        if (!$personalId) return redirect()->route('login.index');
+
+        $personal = Personal::findOrFail($personalId);
+        $solicitacoes = \App\Models\SolicitacaoFicha::where('personal_id', $personalId)
+            ->with('cliente')
+            ->orderByRaw("FIELD(status, 'pendente', 'concluida')")
+            ->latest()
+            ->get();
+
+        return view('personal.solicitacoes_ficha', compact('personal', 'solicitacoes'));
+    }
+
+    public function concluirSolicitacaoFicha(Request $request, $id)
+    {
+        $personalId = session('personal_id');
+        $solicitacao = \App\Models\SolicitacaoFicha::where('id', $id)
+            ->where('personal_id', $personalId)
+            ->firstOrFail();
+
+        $solicitacao->update(['status' => 'concluida']);
+
+        $personal = Personal::find($personalId);
+        $cliente  = $solicitacao->cliente;
+
+        if ($cliente && $cliente->whatsapp) {
+            try {
+                $apiToken = config('services.zenvia.token');
+                $from     = config('services.zenvia.from');
+                $phone    = preg_replace('/\D/', '', $cliente->whatsapp);
+                if (!str_starts_with($phone, '55')) $phone = '55' . $phone;
+
+                $mensagem = "🏋️ *Sua Ficha Está Pronta!*\n\n" .
+                    "Olá, *{$cliente->nome}*!\n" .
+                    "Seu personal *{$personal->nome}* acabou de montar sua ficha de treino personalizada.\n" .
+                    "Acesse o aplicativo para visualizá-la. 💪";
+
+                Http::withHeaders(['X-API-TOKEN' => $apiToken])
+                    ->post('https://api.zenvia.com/v2/channels/whatsapp/messages', [
+                        'from'     => $from,
+                        'to'       => $phone,
+                        'contents' => [['type' => 'text', 'text' => $mensagem]],
+                    ]);
+            } catch (\Exception $e) {
+                Log::warning('concluirSolicitacaoFicha: whatsapp falhou', ['error' => $e->getMessage()]);
+            }
+        }
+
+        return back()->with('success', 'Ficha marcada como concluída! O aluno foi notificado.');
+    }
+
+    public function atualizarValorFicha(Request $request)
+    {
+        $personalId = session('personal_id');
+        if (!$personalId) return redirect()->route('login.index');
+
+        $request->validate(['valor_ficha' => 'required|numeric|min:0']);
+
+        Personal::where('id', $personalId)->update(['valor_ficha' => $request->valor_ficha]);
+
+        return back()->with('success', 'Valor da ficha atualizado!');
     }
 }

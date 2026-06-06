@@ -384,7 +384,7 @@
                     <option value="">Todas as cidades</option>
                 </select>
             </div>
-            <div class="filter-tabs">
+            <div class="filter-tabs" style="flex-wrap:wrap; gap:6px;">
                 <button class="filter-tab active-todos" onclick="filtrar('todos', this)">
                     <i class="fas fa-globe"></i> Todos
                 </button>
@@ -396,6 +396,9 @@
                 </button>
                 <button class="filter-tab" onclick="filtrar('filial', this)">
                     <i class="fas fa-map-marker-alt"></i> Filiais
+                </button>
+                <button class="filter-tab" id="btnTabFichas" onclick="mostrarMinhasFichas(this)" style="border-color:rgba(212,255,0,0.4); color:var(--primary); flex:1 1 100%;">
+                    <i class="fas fa-clipboard-list"></i> Minhas Fichas Solicitadas
                 </button>
             </div>
         </div>
@@ -657,6 +660,78 @@
     // Busca em tempo real
     document.getElementById('searchInput').addEventListener('input', aplicarFiltros);
     document.getElementById('cidadeSelect').addEventListener('change', aplicarFiltros);
+
+    // ============ MINHAS FICHAS SOLICITADAS ============
+    let modoFichas = false;
+
+    async function mostrarMinhasFichas(btn) {
+        modoFichas = true;
+        document.querySelectorAll('.filter-tab').forEach(b => b.className = 'filter-tab');
+        btn.style.background = 'rgba(212,255,0,0.1)';
+        btn.style.borderColor = 'var(--primary)';
+        btn.style.color = 'var(--primary)';
+
+        const lista = document.getElementById('sidebarList');
+        lista.innerHTML = `<div class="empty-state"><i class="fas fa-circle-notch fa-spin"></i><p>Carregando...</p></div>`;
+
+        try {
+            const res = await fetch('/cliente/minhas-fichas-solicitadas', {
+                headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Accept': 'application/json' }
+            });
+            const fichas = await res.json();
+
+            if (fichas.length === 0) {
+                lista.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-clipboard" style="color:var(--primary);"></i>
+                        <p>Nenhuma ficha solicitada ainda.</p>
+                        <small style="font-size:0.75rem; color:var(--text-muted);">Acesse o perfil de um personal e clique em "Solicitar Ficha".</small>
+                    </div>`;
+                return;
+            }
+
+            lista.innerHTML = fichas.map(f => {
+                const statusBadge = f.status === 'concluida'
+                    ? `<span style="background:rgba(0,255,136,0.1);color:#00ff88;border:1px solid rgba(0,255,136,0.3);padding:3px 10px;border-radius:20px;font-size:0.6rem;font-weight:900;text-transform:uppercase;">Concluída ✓</span>`
+                    : `<span style="background:rgba(255,165,0,0.1);color:#ffaa00;border:1px solid rgba(255,165,0,0.3);padding:3px 10px;border-radius:20px;font-size:0.6rem;font-weight:900;text-transform:uppercase;">Pendente</span>`;
+
+                const data = new Date(f.created_at).toLocaleDateString('pt-BR');
+
+                return `
+                    <div class="pin-card" style="border-left:3px solid ${f.status === 'concluida' ? '#00ff88' : '#ffaa00'}; cursor:default;">
+                        <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:8px;">
+                            <div>
+                                <div style="font-weight:900; font-size:0.9rem; margin-bottom:4px;">
+                                    <i class="fas fa-clipboard-list" style="color:var(--primary); margin-right:6px;"></i>
+                                    ${f.personal?.nome ?? 'Personal'}
+                                </div>
+                                <div style="font-size:0.75rem; color:var(--text-muted); margin-bottom:6px;">
+                                    ${data} · R$ ${parseFloat(f.valor).toFixed(2).replace('.', ',')}
+                                </div>
+                            </div>
+                            ${statusBadge}
+                        </div>
+                        <div style="background:rgba(255,255,255,0.03); padding:8px 10px; border-radius:8px; border:1px solid var(--border);">
+                            <div style="font-size:0.7rem; color:var(--text-muted); text-transform:uppercase; font-weight:800; margin-bottom:4px;">Objetivos</div>
+                            <div style="font-size:0.8rem; color:#fff; line-height:1.4;">${f.objetivos}</div>
+                        </div>
+                        ${f.status === 'concluida' ? `<div style="margin-top:8px; font-size:0.75rem; color:#00ff88;"><i class="fas fa-check-circle"></i> Ficha criada — acesse <a href="/cliente" style="color:var(--primary);">seu painel</a> para ver.</div>` : ''}
+                    </div>`;
+            }).join('');
+        } catch(e) {
+            lista.innerHTML = `<div class="empty-state"><i class="fas fa-exclamation-triangle" style="color:var(--error);"></i><p>Erro ao carregar fichas.</p></div>`;
+        }
+    }
+
+    // Restaura modo normal ao clicar em outro filtro
+    const filtrarOriginal = filtrar;
+    filtrar = function(tipo, btn) {
+        modoFichas = false;
+        document.getElementById('btnTabFichas').style.background = '';
+        document.getElementById('btnTabFichas').style.borderColor = 'rgba(212,255,0,0.4)';
+        document.getElementById('btnTabFichas').style.color = 'var(--primary)';
+        filtrarOriginal(tipo, btn);
+    };
 </script>
 </body>
 </html>

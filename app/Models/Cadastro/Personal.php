@@ -46,10 +46,16 @@ class Personal extends Model
         'asaas_account_id',
         'asaas_wallet_id',
         'asaas_api_key',
+        'valor_ficha',
     ];
 
     public function agendas() {
         return $this->hasMany(Agenda::class);
+    }
+
+    public function solicitacoesFicha()
+    {
+        return $this->hasMany(\App\Models\SolicitacaoFicha::class, 'personal_id');
     }
 
     public function pacotes() {

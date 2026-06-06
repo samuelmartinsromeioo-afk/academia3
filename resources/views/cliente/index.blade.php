@@ -702,13 +702,16 @@
             </div>
         </div>
 
-        {{-- AÇÕES: AULA AVULSA E PACOTE --}}
-        <div class="detalhes-actions">
-            <button onclick="abrirAgendaDoDetalhes()" class="btn-action btn-outline">
+        {{-- AÇÕES: AULA AVULSA, PACOTE E FICHA --}}
+        <div class="detalhes-actions" style="grid-template-columns: 1fr 1fr 1fr;">
+            <button onclick="abrirAgendaDoDetalhes()" class="btn-action btn-outline" style="font-size:0.75rem;">
                 <i class="fas fa-calendar-day"></i> Aula Avulsa
             </button>
-            <button onclick="abrirPacoteDoDetalhes()" class="btn-action">
+            <button onclick="abrirPacoteDoDetalhes()" class="btn-action" style="font-size:0.75rem;">
                 <i class="fas fa-calendar-week"></i> Contratar Pacote
+            </button>
+            <button onclick="abrirFichaDoDetalhes()" class="btn-action" style="font-size:0.75rem; background: rgba(212,255,0,0.12); border:1px solid var(--primary); color: var(--primary);">
+                <i class="fas fa-clipboard-list"></i> Solicitar Ficha
             </button>
         </div>
     </div>
@@ -927,6 +930,68 @@
     </div>
 </div>
 
+{{-- MODAL SOLICITAR FICHA PERSONALIZADA --}}
+<div id="fichaModal" class="modal-overlay">
+    <div class="profile-card" style="width: 95%; max-width: 600px; border: 1px solid var(--primary); max-height: 90vh; overflow-y: auto;">
+        <i class="fas fa-times close-form" onclick="fecharFichaModal()"></i>
+
+        <h2 id="nomeFichaPersonal" style="color: var(--primary); margin-bottom: 5px;">Solicitar Ficha</h2>
+        <p style="color: var(--text-muted); font-size: 0.8rem; margin-bottom: 20px;">
+            <i class="fas fa-info-circle"></i> Preencha o briefing para que o personal monte sua ficha personalizada
+        </p>
+
+        {{-- Valor --}}
+        <div style="background: rgba(212,255,0,0.06); border: 1px solid rgba(212,255,0,0.3); border-radius: 12px; padding: 14px 18px; margin-bottom: 20px; display:flex; justify-content:space-between; align-items:center;">
+            <span style="color: var(--text-muted); font-size: 0.8rem; font-weight: 700;">Valor da Ficha</span>
+            <span id="fichaValorDisplay" style="color: var(--primary); font-size: 1.3rem; font-weight: 900;">R$ 0,00</span>
+        </div>
+
+        <div class="form-grid">
+            <div class="col-6">
+                <label>Objetivos *</label>
+                <div class="input-wrapper">
+                    <i class="fas fa-bullseye"></i>
+                    <textarea id="fichaObjetivos" rows="3" placeholder="Ex: Perda de peso, ganho de massa muscular, condicionamento físico..." style="background:transparent; border:none; color:#fff; outline:none; flex:1; padding:12px 0; resize:none; font-size:0.9rem; font-family:inherit;"></textarea>
+                </div>
+            </div>
+            <div class="col-6">
+                <label>Condições Clínicas / Restrições</label>
+                <div class="input-wrapper">
+                    <i class="fas fa-heartbeat"></i>
+                    <textarea id="fichaCondicoes" rows="3" placeholder="Ex: Lesão no joelho, hipertensão, diabetes... (deixe em branco se não houver)" style="background:transparent; border:none; color:#fff; outline:none; flex:1; padding:12px 0; resize:none; font-size:0.9rem; font-family:inherit;"></textarea>
+                </div>
+            </div>
+            <div class="col-3">
+                <label>Nível de Experiência *</label>
+                <div class="input-wrapper">
+                    <i class="fas fa-signal"></i>
+                    <select id="fichaNivel" style="background:transparent; border:none; color:#fff; outline:none; flex:1; padding:12px 0; font-size:0.9rem; font-family:inherit; cursor:pointer;">
+                        <option value="iniciante">Iniciante</option>
+                        <option value="intermediario">Intermediário</option>
+                        <option value="avancado">Avançado</option>
+                    </select>
+                </div>
+            </div>
+            <div class="col-3">
+                <label>Observações Adicionais</label>
+                <div class="input-wrapper">
+                    <i class="fas fa-comment"></i>
+                    <input type="text" id="fichaObs" placeholder="Qualquer informação extra..." style="background:transparent; border:none; color:#fff; outline:none; flex:1; padding:12px 0; font-size:0.9rem;">
+                </div>
+            </div>
+        </div>
+
+        <div style="display:flex; gap:10px; margin-top:20px;">
+            <button type="button" class="btn-action" style="flex:1; margin-top:0;" id="btnFichaPix" onclick="pagarFichaPix()">
+                <i class="fas fa-qrcode"></i> Pagar via PIX
+            </button>
+            <button type="button" class="btn-action" style="flex:1; margin-top:0; background:rgba(255,255,255,0.08); color:#fff; border:1px solid rgba(255,255,255,0.15);" id="btnFichaCartao" onclick="pagarFichaCartao()">
+                <i class="fas fa-credit-card"></i> Pagar com Cartão
+            </button>
+        </div>
+    </div>
+</div>
+
 {{-- MODAL SELETOR DE HORÁRIOS --}}
 <div id="horarioModal" class="modal-overlay" style="display: none;">
     <div class="profile-card" style="width: 90%; max-width: 450px; border: 1px solid var(--primary);">
@@ -961,6 +1026,7 @@
             foto: '{{ $p->foto ? asset("storage/" . $p->foto) : "" }}',
             avaliacao: '{{ $p->media_avaliacao }}',
             valor_secao: {{ $p->valor_secao ?? 0 }},
+            valor_ficha: {{ $p->valor_ficha ?? 0 }},
             academias: {!! json_encode($p->academias ?? '') !!},
             fotos: [
                 @foreach($p->fotos ?? [] as $foto)
@@ -1067,9 +1133,9 @@
                 <div class="valor">${menorPacote > 0 ? 'R$ ' + parseFloat(menorPacote).toFixed(2).replace('.', ',') : '-'}</div>
             </div>
             <div class="detalhes-resumo-card">
-                <i class="fas fa-images"></i>
-                <div class="label">Fotos</div>
-                <div class="valor">${personal.fotos.length}</div>
+                <i class="fas fa-clipboard-list"></i>
+                <div class="label">Ficha Personalizada</div>
+                <div class="valor">${parseFloat(personal.valor_ficha) > 0 ? 'R$ ' + parseFloat(personal.valor_ficha).toFixed(2).replace('.', ',') : 'Consulte'}</div>
             </div>
         `;
 
@@ -1090,6 +1156,111 @@
         const personal = window.personalsData[personalSelecionadoId];
         fecharDetalhesPersonal();
         abrirPacoteModal(personalSelecionadoId, personal.nome);
+    }
+
+    function abrirFichaDoDetalhes() {
+        const personal = window.personalsData[personalSelecionadoId];
+        fecharDetalhesPersonal();
+        abrirFichaModal(personalSelecionadoId, personal.nome, personal.valor_ficha);
+    }
+
+    // ============ MODAL FICHA PERSONALIZADA ============
+    let fichaPersonalId = null;
+
+    function abrirFichaModal(id, nome, valorFicha) {
+        fichaPersonalId = id;
+        document.getElementById('nomeFichaPersonal').innerText = 'Solicitar Ficha — ' + nome;
+        const v = parseFloat(valorFicha) || 0;
+        document.getElementById('fichaValorDisplay').textContent = 'R$ ' + v.toFixed(2).replace('.', ',');
+        document.getElementById('fichaObjetivos').value = '';
+        document.getElementById('fichaCondicoes').value = '';
+        document.getElementById('fichaNivel').value = 'iniciante';
+        document.getElementById('fichaObs').value = '';
+        document.getElementById('fichaModal').style.display = 'flex';
+    }
+
+    function fecharFichaModal() {
+        document.getElementById('fichaModal').style.display = 'none';
+    }
+
+    function getFichaPayload() {
+        const objetivos = document.getElementById('fichaObjetivos').value.trim();
+        if (!objetivos) { alert('Por favor, descreva seus objetivos.'); return null; }
+        return {
+            tipo:                'ficha',
+            personal_id:         fichaPersonalId,
+            objetivos:           objetivos,
+            condicoes_clinicas:  document.getElementById('fichaCondicoes').value.trim() || null,
+            nivel_experiencia:   document.getElementById('fichaNivel').value,
+            observacoes:         document.getElementById('fichaObs').value.trim() || null,
+        };
+    }
+
+    async function pagarFichaPix() {
+        const payload = getFichaPayload();
+        if (!payload) return;
+
+        const personal = window.personalsData[fichaPersonalId];
+        const valor = parseFloat(personal?.valor_ficha) || 0;
+
+        document.getElementById('pixQrCodeImg').src = '';
+        document.getElementById('pixCopiaCola').value = '';
+        document.getElementById('pixValor').textContent = 'R$ ' + valor.toFixed(2).replace('.', ',');
+        document.getElementById('pixStatusMsg').style.display = 'none';
+        document.getElementById('modalPix').style.display = 'flex';
+        clearInterval(pixPollingInterval);
+
+        try {
+            const res = await fetch('/api/criar-pagamento', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}' },
+                body: JSON.stringify(payload),
+            });
+            const pix = await res.json();
+            if (!res.ok) throw new Error(pix.error || 'Erro ao gerar pagamento.');
+
+            document.getElementById('pixQrCodeImg').src = 'data:image/png;base64,' + pix.pixQrCode;
+            document.getElementById('pixCopiaCola').value = pix.pixPayload;
+            document.getElementById('pixValor').textContent = 'R$ ' + parseFloat(pix.amount).toFixed(2).replace('.', ',');
+
+            pixPollingInterval = setInterval(async () => {
+                try {
+                    const sr = await fetch('/api/pagamento/status/' + pix.asaasPaymentId, { headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}' } });
+                    const sd = await sr.json();
+                    if (sd.confirmed) {
+                        clearInterval(pixPollingInterval);
+                        document.getElementById('pixStatusMsg').textContent = '✅ Pagamento confirmado! Sua solicitação foi enviada ao personal.';
+                        document.getElementById('pixStatusMsg').style.color = 'var(--success)';
+                        document.getElementById('pixStatusMsg').style.display = 'block';
+                        setTimeout(() => { window.location.href = '/pagamento/sucesso'; }, 2500);
+                    }
+                } catch(_) {}
+            }, 4000);
+        } catch(err) {
+            fecharModalPix();
+            alert('Erro: ' + err.message);
+        }
+    }
+
+    function pagarFichaCartao() {
+        const payload = getFichaPayload();
+        if (!payload) return;
+
+        const personal = window.personalsData[fichaPersonalId];
+        const valor    = parseFloat(personal?.valor_ficha) || 0;
+
+        cartaoCtx = {
+            modo: 'ficha',
+            payload: payload,
+        };
+
+        document.getElementById('cartaoDescricao').textContent = 'Ficha Personalizada — ' + (personal?.nome || 'Personal');
+        document.getElementById('cartaoValor').textContent = 'R$ ' + valor.toFixed(2).replace('.', ',');
+        resetarFormCartao();
+        document.getElementById('cartaoTelefone').value = '{!! $cliente->whatsapp ?? '' !!}';
+        document.getElementById('cartaoCEP').value = '{{ $cliente->cep ?? '' }}';
+        document.getElementById('modalCartao').style.display = 'flex';
+        fecharFichaModal();
     }
 
     // ============ HISTÓRICO ============

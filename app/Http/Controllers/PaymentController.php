@@ -40,7 +40,7 @@ class PaymentController extends Controller
 
         $validated = $request->validate([
             'personal_id'       => 'required|integer|exists:personals,id',
-            'tipo'              => 'required|in:aula_avulsa,pacote',
+            'tipo'              => 'required|in:aula_avulsa,pacote,ficha',
             'pacote_id'         => 'nullable|integer|exists:pacotes,id',
             'frequencia'        => 'nullable|integer|min:1|max:7',
             'valor_pacote'      => 'nullable|numeric',
@@ -49,6 +49,11 @@ class PaymentController extends Controller
             'hora_fim'          => 'nullable|string|max:10',
             'academia_nome'     => 'nullable|string|max:255',
             'data'              => 'nullable|date',
+            // campos ficha
+            'objetivos'         => 'nullable|string',
+            'condicoes_clinicas'=> 'nullable|string',
+            'nivel_experiencia' => 'nullable|string',
+            'observacoes'       => 'nullable|string',
         ]);
 
         $cliente  = \App\Models\Cadastro\Cliente::findOrFail($clienteId);
@@ -58,6 +63,10 @@ class PaymentController extends Controller
             $pacote      = Pacote::findOrFail($validated['pacote_id']);
             $amount      = (float) $pacote->valor_mensal;
             $description = "Pacote {$pacote->frequencia}x/semana — {$personal->nome}";
+        } elseif ($validated['tipo'] === 'ficha') {
+            $pacote      = null;
+            $amount      = (float) ($personal->valor_ficha ?? 0);
+            $description = "Ficha Personalizada — {$personal->nome}";
         } else {
             $pacote      = null;
             $amount      = (float) ($personal->valor_secao ?? 0);
@@ -76,6 +85,10 @@ class PaymentController extends Controller
             'hora_fim'          => $validated['hora_fim'] ?? null,
             'academia_nome'     => $validated['academia_nome'] ?? null,
             'data'              => $validated['data'] ?? null,
+            'objetivos'         => $validated['objetivos'] ?? null,
+            'condicoes_clinicas'=> $validated['condicoes_clinicas'] ?? null,
+            'nivel_experiencia' => $validated['nivel_experiencia'] ?? null,
+            'observacoes_ficha' => $validated['observacoes'] ?? null,
         ];
 
         try {
@@ -250,6 +263,53 @@ class PaymentController extends Controller
                     ]);
                 } catch (\Exception $e) {
                     Log::error('processarPagamentoConfirmado: avulsa falhou', [
+                        'error'   => $e->getMessage(),
+                        'booking' => $booking,
+                    ]);
+                }
+            }
+
+            if (($booking['tipo'] ?? '') === 'ficha') {
+                try {
+                    $solicitacao = \App\Models\SolicitacaoFicha::create([
+                        'personal_id'       => $booking['personal_id'],
+                        'cliente_id'        => $booking['cliente_id'],
+                        'objetivos'         => $booking['objetivos'] ?? '',
+                        'condicoes_clinicas'=> $booking['condicoes_clinicas'] ?? null,
+                        'nivel_experiencia' => $booking['nivel_experiencia'] ?? 'iniciante',
+                        'observacoes'       => $booking['observacoes_ficha'] ?? null,
+                        'valor'             => $payment->amount_total,
+                        'status'            => 'pendente',
+                        'payment_status'    => 'pago',
+                        'asaas_payment_id'  => $payment->stripe_payment_intent_id,
+                    ]);
+
+                    $personal = \App\Models\Cadastro\Personal::find($booking['personal_id']);
+                    $cliente  = \App\Models\Cadastro\Cliente::find($booking['cliente_id']);
+
+                    if ($personal && $personal->whatsapp) {
+                        $this->notificarWhatsAppZenvia(
+                            $personal->whatsapp,
+                            "📋 *Nova Solicitação de Ficha!*\n\n" .
+                            "Aluno: *{$cliente->nome}*\n" .
+                            "Objetivos: {$solicitacao->objetivos}\n" .
+                            "Nível: {$solicitacao->nivel_experiencia}\n" .
+                            ($solicitacao->condicoes_clinicas ? "Condições clínicas: {$solicitacao->condicoes_clinicas}\n" : "") .
+                            ($solicitacao->observacoes ? "Observações: {$solicitacao->observacoes}\n" : "") .
+                            "\nAcesse seu painel para montar a ficha. 💪"
+                        );
+                    }
+
+                    if ($cliente && $cliente->whatsapp) {
+                        $this->notificarWhatsAppZenvia(
+                            $cliente->whatsapp,
+                            "✅ *Solicitação de Ficha Confirmada!*\n\n" .
+                            "Seu pagamento foi confirmado e a solicitação foi enviada para *{$personal->nome}*.\n" .
+                            "Assim que a ficha estiver pronta, você será avisado por aqui. 🏋️"
+                        );
+                    }
+                } catch (\Exception $e) {
+                    Log::error('processarPagamentoConfirmado: ficha falhou', [
                         'error'   => $e->getMessage(),
                         'booking' => $booking,
                     ]);
@@ -515,6 +575,27 @@ class PaymentController extends Controller
         }
     }
 
+    private function notificarWhatsAppZenvia(string $telefone, string $mensagem): void
+    {
+        try {
+            $apiToken = config('services.zenvia.token');
+            $from     = config('services.zenvia.from');
+            if (!$apiToken || !$from) return;
+
+            $phone = preg_replace('/\D/', '', $telefone);
+            if (!str_starts_with($phone, '55')) $phone = '55' . $phone;
+
+            Http::withHeaders(['X-API-TOKEN' => $apiToken])
+                ->post('https://api.zenvia.com/v2/channels/whatsapp/messages', [
+                    'from'     => $from,
+                    'to'       => $phone,
+                    'contents' => [['type' => 'text', 'text' => $mensagem]],
+                ]);
+        } catch (\Exception $e) {
+            Log::warning('notificarWhatsAppZenvia: falhou', ['error' => $e->getMessage()]);
+        }
+    }
+
     private function obterOuCriarClienteAsaas(\App\Models\Cadastro\Cliente $cliente): string
     {
         $search = Http::withHeaders($this->asaasHeaders())
@@ -638,7 +719,7 @@ class PaymentController extends Controller
 
         $validated = $request->validate([
             'personal_id'       => 'required|integer|exists:personals,id',
-            'tipo'              => 'required|in:aula_avulsa,pacote',
+            'tipo'              => 'required|in:aula_avulsa,pacote,ficha',
             'pacote_id'         => 'nullable|integer|exists:pacotes,id',
             'frequencia'        => 'nullable|integer|min:1|max:7',
             'valor_pacote'      => 'nullable|numeric',
@@ -647,6 +728,10 @@ class PaymentController extends Controller
             'hora_fim'          => 'nullable|string|max:10',
             'academia_nome'     => 'nullable|string|max:255',
             'data'              => 'nullable|date',
+            'objetivos'         => 'nullable|string',
+            'condicoes_clinicas'=> 'nullable|string',
+            'nivel_experiencia' => 'nullable|string',
+            'observacoes'       => 'nullable|string',
             'card_holder'       => 'required|string|max:100',
             'card_number'       => 'required|string|min:13|max:19',
             'card_expiry_month' => 'required|string|size:2',
@@ -665,6 +750,10 @@ class PaymentController extends Controller
             $pacote      = Pacote::findOrFail($validated['pacote_id']);
             $amount      = (float) $pacote->valor_mensal;
             $description = "Pacote {$pacote->frequencia}x/semana — {$personal->nome}";
+        } elseif ($validated['tipo'] === 'ficha') {
+            $pacote      = null;
+            $amount      = (float) ($personal->valor_ficha ?? 0);
+            $description = "Ficha Personalizada — {$personal->nome}";
         } else {
             $pacote      = null;
             $amount      = (float) ($personal->valor_secao ?? 0);
@@ -683,6 +772,10 @@ class PaymentController extends Controller
             'hora_fim'          => $validated['hora_fim'] ?? null,
             'academia_nome'     => $validated['academia_nome'] ?? null,
             'data'              => $validated['data'] ?? null,
+            'objetivos'         => $validated['objetivos'] ?? null,
+            'condicoes_clinicas'=> $validated['condicoes_clinicas'] ?? null,
+            'nivel_experiencia' => $validated['nivel_experiencia'] ?? null,
+            'observacoes_ficha' => $validated['observacoes'] ?? null,
         ];
 
         try {

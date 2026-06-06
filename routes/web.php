@@ -121,6 +121,7 @@ Route::middleware('check.login')->group(function () {
     Route::get('/academias/{id}/detalhes', [ClienteController::class, 'detalhesAcademia'])->name('academias.detalhes');
     Route::post('/academias/contratar', [ClienteController::class, 'contratarAcademia'])->name('academias.contratar');
     Route::get('/pacotes/personal/{id}', [PacoteController::class, 'show'])->name('pacotes.show');
+    Route::get('/cliente/minhas-fichas-solicitadas', [ClienteController::class, 'minhasSolicitacoesFicha'])->name('cliente.solicitacoes-ficha');
 });
 
 // ==========================================
@@ -151,6 +152,11 @@ Route::middleware('check.login')->group(function () {
     // ✅ NOVO: Finalizar aula e notificar via WhatsApp
     Route::post('/personal/aulas/{id}/finalizar', [PersonalController::class, 'finalizarAula'])->name('aulas.finalizar');
     Route::post('/personal/aulas/{id}/concluir', [PersonalController::class, 'finalizarAula'])->name('aulas.concluir');
+
+    // Solicitações de Ficha
+    Route::get('/personal/solicitacoes-ficha', [PersonalController::class, 'listarSolicitacoesFicha'])->name('personal.solicitacoes-ficha');
+    Route::post('/personal/solicitacoes-ficha/{id}/concluir', [PersonalController::class, 'concluirSolicitacaoFicha'])->name('personal.solicitacoes-ficha.concluir');
+    Route::post('/personal/configurar-valor-ficha', [PersonalController::class, 'atualizarValorFicha'])->name('personal.valor-ficha');
 });
 
 

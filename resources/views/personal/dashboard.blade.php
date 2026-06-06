@@ -611,6 +611,9 @@
                 </div>
                 <button type="button" id="btnOpenUpdate"><i class="fas fa-user-edit"></i> Meu Perfil</button>
                 <button type="button" id="btnOpenPlanos"><i class="fas fa-tags" style="color: var(--primary);"></i> Meus Pacotes</button>
+                <a href="{{ route('personal.solicitacoes-ficha') }}" style="display:flex; align-items:center; gap:12px; padding:15px 20px; color:#fff; text-decoration:none; font-size:14px; transition:0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.05)';this.style.color='#d4ff00'" onmouseout="this.style.background='';this.style.color='#fff'">
+                    <i class="fas fa-clipboard-list" style="color: var(--primary);"></i> Solicitações de Ficha
+                </a>
                 <button type="button" id="btnOpenAlunos"><i class="fas fa-users"></i> Meus Alunos</button>
                 <button type="button" id="btnOpenFinance"><i class="fas fa-wallet" style="color: var(--success)"></i> Minhas Finanças</button>
                 <button type="button" id="btnOpenCarteira"><i class="fas fa-piggy-bank" style="color: var(--primary)"></i> Minha Carteira</button>
@@ -920,6 +923,10 @@
                     <div>
                         <label>Valor por Seção (R$)</label>
                         <div class="input-wrapper"><i class="fas fa-dollar-sign"></i><input type="number" step="0.01" name="valor_secao" value="{{ $personal->valor_secao }}"></div>
+                    </div>
+                    <div>
+                        <label>Valor da Ficha Personalizada (R$)</label>
+                        <div class="input-wrapper"><i class="fas fa-clipboard-list"></i><input type="number" step="0.01" name="valor_ficha" value="{{ $personal->valor_ficha }}" placeholder="0.00"></div>
                     </div>
                     <div class="full-width">
                         <label>Chave Pix</label>
