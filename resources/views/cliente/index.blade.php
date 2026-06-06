@@ -777,49 +777,70 @@
     }
 </style>
 
-{{-- MODAL AGENDA --}}
+{{-- MODAL AULA AVULSA --}}
 <div id="agendaModal" class="modal-overlay">
-    <div class="profile-card" style="width: 90%; max-width: 450px; border: 1px solid var(--primary);">
+    <div class="profile-card" style="width: 95%; max-width: 800px; border: 1px solid var(--primary); max-height: 90vh; overflow-y: auto;">
         <i class="fas fa-times close-form" onclick="fecharAgenda()"></i>
-        <h2 id="nomePersonalAgenda" style="color: var(--primary); margin-bottom: 5px;">Personal</h2>
-        <p style="color: var(--text-muted); font-size: 0.8rem; margin-bottom: 15px;">Selecione um horário disponível:</p>
 
-        {{-- SELECT DE ACADEMIA (preenchido via JS) --}}
-        <div id="academiaAvulsaContainer" style="margin-bottom: 15px;"></div>
+        <h2 id="nomePersonalAgenda" style="color: var(--primary); margin-bottom: 5px;">Aula Avulsa</h2>
+        <p style="color: var(--text-muted); font-size: 0.8rem; margin-bottom: 20px;">
+            <i class="fas fa-info-circle"></i> Selecione uma data disponível e o horário para agendar sua aula
+        </p>
 
-        <div id="listaHorarios" style="max-height: 370px; overflow-y: auto;">
-            @foreach($horariosDisponiveis as $h)
-            <div class="horario-item personal-horario-{{ $h->personal_id }}" style="display: none;">
-                <div style="display: flex; flex-direction: column;">
-                    <span style="font-size: 0.8rem; font-weight: 800; color: var(--primary);">
-                        {{ \Carbon\Carbon::parse($h->data)->translatedFormat('d \d\e F') }}
-                    </span>
-                    <span style="font-size: 0.75rem; color: #fff;">{{ $h->horario_inicio }} às {{ $h->horario_fim }}</span>
+        {{-- Input oculto mantido para compatibilidade com pagarPixAvulsa / abrirCartaoAvulsa --}}
+        <input type="hidden" class="academia-nome-avulsa" id="avulsaAcademiaNomeInput" value="">
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+
+            {{-- COLUNA ESQUERDA: resumo + pagamento --}}
+            <div>
+                <div id="academiaAvulsaContainer" style="margin-bottom: 15px;"></div>
+
+                <div style="background: rgba(212, 255, 0, 0.05); padding: 12px; border-radius: 10px; border: 1px solid var(--border); margin-bottom: 15px;">
+                    <p style="margin: 0 0 8px 0; font-size: 0.75rem; color: var(--text-muted);">
+                        <i class="fas fa-calendar"></i> Data: <span id="avulsaDataSelecionada" style="color: var(--primary); font-weight: 900;">Nenhuma</span>
+                    </p>
+                    <p style="margin: 0; font-size: 0.75rem; color: var(--text-muted);">
+                        <i class="fas fa-clock"></i> Horário: <span id="avulsaHorarioSelecionado" style="color: var(--primary); font-weight: 900;">Nenhum</span>
+                    </p>
                 </div>
-                <form action="{{ route('agendar.horario') }}" method="POST">
-                    @csrf
-                    <input type="hidden" name="personal_id" value="{{ $h->personal_id }}">
-                    <input type="hidden" name="data" value="{{ $h->data }}">
-                    <input type="hidden" name="horario_inicio" value="{{ $h->horario_inicio }}">
-                    <input type="hidden" name="horario_fim" value="{{ $h->horario_fim }}">
-                    <input type="hidden" name="academia_id" value="{{ $cliente->academia_id ?? '' }}">
-                    <input type="hidden" name="academia_nome" class="academia-nome-avulsa" value="">
-                    <div style="display:flex; gap:5px; flex-wrap:wrap; justify-content:flex-end;">
-                        <button type="button" class="btn-action"
-                                style="width:auto; margin:0; padding: 7px 10px; font-size: 0.65rem; background:rgba(212,255,0,0.1); border:1px solid var(--primary);"
-                                onclick="pagarPixAvulsa({{ $h->personal_id }}, '{{ $h->data }}', '{{ $h->horario_inicio }}', '{{ $h->horario_fim }}')">
-                            <i class="fas fa-qrcode"></i> PIX
-                        </button>
-                        <button type="button" class="btn-action"
-                                style="width:auto; margin:0; padding: 7px 10px; font-size: 0.65rem; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.15);"
-                                onclick="abrirCartaoAvulsa({{ $h->personal_id }}, '{{ $h->data }}', '{{ $h->horario_inicio }}', '{{ $h->horario_fim }}')">
-                            <i class="fas fa-credit-card"></i> Cartão
-                        </button>
-                    </div>
-                </form>
+
+                <div id="avulsaHorariosList" style="margin-bottom: 20px;"></div>
+
+                <div style="display:flex; gap:10px;">
+                    <button type="button" class="btn-action" style="margin-top:0; flex:1;" id="btnAvulsaPix" disabled onclick="pagarPixAvulsaNovo()">
+                        <i class="fas fa-qrcode"></i> Pagar via PIX
+                    </button>
+                    <button type="button" class="btn-action" style="margin-top:0; flex:1; background:rgba(255,255,255,0.08); color:#fff; border:1px solid rgba(255,255,255,0.15);" id="btnAvulsaCartao" disabled onclick="pagarCartaoAvulsaNovo()">
+                        <i class="fas fa-credit-card"></i> Pagar com Cartão
+                    </button>
+                </div>
             </div>
-            @endforeach
-            <p id="msgSemHorario" style="display: none; text-align: center; color: var(--text-muted); padding: 20px;">Sem horários livres.</p>
+
+            {{-- COLUNA DIREITA: calendário --}}
+            <div>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                    <button type="button" onclick="mesAnteriorAvulsaModal()" class="btn-action btn-outline" style="padding: 8px 12px; margin: 0; width: auto; font-size: 0.7rem;">
+                        <i class="fas fa-chevron-left"></i>
+                    </button>
+                    <span id="avulsaMesLabel" style="color: var(--primary); font-weight: 900; text-transform: uppercase; font-size: 0.8rem; min-width: 150px; text-align: center;"></span>
+                    <button type="button" onclick="mesProximoAvulsaModal()" class="btn-action btn-outline" style="padding: 8px 12px; margin: 0; width: auto; font-size: 0.7rem;">
+                        <i class="fas fa-chevron-right"></i>
+                    </button>
+                </div>
+
+                <div style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; margin-bottom: 10px; text-align: center;">
+                    @foreach(['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'] as $dia)
+                    <div style="color: var(--primary); font-weight: 700; font-size: 0.65rem; padding: 8px 0;">{{ $dia }}</div>
+                    @endforeach
+                </div>
+
+                <div id="avulsaCalendarGrid" style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px;"></div>
+
+                <p id="avulsaDiaLabel" style="color: var(--text-muted); font-size: 0.75rem; margin-top: 15px; text-align: center;">
+                    Clique em um dia disponível para ver os horários
+                </p>
+            </div>
         </div>
     </div>
 </div>
@@ -967,6 +988,18 @@
             })
             ->values()
     ) !!};
+
+    @php
+        $horariosGrouped = [];
+        foreach($horariosDisponiveis as $h) {
+            $pid  = $h->personal_id;
+            $date = is_string($h->data) ? substr($h->data, 0, 10) : \Carbon\Carbon::parse($h->data)->format('Y-m-d');
+            $hi   = is_string($h->horario_inicio) ? $h->horario_inicio : \Carbon\Carbon::parse($h->horario_inicio)->format('H:i');
+            $hf   = is_string($h->horario_fim)    ? $h->horario_fim    : \Carbon\Carbon::parse($h->horario_fim)->format('H:i');
+            $horariosGrouped[$pid][$date][] = ['horario_inicio' => $hi, 'horario_fim' => $hf];
+        }
+    @endphp
+    window.horariosDisponiveisData = {!! json_encode($horariosGrouped) !!};
 
     let personalSelecionadoId = null;
 
@@ -1489,57 +1522,157 @@
         menu.style.display = menu.style.display === 'block' ? 'none' : 'block';
     }
 
-    function abrirAgenda(id, nome) {
-        document.getElementById('nomePersonalAgenda').innerText = nome;
-        document.querySelectorAll('.horario-item').forEach(h => h.style.display = 'none');
-        const filtrados = document.querySelectorAll('.personal-horario-' + id);
-        const msgVazio  = document.getElementById('msgSemHorario');
-        if (filtrados.length > 0) {
-            filtrados.forEach(h => h.style.display = 'flex');
-            msgVazio.style.display = 'none';
-        } else {
-            msgVazio.style.display = 'block';
-        }
+    // ============ MODAL AULA AVULSA ============
+    let avulsaPersonalId    = null;
+    let avulsaDataAtualModal = new Date();
+    let avulsaSelData       = null;
+    let avulsaSelHoraInicio = null;
+    let avulsaSelHoraFim    = null;
 
-        // Popula o select de academias do personal
+    function abrirAgenda(id, nome) {
+        avulsaPersonalId    = id;
+        avulsaSelData       = null;
+        avulsaSelHoraInicio = null;
+        avulsaSelHoraFim    = null;
+        avulsaDataAtualModal = new Date();
+
+        document.getElementById('nomePersonalAgenda').innerText = nome + ' — Aula Avulsa';
+        document.getElementById('avulsaDataSelecionada').textContent  = 'Nenhuma';
+        document.getElementById('avulsaHorarioSelecionado').textContent = 'Nenhum';
+        document.getElementById('avulsaHorariosList').innerHTML = '';
+        document.getElementById('btnAvulsaPix').disabled    = true;
+        document.getElementById('btnAvulsaCartao').disabled = true;
+
         const personal = window.personalsData[id];
         const container = document.getElementById('academiaAvulsaContainer');
-        const academias = personal && personal.academias
+        const academias = personal?.academias
             ? personal.academias.split('\n').map(a => a.trim()).filter(a => a.length > 0)
             : [];
 
-        container.style.display = 'block';
         if (academias.length > 0) {
             container.innerHTML = `
                 <label style="display:block; color:var(--primary); font-weight:900; text-transform:uppercase; font-size:0.7rem; margin-bottom:6px;">
                     <i class="fas fa-map-marker-alt"></i> Academia / Local de Treino
                 </label>
-                <select id="academiaAvulsaSelect" onchange="atualizarAcademiaAvulsa(this.value)"
-                        style="width:100%; background:var(--bg-card,#111); border:1px solid var(--border,#333); color:#fff; padding:10px 12px; border-radius:10px; font-size:0.85rem; outline:none; cursor:pointer;">
+                <select onchange="document.getElementById('avulsaAcademiaNomeInput').value=this.value"
+                        style="width:100%; background:var(--bg-dark,#111); border:1px solid var(--border,#333); color:#fff; padding:10px 12px; border-radius:10px; font-size:0.85rem; outline:none; cursor:pointer; margin-bottom:0;">
                     <option value="">Selecione uma academia</option>
                     ${academias.map(a => `<option value="${a}">${a}</option>`).join('')}
                 </select>`;
             if (academias.length === 1) {
-                document.getElementById('academiaAvulsaSelect').value = academias[0];
-                atualizarAcademiaAvulsa(academias[0]);
+                container.querySelector('select').value = academias[0];
+                document.getElementById('avulsaAcademiaNomeInput').value = academias[0];
             } else {
-                atualizarAcademiaAvulsa('');
+                document.getElementById('avulsaAcademiaNomeInput').value = '';
             }
         } else {
             container.innerHTML = `
-                <p style="color:var(--text-muted); font-size:0.8rem; padding:10px 12px; background:rgba(255,255,255,0.04); border-radius:10px; border:1px solid var(--border,#333); margin:0;">
+                <p style="color:var(--text-muted); font-size:0.8rem; padding:10px 12px; background:rgba(255,255,255,0.04); border-radius:10px; border:1px solid var(--border,#333); margin:0 0 15px;">
                     <i class="fas fa-info-circle"></i> O personal ainda não informou as academias em que trabalha.
                 </p>`;
-            atualizarAcademiaAvulsa('');
+            document.getElementById('avulsaAcademiaNomeInput').value = '';
         }
 
+        renderAvulsaCalendar();
         document.getElementById('agendaModal').style.display = 'flex';
     }
 
-    function atualizarAcademiaAvulsa(valor) {
-        document.querySelectorAll('.academia-nome-avulsa').forEach(input => {
-            input.value = valor;
+    function renderAvulsaCalendar() {
+        const ano  = avulsaDataAtualModal.getFullYear();
+        const mes  = avulsaDataAtualModal.getMonth();
+        const meses = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+        document.getElementById('avulsaMesLabel').textContent = meses[mes] + ' ' + ano;
+
+        const disponiveis = window.horariosDisponiveisData?.[avulsaPersonalId] || {};
+        const hoje = new Date(); hoje.setHours(0,0,0,0);
+
+        const primeiroDia = new Date(ano, mes, 1).getDay();
+        const diasNoMes   = new Date(ano, mes + 1, 0).getDate();
+
+        let html = '';
+        for (let i = 0; i < primeiroDia; i++) html += `<div class="dia-calendario outro-mes"></div>`;
+
+        for (let d = 1; d <= diasNoMes; d++) {
+            const dataStr = `${ano}-${String(mes+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+            const dataObj = new Date(ano, mes, d); dataObj.setHours(0,0,0,0);
+            const temSlots  = !!disponiveis[dataStr];
+            const passado   = dataObj < hoje;
+            const selecionado = dataStr === avulsaSelData;
+
+            if (selecionado) {
+                html += `<div class="dia-calendario selecionado" onclick="selecionarDiaAvulsa('${dataStr}',${d})">${d}</div>`;
+            } else if (!passado && temSlots) {
+                html += `<div class="dia-calendario disponivel" onclick="selecionarDiaAvulsa('${dataStr}',${d})">${d}</div>`;
+            } else {
+                html += `<div class="dia-calendario ${passado ? 'outro-mes' : 'ocupado'}">${d}</div>`;
+            }
+        }
+        document.getElementById('avulsaCalendarGrid').innerHTML = html;
+    }
+
+    function selecionarDiaAvulsa(dataStr, dia) {
+        avulsaSelData       = dataStr;
+        avulsaSelHoraInicio = null;
+        avulsaSelHoraFim    = null;
+        document.getElementById('btnAvulsaPix').disabled    = true;
+        document.getElementById('btnAvulsaCartao').disabled = true;
+
+        const mesesAbrev = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+        const partes = dataStr.split('-');
+        document.getElementById('avulsaDataSelecionada').textContent   = `${dia} ${mesesAbrev[parseInt(partes[1])-1]} ${partes[0]}`;
+        document.getElementById('avulsaHorarioSelecionado').textContent = 'Nenhum';
+
+        const slots = window.horariosDisponiveisData?.[avulsaPersonalId]?.[dataStr] || [];
+        document.getElementById('avulsaHorariosList').innerHTML = `
+            <label style="display:block; color:var(--primary); font-weight:900; text-transform:uppercase; font-size:0.7rem; margin-bottom:8px;">
+                <i class="fas fa-clock"></i> Horários disponíveis
+            </label>
+            ${slots.map(s => `
+                <div class="horario-selecionavel" onclick="selecionarHorarioAvulsa('${s.horario_inicio}','${s.horario_fim}',this)">
+                    <span style="font-weight:800; color:#fff;">${s.horario_inicio} às ${s.horario_fim}</span>
+                    <i class="fas fa-check-circle" style="color:var(--primary); display:none;"></i>
+                </div>
+            `).join('')}
+        `;
+
+        renderAvulsaCalendar();
+    }
+
+    function selecionarHorarioAvulsa(inicio, fim, el) {
+        avulsaSelHoraInicio = inicio;
+        avulsaSelHoraFim    = fim;
+        document.getElementById('avulsaHorarioSelecionado').textContent = inicio + ' às ' + fim;
+        document.getElementById('btnAvulsaPix').disabled    = false;
+        document.getElementById('btnAvulsaCartao').disabled = false;
+
+        document.querySelectorAll('#avulsaHorariosList .horario-selecionavel').forEach(h => {
+            h.style.borderColor = 'transparent';
+            h.style.background  = 'var(--input-bg)';
+            h.querySelector('.fa-check-circle').style.display = 'none';
         });
+        el.style.borderColor = 'var(--primary)';
+        el.style.background  = 'rgba(212,255,0,0.08)';
+        el.querySelector('.fa-check-circle').style.display = 'block';
+    }
+
+    function mesAnteriorAvulsaModal() {
+        avulsaDataAtualModal = new Date(avulsaDataAtualModal.getFullYear(), avulsaDataAtualModal.getMonth() - 1, 1);
+        renderAvulsaCalendar();
+    }
+
+    function mesProximoAvulsaModal() {
+        avulsaDataAtualModal = new Date(avulsaDataAtualModal.getFullYear(), avulsaDataAtualModal.getMonth() + 1, 1);
+        renderAvulsaCalendar();
+    }
+
+    function pagarPixAvulsaNovo() {
+        if (!avulsaSelData || !avulsaSelHoraInicio || !avulsaSelHoraFim) return;
+        pagarPixAvulsa(avulsaPersonalId, avulsaSelData, avulsaSelHoraInicio, avulsaSelHoraFim);
+    }
+
+    function pagarCartaoAvulsaNovo() {
+        if (!avulsaSelData || !avulsaSelHoraInicio || !avulsaSelHoraFim) return;
+        abrirCartaoAvulsa(avulsaPersonalId, avulsaSelData, avulsaSelHoraInicio, avulsaSelHoraFim);
     }
 
     function fecharAgenda() { document.getElementById('agendaModal').style.display = 'none'; }
