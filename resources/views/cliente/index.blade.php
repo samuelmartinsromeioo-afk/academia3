@@ -521,51 +521,6 @@
     </div>
 
     <div id="dashboardSummary">
-        {{-- AGENDA COM PAGINAÇÃO --}}
-        <div class="section-title">Minha Agenda de Treinos</div>
-        <div id="agendaContainer">
-            @php
-                $inicioSemana = now()->startOfWeek()->format('Y-m-d');
-                $fimSemana = now()->endOfWeek()->format('Y-m-d');
-                $agendadasSemana = $meusAgendamentos->whereBetween('data', [$inicioSemana, $fimSemana])->values();
-            @endphp
-            
-            @if($agendadasSemana->count() > 0)
-                <script>
-                    window.agendamentosData = {!! json_encode($agendadasSemana->map(function($a) {
-                        return [
-                            'personal' => $a->personal->nome ?? 'N/A',
-                            'data' => \Carbon\Carbon::parse($a->data)->format('d/m/Y'),
-                            'hora' => \Carbon\Carbon::parse($a->hora_inicio)->format('H:i')
-                        ];
-                    })) !!};
-                </script>
-                
-                <div id="agendaItems" style="min-height: 250px;"></div>
-
-                <div class="pagination-container">
-                    <button class="pagination-btn" onclick="irParaPaginaAgenda(1)" id="btnPrimeira">
-                        <i class="fas fa-angle-double-left"></i>
-                    </button>
-                    <button class="pagination-btn" onclick="paginaAnteriorAgenda()" id="btnAnterior">
-                        <i class="fas fa-angle-left"></i>
-                    </button>
-                    <div id="paginasBotoes"></div>
-                    <button class="pagination-btn" onclick="proximaPaginaAgenda()" id="btnProxima">
-                        <i class="fas fa-angle-right"></i>
-                    </button>
-                    <button class="pagination-btn" onclick="irParaPaginaAgenda(-1)" id="btnUltima">
-                        <i class="fas fa-angle-double-right"></i>
-                    </button>
-                    <span class="pagination-info"><span id="paginaAtualInfo">1</span> / <span id="totalPaginasInfo">1</span></span>
-                </div>
-            @else
-                <div class="stat-card" style="padding: 20px; border-style: dashed;">
-                    <p style="color: var(--text-muted); margin: 0; font-size: 0.85rem;">Você não possui treinos agendados para esta semana.</p>
-                </div>
-            @endif
-        </div>
-
         {{-- CALENDÁRIO MENSAL — AULAS AVULSAS --}}
         <div class="section-title" style="margin-top: 30px;">
             <i class="fas fa-calendar-day" style="color: var(--primary);"></i> Calendário — Aulas Avulsas
@@ -850,9 +805,6 @@
                     <input type="hidden" name="academia_id" value="{{ $cliente->academia_id ?? '' }}">
                     <input type="hidden" name="academia_nome" class="academia-nome-avulsa" value="">
                     <div style="display:flex; gap:5px; flex-wrap:wrap; justify-content:flex-end;">
-                        <button type="submit" class="btn-action" style="width:auto; margin:0; padding: 7px 10px; font-size: 0.65rem;">
-                            <i class="fas fa-calendar-check"></i> Agendar
-                        </button>
                         <button type="button" class="btn-action"
                                 style="width:auto; margin:0; padding: 7px 10px; font-size: 0.65rem; background:rgba(212,255,0,0.1); border:1px solid var(--primary);"
                                 onclick="pagarPixAvulsa({{ $h->personal_id }}, '{{ $h->data }}', '{{ $h->horario_inicio }}', '{{ $h->horario_fim }}')">
