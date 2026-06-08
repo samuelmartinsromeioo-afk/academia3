@@ -430,6 +430,183 @@
             filter: brightness(1.1);
         }
 
+        /* BADGE NIVEL/DIVISÃO NA FICHA */
+        .ficha-badges {
+            display: flex;
+            gap: 6px;
+            margin-bottom: 10px;
+            flex-wrap: wrap;
+        }
+        .badge-nivel {
+            font-size: 0.68rem;
+            font-weight: 900;
+            padding: 2px 9px;
+            border-radius: 20px;
+            text-transform: uppercase;
+        }
+        .badge-nivel.iniciante {
+            background: rgba(0, 200, 120, 0.15);
+            color: #00c878;
+            border: 1px solid rgba(0, 200, 120, 0.3);
+        }
+        .badge-nivel.avancado {
+            background: rgba(212, 255, 0, 0.12);
+            color: var(--primary);
+            border: 1px solid rgba(212, 255, 0, 0.3);
+        }
+        .badge-divisao {
+            font-size: 0.68rem;
+            font-weight: 700;
+            padding: 2px 9px;
+            border-radius: 20px;
+            background: rgba(255,255,255,0.06);
+            color: var(--text-muted);
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        /* SELETOR DE NÍVEL */
+        .nivel-toggle {
+            display: flex;
+            gap: 8px;
+        }
+        .nivel-btn {
+            flex: 1;
+            padding: 10px;
+            border-radius: 8px;
+            border: 1px solid rgba(255,255,255,0.1);
+            background: rgba(255,255,255,0.04);
+            color: var(--text-muted);
+            font-weight: 700;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .nivel-btn.ativo {
+            background: rgba(212, 255, 0, 0.12);
+            color: var(--primary);
+            border-color: rgba(212, 255, 0, 0.4);
+        }
+
+        /* SELETOR DE EXERCÍCIO */
+        .exercicio-search-wrapper {
+            position: relative;
+        }
+        .exercicio-search-wrapper .search-icon {
+            position: absolute;
+            left: 11px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            pointer-events: none;
+        }
+        .exercicio-search-wrapper input {
+            padding-left: 34px !important;
+        }
+        .lista-exercicios {
+            max-height: 200px;
+            overflow-y: auto;
+            border: 1px solid rgba(255,255,255,0.1);
+            border-top: none;
+            border-radius: 0 0 8px 8px;
+            background: #12141a;
+            margin-top: 0;
+        }
+        .lista-exercicios::-webkit-scrollbar {
+            width: 4px;
+        }
+        .lista-exercicios::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .lista-exercicios::-webkit-scrollbar-thumb {
+            background: rgba(255,255,255,0.15);
+            border-radius: 2px;
+        }
+        .exercicio-item {
+            padding: 9px 13px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            transition: background 0.15s;
+        }
+        .exercicio-item:hover {
+            background: rgba(212, 255, 0, 0.07);
+        }
+        .exercicio-item:last-child {
+            border-bottom: none;
+        }
+        .exercicio-item-nome {
+            font-size: 0.88rem;
+            font-weight: 500;
+            color: var(--text-main);
+        }
+        .exercicio-item-grupo {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            background: rgba(255,255,255,0.07);
+            padding: 2px 7px;
+            border-radius: 10px;
+            white-space: nowrap;
+        }
+        .exercicio-vazio {
+            padding: 14px;
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 0.85rem;
+        }
+        .exercicio-personalizado {
+            padding: 9px 13px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.85rem;
+            color: var(--primary);
+            border-top: 1px solid rgba(255,255,255,0.08);
+            transition: background 0.15s;
+        }
+        .exercicio-personalizado:hover {
+            background: rgba(212, 255, 0, 0.07);
+        }
+        .exercicio-escolhido {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 13px;
+            background: rgba(212, 255, 0, 0.08);
+            border: 1px solid rgba(212, 255, 0, 0.25);
+            border-radius: 8px;
+        }
+        .exercicio-escolhido-nome {
+            font-weight: 700;
+            font-size: 0.9rem;
+            flex: 1;
+        }
+        .exercicio-escolhido-grupo {
+            font-size: 0.72rem;
+            color: var(--primary);
+            background: rgba(212,255,0,0.1);
+            padding: 2px 8px;
+            border-radius: 10px;
+        }
+        .btn-trocar-exercicio {
+            background: none;
+            border: 1px solid rgba(255,255,255,0.15);
+            color: var(--text-muted);
+            padding: 3px 9px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.75rem;
+            transition: 0.2s;
+            white-space: nowrap;
+        }
+        .btn-trocar-exercicio:hover {
+            background: rgba(255,255,255,0.08);
+            color: var(--text-main);
+        }
+
         @media (max-width: 768px) {
             .container {
                 margin: 20px auto;
@@ -505,6 +682,26 @@
                             </div>
                         </div>
 
+                        <div class="ficha-badges">
+                            @php $nivelFicha = $ficha->nivel ?? 'iniciante'; @endphp
+                            <span class="badge-nivel {{ $nivelFicha }}">
+                                {{ $nivelFicha === 'avancado' ? 'Avançado' : 'Iniciante' }}
+                            </span>
+                            @if($ficha->divisao)
+                                @php
+                                    $divisoesNomes = [
+                                        'costas_biceps' => 'Costas e Bíceps',
+                                        'peito_ombro_triceps' => 'Peito, Ombro e Tríceps',
+                                        'pernas_gluteos' => 'Pernas e Glúteos',
+                                        'abdomen_core' => 'Abdômen e Core',
+                                        'full_body' => 'Corpo Inteiro',
+                                        'cardio' => 'Cardio e Aeróbico',
+                                    ];
+                                @endphp
+                                <span class="badge-divisao">{{ $divisoesNomes[$ficha->divisao] ?? $ficha->divisao }}</span>
+                            @endif
+                        </div>
+
                         <p class="ficha-nome">{{ $ficha->nome_treino }}</p>
 
                         @if($ficha->observacoes)
@@ -546,7 +743,7 @@
                             @endif
                         </div>
 
-                        <button class="btn-add-ex" onclick="adicionarExercicio({{ $ficha->id }})">
+                        <button class="btn-add-ex" onclick="adicionarExercicio({{ $ficha->id }}, '{{ $ficha->nivel ?? 'iniciante' }}', '{{ $ficha->divisao ?? '' }}')">
                             <i class="fas fa-plus"></i> ADICIONAR EXERCÍCIO
                         </button>
                     </div>
@@ -559,10 +756,36 @@
     <div id="modalNovaFicha" class="modal-overlay">
         <div class="modal-content">
             <h2><i class="fas fa-plus-circle"></i> NOVA FICHA</h2>
-            
+
             <form action="{{ route('fichas-treino.criar') }}" method="POST">
                 @csrf
                 <input type="hidden" name="cliente_id" value="{{ $cliente->id }}">
+                <input type="hidden" name="nivel" id="inputNivel" value="iniciante">
+
+                <div class="form-group">
+                    <label>Nível da Ficha</label>
+                    <div class="nivel-toggle">
+                        <button type="button" class="nivel-btn ativo" data-nivel="iniciante" onclick="selecionarNivel('iniciante')">
+                            <i class="fas fa-seedling"></i> INICIANTE
+                        </button>
+                        <button type="button" class="nivel-btn" data-nivel="avancado" onclick="selecionarNivel('avancado')">
+                            <i class="fas fa-fire"></i> AVANÇADO
+                        </button>
+                    </div>
+                </div>
+
+                <div class="form-group" id="grupoDivisao" style="display:none">
+                    <label>Divisão de Treino</label>
+                    <select name="divisao" id="selectDivisao" onchange="sugerirNomeTreino()">
+                        <option value="">Selecione a divisão</option>
+                        <option value="costas_biceps">Costas e Bíceps</option>
+                        <option value="peito_ombro_triceps">Peito, Ombro e Tríceps</option>
+                        <option value="pernas_gluteos">Pernas e Glúteos</option>
+                        <option value="abdomen_core">Abdômen e Core</option>
+                        <option value="full_body">Corpo Inteiro</option>
+                        <option value="cardio">Cardio e Aeróbico</option>
+                    </select>
+                </div>
 
                 <div class="form-group">
                     <label>Dia da Semana</label>
@@ -580,7 +803,7 @@
 
                 <div class="form-group">
                     <label>Nome do Treino</label>
-                    <input type="text" name="nome_treino" placeholder="Ex: Peito e Costas" required>
+                    <input type="text" id="inputNomeTreinoNovo" name="nome_treino" placeholder="Ex: Peito e Costas" required>
                 </div>
 
                 <div class="form-group">
@@ -627,13 +850,37 @@
     <div id="modalAdicionarExercicio" class="modal-overlay">
         <div class="modal-content">
             <h2><i class="fas fa-dumbbell"></i> ADICIONAR EXERCÍCIO</h2>
-            
+
             <form id="formAdicionarExercicio" method="POST">
                 @csrf
+                <input type="hidden" name="nome_exercicio" id="hiddenNomeExercicio">
 
                 <div class="form-group">
                     <label>Nome do Exercício</label>
-                    <input type="text" name="nome_exercicio" placeholder="Ex: Supino" required>
+
+                    <!-- Estado: nenhum exercício escolhido -->
+                    <div id="exercicioPicker">
+                        <div class="exercicio-search-wrapper">
+                            <i class="fas fa-search search-icon"></i>
+                            <input type="text"
+                                   id="filtroExercicio"
+                                   placeholder="Buscar exercício..."
+                                   autocomplete="off"
+                                   oninput="filtrarExercicios(this.value)">
+                        </div>
+                        <div id="listaExercicios" class="lista-exercicios"></div>
+                    </div>
+
+                    <!-- Estado: exercício escolhido -->
+                    <div id="exercicioEscolhido" class="exercicio-escolhido" style="display:none">
+                        <div style="flex:1">
+                            <div class="exercicio-escolhido-nome" id="nomeExercicioEscolhido"></div>
+                            <div class="exercicio-escolhido-grupo" id="grupoExercicioEscolhido"></div>
+                        </div>
+                        <button type="button" class="btn-trocar-exercicio" onclick="trocarExercicio()">
+                            <i class="fas fa-exchange-alt"></i> Trocar
+                        </button>
+                    </div>
                 </div>
 
                 <div class="form-grid-2">
@@ -653,24 +900,44 @@
                 </div>
 
                 <div class="form-group">
-                    <label>Observações</label>
-                    <textarea name="observacoes" placeholder="Técnica, cuidados, etc"></textarea>
+                    <label>Observações / Técnica</label>
+                    <textarea id="obsExercicio" name="observacoes" placeholder="Técnica, cuidados, etc"></textarea>
                 </div>
 
                 <div class="modal-buttons">
                     <button type="button" class="btn-cancel" onclick="fecharModalAdicionarExercicio()">CANCELAR</button>
-                    <button type="submit" class="btn-submit">ADICIONAR</button>
+                    <button type="submit" id="btnAdicionarExercicio" class="btn-submit" disabled style="opacity:.5;cursor:not-allowed">ADICIONAR</button>
                 </div>
             </form>
         </div>
     </div>
 
     <script>
-        const modalNovaFicha = document.getElementById('modalNovaFicha');
-        const modalEditarFicha = document.getElementById('modalEditarFicha');
+        // ─── DADOS DOS EXERCÍCIOS ───────────────────────────────────────────
+        const TODOS_EXERCICIOS = {!! json_encode($exerciciosData, JSON_UNESCAPED_UNICODE) !!};
+
+        const DIVISOES_NOMES = {
+            'costas_biceps':       'Costas e Bíceps',
+            'peito_ombro_triceps': 'Peito, Ombro e Tríceps',
+            'pernas_gluteos':      'Pernas e Glúteos',
+            'abdomen_core':        'Abdômen e Core',
+            'full_body':           'Corpo Inteiro',
+            'cardio':              'Cardio e Aeróbico',
+        };
+
+        // Estado do picker de exercício
+        let exerciciosFiltradosAtual = [];
+        let nivelFichaAtual = 'iniciante';
+        let divisaoFichaAtual = '';
+        let obsEditadaManualmente = false;
+
+        // ─── MODAIS ─────────────────────────────────────────────────────────
+        const modalNovaFicha          = document.getElementById('modalNovaFicha');
+        const modalEditarFicha        = document.getElementById('modalEditarFicha');
         const modalAdicionarExercicio = document.getElementById('modalAdicionarExercicio');
 
         function abrirModalNovaFicha() {
+            selecionarNivel('iniciante');
             modalNovaFicha.classList.add('active');
         }
 
@@ -690,7 +957,6 @@
 
         function deletarFicha(fichaId) {
             if (!confirm('Tem certeza que deseja deletar esta ficha? Todos os exercícios serão removidos!')) return;
-            
             const form = document.createElement('form');
             form.method = 'POST';
             form.action = `/personal/fichas-treino/${fichaId}`;
@@ -699,20 +965,31 @@
             form.submit();
         }
 
-        function adicionarExercicio(fichaId) {
+        function adicionarExercicio(fichaId, nivel = 'iniciante', divisao = '') {
+            nivelFichaAtual    = nivel;
+            divisaoFichaAtual  = divisao;
+            obsEditadaManualmente = false;
+
             const form = document.getElementById('formAdicionarExercicio');
             form.action = `/personal/fichas-treino/${fichaId}/exercicio`;
+
+            // Reset do picker
+            trocarExercicio();
+            document.getElementById('filtroExercicio').value = '';
+            renderizarExercicios('');
+
             modalAdicionarExercicio.classList.add('active');
+            setTimeout(() => document.getElementById('filtroExercicio').focus(), 100);
         }
 
         function fecharModalAdicionarExercicio() {
             modalAdicionarExercicio.classList.remove('active');
             document.getElementById('formAdicionarExercicio').reset();
+            trocarExercicio();
         }
 
         function deletarExercicio(exercicioId) {
             if (!confirm('Deletar este exercício?')) return;
-            
             const form = document.createElement('form');
             form.method = 'POST';
             form.action = `/personal/fichas-treino/exercicio/${exercicioId}`;
@@ -721,11 +998,143 @@
             form.submit();
         }
 
+        // ─── NOVA FICHA: NÍVEL / DIVISÃO ────────────────────────────────────
+        function selecionarNivel(nivel) {
+            document.querySelectorAll('.nivel-btn').forEach(b => b.classList.remove('ativo'));
+            document.querySelector(`.nivel-btn[data-nivel="${nivel}"]`).classList.add('ativo');
+            document.getElementById('inputNivel').value = nivel;
+
+            const grupoDivisao  = document.getElementById('grupoDivisao');
+            const selectDivisao = document.getElementById('selectDivisao');
+
+            if (nivel === 'avancado') {
+                grupoDivisao.style.display = 'block';
+                selectDivisao.setAttribute('required', 'required');
+            } else {
+                grupoDivisao.style.display = 'none';
+                selectDivisao.removeAttribute('required');
+                selectDivisao.value = '';
+                document.getElementById('inputNomeTreinoNovo').value = '';
+            }
+        }
+
+        function sugerirNomeTreino() {
+            const divisao = document.getElementById('selectDivisao').value;
+            const nomeInput = document.getElementById('inputNomeTreinoNovo');
+            if (divisao && DIVISOES_NOMES[divisao]) {
+                nomeInput.value = DIVISOES_NOMES[divisao];
+            }
+        }
+
+        // ─── PICKER DE EXERCÍCIO ─────────────────────────────────────────────
+        function getExerciciosFiltradosPorFicha() {
+            if (nivelFichaAtual === 'iniciante' || !divisaoFichaAtual) {
+                return TODOS_EXERCICIOS;
+            }
+            return TODOS_EXERCICIOS.filter(e => e.divisoes.includes(divisaoFichaAtual));
+        }
+
+        function filtrarExercicios(termo) {
+            renderizarExercicios(termo);
+        }
+
+        function renderizarExercicios(termo) {
+            const lista = document.getElementById('listaExercicios');
+            const base  = getExerciciosFiltradosPorFicha();
+            const t     = termo.trim().toLowerCase();
+            const filtrados = t
+                ? base.filter(e =>
+                    e.nome.toLowerCase().includes(t) ||
+                    e.grupo.toLowerCase().includes(t))
+                : base;
+
+            exerciciosFiltradosAtual = filtrados;
+
+            if (filtrados.length === 0) {
+                let html = `<div class="exercicio-vazio">Nenhum exercício encontrado</div>`;
+                if (termo.trim()) {
+                    html += `<div class="exercicio-personalizado" onclick="selecionarPersonalizado('${escapeHtml(termo.trim())}')">
+                        <i class="fas fa-plus-circle"></i> Usar "<strong>${escapeHtml(termo.trim())}</strong>" como exercício personalizado
+                    </div>`;
+                }
+                lista.innerHTML = html;
+                return;
+            }
+
+            lista.innerHTML = filtrados.map((e, i) =>
+                `<div class="exercicio-item" onclick="selecionarExercicio(${i})">
+                    <span class="exercicio-item-nome">${escapeHtml(e.nome)}</span>
+                    <span class="exercicio-item-grupo">${escapeHtml(e.grupo)}</span>
+                </div>`
+            ).join('');
+        }
+
+        function selecionarExercicio(indexNaLista) {
+            const exercicio = exerciciosFiltradosAtual[indexNaLista];
+            if (!exercicio) return;
+
+            document.getElementById('hiddenNomeExercicio').value   = exercicio.nome;
+            document.getElementById('nomeExercicioEscolhido').textContent  = exercicio.nome;
+            document.getElementById('grupoExercicioEscolhido').textContent = exercicio.grupo;
+
+            if (!obsEditadaManualmente) {
+                document.getElementById('obsExercicio').value = exercicio.observacao;
+            }
+
+            document.getElementById('exercicioPicker').style.display    = 'none';
+            document.getElementById('exercicioEscolhido').style.display  = 'flex';
+
+            const btn = document.getElementById('btnAdicionarExercicio');
+            btn.disabled = false;
+            btn.style.opacity = '1';
+            btn.style.cursor  = 'pointer';
+        }
+
+        function selecionarPersonalizado(nome) {
+            document.getElementById('hiddenNomeExercicio').value           = nome;
+            document.getElementById('nomeExercicioEscolhido').textContent  = nome;
+            document.getElementById('grupoExercicioEscolhido').textContent = 'Personalizado';
+
+            document.getElementById('exercicioPicker').style.display   = 'none';
+            document.getElementById('exercicioEscolhido').style.display = 'flex';
+
+            const btn = document.getElementById('btnAdicionarExercicio');
+            btn.disabled = false;
+            btn.style.opacity = '1';
+            btn.style.cursor  = 'pointer';
+        }
+
+        function trocarExercicio() {
+            document.getElementById('hiddenNomeExercicio').value           = '';
+            document.getElementById('nomeExercicioEscolhido').textContent  = '';
+            document.getElementById('grupoExercicioEscolhido').textContent = '';
+
+            document.getElementById('exercicioPicker').style.display   = 'block';
+            document.getElementById('exercicioEscolhido').style.display = 'none';
+
+            const btn = document.getElementById('btnAdicionarExercicio');
+            btn.disabled = true;
+            btn.style.opacity = '.5';
+            btn.style.cursor  = 'not-allowed';
+
+            renderizarExercicios(document.getElementById('filtroExercicio').value);
+        }
+
+        function escapeHtml(str) {
+            return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+        }
+
+        // Marcar observação como editada manualmente se o usuário digitar
+        document.getElementById('obsExercicio').addEventListener('input', () => {
+            obsEditadaManualmente = true;
+        });
+
+        // ─── EVENTOS ────────────────────────────────────────────────────────
         document.getElementById('btnNovaFicha').addEventListener('click', abrirModalNovaFicha);
 
         window.addEventListener('click', (e) => {
-            if (e.target === modalNovaFicha) fecharModalNovaFicha();
-            if (e.target === modalEditarFicha) fecharModalEditarFicha();
+            if (e.target === modalNovaFicha)          fecharModalNovaFicha();
+            if (e.target === modalEditarFicha)        fecharModalEditarFicha();
             if (e.target === modalAdicionarExercicio) fecharModalAdicionarExercicio();
         });
     </script>

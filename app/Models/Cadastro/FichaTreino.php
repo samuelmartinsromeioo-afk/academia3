@@ -14,7 +14,9 @@ class FichaTreino extends Model
         'dia_semana',
         'nome_treino',
         'observacoes',
-        'ativo'
+        'ativo',
+        'nivel',
+        'divisao',
     ];
 
     // ✅ RELAÇÕES
