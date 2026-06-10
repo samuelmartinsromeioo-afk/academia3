@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FitSys — Encontre seu personal</title>
+    <title>SnrFit — Plataforma para Personal Trainers</title>
     <link rel="icon" type="image/png" href="{{ asset('SnrFit.png') }}">
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -402,8 +402,8 @@
 
 <nav class="navbar">
     <div class="logo">
-        <img src="{{ asset('SnrFit.png') }}" alt="FitSys">
-        <div>FIT<span>SYS</span></div>
+        <img src="{{ asset('SnrFit.png') }}" alt="SnrFit">
+        <div>SNR<span>FIT</span></div>
     </div>
 
     <div class="nav-actions">
@@ -417,27 +417,28 @@
 </nav>
 
 <main class="hero">
-    <div class="hero-badge">Marketplace fitness</div>
+    <div class="hero-badge">Para Personal Trainers</div>
 
-    <h1>Conecte-se ao <em>personal ideal</em> e evolua de verdade.</h1>
+    <h1>Transforme sua carreira de personal em um <em>negócio profissional</em>.</h1>
 
-    <p>Alunos encontram o profissional certo. Personais gerenciam agenda, alunos, financeiro, divulgação e fichas de treino — tudo em um só lugar.</p>
+    <p>Seja encontrado por novos alunos e centralize sua rotina: agenda organizada, gestão de alunos, controle financeiro, divulgação do seu trabalho e fichas de treino — tudo em uma única plataforma.</p>
 
     <div class="hero-cta">
-        <button type="button" class="btn btn-solid" onclick="openModal()">
-            Começar agora <i class="fa-solid fa-arrow-right"></i>
-        </button>
-        <a href="{{ route('cadastro.SelecaoCadastro') }}" class="btn btn-ghost">
-            Sou personal trainer
+        <a href="{{ route('cadastro.SelecaoCadastro') }}" class="btn btn-solid">
+            Quero expandir meu negócio <i class="fa-solid fa-arrow-right"></i>
         </a>
+        <button type="button" class="btn btn-ghost" onclick="openModal()">
+            Já tenho conta
+        </button>
     </div>
 
     <div class="features">
-        <div class="feature"><i class="fa-solid fa-calendar-check"></i> Agenda inteligente</div>
-        <div class="feature"><i class="fa-solid fa-users"></i> Gestão de alunos</div>
-        <div class="feature"><i class="fa-solid fa-chart-line"></i> Controle financeiro</div>
-        <div class="feature"><i class="fa-solid fa-bullhorn"></i> Divulgação do serviço</div>
-        <div class="feature"><i class="fa-solid fa-dumbbell"></i> Fichas de treino</div>
+        <div class="feature"><i class="fa-solid fa-calendar-check"></i> Agenda sob controle</div>
+        <div class="feature"><i class="fa-solid fa-users"></i> Gestão completa de alunos</div>
+        <div class="feature"><i class="fa-solid fa-chart-line"></i> Financeiro do mês em tempo real</div>
+        <div class="feature"><i class="fa-solid fa-bullhorn"></i> Divulgação do seu perfil</div>
+        <div class="feature"><i class="fa-solid fa-dumbbell"></i> Fichas de treino profissionais</div>
+        <div class="feature"><i class="fa-solid fa-credit-card"></i> Pagamentos online</div>
     </div>
 </main>
 
