@@ -74,6 +74,70 @@
         .btn-top.primary { background: var(--primary); color: #000; border-color: var(--primary); }
         .btn-top.primary:hover { transform: translateY(-1px); }
 
+        /* MENU HAMBÚRGUER */
+        .menu-container { position: relative; display: flex; align-items: center; gap: 14px; }
+
+        .dots-btn {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            color: var(--primary);
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: 0.3s;
+            font-size: 1rem;
+        }
+        .dots-btn:hover { background: var(--primary); color: #000; }
+
+        .dropdown-menu {
+            display: none;
+            position: absolute;
+            top: 50px;
+            left: 0;
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            width: 260px;
+            z-index: 1000;
+            overflow: hidden;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.6);
+        }
+
+        .menu-rating-header {
+            padding: 20px;
+            background: rgba(212, 255, 0, 0.05);
+            border-bottom: 1px solid var(--border);
+            text-align: center;
+        }
+        .menu-rating-header .rating-number { font-size: 1.6rem; font-weight: 900; display: block; }
+        .menu-rating-header .stars-row { color: var(--primary); margin-bottom: 5px; font-size: 0.9rem; }
+        .menu-rating-header .rating-label { color: var(--text-muted); font-size: 0.72rem; text-transform: uppercase; font-weight: 700; }
+
+        .dropdown-menu button,
+        .dropdown-menu a {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 15px 20px;
+            color: #fff;
+            font-size: 14px;
+            width: 100%;
+            text-align: left;
+            background: none;
+            border: none;
+            cursor: pointer;
+            transition: 0.2s;
+            font-family: inherit;
+            text-decoration: none;
+        }
+        .dropdown-menu button:hover,
+        .dropdown-menu a:hover { background: rgba(255, 255, 255, 0.05); color: var(--primary); }
+        .dropdown-menu i { width: 18px; text-align: center; }
+
         .container { max-width: 1200px; margin: 0 auto; padding: 36px 20px; }
 
         .welcome { margin-bottom: 28px; }
@@ -307,15 +371,39 @@
 
 {{-- TOP BAR --}}
 <div class="top-bar">
-    <div class="logo">SNR<span>FIT</span> <span style="font-family:'Inter'; font-size:0.65rem; color:var(--text-muted); letter-spacing:1px; text-transform:uppercase;">| Studio</span></div>
-    <div class="top-actions">
-        <a href="{{ route('studio.horarios') }}" class="btn-top"><i class="fas fa-clock"></i> Horários</a>
-        <button type="button" class="btn-top primary" onclick="abrirCarteira()"><i class="fas fa-wallet"></i> Carteira</button>
-        <form method="POST" action="{{ route('login.logout') }}" style="margin:0;">
-            @csrf
-            <button type="submit" class="btn-top"><i class="fas fa-sign-out-alt"></i> Sair</button>
-        </form>
+    <div class="menu-container">
+        <button class="dots-btn" id="btnMenu" onclick="toggleMenu()"><i class="fas fa-bars"></i></button>
+        <div class="dropdown-menu" id="dropdownMenu">
+            <div class="menu-rating-header">
+                @php
+                    $media = (float) ($studio->media_avaliacao ?? 0);
+                    $totalAvals = $studio->avaliacoes ? $studio->avaliacoes->count() : 0;
+                @endphp
+                <span class="rating-number">{{ number_format($media, 1) }}</span>
+                <div class="stars-row">
+                    @for ($i = 1; $i <= 5; $i++)
+                        @if ($i <= $media) <i class="fas fa-star"></i>
+                        @elseif ($i - 0.5 <= $media) <i class="fas fa-star-half-alt"></i>
+                        @else <i class="far fa-star"></i>
+                        @endif
+                    @endfor
+                </div>
+                <span class="rating-label">{{ $totalAvals }} Avaliações</span>
+            </div>
+            <button type="button" id="btnOpenPlanos"><i class="fas fa-id-card" style="color: var(--primary);"></i> Meus Planos</button>
+            <button type="button" id="btnOpenAlunos"><i class="fas fa-users"></i> Meus Alunos</button>
+            <button type="button" id="btnOpenPerfil"><i class="fas fa-user-edit"></i> Editar Perfil</button>
+            <button type="button" id="btnOpenGaleria"><i class="fas fa-images"></i> Minha Galeria</button>
+            <button type="button" id="btnOpenCarteira"><i class="fas fa-piggy-bank" style="color: var(--primary);"></i> Minha Carteira</button>
+            <a href="{{ route('studio.horarios') }}"><i class="fas fa-clock"></i> Meus Horários</a>
+            <form action="{{ route('login.logout') }}" method="POST" style="margin:0;">
+                @csrf
+                <button type="submit" style="color: var(--error);"><i class="fas fa-power-off"></i> Sair</button>
+            </form>
+        </div>
+        <div class="logo">SNR<span>FIT</span> <span style="font-family:'Inter'; font-size:0.65rem; color:var(--text-muted); letter-spacing:1px; text-transform:uppercase;">| Studio</span></div>
     </div>
+    <span style="font-weight: 700; font-size: 0.9rem;"><i class="fas fa-spa" style="color: var(--primary); margin-right: 8px;"></i>{{ $studio->nome }}</span>
 </div>
 
 <div class="container">
@@ -338,7 +426,7 @@
 
     <div class="welcome">
         <h1>Olá, <em>{{ $studio->nome }}</em> 👋</h1>
-        <p>Gerencie seus alunos, planos, horários e recebimentos em um só lugar.</p>
+        <p>Acompanhe seus alunos, a agenda do dia e suas avaliações. Use o menu para gerenciar o resto.</p>
     </div>
 
     {{-- STATS --}}
@@ -349,14 +437,9 @@
             <div class="stat-label">Alunos vinculados</div>
         </div>
         <div class="stat-card">
-            <div class="stat-icon"><i class="fas fa-id-card"></i></div>
-            <div class="stat-value">{{ $planosAtivos }}</div>
-            <div class="stat-label">Planos ativos</div>
-        </div>
-        <div class="stat-card">
-            <div class="stat-icon"><i class="fas fa-dollar-sign"></i></div>
-            <div class="stat-value" style="color: var(--primary);">R$ {{ number_format($faturamentoMes ?? 0, 2, ',', '.') }}</div>
-            <div class="stat-label">Recebido no mês (sua parte)</div>
+            <div class="stat-icon"><i class="fas fa-calendar-day"></i></div>
+            <div class="stat-value">{{ $agendaHoje->count() }}</div>
+            <div class="stat-label">Aulas hoje</div>
         </div>
         <div class="stat-card">
             <div class="stat-icon"><i class="fas fa-star"></i></div>
@@ -394,9 +477,36 @@
         @endif
     </div>
 
-    {{-- PLANOS --}}
-    <h2 class="section-title"><i class="fas fa-id-card"></i> Meus Planos ({{ $planos->count() }}/5)</h2>
+    {{-- AVALIAÇÕES RECENTES --}}
+    <h2 class="section-title"><i class="fas fa-star"></i> Avaliações recentes</h2>
     <div class="panel">
+        @php $avaliacoesRecentes = $studio->avaliacoes->sortByDesc('created_at')->take(5); @endphp
+        @forelse($avaliacoesRecentes as $av)
+            <div style="padding: 14px 0; border-bottom: 1px solid var(--border);">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                    <span style="font-weight: 700; font-size: 0.88rem;"><i class="fas fa-user-circle" style="color: var(--primary);"></i> {{ $av->cliente->nome ?? 'Aluno' }}</span>
+                    <span style="color: #ffc107; font-size: 0.75rem;">
+                        @for ($i = 1; $i <= 5; $i++)
+                            <i class="fa-star {{ $i <= $av->nota ? 'fas' : 'far' }}"></i>
+                        @endfor
+                    </span>
+                </div>
+                @if($av->comentario)
+                    <p style="color: var(--text-muted); font-size: 0.85rem; line-height: 1.5;">{{ $av->comentario }}</p>
+                @endif
+                <div style="color: var(--text-muted); font-size: 0.7rem; margin-top: 4px;">{{ $av->created_at->format('d/m/Y') }}</div>
+            </div>
+        @empty
+            <p class="empty">Nenhuma avaliação ainda. Elas aparecem aqui depois que seus alunos avaliarem o studio.</p>
+        @endforelse
+    </div>
+</div>
+
+{{-- MODAL PLANOS --}}
+<div id="modalPlanos" class="modal-overlay">
+    <div class="modal-content" style="max-width: 720px;">
+        <button type="button" class="modal-close" onclick="document.getElementById('modalPlanos').style.display='none'">&times;</button>
+        <h2 style="color: var(--primary);"><i class="fas fa-id-card"></i> Meus Planos ({{ $planos->count() }}/5)</h2>
         @forelse($planos as $plano)
             <div class="plano-card">
                 <div class="plano-info">
@@ -427,10 +537,13 @@
             </div>
         @endif
     </div>
+</div>
 
-    {{-- ALUNOS --}}
-    <h2 class="section-title"><i class="fas fa-users"></i> Meus Alunos</h2>
-    <div class="panel">
+{{-- MODAL ALUNOS --}}
+<div id="modalAlunos" class="modal-overlay">
+    <div class="modal-content" style="max-width: 760px;">
+        <button type="button" class="modal-close" onclick="document.getElementById('modalAlunos').style.display='none'">&times;</button>
+        <h2 style="color: var(--primary);"><i class="fas fa-users"></i> Meus Alunos</h2>
         @if($alunos->count() > 0)
             <table>
                 <thead>
@@ -470,10 +583,13 @@
             <p class="empty">Nenhum aluno vinculado ainda. Seus alunos aparecem aqui após contratarem um plano.</p>
         @endif
     </div>
+</div>
 
-    {{-- GALERIA --}}
-    <h2 class="section-title"><i class="fas fa-images"></i> Galeria ({{ $studio->fotos->count() }}/5)</h2>
-    <div class="panel">
+{{-- MODAL GALERIA --}}
+<div id="modalGaleria" class="modal-overlay">
+    <div class="modal-content" style="max-width: 720px;">
+        <button type="button" class="modal-close" onclick="document.getElementById('modalGaleria').style.display='none'">&times;</button>
+        <h2 style="color: var(--primary);"><i class="fas fa-images"></i> Minha Galeria ({{ $studio->fotos->count() }}/5)</h2>
         @if($studio->fotos->count() < 5)
             <form method="POST" action="{{ route('studio.fotos.store') }}" enctype="multipart/form-data" style="display:flex; gap:12px; flex-wrap:wrap; align-items:flex-end;">
                 @csrf
@@ -502,10 +618,13 @@
             <p class="empty" style="margin-top:16px;">Nenhuma foto ainda. Fotos ajudam os alunos a conhecerem seu espaço!</p>
         @endif
     </div>
+</div>
 
-    {{-- PERFIL --}}
-    <h2 class="section-title"><i class="fas fa-store"></i> Perfil do Studio</h2>
-    <div class="panel">
+{{-- MODAL PERFIL --}}
+<div id="modalPerfil" class="modal-overlay">
+    <div class="modal-content" style="max-width: 720px;">
+        <button type="button" class="modal-close" onclick="document.getElementById('modalPerfil').style.display='none'">&times;</button>
+        <h2 style="color: var(--primary);"><i class="fas fa-user-edit"></i> Editar Perfil</h2>
         <form method="POST" action="{{ route('studio.update', $studio->id) }}" class="form-grid">
             @csrf
             @method('PUT')
@@ -673,6 +792,40 @@
 </div>
 
 <script>
+    // ── MENU ──────────────────────────────
+    function toggleMenu() {
+        const m = document.getElementById('dropdownMenu');
+        m.style.display = m.style.display === 'block' ? 'none' : 'block';
+    }
+
+    document.getElementById('btnOpenPlanos').onclick = () => {
+        document.getElementById('modalPlanos').style.display = 'block';
+        toggleMenu();
+    };
+    document.getElementById('btnOpenAlunos').onclick = () => {
+        document.getElementById('modalAlunos').style.display = 'block';
+        toggleMenu();
+    };
+    document.getElementById('btnOpenPerfil').onclick = () => {
+        document.getElementById('modalPerfil').style.display = 'block';
+        toggleMenu();
+    };
+    document.getElementById('btnOpenGaleria').onclick = () => {
+        document.getElementById('modalGaleria').style.display = 'block';
+        toggleMenu();
+    };
+    document.getElementById('btnOpenCarteira').onclick = () => {
+        abrirCarteira();
+        toggleMenu();
+    };
+
+    document.addEventListener('click', (e) => {
+        const menu = document.getElementById('dropdownMenu');
+        if (menu.style.display === 'block' && !e.target.closest('.menu-container')) {
+            menu.style.display = 'none';
+        }
+    });
+
     // ── PLANOS ──────────────────────────────
     function abrirEditarPlano(id, nome, valor, duracao, descricao, ativo) {
         const form = document.getElementById('formEditarPlano');
