@@ -51,7 +51,7 @@
             <p style="margin-top:28px;">Se o problema persistir, entre em contato com nosso suporte.</p>
         </div>
         <div class="footer">
-            &copy; {{ date('Y') }} FitSys. Todos os direitos reservados.
+            &copy; {{ date('Y') }} SnrFit. Todos os direitos reservados.
         </div>
     </div>
 </body>

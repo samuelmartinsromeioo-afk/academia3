@@ -21,7 +21,7 @@ class TrainerPayoutMail extends Mailable
 
     public function envelope(): Envelope
     {
-        return new Envelope(subject: 'Resumo de Repasse Mensal - FitSys');
+        return new Envelope(subject: 'Resumo de Repasse Mensal - SnrFit');
     }
 
     public function content(): Content

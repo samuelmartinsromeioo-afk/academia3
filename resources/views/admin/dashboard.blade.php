@@ -335,7 +335,7 @@
 
 {{-- TOP BAR --}}
 <div class="top-bar">
-    <h2><i class="fas fa-crown"></i> FITSYS ADMIN</h2>
+    <h2><i class="fas fa-crown"></i> SNRFIT ADMIN</h2>
     <div class="admin-menu">
         <span style="color: var(--text-muted); font-size: 0.9rem;">
             <i class="fas fa-user-circle"></i> {{ session('admin_nome') ?? 'Admin' }}

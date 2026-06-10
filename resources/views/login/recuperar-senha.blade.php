@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Recuperar Senha | FitSys</title>
+    <title>Recuperar Senha | SnrFit</title>
  
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Syncopate:wght@700&family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
@@ -157,7 +157,7 @@
  
 <header>
     <a href="{{ route('login.create') }}" style="text-decoration:none;">
-        <div class="logo">FIT<span>SYS</span></div>
+        <div class="logo">SNR<span>FIT</span></div>
     </a>
 </header>
  

@@ -255,7 +255,7 @@ class PersonalController extends Controller
                 try {
                     Mail::send('emails.aula-cancelada', $dadosEmail, function ($message) use ($cliente) {
                         $message->to($cliente->email)
-                            ->subject('❌ Sua aula foi cancelada - FitSys');
+                            ->subject('❌ Sua aula foi cancelada - SnrFit');
                     });
                 } catch (\Exception $e) {
                     // Não bloqueia o fluxo

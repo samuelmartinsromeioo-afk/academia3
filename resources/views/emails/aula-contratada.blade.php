@@ -21,7 +21,7 @@
 <body>
     <div class="container">
         <div class="header">
-            <div class="logo">FIT<span>SYS</span></div>
+            <div class="logo">SNR<span>FIT</span></div>
             <div class="badge">🎉 Novo Aluno Contratou sua Academia</div>
         </div>
         <div class="body">
@@ -43,7 +43,7 @@
             <p>Acesse o sistema para visualizar todos os seus alunos.</p>
         </div>
         <div class="footer">
-            © {{ date('Y') }} FitSys · E-mail automático, não responda.
+            © {{ date('Y') }} SnrFit · E-mail automático, não responda.
         </div>
     </div>
 </body>

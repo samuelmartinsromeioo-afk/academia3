@@ -206,7 +206,7 @@ class ClienteController extends Controller
                     'hora_fim'      => $request->horario_fim,
                     'academia_nome' => $academia ? $academia->nome : null,
                 ], function ($message) use ($personal) {
-                    $message->to($personal->email)->subject('📅 Nova aula agendada - FitSys');
+                    $message->to($personal->email)->subject('📅 Nova aula agendada - SnrFit');
                 });
             } catch (\Exception $e) {}
         }
@@ -234,7 +234,7 @@ class ClienteController extends Controller
                     'cliente_cidade' => $cliente->cidade ?? null,
                     'cliente_idade'  => $cliente->idade ?? null,
                 ], function ($message) use ($academia) {
-                    $message->to($academia->email)->subject('🎉 Novo aluno contratou sua academia - FitSys');
+                    $message->to($academia->email)->subject('🎉 Novo aluno contratou sua academia - SnrFit');
                 });
             } catch (\Exception $e) {}
         }
@@ -354,7 +354,7 @@ class ClienteController extends Controller
                     'data_inicio'   => now()->startOfMonth()->format('d/m/Y'),
                     'data_fim'      => now()->endOfMonth()->format('d/m/Y'),
                 ], function ($message) use ($personal) {
-                    $message->to($personal->email)->subject('🎉 Novo pacote contratado - FitSys');
+                    $message->to($personal->email)->subject('🎉 Novo pacote contratado - SnrFit');
                 });
             } catch (\Exception $e) {}
         }
@@ -450,7 +450,7 @@ class ClienteController extends Controller
                     'data_inicio'   => now()->startOfMonth()->format('d/m/Y'),
                     'data_fim'      => now()->endOfMonth()->format('d/m/Y'),
                 ], function ($message) use ($personal) {
-                    $message->to($personal->email)->subject('🎉 Novo pacote contratado - FitSys');
+                    $message->to($personal->email)->subject('🎉 Novo pacote contratado - SnrFit');
                 });
             } catch (\Exception $e) {}
         }

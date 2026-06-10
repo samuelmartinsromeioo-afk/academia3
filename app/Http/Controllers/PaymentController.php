@@ -419,7 +419,7 @@ class PaymentController extends Controller
             'value'             => (float) $validated['valor'],
             'pixAddressKey'     => $personal->chave_pix,
             'pixAddressKeyType' => $this->detectarTipoChavePix($personal->chave_pix),
-            'description'       => 'Saque FitSys',
+            'description'       => 'Saque SnrFit',
         ]);
 
         $data = $res->json();

@@ -47,7 +47,7 @@
             </p>
         </div>
         <div class="footer">
-            &copy; {{ date('Y') }} FitSys. Todos os direitos reservados.
+            &copy; {{ date('Y') }} SnrFit. Todos os direitos reservados.
         </div>
     </div>
 </body>

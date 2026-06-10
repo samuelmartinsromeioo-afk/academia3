@@ -23,7 +23,7 @@ class PaymentSuccessfulMail extends Mailable
 
     public function envelope(): Envelope
     {
-        return new Envelope(subject: 'Pagamento Confirmado - FitSys');
+        return new Envelope(subject: 'Pagamento Confirmado - SnrFit');
     }
 
     public function content(): Content

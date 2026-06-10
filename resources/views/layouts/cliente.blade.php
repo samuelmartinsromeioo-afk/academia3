@@ -2,7 +2,7 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <title>@yield('title', 'RG Power Gym')</title>
+    <title>@yield('title', 'SnrFit')</title>
     <link rel="icon" type="image/png" href="{{ asset('SnrFit.png') }}">
 
     <!-- BELEZA DO SITE -->
@@ -39,7 +39,7 @@
 <nav class="navbar navbar-expand-lg navbar-dark bg-dark mb-4">
     <div class="container">
         <a class="navbar-brand" href="#">
-            <i class="bi bi-car-front-fill me-2"></i>RG Power Gym
+            <i class="bi bi-car-front-fill me-2"></i>SnrFit
         </a>
 
         <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#menu">

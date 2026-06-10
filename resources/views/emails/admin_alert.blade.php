@@ -77,7 +77,7 @@
             </p>
         </div>
         <div class="footer">
-            &copy; {{ date('Y') }} FitSys Admin. Sistema interno.
+            &copy; {{ date('Y') }} SnrFit Admin. Sistema interno.
         </div>
     </div>
 </body>

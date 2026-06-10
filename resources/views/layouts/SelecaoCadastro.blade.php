@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cadastro | Sistema Fitness</title>
+    <title>Cadastro | SnrFit</title>
     <link rel="icon" type="image/png" href="{{ asset('SnrFit.png') }}">
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -201,7 +201,7 @@
 <body>
 
     <header>
-        <div class="logo">FIT<span>SYS</span></div>
+        <div class="logo">SNR<span>FIT</span></div>
     </header>
 
     <main class="selecao-container">

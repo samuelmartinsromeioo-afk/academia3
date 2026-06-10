@@ -78,7 +78,7 @@ class RecuperarSenhaController extends Controller
             'nome'  => $usuario->nome ?? $usuario->email,
         ], function ($message) use ($email) {
             $message->to($email)
-                    ->subject('Recuperação de Senha - FitSys');
+                    ->subject('Recuperação de Senha - SnrFit');
         });
  
         return back()->with('sucesso', 'Se este e-mail estiver cadastrado, você receberá um link em instantes.');

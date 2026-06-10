@@ -80,12 +80,12 @@
 <body>
     <div class="container">
         <div class="header">
-            <div class="logo">FIT<span>SYS</span></div>
+            <div class="logo">SNR<span>FIT</span></div>
         </div>
  
         <div class="body">
             <h1>Olá, {{ $nome }}!</h1>
-            <p>Recebemos uma solicitação para redefinir a senha da sua conta no <strong>FitSys</strong>.</p>
+            <p>Recebemos uma solicitação para redefinir a senha da sua conta no <strong>SnrFit</strong>.</p>
             <p>Clique no botão abaixo para criar uma nova senha. Este link é válido por <strong>60 minutos</strong>.</p>
  
             <a href="{{ $link }}" class="btn">Redefinir Minha Senha</a>
@@ -101,7 +101,7 @@
         </div>
  
         <div class="footer">
-            © {{ date('Y') }} FitSys · Este é um e-mail automático, não responda.
+            © {{ date('Y') }} SnrFit · Este é um e-mail automático, não responda.
         </div>
     </div>
 </body>

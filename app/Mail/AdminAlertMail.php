@@ -24,7 +24,7 @@ class AdminAlertMail extends Mailable
 
     public function envelope(): Envelope
     {
-        return new Envelope(subject: 'Alerta: Falha de Pagamento - FitSys');
+        return new Envelope(subject: 'Alerta: Falha de Pagamento - SnrFit');
     }
 
     public function content(): Content

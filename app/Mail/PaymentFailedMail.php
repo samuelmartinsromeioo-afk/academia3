@@ -22,7 +22,7 @@ class PaymentFailedMail extends Mailable
 
     public function envelope(): Envelope
     {
-        return new Envelope(subject: 'Falha no Pagamento - FitSys');
+        return new Envelope(subject: 'Falha no Pagamento - SnrFit');
     }
 
     public function content(): Content
