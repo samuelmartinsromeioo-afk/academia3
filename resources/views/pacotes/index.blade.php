@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Planos Disponíveis - SNRFIT</title>
+    <link rel="icon" type="image/png" href="{{ asset('SnrFit.png') }}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/all.min.css">
     <style>
         :root { --primary: #d4ff00; --bg: #0a0a0a; --card: #141414; --border: #222; }
