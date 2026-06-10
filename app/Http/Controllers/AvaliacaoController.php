@@ -15,6 +15,10 @@ class AvaliacaoController extends Controller
             return back()->with('error', 'Apenas clientes podem enviar avaliações.');
         }
 
+        if ($request->filled('studio_id')) {
+            return $this->storeStudio($request, $clienteId);
+        }
+
         $personalId = $request->personal_id;
 
         // ✅ VALIDAÇÃO 1: Verificar se é realmente aluno do personal
@@ -50,6 +54,36 @@ class AvaliacaoController extends Controller
             'cliente_id' => $clienteId,
             'personal_id' => $personalId,
             'academia_id' => $request->academia_id,
+            'nota' => $request->nota,
+            'comentario' => $request->comentario,
+        ]);
+
+        return back()->with('sucesso', 'Avaliação enviada com sucesso! Muito obrigado.');
+    }
+
+    private function storeStudio(Request $request, $clienteId)
+    {
+        $studioId = $request->studio_id;
+
+        $realizouAula = Agenda::where('cliente_id', $clienteId)
+            ->where('studio_id', $studioId)
+            ->where('cancelado', false)
+            ->where('tipo_aula', '!=', 'bloqueio')
+            ->where('data', '<', now()->format('Y-m-d'))
+            ->exists();
+
+        if (!$realizouAula) {
+            return back()->with('error', 'Você só pode avaliar após realizar uma aula neste studio.');
+        }
+
+        $request->validate([
+            'nota' => 'required|integer|min:1|max:5',
+            'comentario' => 'nullable|string|max:500'
+        ]);
+
+        Avaliacao::create([
+            'cliente_id' => $clienteId,
+            'studio_id' => $studioId,
             'nota' => $request->nota,
             'comentario' => $request->comentario,
         ]);

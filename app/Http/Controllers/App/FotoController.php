@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Foto;
 use App\Models\Cadastro\Personal;
 use App\Models\Cadastro\Academia as Academia;
+use App\Models\Cadastro\Studio;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 
@@ -71,6 +72,30 @@ class FotoController extends Controller
         return redirect()->back()->with('success', 'Foto adicionada com sucesso!');
     }
 
+    // Upload de foto para studio
+    public function storeStudio(Request $request)
+    {
+        $request->validate([
+            'foto'    => 'required|file|mimes:jpeg,jpg,png,gif,webp,heic,heif|max:10240',
+            'legenda' => 'nullable|string|max:255',
+        ]);
+
+        $studio = Studio::findOrFail(session('studio_id'));
+
+        if ($studio->fotos()->count() >= 5) {
+            return redirect()->back()->with('error', 'Limite de 5 fotos atingido. Remova uma antes de adicionar outra.');
+        }
+
+        $path = $request->file('foto')->store('galeria/studios', 'public');
+
+        $studio->fotos()->create([
+            'path'    => $path,
+            'legenda' => $request->legenda,
+        ]);
+
+        return redirect()->back()->with('success', 'Foto adicionada com sucesso!');
+    }
+
     // Delete de foto — responde JSON para AJAX
     public function destroy($id)
     {
@@ -78,9 +103,11 @@ class FotoController extends Controller
 
         $personalId = session('personal_id');
         $academiaId = session('academia_id');
+        $studioId   = session('studio_id');
 
         $ehDono = ($personalId && $foto->fotavel_type === 'App\\Models\\cadastro\\Personal' && $foto->fotavel_id == $personalId)
-               || ($academiaId && $foto->fotavel_type === 'App\\Models\\cadastro\\academia' && $foto->fotavel_id == $academiaId);
+               || ($academiaId && $foto->fotavel_type === 'App\\Models\\cadastro\\academia' && $foto->fotavel_id == $academiaId)
+               || ($studioId && $foto->fotavel_type === 'App\\Models\\Cadastro\\Studio' && $foto->fotavel_id == $studioId);
 
         if (!$ehDono) {
             return response()->json(['erro' => 'Ação não permitida.'], 403);

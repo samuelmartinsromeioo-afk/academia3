@@ -17,6 +17,7 @@ class SelecaoController extends \App\Http\Controllers\Controller
             'personal' => redirect()->route('form.personal'),
             'cliente'    => redirect()->route('form.cliente'),
             'academia' => redirect()->route('form.academia'),
+            'studio'   => redirect()->route('form.studio'),
             default    => abort(404),
         };
     }

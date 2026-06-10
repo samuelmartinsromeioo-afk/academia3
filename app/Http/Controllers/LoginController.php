@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Cadastro\Academia as ModelsAcademia;
 use App\Models\Cadastro\Cliente as ModelsCliente;
 use App\Models\Cadastro\Personal as ModelsPersonal;
+use App\Models\Cadastro\Studio as ModelsStudio;
 use App\Models\Admin;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -77,14 +78,30 @@ class loginController extends Controller
             return redirect()->route('academia.dashboard');
         }
 
-        // 4. Se não encontrou em nenhum lugar
+        // 4. Tentar STUDIO (busca por email OU cnpj, com verificação de aprovação)
+        $studio = ModelsStudio::where(function ($query) use ($loginInput) {
+            $query->where('email', $loginInput)
+                  ->orWhere('cnpj', $loginInput);
+        })->first();
+
+        if ($studio && Hash::check($senha, $studio->senha)) {
+            if ($studio->status !== 'aprovado') {
+                return back()->withErrors(['login' => '⏳ Seu cadastro ainda não foi aprovado pelo administrador. Aguarde a análise.'])->withInput();
+            }
+
+            session(['studio_id' => $studio->id]);
+            session()->save();
+            return redirect()->route('studio.dashboard');
+        }
+
+        // 5. Se não encontrou em nenhum lugar
         return back()->withErrors(['login' => 'E-mail, CNPJ ou senha incorretos.'])->withInput();
     }
     
     public function logout(Request $request)
     {
         // Limpa todas as possíveis sessões de login
-        session()->forget(['admin_id', 'admin_nome', 'personal_id', 'cliente_id', 'academia_id']);
+        session()->forget(['admin_id', 'admin_nome', 'personal_id', 'cliente_id', 'academia_id', 'studio_id']);
         return redirect()->route('login.index')->with('sucesso', 'Você saiu do sistema.');
     }
 }

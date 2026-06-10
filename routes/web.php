@@ -9,6 +9,7 @@ use App\Http\Controllers\Cadastro\SelecaoController;
 use App\Http\Controllers\Cadastro\ClienteController;
 use App\Http\Controllers\Cadastro\PersonalController;
 use App\Http\Controllers\Cadastro\AcademiaController;
+use App\Http\Controllers\Cadastro\StudioController;
 use App\Http\Controllers\App\MapaController;
 use App\Http\Controllers\Cadastro\PacoteController;
 use App\Http\Controllers\App\FotoController;
@@ -38,7 +39,15 @@ Route::middleware('check.admin')->group(function () {
     Route::post('/admin/personals/{id}/rejeitar', [AdminController::class, 'rejeitar'])->name('admin.personals.rejeitar');
     Route::delete('/admin/personals/{id}', [AdminController::class, 'deletar'])->name('admin.personals.deletar');
     Route::post('/admin/personals/{id}/criar-asaas', [AdminController::class, 'criarSubcontaAsaas'])->name('admin.personals.criar-asaas');
- 
+
+    // Gerenciar Studios
+    Route::get('/admin/studios', [AdminController::class, 'listarStudios'])->name('admin.studios.lista');
+    Route::get('/admin/studios/{id}/detalhes', [AdminController::class, 'verDetalhesStudio'])->name('admin.studios.detalhes');
+    Route::post('/admin/studios/{id}/aprovar', [AdminController::class, 'aprovarStudio'])->name('admin.studios.aprovar');
+    Route::post('/admin/studios/{id}/rejeitar', [AdminController::class, 'rejeitarStudio'])->name('admin.studios.rejeitar');
+    Route::delete('/admin/studios/{id}', [AdminController::class, 'deletarStudio'])->name('admin.studios.deletar');
+    Route::post('/admin/studios/{id}/criar-asaas', [AdminController::class, 'criarSubcontaAsaasStudio'])->name('admin.studios.criar-asaas');
+
     // Relatórios Financeiros
     Route::get('/admin/relatorio-financeiro', [AdminController::class, 'relatorioFinanceiro'])->name('admin.relatorio-financeiro');
  
@@ -92,6 +101,10 @@ Route::post('/cadastro/personal', [PersonalController::class, 'store'])->name('p
 Route::get('/cadastro/academia', [AcademiaController::class, 'create'])->name('form.academia');
 Route::post('/cadastro/academia', [AcademiaController::class, 'store'])->name('academia.store');
 
+// Cadastro - Studio
+Route::get('/cadastro/studio', [StudioController::class, 'create'])->name('form.studio');
+Route::post('/cadastro/studio', [StudioController::class, 'store'])->name('studio.store');
+
 
 // ==========================================
 // RECURSOS GERAIS (Mapas, Fotos e Avaliações)
@@ -101,6 +114,7 @@ Route::get('/mapa/dados', [MapaController::class, 'dados'])->name('mapa.dados');
 
 Route::post('/personal/fotos', [FotoController::class, 'storePersonal'])->name('personal.fotos.store');
 Route::post('/academia/fotos', [FotoController::class, 'storeAcademia'])->name('academia.fotos.store');
+Route::post('/studio/fotos', [FotoController::class, 'storeStudio'])->name('studio.fotos.store');
 Route::delete('/fotos/{id}', [FotoController::class, 'destroy'])->name('fotos.destroy');
 
 Route::post('/avaliar', [AvaliacaoController::class, 'store'])->name('avaliar.store')->middleware('check.login');
@@ -111,6 +125,7 @@ Route::post('/avaliar', [AvaliacaoController::class, 'store'])->name('avaliar.st
 // ==========================================
 Route::middleware('check.login')->group(function () {
     Route::get('/horarios-disponiveis/{personalId}/{dia}', [ClienteController::class, 'buscarHorariosDisponiveis'])->name('horarios.disponiveis');
+    Route::get('/studio-horarios-disponiveis/{studioId}/{dia}', [ClienteController::class, 'buscarHorariosStudio'])->name('studio.horarios.disponiveis');
     Route::post('/pacotes/contratar', [ClienteController::class, 'contratarPacote'])->name('pacotes.contratar');
     Route::get('/pagamento/sucesso', [PaymentController::class, 'pagarSucesso'])->name('payment.success');
     Route::get('/cliente', [ClienteController::class, 'index'])->name('cliente.index');
@@ -119,6 +134,8 @@ Route::middleware('check.login')->group(function () {
     Route::post('/agendar', [ClienteController::class, 'reservarHorario'])->name('agendar.horario');
     Route::get('/academias/explorar', [ClienteController::class, 'listarAcademias'])->name('academias.explorar');
     Route::get('/academias/{id}/detalhes', [ClienteController::class, 'detalhesAcademia'])->name('academias.detalhes');
+    Route::get('/studios/explorar', [ClienteController::class, 'listarStudios'])->name('studios.explorar');
+    Route::get('/studios/{id}/detalhes', [ClienteController::class, 'detalheStudio'])->name('studios.detalhes');
     Route::post('/academias/contratar', [ClienteController::class, 'contratarAcademia'])->name('academias.contratar');
     Route::get('/pacotes/personal/{id}', [PacoteController::class, 'show'])->name('pacotes.show');
     Route::get('/cliente/minhas-fichas-solicitadas', [ClienteController::class, 'minhasSolicitacoesFicha'])->name('cliente.solicitacoes-ficha');
@@ -181,6 +198,34 @@ Route::middleware('check.login')->group(function () {
     Route::delete('/academia/filiais/{id}', [AcademiaController::class, 'destroyFilial'])->name('academia.filiais.destroy');
 });
 
+
+// ==========================================
+// ÁREA DO STUDIO
+// ==========================================
+Route::middleware('check.login')->group(function () {
+    Route::get('/studio/dashboard', [StudioController::class, 'dashboard'])->name('studio.dashboard');
+    Route::put('/studio/update/{id}', [StudioController::class, 'update'])->name('studio.update');
+
+    // Gestão de Alunos do Studio
+    Route::get('/studio/alunos', [StudioController::class, 'listarAlunos'])->name('studio.alunos');
+    Route::delete('/studio/alunos/{id}/desvincular', [StudioController::class, 'desvincularAluno'])->name('studio.alunos.desvincular');
+
+    // Gestão de Planos do Studio
+    Route::get('/studio/planos', [StudioController::class, 'listarPlanos'])->name('studio.planos');
+    Route::post('/studio/planos', [StudioController::class, 'storePlano'])->name('studio.planos.store');
+    Route::put('/studio/planos/{id}', [StudioController::class, 'updatePlano'])->name('studio.planos.update');
+    Route::delete('/studio/planos/{id}', [StudioController::class, 'destroyPlano'])->name('studio.planos.destroy');
+
+    // Horários de funcionamento e bloqueios de slots
+    Route::get('/studio/horarios', [StudioController::class, 'horarios'])->name('studio.horarios');
+    Route::post('/studio/horarios', [StudioController::class, 'storeHorario'])->name('studio.horarios.store');
+    Route::delete('/studio/horarios/{id}', [StudioController::class, 'destroyHorario'])->name('studio.horarios.destroy');
+    Route::post('/studio/bloquear-slot', [StudioController::class, 'bloquearSlot'])->name('studio.bloquear-slot');
+    Route::delete('/studio/bloqueios/{id}', [StudioController::class, 'desbloquearSlot'])->name('studio.desbloquear-slot');
+
+    // Agenda do dia
+    Route::get('/studio/agenda/{data}', [StudioController::class, 'getAgendaDia'])->name('studio.getAgenda');
+});
 
 // ==========================================
 // PACOTES

@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Cadastro\Filial;
 use App\Models\Cadastro\Personal;
 use App\Models\Cadastro\Academia as Academia;
+use App\Models\Cadastro\Studio;
 
 class MapaController extends Controller
 {
@@ -69,10 +70,27 @@ class MapaController extends Controller
                 'longitude'     => (float) $f->longitude,
             ]);
 
+        $studios = Studio::whereNotNull('latitude')
+            ->whereNotNull('longitude')
+            ->where('status', 'aprovado')
+            ->get(['id', 'nome', 'cidade', 'estado', 'endereco', 'valor_aula', 'modalidades', 'latitude', 'longitude'])
+            ->map(fn($s) => [
+                'tipo'      => 'studio',
+                'id'        => $s->id,
+                'nome'      => $s->nome,
+                'cidade'    => $s->cidade,
+                'estado'    => $s->estado,
+                'endereco'  => $s->endereco ?? "$s->cidade - $s->estado",
+                'info'      => 'Aula: R$ ' . number_format($s->valor_aula ?? 0, 2, ',', '.') . ($s->modalidades ? ' · ' . $s->modalidades : ''),
+                'latitude'  => (float) $s->latitude,
+                'longitude' => (float) $s->longitude,
+            ]);
+
         return response()->json([
             'academias' => $academias,
             'personals' => $personals,
             'filiais'   => $filiais,
+            'studios'   => $studios,
         ]);
     }
 }

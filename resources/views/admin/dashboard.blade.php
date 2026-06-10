@@ -482,6 +482,27 @@
         >
             <i class="fas fa-list"></i> Ver Todos os Personals
         </a>
+        <a href="{{ route('admin.studios.lista') }}" style="
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: transparent;
+            border: 1px solid var(--primary);
+            color: var(--primary);
+            padding: 12px 24px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 700;
+            text-transform: uppercase;
+            font-size: 0.8rem;
+            transition: 0.2s;
+            margin-left: 12px;
+        "
+        onmouseover="this.style.background='rgba(212, 255, 0, 0.1)'"
+        onmouseout="this.style.background='transparent'"
+        >
+            <i class="fas fa-spa"></i> Ver Studios
+        </a>
     </div>
 </div>
 

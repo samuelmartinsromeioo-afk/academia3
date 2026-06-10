@@ -15,6 +15,8 @@ class Payment extends Model
         'membership_id',
         'academia_id',
         'plano_id',
+        'studio_id',
+        'studio_plano_id',
         'amount_total',
         'company_fee',
         'trainer_amount',
@@ -61,6 +63,16 @@ class Payment extends Model
     public function plano()
     {
         return $this->belongsTo(\App\Models\Cadastro\Plano::class, 'plano_id');
+    }
+
+    public function studio()
+    {
+        return $this->belongsTo(\App\Models\Cadastro\Studio::class, 'studio_id');
+    }
+
+    public function studioPlano()
+    {
+        return $this->belongsTo(\App\Models\Cadastro\StudioPlano::class, 'studio_plano_id');
     }
 
     public function confirmation()

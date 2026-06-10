@@ -40,6 +40,9 @@ class Cliente extends Model
         'foto',
         'plano',
         'plano_ativo',
+        'studio_id',
+        'studio_plano_id',
+        'studio_plano_ativo',
     ];
     protected $casts = [
         'aceita_termos' => 'boolean',
@@ -48,6 +51,14 @@ class Cliente extends Model
 
         public function personal() {
             return $this->belongsTo(\App\Models\Cadastro\Personal::class, 'personal_id');
+        }
+
+        public function studio() {
+            return $this->belongsTo(\App\Models\Cadastro\Studio::class, 'studio_id');
+        }
+
+        public function studioPlano() {
+            return $this->belongsTo(\App\Models\Cadastro\StudioPlano::class, 'studio_plano_id');
         }
     use HasFactory;
 }

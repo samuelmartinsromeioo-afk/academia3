@@ -16,6 +16,7 @@ class Agenda extends Model
     protected $fillable = [
         'personal_id',
         'academia_id',
+        'studio_id',
         'cliente_id',
         'data',
         'hora_inicio',
@@ -50,6 +51,11 @@ class Agenda extends Model
     public function academia()
     {
         return $this->belongsTo(\App\Models\Cadastro\Academia::class, 'academia_id');
+    }
+
+    public function studio()
+    {
+        return $this->belongsTo(\App\Models\Cadastro\Studio::class, 'studio_id');
     }
 
     public function cliente()

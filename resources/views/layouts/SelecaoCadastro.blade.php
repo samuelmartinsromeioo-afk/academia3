@@ -249,6 +249,19 @@
                     </div>
                 </div>
             </a>
+
+            <a href="{{ route('cadastro.ir', ['tipo' => 'studio']) }}" class="card-link">
+                <div class="card">
+                    <div class="icon-wrapper">
+                        <i class="fa-solid fa-spa"></i>
+                    </div>
+                    <h3>Studio Fitness</h3>
+                    <p>Gerencie planos, horários com vagas, alunos e receba pagamentos online direto na sua conta.</p>
+                    <div class="card-footer">
+                        <span class="go-btn">Cadastrar studio <i class="fa-solid fa-arrow-right"></i></span>
+                    </div>
+                </div>
+            </a>
         </div>
     </main>
 

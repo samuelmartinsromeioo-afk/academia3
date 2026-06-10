@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Controllers\Controller;
 use App\Models\Cadastro\Personal;
 use App\Models\Cadastro\Cliente;
+use App\Models\Cadastro\Studio;
 use App\Models\Admin;
 use App\Models\Agenda;
 use Illuminate\Http\Request;
@@ -362,6 +363,189 @@ class AdminController extends Controller
 
         } catch (\Exception $e) {
             Log::error("Admin: exceção ao criar subconta Asaas", ['personal_id' => $personal->id, 'error' => $e->getMessage()]);
+            return redirect()->back()->with('error', "Erro ao criar conta Asaas: {$e->getMessage()}");
+        }
+    }
+
+    // ==========================================
+    // GESTÃO DE STUDIOS
+    // ==========================================
+
+    public function listarStudios(Request $request)
+    {
+        if (!session('admin_id')) {
+            return redirect()->route('admin.login');
+        }
+
+        $filtro = $request->query('status', 'todos');
+        $busca = $request->query('busca', '');
+
+        $query = Studio::query();
+
+        if ($filtro !== 'todos') {
+            $query->where('status', $filtro);
+        }
+
+        if ($busca) {
+            $query->where(function ($q) use ($busca) {
+                $q->where('nome', 'LIKE', "%$busca%")
+                  ->orWhere('email', 'LIKE', "%$busca%")
+                  ->orWhere('cnpj', 'LIKE', "%$busca%");
+            });
+        }
+
+        $studios = $query->orderBy('nome')->get();
+
+        return view('admin.studios.lista', [
+            'studios' => $studios,
+            'filtro' => $filtro,
+            'busca' => $busca,
+        ]);
+    }
+
+    public function verDetalhesStudio($id)
+    {
+        if (!session('admin_id')) {
+            return redirect()->route('admin.login');
+        }
+
+        $studio = Studio::withCount('clientes')->findOrFail($id);
+
+        $faturamentoMes = \App\Models\Payment::where('studio_id', $id)
+            ->where('status', 'paid')
+            ->whereMonth('paid_at', now()->month)
+            ->whereYear('paid_at', now()->year)
+            ->sum('amount_total');
+
+        return view('admin.studios.detalhes', [
+            'studio' => $studio,
+            'faturamentoMes' => $faturamentoMes,
+        ]);
+    }
+
+    public function aprovarStudio($id)
+    {
+        if (!session('admin_id')) {
+            return redirect()->route('admin.login');
+        }
+
+        $studio = Studio::findOrFail($id);
+        $studio->update([
+            'status' => 'aprovado',
+            'data_aprovacao' => now(),
+            'motivo_rejeicao' => null,
+        ]);
+
+        return redirect()->back()->with('success', "Studio '{$studio->nome}' aprovado com sucesso! ✅");
+    }
+
+    public function rejeitarStudio($id, Request $request)
+    {
+        if (!session('admin_id')) {
+            return redirect()->route('admin.login');
+        }
+
+        $request->validate([
+            'motivo' => 'required|string|min:10|max:500'
+        ], [
+            'motivo.required' => 'Você deve informar o motivo da rejeição',
+            'motivo.min' => 'O motivo deve ter pelo menos 10 caracteres',
+        ]);
+
+        $studio = Studio::findOrFail($id);
+        $studio->update([
+            'status' => 'rejeitado',
+            'motivo_rejeicao' => $request->motivo,
+        ]);
+
+        return redirect()->back()->with('success', "Studio '{$studio->nome}' rejeitado.");
+    }
+
+    public function deletarStudio($id)
+    {
+        if (!session('admin_id')) {
+            return redirect()->route('admin.login');
+        }
+
+        $studio = Studio::findOrFail($id);
+        $nome = $studio->nome;
+
+        Agenda::where('studio_id', $id)->delete();
+        Cliente::where('studio_id', $id)->update([
+            'studio_id' => null,
+            'studio_plano_id' => null,
+            'studio_plano_ativo' => false,
+        ]);
+        $studio->fotos()->delete();
+        $studio->delete();
+
+        Log::info("Studio '{$nome}' (ID: {$id}) foi deletado pelo admin");
+
+        return redirect()->route('admin.studios.lista')
+            ->with('success', "Studio '{$nome}' e todos seus dados foram deletados permanentemente.");
+    }
+
+    // ✅ CRIAR SUBCONTA ASAAS PARA STUDIO (PESSOA JURÍDICA)
+    public function criarSubcontaAsaasStudio($id)
+    {
+        if (!session('admin_id')) {
+            return redirect()->route('admin.login');
+        }
+
+        $studio = Studio::findOrFail($id);
+
+        if ($studio->asaas_wallet_id) {
+            return redirect()->back()->with('success', "Studio '{$studio->nome}' já possui conta Asaas configurada.");
+        }
+
+        try {
+            // Subconta PJ: a Asaas exige companyType e incomeValue (e dispensa birthDate)
+            $payload = [
+                'name'          => $studio->nome,
+                'email'         => $studio->email,
+                'cpfCnpj'       => preg_replace('/\D/', '', $studio->cnpj),
+                'personType'    => 'JURIDICA',
+                'companyType'   => 'LIMITED',
+                'incomeValue'   => 10000,
+                'address'       => $studio->rua,
+                'addressNumber' => 'S/N',
+                'province'      => $studio->bairro,
+                'postalCode'    => preg_replace('/\D/', '', $studio->cep),
+                'complement'    => $studio->complemento,
+            ];
+
+            if ($studio->whatsapp) {
+                $payload['mobilePhone'] = preg_replace('/\D/', '', $studio->whatsapp);
+            }
+
+            $res = Http::withHeaders([
+                'access_token' => config('services.asaas.key'),
+                'Content-Type' => 'application/json',
+            ])->post(config('services.asaas.url') . '/accounts', $payload);
+
+            $data = $res->json();
+
+            if ($res->successful() && !empty($data['walletId'])) {
+                $studio->update([
+                    'asaas_account_id' => $data['id']       ?? null,
+                    'asaas_wallet_id'  => $data['walletId'] ?? null,
+                    'asaas_api_key'    => $data['apiKey']   ?? null,
+                ]);
+
+                Log::info("Admin: subconta Asaas criada para studio", [
+                    'studio_id' => $studio->id,
+                    'wallet_id' => $data['walletId'],
+                ]);
+
+                return redirect()->back()->with('success', "Conta Asaas criada com sucesso para '{$studio->nome}'! Split de pagamentos ativado.");
+            }
+
+            $errMsg = $data['errors'][0]['description'] ?? 'Resposta inesperada da Asaas.';
+            Log::warning("Admin: falha ao criar subconta Asaas do studio", ['studio_id' => $studio->id, 'response' => $data]);
+            return redirect()->back()->with('error', "Falha ao criar conta Asaas: {$errMsg}");
+
+        } catch (\Exception $e) {
+            Log::error("Admin: exceção ao criar subconta Asaas do studio", ['studio_id' => $studio->id, 'error' => $e->getMessage()]);
             return redirect()->back()->with('error', "Erro ao criar conta Asaas: {$e->getMessage()}");
         }
     }

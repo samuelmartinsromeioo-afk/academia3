@@ -21,6 +21,7 @@
             --filial-color: #ff9500;
             --filial-contorno-color: #00c8ff;
             --filial-pratique-color: #ff4444;
+            --studio-color: #b14cff;
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -133,6 +134,12 @@
             color: var(--personal-color);
         }
 
+        .filter-tab.active-studio {
+            background: rgba(177, 76, 255, 0.12);
+            border-color: var(--studio-color);
+            color: var(--studio-color);
+        }
+
         .filter-tab.active-todos {
             background: rgba(255, 255, 255, 0.05);
             border-color: rgba(255, 255, 255, 0.3);
@@ -201,6 +208,7 @@
         .pin-icon.filial-contorno  { background: rgba(0,200,255,0.12);   color: var(--filial-contorno-color); }
         .pin-icon.filial-pratique  { background: rgba(255,68,68,0.12);   color: var(--filial-pratique-color); }
         .pin-icon.filial           { background: rgba(255,149,0,0.12);   color: var(--filial-color); }
+        .pin-icon.studio           { background: rgba(177,76,255,0.12);  color: var(--studio-color); }
 
         .pin-info h4 { font-size: 0.85rem; font-weight: 700; margin-bottom: 3px; }
         .pin-info p { font-size: 0.72rem; color: var(--text-muted); margin: 0; }
@@ -218,6 +226,7 @@
         .badge-filial-contorno { background: rgba(0,200,255,0.1);  color: var(--filial-contorno-color); }
         .badge-filial-pratique { background: rgba(255,68,68,0.1);  color: var(--filial-pratique-color); }
         .badge-filial          { background: rgba(255,149,0,0.1);  color: var(--filial-color); }
+        .badge-studio          { background: rgba(177,76,255,0.1); color: var(--studio-color); }
 
         .empty-state {
             text-align: center;
@@ -397,6 +406,9 @@
                 <button class="filter-tab" onclick="filtrar('filial', this)">
                     <i class="fas fa-map-marker-alt"></i> Filiais
                 </button>
+                <button class="filter-tab" onclick="filtrar('studio', this)">
+                    <i class="fas fa-spa"></i> Studios
+                </button>
                 <button class="filter-tab" id="btnTabFichas" onclick="mostrarMinhasFichas(this)" style="border-color:rgba(212,255,0,0.4); color:var(--primary); flex:1 1 100%;">
                     <i class="fas fa-clipboard-list"></i> Minhas Fichas Solicitadas
                 </button>
@@ -433,6 +445,10 @@
                 <div class="legend-dot" style="background: var(--filial-color);"></div>
                 <span>Filial (outras)</span>
             </div>
+            <div class="legend-item">
+                <div class="legend-dot" style="background: var(--studio-color);"></div>
+                <span>Studio</span>
+            </div>
         </div>
         <div class="loading-overlay" id="loadingOverlay">
             <div class="loading-spinner"></div>
@@ -467,6 +483,7 @@
         if (pin.tipo === 'academia') return '#d4ff00';
         if (pin.tipo === 'personal') return '#1a5fd4';
         if (pin.tipo === 'filial')   return getFilialCor(pin);
+        if (pin.tipo === 'studio')   return '#b14cff';
         return '#ffffff';
     }
 
@@ -480,7 +497,7 @@
     function criarIcone(pin) {
         const tipo  = typeof pin === 'string' ? pin : pin.tipo;
         const cor   = typeof pin === 'string' ? (pin === 'academia' ? '#d4ff00' : pin === 'personal' ? '#1a5fd4' : '#ff9500') : getPinCor(pin);
-        const icones = { academia: '🏋️', personal: '👤', filial: '📍' };
+        const icones = { academia: '🏋️', personal: '👤', filial: '📍', studio: '🧘' };
         const icone = icones[tipo] || '📌';
         return L.divIcon({
             className: '',
@@ -519,12 +536,13 @@
             return;
         }
 
-        const tipoIcon = { academia: 'dumbbell', personal: 'user', filial: 'map-marker-alt' };
+        const tipoIcon = { academia: 'dumbbell', personal: 'user', filial: 'map-marker-alt', studio: 'spa' };
 
         lista.innerHTML = pins.map((pin, i) => {
             const cssClass  = pin.tipo === 'filial' ? getFilialClass(pin) : pin.tipo;
             const badgeText = pin.tipo === 'academia' ? 'Academia'
                             : pin.tipo === 'personal' ? 'Personal'
+                            : pin.tipo === 'studio' ? 'Studio'
                             : pin.info;
             return `
             <div class="pin-card" id="card-${i}" onclick="focarPin(${pin.latitude}, ${pin.longitude}, ${i})">
@@ -588,6 +606,7 @@
             const pinColor   = getPinCor(pin);
             const badgeLabel = pin.tipo === 'academia' ? '🏋️ Academia'
                              : pin.tipo === 'personal' ? '👤 Personal'
+                             : pin.tipo === 'studio' ? '🧘 Studio'
                              : `📍 ${pin.info}`;
 
             const marker = L.marker([pin.latitude, pin.longitude], { icon: criarIcone(pin) })
@@ -632,6 +651,7 @@
                 ...data.academias,
                 ...data.personals,
                 ...(data.filiais || []),
+                ...(data.studios || []),
             ];
 
             // Popula o select de cidades com valores únicos, ordenados

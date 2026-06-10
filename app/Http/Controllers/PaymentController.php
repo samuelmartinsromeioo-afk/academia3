@@ -3,8 +3,11 @@
 namespace App\Http\Controllers;
 
 use App\Mail\PaymentSuccessfulMail;
+use App\Models\Agenda;
 use App\Models\Cadastro\Pacote;
 use App\Models\Cadastro\Personal;
+use App\Models\Cadastro\Studio;
+use App\Models\Cadastro\StudioPlano;
 use App\Models\MembershipConfirmation;
 use App\Models\Payment;
 use App\Models\TrainerPayout;
@@ -227,6 +230,56 @@ class PaymentController extends Controller
                     }
                 } catch (\Exception $e) {
                     Log::error('processarPagamentoConfirmado: academia falhou', [
+                        'error'   => $e->getMessage(),
+                        'booking' => $booking,
+                    ]);
+                }
+            }
+
+            if (($booking['tipo'] ?? '') === 'studio_plano') {
+                try {
+                    $cliente = \App\Models\Cadastro\Cliente::find($booking['cliente_id']);
+                    if ($cliente) {
+                        $cliente->update([
+                            'studio_id'          => $booking['studio_id'],
+                            'studio_plano_id'    => $booking['studio_plano_id'],
+                            'studio_plano_ativo' => true,
+                        ]);
+                    }
+                } catch (\Exception $e) {
+                    Log::error('processarPagamentoConfirmado: studio_plano falhou', [
+                        'error'   => $e->getMessage(),
+                        'booking' => $booking,
+                    ]);
+                }
+            }
+
+            if (($booking['tipo'] ?? '') === 'studio_aula') {
+                try {
+                    $studio = Studio::find($booking['studio_id']);
+                    $slot   = $studio ? $this->slotStudioDisponivel($studio, $booking['data'], $booking['hora_inicio']) : null;
+
+                    if ($slot) {
+                        Agenda::create([
+                            'studio_id'   => $booking['studio_id'],
+                            'cliente_id'  => $booking['cliente_id'],
+                            'data'        => $booking['data'],
+                            'hora_inicio' => $booking['hora_inicio'],
+                            'hora_fim'    => $booking['hora_fim'],
+                            'tipo_aula'   => 'avulsa',
+                            'descricao'   => 'Aula avulsa no studio',
+                            'cancelado'   => false,
+                            'status'      => 0,
+                        ]);
+                    } else {
+                        Log::critical('processarPagamentoConfirmado: slot do studio lotou entre cobrança e confirmação — ESTORNO MANUAL NECESSÁRIO', [
+                            'payment_id'       => $payment->id,
+                            'asaas_payment_id' => $payment->stripe_payment_intent_id,
+                            'booking'          => $booking,
+                        ]);
+                    }
+                } catch (\Exception $e) {
+                    Log::error('processarPagamentoConfirmado: studio_aula falhou', [
                         'error'   => $e->getMessage(),
                         'booking' => $booking,
                     ]);
@@ -478,34 +531,36 @@ class PaymentController extends Controller
             'next_billing_date' => now()->addDays(30)->toDateString(),
         ]);
 
-        $pacote            = Pacote::find($payment->membership_id);
-        $scheduledSessions = $pacote ? ($pacote->frequencia * 4) : 0;
+        if ($payment->trainer_id) {
+            $pacote            = Pacote::find($payment->membership_id);
+            $scheduledSessions = $pacote ? ($pacote->frequencia * 4) : 0;
 
-        MembershipConfirmation::updateOrCreate(
-            [
-                'user_id'       => $payment->user_id,
-                'trainer_id'    => $payment->trainer_id,
-                'membership_id' => $payment->membership_id,
-            ],
-            [
-                'payment_id'         => $payment->id,
-                'confirmed_at'       => now(),
-                'scheduled_sessions' => $scheduledSessions,
-            ]
-        );
+            MembershipConfirmation::updateOrCreate(
+                [
+                    'user_id'       => $payment->user_id,
+                    'trainer_id'    => $payment->trainer_id,
+                    'membership_id' => $payment->membership_id,
+                ],
+                [
+                    'payment_id'         => $payment->id,
+                    'confirmed_at'       => now(),
+                    'scheduled_sessions' => $scheduledSessions,
+                ]
+            );
 
-        \App\Models\Cadastro\Cliente::where('id', $payment->user_id)->update([
-            'plano'       => $payment->membership_id,
-            'plano_ativo' => true,
-        ]);
+            \App\Models\Cadastro\Cliente::where('id', $payment->user_id)->update([
+                'plano'       => $payment->membership_id,
+                'plano_ativo' => true,
+            ]);
 
-        $personal = Personal::find($payment->trainer_id);
+            $personal = Personal::find($payment->trainer_id);
 
-        TrainerPayout::create([
-            'trainer_id' => $payment->trainer_id,
-            'amount'     => $payment->trainer_amount,
-            'status'     => $personal?->asaas_wallet_id ? 'in_wallet' : 'pending',
-        ]);
+            TrainerPayout::create([
+                'trainer_id' => $payment->trainer_id,
+                'amount'     => $payment->trainer_amount,
+                'status'     => $personal?->asaas_wallet_id ? 'in_wallet' : 'pending',
+            ]);
+        }
 
         $cliente  = \App\Models\Cadastro\Cliente::find($payment->user_id);
         $personal = Personal::find($payment->trainer_id);
@@ -953,6 +1008,541 @@ class PaymentController extends Controller
             Log::error('Asaas cartão academia: exception', ['error' => $e->getMessage()]);
             return response()->json(['error' => 'Erro interno. Tente novamente.'], 500);
         }
+    }
+
+    // ─────────────────────────────────────────────
+    // STUDIO — HELPERS
+    // ─────────────────────────────────────────────
+    private function slotStudioDisponivel(Studio $studio, string $data, string $horaInicio): ?array
+    {
+        foreach ($studio->slotsDisponiveis($data) as $slot) {
+            if ($slot['inicio'] === substr($horaInicio, 0, 5)) {
+                return $slot['vagas'] > 0 ? $slot : null;
+            }
+        }
+
+        return null;
+    }
+
+    private function validarStudioPlano(int $studioId, int $planoId): array
+    {
+        $studio = Studio::where('id', $studioId)->where('status', 'aprovado')->first();
+        if (!$studio) {
+            abort(response()->json(['error' => 'Studio não encontrado.'], 404));
+        }
+
+        $plano = StudioPlano::find($planoId);
+        if (!$plano || (int) $plano->studio_id !== (int) $studioId || !$plano->ativo) {
+            abort(response()->json(['error' => 'Plano inválido para este studio.'], 422));
+        }
+
+        return [$studio, $plano];
+    }
+
+    private function splitStudio(Studio $studio, float $amount): ?array
+    {
+        if ($studio->asaas_wallet_id) {
+            return [['walletId' => $studio->asaas_wallet_id, 'percentualValue' => 90]];
+        }
+
+        Log::warning('Asaas: split não aplicado — studio sem walletId', ['studio_id' => $studio->id]);
+        return null;
+    }
+
+    // ─────────────────────────────────────────────
+    // CRIAR PAGAMENTO PIX — PLANO DE STUDIO
+    // ─────────────────────────────────────────────
+    public function criarPagamentoStudioPlano(Request $request)
+    {
+        $clienteId = session('cliente_id');
+        if (!$clienteId) {
+            return response()->json(['error' => 'Não autenticado.'], 401);
+        }
+
+        $validated = $request->validate([
+            'studio_id' => 'required|integer|exists:studios,id',
+            'plano_id'  => 'required|integer|exists:studio_planos,id',
+        ]);
+
+        $cliente = \App\Models\Cadastro\Cliente::findOrFail($clienteId);
+        [$studio, $plano] = $this->validarStudioPlano($validated['studio_id'], $validated['plano_id']);
+
+        $amount      = (float) $plano->valor;
+        $description = "Plano {$plano->nome} — {$studio->nome}";
+
+        try {
+            $asaasCustomerId = $this->obterOuCriarClienteAsaas($cliente);
+
+            $pixPayload = [
+                'customer'          => $asaasCustomerId,
+                'billingType'       => 'PIX',
+                'value'             => $amount,
+                'dueDate'           => now()->addDay()->format('Y-m-d'),
+                'description'       => $description,
+                'externalReference' => 'stu_' . $clienteId . '_' . $studio->id . '_' . time(),
+            ];
+
+            if ($split = $this->splitStudio($studio, $amount)) {
+                $pixPayload['split'] = $split;
+            }
+
+            $paymentRes = Http::withHeaders($this->asaasHeaders())
+                ->post($this->asaas() . '/payments', $pixPayload);
+
+            if ($paymentRes->failed()) {
+                Log::error('Asaas studio plano: falha ao criar pagamento', ['body' => $paymentRes->json()]);
+                return response()->json(['error' => 'Falha ao gerar cobrança. Tente novamente.'], 500);
+            }
+
+            $asaasPaymentId = $paymentRes->json()['id'];
+
+            $qrRes  = Http::withHeaders($this->asaasHeaders())
+                ->get($this->asaas() . "/payments/{$asaasPaymentId}/pixQrCode");
+            $qrData = $qrRes->json();
+
+            $valores = $this->calculateSplit($amount);
+            $payment = Payment::create([
+                'user_id'                  => $clienteId,
+                'trainer_id'               => null,
+                'membership_id'            => null,
+                'studio_id'                => $studio->id,
+                'studio_plano_id'          => $plano->id,
+                'amount_total'             => $valores['amount_total'],
+                'company_fee'              => $valores['company_fee'],
+                'trainer_amount'           => $valores['trainer_amount'],
+                'stripe_payment_intent_id' => $asaasPaymentId,
+                'status'                   => 'pending',
+                'payment_method'           => 'pix',
+                'idempotency_key'          => 'stu_' . $asaasPaymentId,
+                'booking_data'             => json_encode([
+                    'tipo'            => 'studio_plano',
+                    'studio_id'       => $studio->id,
+                    'studio_plano_id' => $plano->id,
+                    'cliente_id'      => $clienteId,
+                ]),
+            ]);
+
+            Log::info('Asaas studio plano: pagamento Pix criado', [
+                'payment_id'       => $payment->id,
+                'asaas_payment_id' => $asaasPaymentId,
+                'studio_id'        => $studio->id,
+                'cliente_id'       => $clienteId,
+            ]);
+
+            return response()->json([
+                'paymentId'      => $payment->id,
+                'asaasPaymentId' => $asaasPaymentId,
+                'pixPayload'     => $qrData['payload']      ?? '',
+                'pixQrCode'      => $qrData['encodedImage'] ?? '',
+                'amount'         => $amount,
+            ]);
+
+        } catch (\Illuminate\Http\Exceptions\HttpResponseException $e) {
+            throw $e;
+        } catch (\Exception $e) {
+            Log::error('Asaas studio plano: exception', ['error' => $e->getMessage()]);
+            return response()->json(['error' => 'Erro interno. Tente novamente.'], 500);
+        }
+    }
+
+    // ─────────────────────────────────────────────
+    // CRIAR PAGAMENTO PIX — AULA AVULSA DE STUDIO
+    // ─────────────────────────────────────────────
+    public function criarPagamentoAulaStudio(Request $request)
+    {
+        $clienteId = session('cliente_id');
+        if (!$clienteId) {
+            return response()->json(['error' => 'Não autenticado.'], 401);
+        }
+
+        $validated = $request->validate([
+            'studio_id'   => 'required|integer|exists:studios,id',
+            'data'        => 'required|date_format:Y-m-d|after_or_equal:today',
+            'hora_inicio' => 'required|date_format:H:i',
+            'hora_fim'    => 'required|date_format:H:i|after:hora_inicio',
+        ]);
+
+        $cliente = \App\Models\Cadastro\Cliente::findOrFail($clienteId);
+        $studio  = Studio::where('id', $validated['studio_id'])->where('status', 'aprovado')->first();
+
+        if (!$studio) {
+            return response()->json(['error' => 'Studio não encontrado.'], 404);
+        }
+
+        if (!$this->slotStudioDisponivel($studio, $validated['data'], $validated['hora_inicio'])) {
+            return response()->json(['error' => 'Este horário não está mais disponível. Escolha outro.'], 422);
+        }
+
+        $amount = (float) ($studio->valor_aula ?? 0);
+        if ($amount <= 0) {
+            return response()->json(['error' => 'Este studio não definiu o valor da aula avulsa.'], 422);
+        }
+
+        $description = "Aula avulsa {$validated['hora_inicio']} — {$studio->nome}";
+
+        try {
+            $asaasCustomerId = $this->obterOuCriarClienteAsaas($cliente);
+
+            $pixPayload = [
+                'customer'          => $asaasCustomerId,
+                'billingType'       => 'PIX',
+                'value'             => $amount,
+                'dueDate'           => now()->addDay()->format('Y-m-d'),
+                'description'       => $description,
+                'externalReference' => 'stu_aula_' . $clienteId . '_' . $studio->id . '_' . time(),
+            ];
+
+            if ($split = $this->splitStudio($studio, $amount)) {
+                $pixPayload['split'] = $split;
+            }
+
+            $paymentRes = Http::withHeaders($this->asaasHeaders())
+                ->post($this->asaas() . '/payments', $pixPayload);
+
+            if ($paymentRes->failed()) {
+                Log::error('Asaas studio aula: falha ao criar pagamento', ['body' => $paymentRes->json()]);
+                return response()->json(['error' => 'Falha ao gerar cobrança. Tente novamente.'], 500);
+            }
+
+            $asaasPaymentId = $paymentRes->json()['id'];
+
+            $qrRes  = Http::withHeaders($this->asaasHeaders())
+                ->get($this->asaas() . "/payments/{$asaasPaymentId}/pixQrCode");
+            $qrData = $qrRes->json();
+
+            $valores = $this->calculateSplit($amount);
+            $payment = Payment::create([
+                'user_id'                  => $clienteId,
+                'trainer_id'               => null,
+                'membership_id'            => null,
+                'studio_id'                => $studio->id,
+                'amount_total'             => $valores['amount_total'],
+                'company_fee'              => $valores['company_fee'],
+                'trainer_amount'           => $valores['trainer_amount'],
+                'stripe_payment_intent_id' => $asaasPaymentId,
+                'status'                   => 'pending',
+                'payment_method'           => 'pix',
+                'idempotency_key'          => 'stu_aula_' . $asaasPaymentId,
+                'booking_data'             => json_encode([
+                    'tipo'        => 'studio_aula',
+                    'studio_id'   => $studio->id,
+                    'cliente_id'  => $clienteId,
+                    'data'        => $validated['data'],
+                    'hora_inicio' => $validated['hora_inicio'],
+                    'hora_fim'    => $validated['hora_fim'],
+                ]),
+            ]);
+
+            Log::info('Asaas studio aula: pagamento Pix criado', [
+                'payment_id'       => $payment->id,
+                'asaas_payment_id' => $asaasPaymentId,
+                'studio_id'        => $studio->id,
+                'cliente_id'       => $clienteId,
+            ]);
+
+            return response()->json([
+                'paymentId'      => $payment->id,
+                'asaasPaymentId' => $asaasPaymentId,
+                'pixPayload'     => $qrData['payload']      ?? '',
+                'pixQrCode'      => $qrData['encodedImage'] ?? '',
+                'amount'         => $amount,
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Asaas studio aula: exception', ['error' => $e->getMessage()]);
+            return response()->json(['error' => 'Erro interno. Tente novamente.'], 500);
+        }
+    }
+
+    // ─────────────────────────────────────────────
+    // CRIAR PAGAMENTO CARTÃO — PLANO DE STUDIO
+    // ─────────────────────────────────────────────
+    public function criarPagamentoCartaoStudioPlano(Request $request)
+    {
+        $clienteId = session('cliente_id');
+        if (!$clienteId) {
+            return response()->json(['error' => 'Não autenticado.'], 401);
+        }
+
+        $validated = $request->validate([
+            'studio_id'         => 'required|integer|exists:studios,id',
+            'plano_id'          => 'required|integer|exists:studio_planos,id',
+            'card_holder'       => 'required|string|max:100',
+            'card_number'       => 'required|string|min:13|max:19',
+            'card_expiry_month' => 'required|string|size:2',
+            'card_expiry_year'  => 'required|string|size:4',
+            'card_ccv'          => 'required|string|min:3|max:4',
+            'cpf'               => 'required|string|min:11|max:18',
+            'cep'               => 'required|string|min:8|max:9',
+            'numero'            => 'required|string|max:20',
+            'telefone'          => 'required|string|min:10|max:15',
+        ]);
+
+        $cliente = \App\Models\Cadastro\Cliente::findOrFail($clienteId);
+        [$studio, $plano] = $this->validarStudioPlano($validated['studio_id'], $validated['plano_id']);
+
+        $amount      = (float) $plano->valor;
+        $description = "Plano {$plano->nome} — {$studio->nome}";
+
+        $bookingData = [
+            'tipo'            => 'studio_plano',
+            'studio_id'       => $studio->id,
+            'studio_plano_id' => $plano->id,
+            'cliente_id'      => $clienteId,
+        ];
+
+        try {
+            return $this->processarCartaoStudio($cliente, $studio, $amount, $description, $validated, $bookingData, [
+                'studio_plano_id' => $plano->id,
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Asaas cartão studio plano: exception', ['error' => $e->getMessage()]);
+            return response()->json(['error' => 'Erro interno. Tente novamente.'], 500);
+        }
+    }
+
+    // ─────────────────────────────────────────────
+    // CRIAR PAGAMENTO CARTÃO — AULA AVULSA DE STUDIO
+    // ─────────────────────────────────────────────
+    public function criarPagamentoCartaoAulaStudio(Request $request)
+    {
+        $clienteId = session('cliente_id');
+        if (!$clienteId) {
+            return response()->json(['error' => 'Não autenticado.'], 401);
+        }
+
+        $validated = $request->validate([
+            'studio_id'         => 'required|integer|exists:studios,id',
+            'data'              => 'required|date_format:Y-m-d|after_or_equal:today',
+            'hora_inicio'       => 'required|date_format:H:i',
+            'hora_fim'          => 'required|date_format:H:i|after:hora_inicio',
+            'card_holder'       => 'required|string|max:100',
+            'card_number'       => 'required|string|min:13|max:19',
+            'card_expiry_month' => 'required|string|size:2',
+            'card_expiry_year'  => 'required|string|size:4',
+            'card_ccv'          => 'required|string|min:3|max:4',
+            'cpf'               => 'required|string|min:11|max:18',
+            'cep'               => 'required|string|min:8|max:9',
+            'numero'            => 'required|string|max:20',
+            'telefone'          => 'required|string|min:10|max:15',
+        ]);
+
+        $cliente = \App\Models\Cadastro\Cliente::findOrFail($clienteId);
+        $studio  = Studio::where('id', $validated['studio_id'])->where('status', 'aprovado')->first();
+
+        if (!$studio) {
+            return response()->json(['error' => 'Studio não encontrado.'], 404);
+        }
+
+        if (!$this->slotStudioDisponivel($studio, $validated['data'], $validated['hora_inicio'])) {
+            return response()->json(['error' => 'Este horário não está mais disponível. Escolha outro.'], 422);
+        }
+
+        $amount = (float) ($studio->valor_aula ?? 0);
+        if ($amount <= 0) {
+            return response()->json(['error' => 'Este studio não definiu o valor da aula avulsa.'], 422);
+        }
+
+        $description = "Aula avulsa {$validated['hora_inicio']} — {$studio->nome}";
+
+        $bookingData = [
+            'tipo'        => 'studio_aula',
+            'studio_id'   => $studio->id,
+            'cliente_id'  => $clienteId,
+            'data'        => $validated['data'],
+            'hora_inicio' => $validated['hora_inicio'],
+            'hora_fim'    => $validated['hora_fim'],
+        ];
+
+        try {
+            return $this->processarCartaoStudio($cliente, $studio, $amount, $description, $validated, $bookingData, []);
+        } catch (\Exception $e) {
+            Log::error('Asaas cartão studio aula: exception', ['error' => $e->getMessage()]);
+            return response()->json(['error' => 'Erro interno. Tente novamente.'], 500);
+        }
+    }
+
+    private function processarCartaoStudio($cliente, Studio $studio, float $amount, string $description, array $validated, array $bookingData, array $extraPaymentFields)
+    {
+        $asaasCustomerId = $this->obterOuCriarClienteAsaas($cliente);
+
+        $cardNumber = preg_replace('/\D/', '', $validated['card_number']);
+        $cpf        = preg_replace('/\D/', '', $validated['cpf']);
+        $cep        = preg_replace('/\D/', '', $validated['cep']);
+        $telefone   = preg_replace('/\D/', '', $validated['telefone']);
+
+        $ccPayload = [
+            'customer'          => $asaasCustomerId,
+            'billingType'       => 'CREDIT_CARD',
+            'value'             => $amount,
+            'dueDate'           => now()->format('Y-m-d'),
+            'description'       => $description,
+            'externalReference' => 'stu_cc_' . $cliente->id . '_' . $studio->id . '_' . time(),
+            'creditCard'        => [
+                'holderName'  => $validated['card_holder'],
+                'number'      => $cardNumber,
+                'expiryMonth' => $validated['card_expiry_month'],
+                'expiryYear'  => $validated['card_expiry_year'],
+                'ccv'         => $validated['card_ccv'],
+            ],
+            'creditCardHolderInfo' => [
+                'name'          => $validated['card_holder'],
+                'email'         => $cliente->email,
+                'cpfCnpj'       => $cpf,
+                'postalCode'    => $cep,
+                'addressNumber' => $validated['numero'],
+                'phone'         => $telefone,
+            ],
+        ];
+
+        if ($split = $this->splitStudio($studio, $amount)) {
+            $ccPayload['split'] = $split;
+        }
+
+        $paymentRes = Http::withHeaders($this->asaasHeaders())
+            ->post($this->asaas() . '/payments', $ccPayload);
+
+        $asaasData = $paymentRes->json();
+
+        if (!empty($asaasData['errors'])) {
+            $errMsg = $asaasData['errors'][0]['description'] ?? 'Falha ao processar cartão.';
+            Log::error('Asaas cartão studio: falha', ['body' => $asaasData]);
+            return response()->json(['error' => $errMsg], 422);
+        }
+
+        if ($paymentRes->failed()) {
+            Log::error('Asaas cartão studio: http error', ['body' => $asaasData]);
+            return response()->json(['error' => 'Falha ao processar cartão. Tente novamente.'], 500);
+        }
+
+        $asaasPaymentId = $asaasData['id'];
+        $status         = $asaasData['status'] ?? 'PENDING';
+
+        $valores = $this->calculateSplit($amount);
+        $payment = Payment::create(array_merge([
+            'user_id'                  => $cliente->id,
+            'trainer_id'               => null,
+            'membership_id'            => null,
+            'studio_id'                => $studio->id,
+            'amount_total'             => $valores['amount_total'],
+            'company_fee'              => $valores['company_fee'],
+            'trainer_amount'           => $valores['trainer_amount'],
+            'stripe_payment_intent_id' => $asaasPaymentId,
+            'status'                   => 'pending',
+            'payment_method'           => 'credit_card',
+            'idempotency_key'          => 'stu_cc_' . $asaasPaymentId,
+            'booking_data'             => json_encode($bookingData),
+        ], $extraPaymentFields));
+
+        $confirmed = in_array($status, ['CONFIRMED', 'RECEIVED', 'RECEIVED_IN_CASH']);
+
+        if ($confirmed) {
+            $this->processarPagamentoConfirmado($payment);
+        }
+
+        Log::info('Asaas cartão studio: pagamento criado', [
+            'payment_id'       => $payment->id,
+            'asaas_payment_id' => $asaasPaymentId,
+            'status'           => $status,
+            'tipo'             => $bookingData['tipo'],
+        ]);
+
+        return response()->json([
+            'paymentId' => $payment->id,
+            'status'    => $status,
+            'confirmed' => $confirmed,
+        ]);
+    }
+
+    // ─────────────────────────────────────────────
+    // CARTEIRA DO STUDIO — SALDO E SAQUE
+    // ─────────────────────────────────────────────
+    public function saldoStudio(Request $request)
+    {
+        $studioId = session('studio_id');
+        if (!$studioId) {
+            return response()->json(['error' => 'Não autenticado.'], 401);
+        }
+
+        $studio = Studio::find($studioId);
+
+        if (!$studio?->asaas_api_key) {
+            return response()->json(['saldo' => 0, 'sem_conta' => true]);
+        }
+
+        $res = Http::withHeaders([
+            'access_token' => $studio->asaas_api_key,
+            'Content-Type' => 'application/json',
+        ])->get($this->asaas() . '/finance/balance');
+
+        if ($res->failed()) {
+            Log::error('Asaas saldo studio: falha', ['studio_id' => $studioId, 'body' => $res->json()]);
+            return response()->json(['error' => 'Não foi possível consultar o saldo.'], 500);
+        }
+
+        return response()->json([
+            'saldo'     => $res->json()['balance']           ?? 0,
+            'sem_conta' => false,
+            'tem_pix'   => !empty($studio->chave_pix),
+        ]);
+    }
+
+    public function sacarStudio(Request $request)
+    {
+        $studioId = session('studio_id');
+        if (!$studioId) {
+            return response()->json(['error' => 'Não autenticado.'], 401);
+        }
+
+        $studio = Studio::find($studioId);
+
+        if (!$studio?->asaas_api_key) {
+            return response()->json(['error' => 'Sua conta Asaas ainda não foi configurada.'], 422);
+        }
+
+        if (!$studio->chave_pix) {
+            return response()->json(['error' => 'Cadastre sua chave PIX no perfil antes de sacar.'], 422);
+        }
+
+        $validated = $request->validate([
+            'valor' => 'required|numeric|min:0.01',
+        ]);
+
+        $res = Http::withHeaders([
+            'access_token' => $studio->asaas_api_key,
+            'Content-Type' => 'application/json',
+        ])->post($this->asaas() . '/transfers', [
+            'operationType'     => 'PIX',
+            'value'             => (float) $validated['valor'],
+            'pixAddressKey'     => $studio->chave_pix,
+            'pixAddressKeyType' => $this->detectarTipoChavePix($studio->chave_pix),
+            'description'       => 'Saque SnrFit',
+        ]);
+
+        $data = $res->json();
+
+        if (!empty($data['errors'])) {
+            $errMsg = $data['errors'][0]['description'] ?? 'Falha ao processar saque.';
+            Log::error('Asaas saque studio: falha', ['studio_id' => $studioId, 'body' => $data]);
+            return response()->json(['error' => $errMsg], 422);
+        }
+
+        if ($res->failed()) {
+            Log::error('Asaas saque studio: http error', ['studio_id' => $studioId, 'body' => $data]);
+            return response()->json(['error' => 'Falha ao processar saque. Tente novamente.'], 500);
+        }
+
+        Log::info('Asaas saque studio realizado', [
+            'studio_id'   => $studioId,
+            'valor'       => $validated['valor'],
+            'transfer_id' => $data['id'] ?? null,
+        ]);
+
+        return response()->json([
+            'success'     => true,
+            'transfer_id' => $data['id'] ?? null,
+            'valor'       => $validated['valor'],
+        ]);
     }
 
     private function detectarTipoChavePix(string $chave): string

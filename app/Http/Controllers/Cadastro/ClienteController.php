@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Cadastro\Cliente;
 use App\Models\Cadastro\Personal;
 use App\Models\Cadastro\Academia as Academia;
+use App\Models\Cadastro\Studio;
 use App\Models\Agenda;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Http\Request;
@@ -547,6 +548,15 @@ class ClienteController extends Controller
         return response()->json($horariosDisponiveis);
     }
 
+    public function buscarHorariosStudio($studioId, $dia)
+    {
+        $studio = Studio::where('id', $studioId)->where('status', 'aprovado')->first();
+        if (!$studio) return response()->json(['erro' => 'Studio não encontrado'], 404);
+        if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $dia)) return response()->json(['erro' => 'Formato de data inválido'], 400);
+
+        return response()->json($studio->slotsDisponiveis($dia));
+    }
+
     public function listarAcademias()
     {
         $cliente   = Cliente::find(session('cliente_id'));
@@ -558,6 +568,31 @@ class ClienteController extends Controller
     {
         $academia = Academia::findOrFail($id);
         return view('cliente.academia-detalhes', compact('academia'));
+    }
+
+    public function listarStudios()
+    {
+        $cliente = Cliente::find(session('cliente_id'));
+        $studios = Studio::where('status', 'aprovado')
+            ->with(['fotos', 'planos' => fn($q) => $q->where('ativo', true)->orderBy('valor'), 'avaliacoes'])
+            ->get();
+
+        return view('cliente.studios', compact('studios', 'cliente'));
+    }
+
+    public function detalheStudio($id)
+    {
+        $cliente = Cliente::find(session('cliente_id'));
+        $studio = Studio::where('status', 'aprovado')
+            ->with([
+                'fotos',
+                'planos'    => fn($q) => $q->where('ativo', true)->orderBy('valor'),
+                'horarios'  => fn($q) => $q->where('ativo', true)->orderBy('dia_semana'),
+                'avaliacoes' => fn($q) => $q->with('cliente:id,nome')->latest()->limit(20),
+            ])
+            ->findOrFail($id);
+
+        return view('cliente.studio-detalhes', compact('studio', 'cliente'));
     }
 
     private function notificarPersonalWhatsApp($clienteId, $personalId, $tipo, $agenda = null, $frequencia = null, $diasTotal = null)

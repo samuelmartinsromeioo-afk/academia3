@@ -11,7 +11,7 @@ class Avaliacao extends Model
     use HasFactory;
 
     protected $table = 'avaliacoes';
-    protected $fillable = ['cliente_id', 'personal_id', 'academia_id', 'nota', 'comentario'];
+    protected $fillable = ['cliente_id', 'personal_id', 'academia_id', 'studio_id', 'nota', 'comentario'];
 
     public function cliente()
     {
@@ -20,5 +20,10 @@ class Avaliacao extends Model
     public function personal()
     {
         return $this->belongsTo(Personal::class, 'personal_id');
+    }
+
+    public function studio()
+    {
+        return $this->belongsTo(\App\Models\Cadastro\Studio::class, 'studio_id');
     }
 }
