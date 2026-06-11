@@ -367,6 +367,7 @@
             <button type="button" onclick="window.location.href='{{ route('cliente.index') }}'"><i class="fas fa-chart-line"></i> Menu Principal</button>
             <button type="button" onclick="toggleEditForm()"><i class="fas fa-user-edit"></i> Editar Perfil</button>
             <button type="button" onclick="window.location.href='{{ route('fichas-treino.minhas') }}'"><i class="fas fa-dumbbell"></i> Minha Ficha</button>
+            <button type="button" onclick="window.location.href='{{ route('cliente.avaliacao-fisica') }}'"><i class="fas fa-heart-pulse"></i> Avaliação Física</button>
             <button type="button" onclick="abrirHistoricoModal()"><i class="fas fa-history"></i> Ver Histórico</button>
             <button type="button" onclick="window.location.href='{{ route('mapa.index') }}'"><i class="fas fa-map-marked-alt"></i> Ver Mapa</button>
             <button type="button" onclick="window.location.href='{{ route('studios.explorar') }}'"><i class="fas fa-spa"></i> Explorar Studios</button>
@@ -681,8 +682,8 @@
             </div>
         </div>
 
-        {{-- AÇÕES: AULA AVULSA, PACOTE E FICHA --}}
-        <div class="detalhes-actions" style="grid-template-columns: 1fr 1fr 1fr;">
+        {{-- AÇÕES: AULA AVULSA, PACOTE, FICHA E AVALIAÇÃO FÍSICA --}}
+        <div class="detalhes-actions" style="grid-template-columns: 1fr 1fr;">
             <button onclick="abrirAgendaDoDetalhes()" class="btn-action btn-outline" style="font-size:0.75rem;">
                 <i class="fas fa-calendar-day"></i> Aula Avulsa
             </button>
@@ -691,6 +692,9 @@
             </button>
             <button onclick="abrirFichaDoDetalhes()" class="btn-action" style="font-size:0.75rem; background: rgba(212,255,0,0.12); border:1px solid var(--primary); color: var(--primary);">
                 <i class="fas fa-clipboard-list"></i> Solicitar Ficha
+            </button>
+            <button onclick="abrirAvFisicaDoDetalhes()" class="btn-action" style="font-size:0.75rem; background: rgba(212,255,0,0.12); border:1px solid var(--primary); color: var(--primary);">
+                <i class="fas fa-heart-pulse"></i> Avaliação Física
             </button>
         </div>
     </div>
@@ -971,6 +975,39 @@
     </div>
 </div>
 
+{{-- MODAL CONTRATAR AVALIAÇÃO FÍSICA --}}
+<div id="avFisicaModal" class="modal-overlay">
+    <div class="profile-card" style="width: 95%; max-width: 500px; border: 1px solid var(--primary); max-height: 90vh; overflow-y: auto;">
+        <i class="fas fa-times close-form" onclick="fecharAvFisicaModal()"></i>
+
+        <h2 id="nomeAvFisicaPersonal" style="color: var(--primary); margin-bottom: 5px;">Avaliação Física</h2>
+        <p style="color: var(--text-muted); font-size: 0.8rem; margin-bottom: 20px;">
+            <i class="fas fa-info-circle"></i> Contrate a avaliação física avulsa. Após o pagamento, o personal entra em contato para agendar.
+        </p>
+
+        {{-- Valor --}}
+        <div style="background: rgba(212,255,0,0.06); border: 1px solid rgba(212,255,0,0.3); border-radius: 12px; padding: 14px 18px; margin-bottom: 20px; display:flex; justify-content:space-between; align-items:center;">
+            <span style="color: var(--text-muted); font-size: 0.8rem; font-weight: 700;">Valor da Avaliação</span>
+            <span id="avFisicaValorDisplay" style="color: var(--primary); font-size: 1.3rem; font-weight: 900;">R$ 0,00</span>
+        </div>
+
+        <label>Observações (Opcional)</label>
+        <div class="input-wrapper" style="height: auto; margin-top: 5px;">
+            <i class="fas fa-comment" style="align-self: flex-start; margin-top: 15px;"></i>
+            <textarea id="avFisicaObs" rows="3" placeholder="Ex: melhor horário, restrições de saúde..." style="background:transparent; border:none; color:#fff; outline:none; flex:1; padding:12px 0; resize:none; font-size:0.9rem; font-family:inherit;"></textarea>
+        </div>
+
+        <div style="display:flex; gap:10px; margin-top:20px;">
+            <button type="button" class="btn-action" style="flex:1; margin-top:0;" onclick="pagarAvFisicaPix()">
+                <i class="fas fa-qrcode"></i> Pagar via PIX
+            </button>
+            <button type="button" class="btn-action" style="flex:1; margin-top:0; background:rgba(255,255,255,0.08); color:#fff; border:1px solid rgba(255,255,255,0.15);" onclick="pagarAvFisicaCartao()">
+                <i class="fas fa-credit-card"></i> Pagar com Cartão
+            </button>
+        </div>
+    </div>
+</div>
+
 {{-- MODAL SELETOR DE HORÁRIOS --}}
 <div id="horarioModal" class="modal-overlay" style="display: none;">
     <div class="profile-card" style="width: 90%; max-width: 450px; border: 1px solid var(--primary);">
@@ -1006,6 +1043,7 @@
             avaliacao: '{{ $p->media_avaliacao }}',
             valor_secao: {{ $p->valor_secao ?? 0 }},
             valor_ficha: {{ $p->valor_ficha ?? 0 }},
+            valor_avaliacao: {{ $p->valor_avaliacao ?? 0 }},
             academias: {!! json_encode($p->academias ?? '') !!},
             fotos: [
                 @foreach($p->fotos ?? [] as $foto)
@@ -1098,6 +1136,11 @@
                 <i class="fas fa-clipboard-list"></i>
                 <div class="label">Ficha Personalizada</div>
                 <div class="valor">${parseFloat(personal.valor_ficha) > 0 ? 'R$ ' + parseFloat(personal.valor_ficha).toFixed(2).replace('.', ',') : 'Consulte'}</div>
+            </div>
+            <div class="detalhes-resumo-card">
+                <i class="fas fa-heart-pulse"></i>
+                <div class="label">Avaliação Física</div>
+                <div class="valor">${parseFloat(personal.valor_avaliacao) > 0 ? 'R$ ' + parseFloat(personal.valor_avaliacao).toFixed(2).replace('.', ',') : 'Consulte'}</div>
             </div>
         `;
 
@@ -1223,6 +1266,106 @@
         document.getElementById('cartaoCEP').value = '{{ $cliente->cep ?? '' }}';
         document.getElementById('modalCartao').style.display = 'flex';
         fecharFichaModal();
+    }
+
+    // ============ MODAL AVALIAÇÃO FÍSICA ============
+    let avFisicaPersonalId = null;
+
+    function abrirAvFisicaDoDetalhes() {
+        const personal = window.personalsData[personalSelecionadoId];
+        fecharDetalhesPersonal();
+        abrirAvFisicaModal(personalSelecionadoId, personal.nome, personal.valor_avaliacao);
+    }
+
+    function abrirAvFisicaModal(id, nome, valorAvaliacao) {
+        const v = parseFloat(valorAvaliacao) || 0;
+        if (v <= 0) {
+            alert('Este personal ainda não definiu o valor da avaliação física. Entre em contato com ele.');
+            return;
+        }
+        avFisicaPersonalId = id;
+        document.getElementById('nomeAvFisicaPersonal').innerText = 'Avaliação Física — ' + nome;
+        document.getElementById('avFisicaValorDisplay').textContent = 'R$ ' + v.toFixed(2).replace('.', ',');
+        document.getElementById('avFisicaObs').value = '';
+        document.getElementById('avFisicaModal').style.display = 'flex';
+    }
+
+    function fecharAvFisicaModal() {
+        document.getElementById('avFisicaModal').style.display = 'none';
+    }
+
+    function getAvFisicaPayload() {
+        return {
+            tipo:        'avaliacao',
+            personal_id: avFisicaPersonalId,
+            observacoes: document.getElementById('avFisicaObs').value.trim() || null,
+        };
+    }
+
+    async function pagarAvFisicaPix() {
+        const payload = getAvFisicaPayload();
+
+        const personal = window.personalsData[avFisicaPersonalId];
+        const valor = parseFloat(personal?.valor_avaliacao) || 0;
+
+        fecharAvFisicaModal();
+        document.getElementById('pixQrCodeImg').src = '';
+        document.getElementById('pixCopiaCola').value = '';
+        document.getElementById('pixValor').textContent = 'R$ ' + valor.toFixed(2).replace('.', ',');
+        document.getElementById('pixStatusMsg').style.display = 'none';
+        document.getElementById('modalPix').style.display = 'flex';
+        clearInterval(pixPollingInterval);
+
+        try {
+            const res = await fetch('/api/criar-pagamento', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}' },
+                body: JSON.stringify(payload),
+            });
+            const pix = await res.json();
+            if (!res.ok) throw new Error(pix.error || 'Erro ao gerar pagamento.');
+
+            document.getElementById('pixQrCodeImg').src = 'data:image/png;base64,' + pix.pixQrCode;
+            document.getElementById('pixCopiaCola').value = pix.pixPayload;
+            document.getElementById('pixValor').textContent = 'R$ ' + parseFloat(pix.amount).toFixed(2).replace('.', ',');
+
+            pixPollingInterval = setInterval(async () => {
+                try {
+                    const sr = await fetch('/api/pagamento/status/' + pix.asaasPaymentId, { headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}' } });
+                    const sd = await sr.json();
+                    if (sd.confirmed) {
+                        clearInterval(pixPollingInterval);
+                        document.getElementById('pixStatusMsg').textContent = '✅ Pagamento confirmado! O personal foi avisado da sua avaliação física.';
+                        document.getElementById('pixStatusMsg').style.color = 'var(--success)';
+                        document.getElementById('pixStatusMsg').style.display = 'block';
+                        setTimeout(() => { window.location.href = '/pagamento/sucesso'; }, 2500);
+                    }
+                } catch(_) {}
+            }, 4000);
+        } catch(err) {
+            fecharModalPix();
+            alert('Erro: ' + err.message);
+        }
+    }
+
+    function pagarAvFisicaCartao() {
+        const payload = getAvFisicaPayload();
+
+        const personal = window.personalsData[avFisicaPersonalId];
+        const valor    = parseFloat(personal?.valor_avaliacao) || 0;
+
+        cartaoCtx = {
+            modo: 'avaliacao',
+            payload: payload,
+        };
+
+        document.getElementById('cartaoDescricao').textContent = 'Avaliação Física — ' + (personal?.nome || 'Personal');
+        document.getElementById('cartaoValor').textContent = 'R$ ' + valor.toFixed(2).replace('.', ',');
+        resetarFormCartao();
+        document.getElementById('cartaoTelefone').value = '{!! $cliente->whatsapp ?? '' !!}';
+        document.getElementById('cartaoCEP').value = '{{ $cliente->cep ?? '' }}';
+        document.getElementById('modalCartao').style.display = 'flex';
+        fecharAvFisicaModal();
     }
 
     // ============ HISTÓRICO ============

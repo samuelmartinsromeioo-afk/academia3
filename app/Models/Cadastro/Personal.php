@@ -47,6 +47,7 @@ class Personal extends Model
         'asaas_wallet_id',
         'asaas_api_key',
         'valor_ficha',
+        'valor_avaliacao',
     ];
 
     public function agendas() {

@@ -43,7 +43,7 @@ class PaymentController extends Controller
 
         $validated = $request->validate([
             'personal_id'       => 'required|integer|exists:personals,id',
-            'tipo'              => 'required|in:aula_avulsa,pacote,ficha',
+            'tipo'              => 'required|in:aula_avulsa,pacote,ficha,avaliacao',
             'pacote_id'         => 'nullable|integer|exists:pacotes,id',
             'frequencia'        => 'nullable|integer|min:1|max:7',
             'valor_pacote'      => 'nullable|numeric',
@@ -70,6 +70,10 @@ class PaymentController extends Controller
             $pacote      = null;
             $amount      = (float) ($personal->valor_ficha ?? 0);
             $description = "Ficha Personalizada — {$personal->nome}";
+        } elseif ($validated['tipo'] === 'avaliacao') {
+            $pacote      = null;
+            $amount      = (float) ($personal->valor_avaliacao ?? 0);
+            $description = "Avaliação Física — {$personal->nome}";
         } else {
             $pacote      = null;
             $amount      = (float) ($personal->valor_secao ?? 0);
@@ -365,6 +369,46 @@ class PaymentController extends Controller
                     }
                 } catch (\Exception $e) {
                     Log::error('processarPagamentoConfirmado: ficha falhou', [
+                        'error'   => $e->getMessage(),
+                        'booking' => $booking,
+                    ]);
+                }
+            }
+
+            if (($booking['tipo'] ?? '') === 'avaliacao') {
+                try {
+                    $solicitacao = \App\Models\SolicitacaoAvaliacao::create([
+                        'personal_id'      => $booking['personal_id'],
+                        'cliente_id'       => $booking['cliente_id'],
+                        'observacoes'      => $booking['observacoes_ficha'] ?? null,
+                        'valor'            => $payment->amount_total,
+                        'payment_status'   => 'pago',
+                        'asaas_payment_id' => $payment->stripe_payment_intent_id,
+                    ]);
+
+                    $personal = \App\Models\Cadastro\Personal::find($booking['personal_id']);
+                    $cliente  = \App\Models\Cadastro\Cliente::find($booking['cliente_id']);
+
+                    if ($personal && $personal->whatsapp) {
+                        $this->notificarWhatsAppZenvia(
+                            $personal->whatsapp,
+                            "📏 *Nova Avaliação Física Contratada!*\n\n" .
+                            "Aluno: *{$cliente->nome}*\n" .
+                            ($solicitacao->observacoes ? "Observações: {$solicitacao->observacoes}\n" : "") .
+                            "\nO aluno já aparece na sua área de Avaliação Física. 💪"
+                        );
+                    }
+
+                    if ($cliente && $cliente->whatsapp) {
+                        $this->notificarWhatsAppZenvia(
+                            $cliente->whatsapp,
+                            "✅ *Avaliação Física Confirmada!*\n\n" .
+                            "Seu pagamento foi confirmado e *{$personal->nome}* já foi avisado.\n" .
+                            "Combine com o personal a data da sua avaliação. 🏋️"
+                        );
+                    }
+                } catch (\Exception $e) {
+                    Log::error('processarPagamentoConfirmado: avaliacao falhou', [
                         'error'   => $e->getMessage(),
                         'booking' => $booking,
                     ]);
@@ -725,7 +769,7 @@ class PaymentController extends Controller
 
         $validated = $request->validate([
             'personal_id'       => 'required|integer|exists:personals,id',
-            'tipo'              => 'required|in:aula_avulsa,pacote,ficha',
+            'tipo'              => 'required|in:aula_avulsa,pacote,ficha,avaliacao',
             'pacote_id'         => 'nullable|integer|exists:pacotes,id',
             'frequencia'        => 'nullable|integer|min:1|max:7',
             'valor_pacote'      => 'nullable|numeric',
@@ -760,6 +804,10 @@ class PaymentController extends Controller
             $pacote      = null;
             $amount      = (float) ($personal->valor_ficha ?? 0);
             $description = "Ficha Personalizada — {$personal->nome}";
+        } elseif ($validated['tipo'] === 'avaliacao') {
+            $pacote      = null;
+            $amount      = (float) ($personal->valor_avaliacao ?? 0);
+            $description = "Avaliação Física — {$personal->nome}";
         } else {
             $pacote      = null;
             $amount      = (float) ($personal->valor_secao ?? 0);

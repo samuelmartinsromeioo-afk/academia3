@@ -15,6 +15,7 @@ use App\Http\Controllers\Cadastro\PacoteController;
 use App\Http\Controllers\App\FotoController;
 use App\Http\Controllers\Cadastro\FichaTreinoController;
 use App\Http\Controllers\AvaliacaoController;
+use App\Http\Controllers\AvaliacaoFisicaController;
 use App\Http\Controllers\AulaController;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\PaymentController;
@@ -139,6 +140,7 @@ Route::middleware('check.login')->group(function () {
     Route::post('/academias/contratar', [ClienteController::class, 'contratarAcademia'])->name('academias.contratar');
     Route::get('/pacotes/personal/{id}', [PacoteController::class, 'show'])->name('pacotes.show');
     Route::get('/cliente/minhas-fichas-solicitadas', [ClienteController::class, 'minhasSolicitacoesFicha'])->name('cliente.solicitacoes-ficha');
+    Route::get('/cliente/avaliacao-fisica', [AvaliacaoFisicaController::class, 'minhaAvaliacao'])->name('cliente.avaliacao-fisica');
 });
 
 // ==========================================
@@ -174,6 +176,13 @@ Route::middleware('check.login')->group(function () {
     Route::get('/personal/solicitacoes-ficha', [PersonalController::class, 'listarSolicitacoesFicha'])->name('personal.solicitacoes-ficha');
     Route::post('/personal/solicitacoes-ficha/{id}/concluir', [PersonalController::class, 'concluirSolicitacaoFicha'])->name('personal.solicitacoes-ficha.concluir');
     Route::post('/personal/configurar-valor-ficha', [PersonalController::class, 'atualizarValorFicha'])->name('personal.valor-ficha');
+
+    // Avaliação Física
+    Route::get('/personal/avaliacao-fisica', [AvaliacaoFisicaController::class, 'index'])->name('personal.avaliacao-fisica');
+    Route::post('/personal/avaliacao-fisica/valor', [AvaliacaoFisicaController::class, 'atualizarValor'])->name('personal.avaliacao-fisica.valor');
+    Route::delete('/personal/avaliacao-fisica/registro/{id}', [AvaliacaoFisicaController::class, 'destroy'])->name('personal.avaliacao-fisica.destroy');
+    Route::get('/personal/avaliacao-fisica/{clienteId}', [AvaliacaoFisicaController::class, 'show'])->name('personal.avaliacao-fisica.aluno');
+    Route::post('/personal/avaliacao-fisica/{clienteId}', [AvaliacaoFisicaController::class, 'store'])->name('personal.avaliacao-fisica.store');
 });
 
 

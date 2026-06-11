@@ -616,6 +616,9 @@
                     <i class="fas fa-clipboard-list" style="color: var(--primary);"></i> Solicitações de Ficha
                 </a>
                 <button type="button" id="btnOpenAlunos"><i class="fas fa-users"></i> Meus Alunos</button>
+                <a href="{{ route('personal.avaliacao-fisica') }}" style="display:flex; align-items:center; gap:12px; padding:15px 20px; color:#fff; text-decoration:none; font-size:14px; transition:0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.05)';this.style.color='#d4ff00'" onmouseout="this.style.background='';this.style.color='#fff'">
+                    <i class="fas fa-heart-pulse" style="color: var(--primary);"></i> Avaliação Física
+                </a>
                 <button type="button" id="btnOpenFinance"><i class="fas fa-wallet" style="color: var(--success)"></i> Minhas Finanças</button>
                 <button type="button" id="btnOpenCarteira"><i class="fas fa-piggy-bank" style="color: var(--primary)"></i> Minha Carteira</button>
                 <button type="button" id="btnOpenGaleria"><i class="fas fa-images"></i> Minha Galeria</button>
