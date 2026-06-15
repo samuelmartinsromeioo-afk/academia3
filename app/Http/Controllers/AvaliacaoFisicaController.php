@@ -6,6 +6,7 @@ use App\Models\Agenda;
 use App\Models\AvaliacaoFisica;
 use App\Models\Cadastro\Personal;
 use App\Models\SolicitacaoAvaliacao;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 
@@ -114,9 +115,14 @@ class AvaliacaoFisicaController extends Controller
             $resumo = $this->montarResumo($registros);
         }
 
+        $clienteIdade = $cliente->data_nascimento
+            ? Carbon::parse($cliente->data_nascimento)->age
+            : null;
+
         return view('personal.avaliacao_fisica_aluno', [
             'personal'         => $personal,
             'cliente'          => $cliente,
+            'clienteIdade'     => $clienteIdade,
             'registros'        => $registros,
             'tipoFiltro'       => $tipo,
             'mesFiltro'        => $mes,
@@ -160,8 +166,13 @@ class AvaliacaoFisicaController extends Controller
             $resumo = $this->montarResumo($registros);
         }
 
+        $clienteIdade = $cliente->data_nascimento
+            ? Carbon::parse($cliente->data_nascimento)->age
+            : null;
+
         return view('cliente.avaliacao_fisica', [
             'cliente'          => $cliente,
+            'clienteIdade'     => $clienteIdade,
             'registros'        => $registros,
             'tipoFiltro'       => $tipo,
             'mesFiltro'        => $mes,
@@ -233,6 +244,20 @@ class AvaliacaoFisicaController extends Controller
             ];
         }
 
+        $completa = $ultimos->get('completa');
+        if ($completa) {
+            $partes = [];
+            if ($completa->peso) $partes[] = number_format($completa->peso, 1, ',', '.') . ' kg';
+            if ($completa->imc)  $partes[] = 'IMC ' . number_format($completa->imc, 1, ',', '.');
+            if ($completa->percentual_gordura) $partes[] = number_format($completa->percentual_gordura, 1, ',', '.') . '% gordura';
+            $resumo['completa'] = [
+                'registro'      => $completa,
+                'valor'         => $partes ? implode(' · ', $partes) : 'SNR Fit Tech',
+                'detalhe'       => null,
+                'classificacao' => null,
+            ];
+        }
+
         return $resumo;
     }
 
@@ -273,7 +298,7 @@ class AvaliacaoFisicaController extends Controller
         }
 
         $dados = $request->validate([
-            'tipo'               => 'required|in:antes_depois,dinamometro,oximetro,pressao_arterial,bioimpedancia',
+            'tipo'               => 'required|in:antes_depois,dinamometro,oximetro,pressao_arterial,bioimpedancia,completa',
             'data_avaliacao'     => 'required|date',
             'foto'               => 'nullable|file|mimes:jpeg,jpg,png,gif,webp,heic,heif|max:10240',
             'arquivo'            => 'nullable|file|mimes:pdf|max:10240',
@@ -285,6 +310,79 @@ class AvaliacaoFisicaController extends Controller
             'pressao_sistolica'  => 'nullable|integer|min:0|max:400',
             'pressao_diastolica' => 'nullable|integer|min:0|max:300',
             'observacoes'        => 'nullable|string|max:2000',
+            // Anamnese
+            'objetivo_principal'  => 'nullable|string|max:5000',
+            'historico_atividade' => 'nullable|string|max:5000',
+            'lesoes'              => 'nullable|string|max:2000',
+            'cirurgias'           => 'nullable|string|max:2000',
+            'medicamentos'        => 'nullable|string|max:2000',
+            'restricoes_medicas'  => 'nullable|string|max:2000',
+            'habitos_sono'        => 'nullable|string|max:100',
+            'nivel_estresse'      => 'nullable|integer|min:0|max:10',
+            'alimentacao'         => 'nullable|string|max:5000',
+            // Antropométrica
+            'altura'            => 'nullable|numeric|min:0|max:300',
+            'circ_cintura'      => 'nullable|numeric|min:0|max:300',
+            'circ_abdomen'      => 'nullable|numeric|min:0|max:300',
+            'circ_quadril'      => 'nullable|numeric|min:0|max:300',
+            'circ_torax'        => 'nullable|numeric|min:0|max:300',
+            'circ_braco'        => 'nullable|numeric|min:0|max:200',
+            'circ_coxa'         => 'nullable|numeric|min:0|max:200',
+            'circ_panturrilha'  => 'nullable|numeric|min:0|max:200',
+            // Dobras
+            'protocolo_dobras'    => 'nullable|string|max:50',
+            'dobra_triceps'       => 'nullable|numeric|min:0|max:200',
+            'dobra_biceps'        => 'nullable|numeric|min:0|max:200',
+            'dobra_subescapular'  => 'nullable|numeric|min:0|max:200',
+            'dobra_suprailiaca'   => 'nullable|numeric|min:0|max:200',
+            'dobra_abdominal'     => 'nullable|numeric|min:0|max:200',
+            'dobra_coxa_dc'       => 'nullable|numeric|min:0|max:200',
+            'dobra_peitoral'      => 'nullable|numeric|min:0|max:200',
+            'dobra_axilar_media'  => 'nullable|numeric|min:0|max:200',
+            'percentual_gordura'  => 'nullable|numeric|min:0|max:100',
+            'massa_gorda'         => 'nullable|numeric|min:0|max:500',
+            'massa_magra'         => 'nullable|numeric|min:0|max:500',
+            // Postural fotos
+            'foto_anterior'        => 'nullable|file|mimes:jpeg,jpg,png,gif,webp,heic,heif|max:10240',
+            'foto_posterior'       => 'nullable|file|mimes:jpeg,jpg,png,gif,webp,heic,heif|max:10240',
+            'foto_lateral_direita' => 'nullable|file|mimes:jpeg,jpg,png,gif,webp,heic,heif|max:10240',
+            'foto_lateral_esquerda'=> 'nullable|file|mimes:jpeg,jpg,png,gif,webp,heic,heif|max:10240',
+            'postural_checklist'   => 'nullable|array',
+            'postural_checklist.*' => 'nullable|string|max:100',
+            // Neuromotora
+            'equil_unipodal'    => 'nullable|string|max:100',
+            'coordenacao_motora'=> 'nullable|string|max:100',
+            'mob_ombro'         => 'nullable|string|max:50',
+            'mob_quadril'       => 'nullable|string|max:50',
+            'mob_tornozelo'     => 'nullable|string|max:50',
+            'agach_profundidade'=> 'nullable|string|max:50',
+            'agach_estabilidade'=> 'nullable|string|max:50',
+            'agach_simetria'    => 'nullable|string|max:50',
+            // Flexibilidade
+            'flex_sentar_alcancar' => 'nullable|numeric|min:-50|max:100',
+            'flex_ombros'          => 'nullable|string|max:50',
+            'flex_quadril'         => 'nullable|numeric|min:0|max:200',
+            // Cardiorrespiratória
+            'teste_caminhada_dist' => 'nullable|numeric|min:0|max:9999',
+            'teste_cooper_dist'    => 'nullable|numeric|min:0|max:9999',
+            'teste_rockport_tempo' => 'nullable|numeric|min:0|max:999',
+            'vo2max_estimado'      => 'nullable|numeric|min:0|max:200',
+            // Força
+            'flexao_braco_reps' => 'nullable|integer|min:0|max:9999',
+            'prancha_tempo'     => 'nullable|integer|min:0|max:9999',
+            'testes_submax'     => 'nullable|string|max:2000',
+            // Funcional
+            'func_agachamento'  => 'nullable|string|max:2000',
+            'func_avanco'       => 'nullable|string|max:2000',
+            'func_stepup'       => 'nullable|string|max:2000',
+            'func_prancha'      => 'nullable|string|max:2000',
+            'func_mob_toracica' => 'nullable|string|max:2000',
+            // Dor
+            'dor_lombar'   => 'nullable|integer|min:0|max:10',
+            'dor_ombro'    => 'nullable|integer|min:0|max:10',
+            'dor_joelho'   => 'nullable|integer|min:0|max:10',
+            'dor_quadril'  => 'nullable|integer|min:0|max:10',
+            'dor_cervical' => 'nullable|integer|min:0|max:10',
         ]);
 
         if ($dados['tipo'] === 'dinamometro' && !isset($dados['forca'])) {
@@ -310,6 +408,91 @@ class AvaliacaoFisicaController extends Controller
             $arquivoPath = $request->file('arquivo')->store('avaliacoes_fisicas', 'public');
         }
 
+        // Fotos posturais
+        $fotoAnteriorPath = null;
+        if ($request->hasFile('foto_anterior')) {
+            $fotoAnteriorPath = $request->file('foto_anterior')->store('avaliacoes_fisicas/postural', 'public');
+        }
+        $fotoPosteriorPath = null;
+        if ($request->hasFile('foto_posterior')) {
+            $fotoPosteriorPath = $request->file('foto_posterior')->store('avaliacoes_fisicas/postural', 'public');
+        }
+        $fotoLateralDireitaPath = null;
+        if ($request->hasFile('foto_lateral_direita')) {
+            $fotoLateralDireitaPath = $request->file('foto_lateral_direita')->store('avaliacoes_fisicas/postural', 'public');
+        }
+        $fotoLateralEsquerdaPath = null;
+        if ($request->hasFile('foto_lateral_esquerda')) {
+            $fotoLateralEsquerdaPath = $request->file('foto_lateral_esquerda')->store('avaliacoes_fisicas/postural', 'public');
+        }
+
+        // Calcular IMC automaticamente
+        $imcCalculado = null;
+        $peso  = $dados['peso'] ?? null;
+        $altura = $dados['altura'] ?? null;
+        if ($peso && $altura && $altura > 0) {
+            $alturaM = $altura / 100;
+            $imcCalculado = round($peso / ($alturaM * $alturaM), 2);
+        }
+
+        // Calcular % gordura via Pollock se os dados forem enviados
+        $percentualGordura = $dados['percentual_gordura'] ?? null;
+        $massaGorda        = $dados['massa_gorda'] ?? null;
+        $massaMagra        = $dados['massa_magra'] ?? null;
+
+        $protocolo = $dados['protocolo_dobras'] ?? null;
+        if ($protocolo && $peso) {
+            $cliente  = \App\Models\Cadastro\Cliente::findOrFail($clienteId);
+            $sexo     = $cliente->sexo ?? 'masculino';
+            $idade    = $cliente->data_nascimento
+                ? Carbon::parse($cliente->data_nascimento)->age
+                : 30;
+
+            $D = null;
+
+            if ($protocolo === 'pollock3') {
+                $peitoral  = $dados['dobra_peitoral'] ?? null;
+                $abdominal = $dados['dobra_abdominal'] ?? null;
+                $coxaDc    = $dados['dobra_coxa_dc'] ?? null;
+                $triceps   = $dados['dobra_triceps'] ?? null;
+                $supra     = $dados['dobra_suprailiaca'] ?? null;
+
+                if ($sexo === 'masculino' && $peitoral !== null && $abdominal !== null && $coxaDc !== null) {
+                    $soma = $peitoral + $abdominal + $coxaDc;
+                    $D = 1.10938 - (0.0008267 * $soma) + (0.0000016 * $soma * $soma) - (0.0002574 * $idade);
+                } elseif ($sexo !== 'masculino' && $triceps !== null && $supra !== null && $coxaDc !== null) {
+                    $soma = $triceps + $supra + $coxaDc;
+                    $D = 1.0994921 - (0.0009929 * $soma) + (0.0000023 * $soma * $soma) - (0.0001392 * $idade);
+                }
+            } elseif ($protocolo === 'pollock7') {
+                $peitoral  = $dados['dobra_peitoral'] ?? null;
+                $abdominal = $dados['dobra_abdominal'] ?? null;
+                $coxaDc    = $dados['dobra_coxa_dc'] ?? null;
+                $triceps   = $dados['dobra_triceps'] ?? null;
+                $supra     = $dados['dobra_suprailiaca'] ?? null;
+                $sub       = $dados['dobra_subescapular'] ?? null;
+                $axilar    = $dados['dobra_axilar_media'] ?? null;
+
+                if ($sexo === 'masculino' && $peitoral !== null && $abdominal !== null && $coxaDc !== null
+                    && $triceps !== null && $supra !== null && $sub !== null && $axilar !== null) {
+                    $soma = $peitoral + $abdominal + $coxaDc + $triceps + $supra + $sub + $axilar;
+                    $D = 1.112 - (0.00043499 * $soma) + (0.00000055 * $soma * $soma) - (0.00028826 * $idade);
+                } elseif ($sexo !== 'masculino' && $peitoral !== null && $abdominal !== null && $coxaDc !== null
+                    && $triceps !== null && $supra !== null && $sub !== null && $axilar !== null) {
+                    $soma = $peitoral + $abdominal + $coxaDc + $triceps + $supra + $sub + $axilar;
+                    $D = 1.097 - (0.00046971 * $soma) + (0.00000056 * $soma * $soma) - (0.00012828 * $idade);
+                }
+            }
+
+            if ($D !== null && $D > 0) {
+                $pg = ((4.95 / $D) - 4.50) * 100;
+                $pg = max(0, min(100, round($pg, 2)));
+                $percentualGordura = $pg;
+                $massaGorda        = round($peso * $pg / 100, 2);
+                $massaMagra        = round($peso - $massaGorda, 2);
+            }
+        }
+
         AvaliacaoFisica::create([
             'personal_id'        => $personalId,
             'cliente_id'         => $clienteId,
@@ -325,6 +508,79 @@ class AvaliacaoFisicaController extends Controller
             'pressao_sistolica'  => $dados['pressao_sistolica'] ?? null,
             'pressao_diastolica' => $dados['pressao_diastolica'] ?? null,
             'observacoes'        => $dados['observacoes'] ?? null,
+            // Anamnese
+            'objetivo_principal'  => $dados['objetivo_principal'] ?? null,
+            'historico_atividade' => $dados['historico_atividade'] ?? null,
+            'lesoes'              => $dados['lesoes'] ?? null,
+            'cirurgias'           => $dados['cirurgias'] ?? null,
+            'medicamentos'        => $dados['medicamentos'] ?? null,
+            'restricoes_medicas'  => $dados['restricoes_medicas'] ?? null,
+            'habitos_sono'        => $dados['habitos_sono'] ?? null,
+            'nivel_estresse'      => $dados['nivel_estresse'] ?? null,
+            'alimentacao'         => $dados['alimentacao'] ?? null,
+            // Antropométrica
+            'altura'           => $altura,
+            'imc'              => $imcCalculado,
+            'circ_cintura'     => $dados['circ_cintura'] ?? null,
+            'circ_abdomen'     => $dados['circ_abdomen'] ?? null,
+            'circ_quadril'     => $dados['circ_quadril'] ?? null,
+            'circ_torax'       => $dados['circ_torax'] ?? null,
+            'circ_braco'       => $dados['circ_braco'] ?? null,
+            'circ_coxa'        => $dados['circ_coxa'] ?? null,
+            'circ_panturrilha' => $dados['circ_panturrilha'] ?? null,
+            // Dobras
+            'protocolo_dobras'   => $dados['protocolo_dobras'] ?? null,
+            'dobra_triceps'      => $dados['dobra_triceps'] ?? null,
+            'dobra_biceps'       => $dados['dobra_biceps'] ?? null,
+            'dobra_subescapular' => $dados['dobra_subescapular'] ?? null,
+            'dobra_suprailiaca'  => $dados['dobra_suprailiaca'] ?? null,
+            'dobra_abdominal'    => $dados['dobra_abdominal'] ?? null,
+            'dobra_coxa_dc'      => $dados['dobra_coxa_dc'] ?? null,
+            'dobra_peitoral'     => $dados['dobra_peitoral'] ?? null,
+            'dobra_axilar_media' => $dados['dobra_axilar_media'] ?? null,
+            'percentual_gordura' => $percentualGordura,
+            'massa_gorda'        => $massaGorda,
+            'massa_magra'        => $massaMagra,
+            // Postural
+            'foto_anterior'         => $fotoAnteriorPath,
+            'foto_posterior'        => $fotoPosteriorPath,
+            'foto_lateral_direita'  => $fotoLateralDireitaPath,
+            'foto_lateral_esquerda' => $fotoLateralEsquerdaPath,
+            'postural_checklist'    => $dados['postural_checklist'] ?? null,
+            // Neuromotora
+            'equil_unipodal'     => $dados['equil_unipodal'] ?? null,
+            'coordenacao_motora' => $dados['coordenacao_motora'] ?? null,
+            'mob_ombro'          => $dados['mob_ombro'] ?? null,
+            'mob_quadril'        => $dados['mob_quadril'] ?? null,
+            'mob_tornozelo'      => $dados['mob_tornozelo'] ?? null,
+            'agach_profundidade' => $dados['agach_profundidade'] ?? null,
+            'agach_estabilidade' => $dados['agach_estabilidade'] ?? null,
+            'agach_simetria'     => $dados['agach_simetria'] ?? null,
+            // Flexibilidade
+            'flex_sentar_alcancar' => $dados['flex_sentar_alcancar'] ?? null,
+            'flex_ombros'          => $dados['flex_ombros'] ?? null,
+            'flex_quadril'         => $dados['flex_quadril'] ?? null,
+            // Cardiorrespiratória
+            'teste_caminhada_dist' => $dados['teste_caminhada_dist'] ?? null,
+            'teste_cooper_dist'    => $dados['teste_cooper_dist'] ?? null,
+            'teste_rockport_tempo' => $dados['teste_rockport_tempo'] ?? null,
+            'vo2max_estimado'      => $dados['vo2max_estimado'] ?? null,
+            // Força
+            'flexao_braco_reps' => $dados['flexao_braco_reps'] ?? null,
+            'prancha_tempo'     => $dados['prancha_tempo'] ?? null,
+            'testes_submax'     => $dados['testes_submax'] ?? null,
+            // Funcional
+            'func_agachamento'  => $dados['func_agachamento'] ?? null,
+            'func_avanco'       => $dados['func_avanco'] ?? null,
+            'func_stepup'       => $dados['func_stepup'] ?? null,
+            'func_prancha'      => $dados['func_prancha'] ?? null,
+            'func_mob_toracica' => $dados['func_mob_toracica'] ?? null,
+            // Dor
+            'dor_lombar'   => $dados['dor_lombar'] ?? null,
+            'dor_ombro'    => $dados['dor_ombro'] ?? null,
+            'dor_joelho'   => $dados['dor_joelho'] ?? null,
+            'dor_quadril'  => $dados['dor_quadril'] ?? null,
+            'dor_cervical' => $dados['dor_cervical'] ?? null,
         ]);
 
         return back()->with('success', 'Registro de avaliação salvo com sucesso!');
@@ -342,6 +598,12 @@ class AvaliacaoFisicaController extends Controller
         }
         if ($registro->arquivo) {
             Storage::disk('public')->delete($registro->arquivo);
+        }
+        // Fotos posturais
+        foreach (['foto_anterior', 'foto_posterior', 'foto_lateral_direita', 'foto_lateral_esquerda'] as $campo) {
+            if ($registro->$campo) {
+                Storage::disk('public')->delete($registro->$campo);
+            }
         }
 
         $registro->delete();
