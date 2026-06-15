@@ -178,6 +178,19 @@ class ClienteController extends Controller
             'horario_fim'    => 'required'
         ]);
 
+        $conflito = Agenda::where('personal_id', $request->personal_id)
+            ->where('data', $request->data)
+            ->where('cancelado', false)
+            ->where(function ($q) use ($request) {
+                $q->where('hora_inicio', '<', $request->horario_fim)
+                  ->where('hora_fim', '>', $request->horario_inicio);
+            })
+            ->exists();
+
+        if ($conflito) {
+            return redirect()->back()->with('erro', 'Este horário já foi reservado por outro aluno. Por favor, escolha outro horário.');
+        }
+
         $agenda = Agenda::create([
             'cliente_id'    => $clienteId,
             'personal_id'   => $request->personal_id,

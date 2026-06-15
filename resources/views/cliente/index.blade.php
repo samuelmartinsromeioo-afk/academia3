@@ -1886,7 +1886,7 @@
         document.getElementById('avulsaCalendarGrid').innerHTML = html;
     }
 
-    function selecionarDiaAvulsa(dataStr, dia) {
+    async function selecionarDiaAvulsa(dataStr, dia) {
         avulsaSelData       = dataStr;
         avulsaSelHoraInicio = null;
         avulsaSelHoraFim    = null;
@@ -1898,18 +1898,31 @@
         document.getElementById('avulsaDataSelecionada').textContent   = `${dia} ${mesesAbrev[parseInt(partes[1])-1]} ${partes[0]}`;
         document.getElementById('avulsaHorarioSelecionado').textContent = 'Nenhum';
 
-        const slots = window.horariosDisponiveisData?.[avulsaPersonalId]?.[dataStr] || [];
-        document.getElementById('avulsaHorariosList').innerHTML = `
-            <label style="display:block; color:var(--primary); font-weight:900; text-transform:uppercase; font-size:0.7rem; margin-bottom:8px;">
-                <i class="fas fa-clock"></i> Horários disponíveis
-            </label>
-            ${slots.map(s => `
-                <div class="horario-selecionavel" onclick="selecionarHorarioAvulsa('${s.horario_inicio}','${s.horario_fim}',this)">
-                    <span style="font-weight:800; color:#fff;">${s.horario_inicio} às ${s.horario_fim}</span>
-                    <i class="fas fa-check-circle" style="color:var(--primary); display:none;"></i>
-                </div>
-            `).join('')}
-        `;
+        const listEl = document.getElementById('avulsaHorariosList');
+        listEl.innerHTML = `<p style="color:var(--text-muted); font-size:0.8rem; text-align:center;"><i class="fas fa-circle-notch fa-spin"></i> Buscando horários...</p>`;
+
+        try {
+            const res   = await fetch(`/horarios-disponiveis/${avulsaPersonalId}/${dataStr}`, { headers: { 'Accept': 'application/json' } });
+            const slots = await res.json();
+
+            if (!Array.isArray(slots) || slots.length === 0) {
+                listEl.innerHTML = `<p style="color:var(--text-muted); font-size:0.8rem; text-align:center;">Nenhum horário disponível neste dia.</p>`;
+            } else {
+                listEl.innerHTML = `
+                    <label style="display:block; color:var(--primary); font-weight:900; text-transform:uppercase; font-size:0.7rem; margin-bottom:8px;">
+                        <i class="fas fa-clock"></i> Horários disponíveis
+                    </label>
+                    ${slots.map(s => `
+                        <div class="horario-selecionavel" onclick="selecionarHorarioAvulsa('${s.inicio}','${s.fim}',this)">
+                            <span style="font-weight:800; color:#fff;">${s.inicio} às ${s.fim}</span>
+                            <i class="fas fa-check-circle" style="color:var(--primary); display:none;"></i>
+                        </div>
+                    `).join('')}
+                `;
+            }
+        } catch (e) {
+            listEl.innerHTML = `<p style="color:var(--error); font-size:0.8rem; text-align:center;">Erro ao buscar horários. Tente novamente.</p>`;
+        }
 
         renderAvulsaCalendar();
     }
