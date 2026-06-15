@@ -8,7 +8,50 @@ class AvaliacaoFisica extends Model
 {
     protected $table = 'avaliacoes_fisicas';
 
-    public const TIPOS = ['antes_depois', 'dinamometro', 'oximetro', 'pressao_arterial', 'bioimpedancia', 'completa'];
+    /**
+     * Tipos de avaliação que podem ser criados — cada um é salvo de forma
+     * independente. O antigo "completa" (SNR Fit Tech, tudo num registro só)
+     * foi quebrado nos módulos abaixo; ele permanece apenas em META para que
+     * registros antigos continuem sendo exibidos.
+     */
+    public const TIPOS = [
+        'antes_depois',
+        'antropometrica',
+        'dobras',
+        'bioimpedancia',
+        'dinamometro',
+        'forca',
+        'flexibilidade',
+        'neuromotora',
+        'funcional',
+        'cardio',
+        'oximetro',
+        'pressao_arterial',
+        'postural',
+        'dor',
+        'anamnese',
+    ];
+
+    /** Rótulo + ícone (Font Awesome) de cada tipo, usado nas views. */
+    public const META = [
+        'antes_depois'     => ['label' => 'Antes e Depois',       'icon' => 'fa-camera-retro'],
+        'antropometrica'   => ['label' => 'Antropométrica',       'icon' => 'fa-ruler'],
+        'dobras'           => ['label' => 'Dobras Cutâneas',      'icon' => 'fa-compress-arrows-alt'],
+        'bioimpedancia'    => ['label' => 'Bioimpedância',        'icon' => 'fa-weight-scale'],
+        'dinamometro'      => ['label' => 'Dinamômetro',          'icon' => 'fa-hand-fist'],
+        'forca'            => ['label' => 'Força',                'icon' => 'fa-dumbbell'],
+        'flexibilidade'    => ['label' => 'Flexibilidade',        'icon' => 'fa-person-walking'],
+        'neuromotora'      => ['label' => 'Neuromotora',          'icon' => 'fa-brain'],
+        'funcional'        => ['label' => 'Funcional',            'icon' => 'fa-running'],
+        'cardio'           => ['label' => 'Cardiorrespiratória',  'icon' => 'fa-heart-pulse'],
+        'oximetro'         => ['label' => 'Oxímetro',             'icon' => 'fa-lungs'],
+        'pressao_arterial' => ['label' => 'Pressão Arterial',     'icon' => 'fa-heart-pulse'],
+        'postural'         => ['label' => 'Postural',             'icon' => 'fa-person'],
+        'dor'              => ['label' => 'Dor',                  'icon' => 'fa-triangle-exclamation'],
+        'anamnese'         => ['label' => 'Anamnese',             'icon' => 'fa-file-medical'],
+        // Legado — não pode mais ser criado, apenas exibido.
+        'completa'         => ['label' => 'SNR Fit Tech',         'icon' => 'fa-clipboard-list'],
+    ];
 
     protected $fillable = [
         'personal_id',

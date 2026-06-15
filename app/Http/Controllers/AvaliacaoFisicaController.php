@@ -184,81 +184,140 @@ class AvaliacaoFisicaController extends Controller
     private function montarResumo($registros): array
     {
         // registros já vêm ordenados do mais recente para o mais antigo
-        $ultimos  = $registros->groupBy('tipo')->map->first();
-        $resumo   = [];
+        $ultimos = $registros->groupBy('tipo')->map->first();
+        $resumo  = [];
 
-        $antesDepois = $ultimos->get('antes_depois');
-        if ($antesDepois) {
-            $pesos        = $registros->where('tipo', 'antes_depois')->whereNotNull('peso');
-            $pesoInicial  = $pesos->last()?->peso;
-            $pesoAtual    = $pesos->first()?->peso;
-            $variacao     = ($pesoInicial !== null && $pesoAtual !== null) ? round($pesoAtual - $pesoInicial, 2) : null;
-
-            $resumo['antes_depois'] = [
-                'registro'      => $antesDepois,
-                'valor'         => $pesoAtual !== null ? number_format($pesoAtual, 1, ',', '.') . ' kg' : '—',
-                'detalhe'       => $variacao !== null && $variacao != 0
-                    ? 'Variação no período: ' . ($variacao > 0 ? '+' : '') . number_format($variacao, 1, ',', '.') . ' kg'
-                    : null,
-                'classificacao' => null,
-            ];
-        }
-
-        $dinamometro = $ultimos->get('dinamometro');
-        if ($dinamometro && $dinamometro->forca !== null) {
-            $resumo['dinamometro'] = [
-                'registro'      => $dinamometro,
-                'valor'         => number_format($dinamometro->forca, 1, ',', '.') . ' kgf',
-                'detalhe'       => null,
-                'classificacao' => $this->classificarForca((float) $dinamometro->forca),
-            ];
-        }
-
-        $oximetro = $ultimos->get('oximetro');
-        if ($oximetro && $oximetro->spo2 !== null) {
-            $resumo['oximetro'] = [
-                'registro'      => $oximetro,
-                'valor'         => $oximetro->spo2 . '% SpO2' . ($oximetro->bpm ? ' · ' . $oximetro->bpm . ' bpm' : ''),
-                'detalhe'       => null,
-                'classificacao' => $this->classificarSpo2((int) $oximetro->spo2),
-            ];
-        }
-
-        $pressao = $ultimos->get('pressao_arterial');
-        if ($pressao && $pressao->pressao_sistolica !== null) {
-            $resumo['pressao_arterial'] = [
-                'registro'      => $pressao,
-                'valor'         => $pressao->pressao_sistolica . '/' . $pressao->pressao_diastolica . ' mmHg',
-                'detalhe'       => null,
-                'classificacao' => $this->classificarPressao((int) $pressao->pressao_sistolica, (int) $pressao->pressao_diastolica),
-            ];
-        }
-
-        $bio = $ultimos->get('bioimpedancia');
-        if ($bio) {
-            $resumo['bioimpedancia'] = [
-                'registro'      => $bio,
-                'valor'         => $bio->arquivo ? 'Relatório em PDF' : '—',
-                'detalhe'       => null,
-                'classificacao' => null,
-            ];
-        }
-
-        $completa = $ultimos->get('completa');
-        if ($completa) {
-            $partes = [];
-            if ($completa->peso) $partes[] = number_format($completa->peso, 1, ',', '.') . ' kg';
-            if ($completa->imc)  $partes[] = 'IMC ' . number_format($completa->imc, 1, ',', '.');
-            if ($completa->percentual_gordura) $partes[] = number_format($completa->percentual_gordura, 1, ',', '.') . '% gordura';
-            $resumo['completa'] = [
-                'registro'      => $completa,
-                'valor'         => $partes ? implode(' · ', $partes) : 'SNR Fit Tech',
-                'detalhe'       => null,
-                'classificacao' => null,
+        foreach ($ultimos as $tipo => $reg) {
+            [$valor, $detalhe, $classificacao] = $this->resumoValor($tipo, $reg, $registros);
+            if ($valor === null) {
+                continue;
+            }
+            $resumo[$tipo] = [
+                'registro'      => $reg,
+                'valor'         => $valor,
+                'detalhe'       => $detalhe,
+                'classificacao' => $classificacao,
             ];
         }
 
         return $resumo;
+    }
+
+    /**
+     * Retorna [valor, detalhe, classificacao] para o card de resumo de um tipo.
+     * valor === null faz o tipo ser omitido do resumo.
+     */
+    private function resumoValor(string $tipo, $r, $registros): array
+    {
+        switch ($tipo) {
+            case 'antes_depois':
+                $pesos       = $registros->where('tipo', 'antes_depois')->whereNotNull('peso');
+                $pesoInicial = $pesos->last()?->peso;
+                $pesoAtual   = $pesos->first()?->peso;
+                $variacao    = ($pesoInicial !== null && $pesoAtual !== null) ? round($pesoAtual - $pesoInicial, 2) : null;
+                return [
+                    $pesoAtual !== null ? number_format($pesoAtual, 1, ',', '.') . ' kg' : 'Registro',
+                    $variacao !== null && $variacao != 0
+                        ? 'Variação no período: ' . ($variacao > 0 ? '+' : '') . number_format($variacao, 1, ',', '.') . ' kg'
+                        : null,
+                    null,
+                ];
+
+            case 'antropometrica':
+                $partes = [];
+                if ($r->peso) $partes[] = number_format($r->peso, 1, ',', '.') . ' kg';
+                if ($r->imc)  $partes[] = 'IMC ' . number_format($r->imc, 1, ',', '.');
+                return [$partes ? implode(' · ', $partes) : 'Medidas registradas', null, null];
+
+            case 'dobras':
+                return [
+                    $r->percentual_gordura !== null ? number_format($r->percentual_gordura, 1, ',', '.') . '% gordura' : 'Dobras registradas',
+                    $r->massa_magra !== null ? 'Massa magra: ' . number_format($r->massa_magra, 1, ',', '.') . ' kg' : null,
+                    null,
+                ];
+
+            case 'bioimpedancia':
+                return [$r->arquivo ? 'Relatório em PDF' : '—', null, null];
+
+            case 'dinamometro':
+                if ($r->forca === null) return [null, null, null];
+                return [number_format($r->forca, 1, ',', '.') . ' kgf', null, $this->classificarForca((float) $r->forca)];
+
+            case 'forca':
+                $partes = [];
+                if ($r->flexao_braco_reps !== null) $partes[] = $r->flexao_braco_reps . ' flexões';
+                if ($r->prancha_tempo !== null)     $partes[] = $r->prancha_tempo . 's prancha';
+                if ($r->forca !== null)             $partes[] = number_format($r->forca, 1, ',', '.') . ' kgf';
+                return [$partes ? implode(' · ', $partes) : 'Avaliação de força', null, null];
+
+            case 'flexibilidade':
+                return [
+                    $r->flex_sentar_alcancar !== null ? number_format($r->flex_sentar_alcancar, 1, ',', '.') . ' cm' : 'Avaliada',
+                    $r->flex_ombros ? 'Ombros: ' . $r->flex_ombros : null,
+                    null,
+                ];
+
+            case 'neuromotora':
+                return [$r->coordenacao_motora ?: 'Avaliada', $r->equil_unipodal ? 'Equilíbrio: ' . $r->equil_unipodal : null, null];
+
+            case 'funcional':
+                return ['Avaliação funcional', $r->func_agachamento ? 'Agachamento: ' . $r->func_agachamento : null, null];
+
+            case 'cardio':
+                if ($r->vo2max_estimado !== null) {
+                    return ['VO2max ' . number_format($r->vo2max_estimado, 1, ',', '.'), $r->bpm ? 'FC repouso: ' . $r->bpm . ' bpm' : null, null];
+                }
+                if ($r->bpm !== null) {
+                    return [$r->bpm . ' bpm', null, null];
+                }
+                if ($r->pressao_sistolica !== null) {
+                    return [$r->pressao_sistolica . '/' . $r->pressao_diastolica . ' mmHg', null, $this->classificarPressao((int) $r->pressao_sistolica, (int) $r->pressao_diastolica)];
+                }
+                return ['Avaliação cardiorrespiratória', null, null];
+
+            case 'oximetro':
+                if ($r->spo2 === null) return [null, null, null];
+                return [
+                    $r->spo2 . '% SpO2' . ($r->bpm ? ' · ' . $r->bpm . ' bpm' : ''),
+                    null,
+                    $this->classificarSpo2((int) $r->spo2),
+                ];
+
+            case 'pressao_arterial':
+                if ($r->pressao_sistolica === null) return [null, null, null];
+                return [
+                    $r->pressao_sistolica . '/' . $r->pressao_diastolica . ' mmHg',
+                    null,
+                    $this->classificarPressao((int) $r->pressao_sistolica, (int) $r->pressao_diastolica),
+                ];
+
+            case 'postural':
+                $fotos = collect(['foto_anterior', 'foto_posterior', 'foto_lateral_direita', 'foto_lateral_esquerda'])
+                    ->filter(fn ($c) => $r->$c)->count();
+                $checklist = is_array($r->postural_checklist) ? count($r->postural_checklist) : 0;
+                $partes = [];
+                if ($fotos)     $partes[] = $fotos . ' foto(s)';
+                if ($checklist) $partes[] = $checklist . ' apontamento(s)';
+                return [$partes ? implode(' · ', $partes) : 'Avaliação postural', null, null];
+
+            case 'dor':
+                $valores = collect(['dor_lombar', 'dor_ombro', 'dor_joelho', 'dor_quadril', 'dor_cervical'])
+                    ->map(fn ($c) => $r->$c)->filter(fn ($v) => $v !== null);
+                if ($valores->isEmpty()) return ['Sem queixas registradas', null, null];
+                return [$valores->max() . '/10', 'Maior nível de dor relatado', null];
+
+            case 'anamnese':
+                return [$r->objetivo_principal ?: 'Anamnese registrada', null, null];
+
+            case 'completa': // legado
+                $partes = [];
+                if ($r->peso) $partes[] = number_format($r->peso, 1, ',', '.') . ' kg';
+                if ($r->imc)  $partes[] = 'IMC ' . number_format($r->imc, 1, ',', '.');
+                if ($r->percentual_gordura) $partes[] = number_format($r->percentual_gordura, 1, ',', '.') . '% gordura';
+                return [$partes ? implode(' · ', $partes) : 'SNR Fit Tech', null, null];
+        }
+
+        return [null, null, null];
     }
 
     private function classificarSpo2(int $spo2): string
@@ -298,7 +357,7 @@ class AvaliacaoFisicaController extends Controller
         }
 
         $dados = $request->validate([
-            'tipo'               => 'required|in:antes_depois,dinamometro,oximetro,pressao_arterial,bioimpedancia,completa',
+            'tipo'               => 'required|in:' . implode(',', AvaliacaoFisica::TIPOS),
             'data_avaliacao'     => 'required|date',
             'foto'               => 'nullable|file|mimes:jpeg,jpg,png,gif,webp,heic,heif|max:10240',
             'arquivo'            => 'nullable|file|mimes:pdf|max:10240',
