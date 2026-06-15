@@ -30,6 +30,7 @@ class Studio extends Model
         'endereco',
         'descricao',
         'modalidades',
+        'tipo',
         'valor_aula',
         'capacidade_padrao',
         'latitude',

@@ -38,6 +38,7 @@ class StudioController extends Controller
             'endereco' => 'required|string|max:255',
             'descricao' => 'nullable|string|max:500',
             'modalidades' => 'nullable|string|max:500',
+            'tipo' => 'required|in:yoga_pilates,luta,crossfit,fitness,danca,outros',
             'valor_aula' => 'required|numeric|min:0',
             'capacidade_padrao' => 'required|integer|min:1|max:500',
             'latitude' => 'nullable|numeric',
@@ -100,7 +101,22 @@ class StudioController extends Controller
             ->whereYear('paid_at', now()->year)
             ->sum('trainer_amount');
 
-        $alunos = Cliente::where('studio_id', $studio->id)->orderBy('nome')->get();
+        $alunos = Cliente::where('studio_id', $studio->id)->orderBy('nome')->get()->map(function ($aluno) use ($studio) {
+            $aluno->frequencia_mes   = Agenda::where('studio_id', $studio->id)
+                ->where('cliente_id', $aluno->id)
+                ->where('cancelado', false)
+                ->where('tipo_aula', '!=', 'bloqueio')
+                ->whereMonth('data', now()->month)
+                ->whereYear('data', now()->year)
+                ->count();
+            $aluno->frequencia_total = Agenda::where('studio_id', $studio->id)
+                ->where('cliente_id', $aluno->id)
+                ->where('cancelado', false)
+                ->where('tipo_aula', '!=', 'bloqueio')
+                ->count();
+            return $aluno;
+        });
+
         $planos = StudioPlano::where('studio_id', $studio->id)->orderBy('valor')->get();
         $horarios = StudioHorario::where('studio_id', $studio->id)->orderBy('dia_semana')->get();
 
@@ -136,6 +152,7 @@ class StudioController extends Controller
             'whatsapp' => 'nullable|string|max:20',
             'descricao' => 'nullable|string|max:500',
             'modalidades' => 'nullable|string|max:500',
+            'tipo' => 'required|in:yoga_pilates,luta,crossfit,fitness,danca,outros',
             'valor_aula' => 'required|numeric|min:0',
             'capacidade_padrao' => 'required|integer|min:1|max:500',
             'chave_pix' => 'nullable|string|max:255',

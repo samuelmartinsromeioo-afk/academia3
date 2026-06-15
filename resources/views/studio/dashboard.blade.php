@@ -552,6 +552,8 @@
                         <th>Email</th>
                         <th>Plano</th>
                         <th>Status</th>
+                        <th style="text-align:center;">Aulas este mês</th>
+                        <th style="text-align:center;">Total de aulas</th>
                         <th>Ação</th>
                     </tr>
                 </thead>
@@ -567,6 +569,14 @@
                                 @else
                                     <span style="color: var(--text-muted); font-weight: 700; font-size: 0.8rem;"><i class="fas fa-circle" style="font-size:0.5rem;"></i> Inativo</span>
                                 @endif
+                            </td>
+                            <td style="text-align:center;">
+                                <span style="font-weight:700; color:{{ $aluno->frequencia_mes > 0 ? 'var(--primary)' : 'var(--text-muted)' }};">
+                                    {{ $aluno->frequencia_mes }}
+                                </span>
+                            </td>
+                            <td style="text-align:center;">
+                                <span style="font-weight:700; color:var(--text-muted);">{{ $aluno->frequencia_total }}</span>
                             </td>
                             <td>
                                 <form method="POST" action="{{ route('studio.alunos.desvincular', $aluno->id) }}" onsubmit="return confirm('Desvincular {{ $aluno->nome }} do studio?');" style="margin:0;">
@@ -654,7 +664,19 @@
                 <input type="text" name="chave_pix" value="{{ old('chave_pix', $studio->chave_pix) }}" placeholder="CPF/CNPJ, e-mail, telefone ou chave aleatória">
             </div>
 
-            <div class="form-group full-width">
+            <div class="form-group">
+                <label>Tipo de Studio</label>
+                <select name="tipo" style="width:100%; background:var(--input-bg); border:1px solid var(--border); border-radius:10px; padding:12px; color:#fff;">
+                    <option value="yoga_pilates" {{ ($studio->tipo ?? '') === 'yoga_pilates' ? 'selected' : '' }}>🧘 Yoga / Pilates</option>
+                    <option value="luta"         {{ ($studio->tipo ?? '') === 'luta'         ? 'selected' : '' }}>🥊 Luta / Artes Marciais</option>
+                    <option value="crossfit"     {{ ($studio->tipo ?? '') === 'crossfit'     ? 'selected' : '' }}>🏋️ CrossFit / Funcional</option>
+                    <option value="fitness"      {{ ($studio->tipo ?? 'fitness') === 'fitness' ? 'selected' : '' }}>💪 Fitness / Musculação</option>
+                    <option value="danca"        {{ ($studio->tipo ?? '') === 'danca'        ? 'selected' : '' }}>💃 Dança</option>
+                    <option value="outros"       {{ ($studio->tipo ?? '') === 'outros'       ? 'selected' : '' }}>🏃 Outros</option>
+                </select>
+            </div>
+
+            <div class="form-group">
                 <label>Modalidades</label>
                 <input type="text" name="modalidades" value="{{ old('modalidades', $studio->modalidades) }}" placeholder="Ex: Pilates, Funcional, Yoga">
             </div>

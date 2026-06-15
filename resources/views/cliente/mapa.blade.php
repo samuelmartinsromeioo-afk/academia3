@@ -23,6 +23,12 @@
             --filial-contorno-color: #00c8ff;
             --filial-pratique-color: #ff4444;
             --studio-color: #b14cff;
+            --studio-yoga-color: #ff69b4;
+            --studio-luta-color: #dd2233;
+            --studio-crossfit-color: #ff7700;
+            --studio-fitness-color: #33cc77;
+            --studio-danca-color: #00ccdd;
+            --studio-outros-color: #b14cff;
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -210,6 +216,12 @@
         .pin-icon.filial-pratique  { background: rgba(255,68,68,0.12);   color: var(--filial-pratique-color); }
         .pin-icon.filial           { background: rgba(255,149,0,0.12);   color: var(--filial-color); }
         .pin-icon.studio           { background: rgba(177,76,255,0.12);  color: var(--studio-color); }
+        .pin-icon.studio-yoga_pilates { background: rgba(255,105,180,0.14); color: var(--studio-yoga-color); }
+        .pin-icon.studio-luta         { background: rgba(221,34,51,0.14);   color: var(--studio-luta-color); }
+        .pin-icon.studio-crossfit     { background: rgba(255,119,0,0.14);   color: var(--studio-crossfit-color); }
+        .pin-icon.studio-fitness      { background: rgba(51,204,119,0.14);  color: var(--studio-fitness-color); }
+        .pin-icon.studio-danca        { background: rgba(0,204,221,0.14);   color: var(--studio-danca-color); }
+        .pin-icon.studio-outros       { background: rgba(177,76,255,0.12);  color: var(--studio-outros-color); }
 
         .pin-info h4 { font-size: 0.85rem; font-weight: 700; margin-bottom: 3px; }
         .pin-info p { font-size: 0.72rem; color: var(--text-muted); margin: 0; }
@@ -228,6 +240,12 @@
         .badge-filial-pratique { background: rgba(255,68,68,0.1);  color: var(--filial-pratique-color); }
         .badge-filial          { background: rgba(255,149,0,0.1);  color: var(--filial-color); }
         .badge-studio          { background: rgba(177,76,255,0.1); color: var(--studio-color); }
+        .badge-studio-yoga_pilates { background: rgba(255,105,180,0.12); color: var(--studio-yoga-color); }
+        .badge-studio-luta         { background: rgba(221,34,51,0.12);   color: var(--studio-luta-color); }
+        .badge-studio-crossfit     { background: rgba(255,119,0,0.12);   color: var(--studio-crossfit-color); }
+        .badge-studio-fitness      { background: rgba(51,204,119,0.12);  color: var(--studio-fitness-color); }
+        .badge-studio-danca        { background: rgba(0,204,221,0.12);   color: var(--studio-danca-color); }
+        .badge-studio-outros       { background: rgba(177,76,255,0.1);   color: var(--studio-outros-color); }
 
         .empty-state {
             text-align: center;
@@ -444,8 +462,28 @@
                 <span>Filial (outras)</span>
             </div>
             <div class="legend-item">
-                <div class="legend-dot" style="background: var(--studio-color);"></div>
-                <span>Studio</span>
+                <div class="legend-dot" style="background: var(--studio-yoga-color);"></div>
+                <span>🧘 Yoga / Pilates</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-dot" style="background: var(--studio-luta-color);"></div>
+                <span>🥊 Luta / Artes Marciais</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-dot" style="background: var(--studio-crossfit-color);"></div>
+                <span>🏋️ CrossFit / Funcional</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-dot" style="background: var(--studio-fitness-color);"></div>
+                <span>💪 Fitness / Musculação</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-dot" style="background: var(--studio-danca-color);"></div>
+                <span>💃 Dança</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-dot" style="background: var(--studio-outros-color);"></div>
+                <span>🏃 Outros Studios</span>
             </div>
         </div>
         <div class="loading-overlay" id="loadingOverlay">
@@ -477,11 +515,24 @@
         return '#ff9500';
     }
 
+    const studioCores = {
+        yoga_pilates: '#ff69b4',
+        luta:         '#dd2233',
+        crossfit:     '#ff7700',
+        fitness:      '#33cc77',
+        danca:        '#00ccdd',
+        outros:       '#b14cff',
+    };
+
+    function getStudioCor(pin) {
+        return studioCores[pin.subtipo] || '#b14cff';
+    }
+
     function getPinCor(pin) {
         if (pin.tipo === 'academia') return '#d4ff00';
         if (pin.tipo === 'personal') return '#1a5fd4';
         if (pin.tipo === 'filial')   return getFilialCor(pin);
-        if (pin.tipo === 'studio')   return '#b14cff';
+        if (pin.tipo === 'studio')   return getStudioCor(pin);
         return '#ffffff';
     }
 
@@ -492,11 +543,15 @@
         return 'filial';
     }
 
+    const studioIcones = { yoga_pilates: '🧘', luta: '🥊', crossfit: '🏋️', fitness: '💪', danca: '💃', outros: '🏃' };
+
     function criarIcone(pin) {
         const tipo  = typeof pin === 'string' ? pin : pin.tipo;
         const cor   = typeof pin === 'string' ? (pin === 'academia' ? '#d4ff00' : pin === 'personal' ? '#1a5fd4' : '#ff9500') : getPinCor(pin);
-        const icones = { academia: '🏋️', personal: '👤', filial: '📍', studio: '🧘' };
-        const icone = icones[tipo] || '📌';
+        const iconeBase = { academia: '🏋️', personal: '👤', filial: '📍' };
+        const icone = tipo === 'studio'
+            ? (studioIcones[pin.subtipo] || '🏃')
+            : (iconeBase[tipo] || '📌');
         return L.divIcon({
             className: '',
             html: `
@@ -534,18 +589,27 @@
             return;
         }
 
-        const tipoIcon = { academia: 'dumbbell', personal: 'user', filial: 'map-marker-alt', studio: 'spa' };
+        const tipoIconFA = { academia: 'dumbbell', personal: 'user', filial: 'map-marker-alt',
+                             'studio-yoga_pilates': 'spa', 'studio-luta': 'fist-raised',
+                             'studio-crossfit': 'bolt', 'studio-fitness': 'dumbbell',
+                             'studio-danca': 'music', 'studio-outros': 'running' };
+        const studioLabel = { yoga_pilates: 'Yoga / Pilates', luta: 'Luta / Artes Marciais',
+                              crossfit: 'CrossFit / Funcional', fitness: 'Fitness / Musculação',
+                              danca: 'Dança', outros: 'Outros' };
 
         lista.innerHTML = pins.map((pin, i) => {
-            const cssClass  = pin.tipo === 'filial' ? getFilialClass(pin) : pin.tipo;
+            const cssClass  = pin.tipo === 'filial'  ? getFilialClass(pin)
+                            : pin.tipo === 'studio'  ? `studio-${pin.subtipo || 'outros'}`
+                            : pin.tipo;
             const badgeText = pin.tipo === 'academia' ? 'Academia'
                             : pin.tipo === 'personal' ? 'Personal'
-                            : pin.tipo === 'studio' ? 'Studio'
+                            : pin.tipo === 'studio'   ? (studioLabel[pin.subtipo] || 'Studio')
                             : pin.info;
+            const faIcon = tipoIconFA[cssClass] || tipoIconFA[pin.tipo] || 'map-pin';
             return `
             <div class="pin-card" id="card-${i}" onclick="focarPin(${pin.latitude}, ${pin.longitude}, ${i})">
                 <div class="pin-icon ${cssClass}">
-                    <i class="fas fa-${tipoIcon[pin.tipo] || 'map-pin'}"></i>
+                    <i class="fas fa-${faIcon}"></i>
                 </div>
                 <div class="pin-info" style="flex: 1; min-width: 0;">
                     <h4 style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${pin.nome}</h4>
@@ -600,11 +664,13 @@
         marcadores.forEach(m => map.removeLayer(m));
         marcadores = [];
 
+        const studioEmoji = { yoga_pilates:'🧘', luta:'🥊', crossfit:'🏋️', fitness:'💪', danca:'💃', outros:'🏃' };
+
         filtrados.forEach((pin, i) => {
             const pinColor   = getPinCor(pin);
             const badgeLabel = pin.tipo === 'academia' ? '🏋️ Academia'
                              : pin.tipo === 'personal' ? '👤 Personal'
-                             : pin.tipo === 'studio' ? '🧘 Studio'
+                             : pin.tipo === 'studio'   ? `${studioEmoji[pin.subtipo]||'🏃'} ${studioLabel[pin.subtipo]||'Studio'}`
                              : `📍 ${pin.info}`;
 
             const marker = L.marker([pin.latitude, pin.longitude], { icon: criarIcone(pin) })

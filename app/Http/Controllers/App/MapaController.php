@@ -73,17 +73,18 @@ class MapaController extends Controller
         $studios = Studio::whereNotNull('latitude')
             ->whereNotNull('longitude')
             ->where('status', 'aprovado')
-            ->get(['id', 'nome', 'cidade', 'estado', 'endereco', 'valor_aula', 'modalidades', 'latitude', 'longitude'])
+            ->get(['id', 'nome', 'cidade', 'estado', 'endereco', 'valor_aula', 'modalidades', 'tipo', 'latitude', 'longitude'])
             ->map(fn($s) => [
-                'tipo'      => 'studio',
-                'id'        => $s->id,
-                'nome'      => $s->nome,
-                'cidade'    => $s->cidade,
-                'estado'    => $s->estado,
-                'endereco'  => $s->endereco ?? "$s->cidade - $s->estado",
-                'info'      => 'Aula: R$ ' . number_format($s->valor_aula ?? 0, 2, ',', '.') . ($s->modalidades ? ' · ' . $s->modalidades : ''),
-                'latitude'  => (float) $s->latitude,
-                'longitude' => (float) $s->longitude,
+                'tipo'        => 'studio',
+                'subtipo'     => $s->tipo ?? 'fitness',
+                'id'          => $s->id,
+                'nome'        => $s->nome,
+                'cidade'      => $s->cidade,
+                'estado'      => $s->estado,
+                'endereco'    => $s->endereco ?? "$s->cidade - $s->estado",
+                'info'        => 'Aula: R$ ' . number_format($s->valor_aula ?? 0, 2, ',', '.') . ($s->modalidades ? ' · ' . $s->modalidades : ''),
+                'latitude'    => (float) $s->latitude,
+                'longitude'   => (float) $s->longitude,
             ]);
 
         return response()->json([

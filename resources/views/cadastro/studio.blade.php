@@ -17,7 +17,8 @@
         .full-width { grid-column: span 2; }
         .form-group label { display: block; font-size: 0.8rem; color: var(--primary); margin-bottom: 8px; font-weight: 700; text-transform: uppercase; }
         .input-wrapper { display: flex; align-items: center; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 0 15px; }
-        .input-wrapper input, .input-wrapper textarea { flex: 1; background: transparent; border: none; padding: 12px 0; color: #fff; outline: none; }
+        .input-wrapper input, .input-wrapper textarea, .input-wrapper select { flex: 1; background: transparent; border: none; padding: 12px 0; color: #fff; outline: none; }
+        .input-wrapper select option { background: #16181d; color: #fff; }
         .input-wrapper i { margin-right: 10px; color: #666; width: 20px; text-align: center; }
         .btn-submit { background: var(--primary); color: #000; width: 100%; padding: 18px; border-radius: 12px; font-weight: 800; cursor: pointer; border: none; margin-top: 20px; text-transform: uppercase; transition: 0.3s; }
         .btn-submit:hover { transform: translateY(-2px); box-shadow: 0 10px 20px rgba(212, 255, 0, 0.2); }
@@ -169,7 +170,23 @@
             </div>
         </div>
 
-        <div class="form-group full-width">
+        <div class="form-group">
+            <label>Tipo de Studio</label>
+            <div class="input-wrapper">
+                <i class="fa-solid fa-tag"></i>
+                <select name="tipo" required>
+                    <option value="" disabled {{ old('tipo') ? '' : 'selected' }}>Selecione o tipo...</option>
+                    <option value="yoga_pilates" {{ old('tipo') === 'yoga_pilates' ? 'selected' : '' }}>🧘 Yoga / Pilates</option>
+                    <option value="luta"         {{ old('tipo') === 'luta'         ? 'selected' : '' }}>🥊 Luta / Artes Marciais</option>
+                    <option value="crossfit"     {{ old('tipo') === 'crossfit'     ? 'selected' : '' }}>🏋️ CrossFit / Funcional</option>
+                    <option value="fitness"      {{ old('tipo') === 'fitness'      ? 'selected' : '' }}>💪 Fitness / Musculação</option>
+                    <option value="danca"        {{ old('tipo') === 'danca'        ? 'selected' : '' }}>💃 Dança</option>
+                    <option value="outros"       {{ old('tipo') === 'outros'       ? 'selected' : '' }}>🏃 Outros</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="form-group">
             <label>Modalidades Oferecidas</label>
             <div class="input-wrapper">
                 <i class="fa-solid fa-person-running"></i>
