@@ -188,7 +188,7 @@ class ClienteController extends Controller
             ->exists();
 
         if ($conflito) {
-            return redirect()->back()->with('erro', 'Este horário já foi reservado por outro aluno. Por favor, escolha outro horário.');
+            return redirect()->back()->with('error', 'Este horário já foi reservado por outro aluno. Por favor, escolha outro horário.');
         }
 
         $agenda = Agenda::create([
