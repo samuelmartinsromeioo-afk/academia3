@@ -11,10 +11,16 @@ class SolicitacaoAvaliacao extends Model
     protected $fillable = [
         'personal_id',
         'cliente_id',
+        'pacote_avaliacao_id',
         'observacoes',
+        'tipos',
         'valor',
         'payment_status',
         'asaas_payment_id',
+    ];
+
+    protected $casts = [
+        'tipos' => 'array',
     ];
 
     public function personal()

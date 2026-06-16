@@ -74,20 +74,7 @@
         <div class="alert-error"><i class="fas fa-exclamation-circle"></i> {{ session('error') }}</div>
     @endif
 
-    <div class="section-label">Valor da Avaliação Avulsa</div>
-    <div class="card">
-        <form action="{{ route('personal.avaliacao-fisica.valor') }}" method="POST" class="valor-config">
-            @csrf
-            <div>
-                <label><i class="fas fa-dollar-sign"></i> Valor cobrado (R$)</label>
-                <input type="number" step="0.01" min="0" name="valor_avaliacao" value="{{ $personal->valor_avaliacao }}" placeholder="0.00" required>
-            </div>
-            <button type="submit" class="btn-primary"><i class="fas fa-save"></i> Salvar</button>
-            <p style="margin:0; color:var(--text-muted); font-size:0.75rem; flex-basis:100%;">Esse é o valor que aparece para clientes que querem contratar somente a avaliação física, sem pacote mensal.</p>
-        </form>
-    </div>
-
-    <div class="section-label" style="margin-top:30px;">Alunos ({{ $clientes->count() }})</div>
+    <div class="section-label">Alunos ({{ $clientes->count() }})</div>
 
     @if($clientes->isEmpty())
         <div class="empty-state">

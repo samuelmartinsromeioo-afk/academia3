@@ -179,7 +179,11 @@ Route::middleware('check.login')->group(function () {
 
     // Avaliação Física
     Route::get('/personal/avaliacao-fisica', [AvaliacaoFisicaController::class, 'index'])->name('personal.avaliacao-fisica');
-    Route::post('/personal/avaliacao-fisica/valor', [AvaliacaoFisicaController::class, 'atualizarValor'])->name('personal.avaliacao-fisica.valor');
+    Route::get('/personal/valores-avaliacoes', [AvaliacaoFisicaController::class, 'valores'])->name('personal.avaliacao-fisica.valores');
+    Route::post('/personal/avaliacao-fisica/precos', [AvaliacaoFisicaController::class, 'salvarPrecos'])->name('personal.avaliacao-fisica.precos');
+    Route::post('/personal/avaliacao-fisica/pacotes', [AvaliacaoFisicaController::class, 'criarPacote'])->name('personal.avaliacao-fisica.pacotes.store');
+    Route::put('/personal/avaliacao-fisica/pacotes/{id}', [AvaliacaoFisicaController::class, 'atualizarPacote'])->name('personal.avaliacao-fisica.pacotes.update');
+    Route::delete('/personal/avaliacao-fisica/pacotes/{id}', [AvaliacaoFisicaController::class, 'excluirPacote'])->name('personal.avaliacao-fisica.pacotes.destroy');
     Route::delete('/personal/avaliacao-fisica/registro/{id}', [AvaliacaoFisicaController::class, 'destroy'])->name('personal.avaliacao-fisica.destroy');
     Route::get('/personal/avaliacao-fisica/{clienteId}', [AvaliacaoFisicaController::class, 'show'])->name('personal.avaliacao-fisica.aluno');
     Route::post('/personal/avaliacao-fisica/{clienteId}', [AvaliacaoFisicaController::class, 'store'])->name('personal.avaliacao-fisica.store');

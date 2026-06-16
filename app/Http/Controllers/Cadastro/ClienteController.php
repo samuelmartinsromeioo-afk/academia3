@@ -25,7 +25,7 @@ class ClienteController extends Controller
 
         $cliente = Cliente::find($id);
         $personals = Personal::where('status', 'aprovado')
-            ->with(['fotos', 'avaliacoes'])
+            ->with(['fotos', 'avaliacoes', 'pacotesAvaliacao' => fn($q) => $q->where('ativo', true)->orderBy('nome')])
             ->get();
         $academias = Academia::with(['fotos', 'planos' => fn($q) => $q->where('ativo', true)->orderBy('valor')])->get();
 

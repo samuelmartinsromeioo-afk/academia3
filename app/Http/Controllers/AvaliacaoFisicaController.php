@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Agenda;
 use App\Models\AvaliacaoFisica;
 use App\Models\Cadastro\Personal;
+use App\Models\PacoteAvaliacao;
 use App\Models\SolicitacaoAvaliacao;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -62,16 +63,108 @@ class AvaliacaoFisicaController extends Controller
         ]);
     }
 
-    public function atualizarValor(Request $request)
+    /** Página de gestão de valores: preços avulsos por tipo + pacotes de avaliação. */
+    public function valores()
     {
         $personalId = session('personal_id');
         if (!$personalId) return redirect()->route('login.index');
 
-        $request->validate(['valor_avaliacao' => 'required|numeric|min:0']);
+        $personal = Personal::findOrFail($personalId);
 
-        Personal::where('id', $personalId)->update(['valor_avaliacao' => $request->valor_avaliacao]);
+        $pacotesAvaliacao = PacoteAvaliacao::where('personal_id', $personalId)
+            ->orderBy('nome')
+            ->get();
 
-        return back()->with('success', 'Valor da avaliação física atualizado!');
+        return view('personal.valores_avaliacao', [
+            'personal'         => $personal,
+            'precos'           => $personal->precos_avaliacao ?? [],
+            'pacotesAvaliacao' => $pacotesAvaliacao,
+        ]);
+    }
+
+    /** Salva o preço avulso de cada tipo de avaliação (em branco = não trabalha com o tipo). */
+    public function salvarPrecos(Request $request)
+    {
+        $personalId = session('personal_id');
+        if (!$personalId) return redirect()->route('login.index');
+
+        $request->validate([
+            'precos'   => 'nullable|array',
+            'precos.*' => 'nullable|numeric|min:0',
+        ]);
+
+        $precos = [];
+        foreach (($request->input('precos') ?? []) as $tipo => $valor) {
+            if (in_array($tipo, AvaliacaoFisica::TIPOS, true) && $valor !== null && $valor !== '' && (float) $valor > 0) {
+                $precos[$tipo] = round((float) $valor, 2);
+            }
+        }
+
+        Personal::where('id', $personalId)->update(['precos_avaliacao' => $precos]);
+
+        return back()->with('success', 'Preços avulsos das avaliações atualizados!');
+    }
+
+    /** Cria um pacote de avaliação física (nome, valor e tipos inclusos). */
+    public function criarPacote(Request $request)
+    {
+        $personalId = session('personal_id');
+        if (!$personalId) return redirect()->route('login.index');
+
+        $dados = $this->validarPacote($request);
+
+        PacoteAvaliacao::create([
+            'personal_id' => $personalId,
+            'nome'        => $dados['nome'],
+            'valor'       => $dados['valor'],
+            'tipos'       => $dados['tipos'],
+            'ativo'       => true,
+        ]);
+
+        return back()->with('success', 'Pacote de avaliação criado!');
+    }
+
+    public function atualizarPacote(Request $request, $id)
+    {
+        $personalId = session('personal_id');
+        if (!$personalId) return redirect()->route('login.index');
+
+        $pacote = PacoteAvaliacao::where('personal_id', $personalId)->findOrFail($id);
+        $dados  = $this->validarPacote($request);
+
+        $pacote->update([
+            'nome'  => $dados['nome'],
+            'valor' => $dados['valor'],
+            'tipos' => $dados['tipos'],
+            'ativo' => $request->boolean('ativo', true),
+        ]);
+
+        return back()->with('success', 'Pacote de avaliação atualizado!');
+    }
+
+    public function excluirPacote($id)
+    {
+        $personalId = session('personal_id');
+        if (!$personalId) return redirect()->route('login.index');
+
+        PacoteAvaliacao::where('personal_id', $personalId)->findOrFail($id)->delete();
+
+        return back()->with('success', 'Pacote de avaliação removido.');
+    }
+
+    private function validarPacote(Request $request): array
+    {
+        $dados = $request->validate([
+            'nome'    => 'required|string|max:120',
+            'valor'   => 'required|numeric|min:0',
+            'tipos'   => 'required|array|min:1',
+            'tipos.*' => 'in:' . implode(',', AvaliacaoFisica::TIPOS),
+        ]);
+
+        // remove tipos duplicados mantendo apenas válidos
+        $dados['tipos'] = array_values(array_unique($dados['tipos']));
+
+        return $dados;
     }
 
     public function show(Request $request, $clienteId)

@@ -976,34 +976,50 @@
 </div>
 
 {{-- MODAL CONTRATAR AVALIAÇÃO FÍSICA --}}
+<style>
+    .avf-sec-title { font-size:0.7rem; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-muted); font-weight:800; margin-bottom:8px; }
+    .avf-opt { display:flex; align-items:center; gap:12px; justify-content:space-between; background:rgba(255,255,255,0.03); border:1px solid var(--border); border-radius:12px; padding:12px 14px; margin-bottom:8px; cursor:pointer; transition:0.2s; }
+    .avf-opt:hover { border-color:var(--primary); }
+    .avf-opt.avf-selected { border-color:var(--primary); background:rgba(212,255,0,0.08); }
+    .avf-opt-nome { font-size:0.88rem; font-weight:800; color:#fff; }
+    .avf-opt-nome i { color:var(--primary); margin-right:4px; }
+    .avf-opt-valor { color:var(--primary); font-weight:900; font-size:0.95rem; white-space:nowrap; }
+    .avf-chips { display:flex; flex-wrap:wrap; gap:5px; margin-top:6px; }
+    .avf-chip { background:rgba(212,255,0,0.08); border:1px solid rgba(212,255,0,0.25); color:var(--primary); padding:2px 8px; border-radius:20px; font-size:0.62rem; font-weight:800; }
+    .avf-opt.avf-disabled { cursor:not-allowed; opacity:0.5; }
+    .avf-opt.avf-disabled:hover { border-color:var(--border); }
+    .avf-na { font-size:0.66rem; color:var(--text-muted); font-style:italic; text-align:right; max-width:170px; }
+</style>
 <div id="avFisicaModal" class="modal-overlay">
-    <div class="profile-card" style="width: 95%; max-width: 500px; border: 1px solid var(--primary); max-height: 90vh; overflow-y: auto;">
+    <div class="profile-card" style="width: 95%; max-width: 540px; border: 1px solid var(--primary); max-height: 90vh; overflow-y: auto;">
         <i class="fas fa-times close-form" onclick="fecharAvFisicaModal()"></i>
 
         <h2 id="nomeAvFisicaPersonal" style="color: var(--primary); margin-bottom: 5px;">Avaliação Física</h2>
-        <p style="color: var(--text-muted); font-size: 0.8rem; margin-bottom: 20px;">
-            <i class="fas fa-info-circle"></i> Contrate a avaliação física avulsa. Após o pagamento, o personal entra em contato para agendar.
+        <p style="color: var(--text-muted); font-size: 0.8rem; margin-bottom: 18px;">
+            <i class="fas fa-info-circle"></i> Escolha um pacote ou uma avaliação avulsa. Após o pagamento, o personal entra em contato para agendar.
         </p>
 
-        {{-- Valor --}}
-        <div style="background: rgba(212,255,0,0.06); border: 1px solid rgba(212,255,0,0.3); border-radius: 12px; padding: 14px 18px; margin-bottom: 20px; display:flex; justify-content:space-between; align-items:center;">
-            <span style="color: var(--text-muted); font-size: 0.8rem; font-weight: 700;">Valor da Avaliação</span>
-            <span id="avFisicaValorDisplay" style="color: var(--primary); font-size: 1.3rem; font-weight: 900;">R$ 0,00</span>
-        </div>
+        <div id="avFisicaLista"></div>
 
-        <label>Observações (Opcional)</label>
+        <label style="margin-top:18px; display:block;">Observações (Opcional)</label>
         <div class="input-wrapper" style="height: auto; margin-top: 5px;">
             <i class="fas fa-comment" style="align-self: flex-start; margin-top: 15px;"></i>
-            <textarea id="avFisicaObs" rows="3" placeholder="Ex: melhor horário, restrições de saúde..." style="background:transparent; border:none; color:#fff; outline:none; flex:1; padding:12px 0; resize:none; font-size:0.9rem; font-family:inherit;"></textarea>
+            <textarea id="avFisicaObs" rows="2" placeholder="Ex: melhor horário, restrições de saúde..." style="background:transparent; border:none; color:#fff; outline:none; flex:1; padding:12px 0; resize:none; font-size:0.9rem; font-family:inherit;"></textarea>
         </div>
 
-        <div style="display:flex; gap:10px; margin-top:20px;">
-            <button type="button" class="btn-action" style="flex:1; margin-top:0;" onclick="pagarAvFisicaPix()">
-                <i class="fas fa-qrcode"></i> Pagar via PIX
-            </button>
-            <button type="button" class="btn-action" style="flex:1; margin-top:0; background:rgba(255,255,255,0.08); color:#fff; border:1px solid rgba(255,255,255,0.15);" onclick="pagarAvFisicaCartao()">
-                <i class="fas fa-credit-card"></i> Pagar com Cartão
-            </button>
+        <div id="avFisicaFooter" style="display:none; margin-top:18px; border-top:1px solid var(--border); padding-top:16px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; flex-wrap:wrap; gap:8px;">
+                <span style="color: var(--text-muted); font-size: 0.8rem; font-weight: 700;"><i class="fas fa-check-circle" style="color:var(--primary);"></i> <span id="avFisicaSelLabel">—</span></span>
+                <span id="avFisicaValorDisplay" style="color: var(--primary); font-size: 1.3rem; font-weight: 900;">R$ 0,00</span>
+            </div>
+            <div style="display:flex; gap:10px;">
+                <button type="button" class="btn-action" style="flex:1; margin-top:0;" onclick="pagarAvFisicaPix()">
+                    <i class="fas fa-qrcode"></i> Pagar via PIX
+                </button>
+                <button type="button" class="btn-action" style="flex:1; margin-top:0; background:rgba(255,255,255,0.08); color:#fff; border:1px solid rgba(255,255,255,0.15);" onclick="pagarAvFisicaCartao()">
+                    <i class="fas fa-credit-card"></i> Cartão
+                </button>
+            </div>
         </div>
     </div>
 </div>
@@ -1033,6 +1049,10 @@
 </div>
 
 <script>
+    // ============ META DOS TIPOS DE AVALIAÇÃO ============
+    window.avaliacaoTipos = {!! json_encode(\App\Models\AvaliacaoFisica::TIPOS) !!};
+    window.avaliacaoMeta  = {!! json_encode(\App\Models\AvaliacaoFisica::META) !!};
+
     // ============ DADOS DOS PERSONALS ============
     window.personalsData = {
         @foreach($personals as $p)
@@ -1044,6 +1064,8 @@
             valor_secao: {{ $p->valor_secao ?? 0 }},
             valor_ficha: {{ $p->valor_ficha ?? 0 }},
             valor_avaliacao: {{ $p->valor_avaliacao ?? 0 }},
+            precos_avaliacao: {!! json_encode($p->precos_avaliacao ?: (object)[]) !!},
+            pacotes_avaliacao: {!! json_encode($p->pacotesAvaliacao->map(fn($pa) => ['id' => $pa->id, 'nome' => $pa->nome, 'valor' => (float) $pa->valor, 'tipos' => $pa->tipos])) !!},
             academias: {!! json_encode($p->academias ?? '') !!},
             fotos: [
                 @foreach($p->fotos ?? [] as $foto)
@@ -1121,6 +1143,12 @@
         const pacotes = window.pacotesPorPersonal?.[personalId] || [];
         const menorPacote = pacotes.length > 0 ? Math.min(...pacotes.map(p => p.valor_mensal)) : 0;
 
+        // Menor preço de avaliação física (avulso ou pacote de avaliação)
+        const precosAv = Object.values(personal.precos_avaliacao || {}).map(v => parseFloat(v)).filter(v => v > 0);
+        const pacotesAv = (personal.pacotes_avaliacao || []).map(p => parseFloat(p.valor)).filter(v => v > 0);
+        const todosAv = precosAv.concat(pacotesAv);
+        const menorAvaliacao = todosAv.length > 0 ? Math.min(...todosAv) : 0;
+
         document.getElementById('detalhesResumo').innerHTML = `
             <div class="detalhes-resumo-card">
                 <i class="fas fa-dollar-sign"></i>
@@ -1140,7 +1168,7 @@
             <div class="detalhes-resumo-card">
                 <i class="fas fa-heart-pulse"></i>
                 <div class="label">Avaliação Física</div>
-                <div class="valor">${parseFloat(personal.valor_avaliacao) > 0 ? 'R$ ' + parseFloat(personal.valor_avaliacao).toFixed(2).replace('.', ',') : 'Consulte'}</div>
+                <div class="valor">${menorAvaliacao > 0 ? 'A partir de R$ ' + parseFloat(menorAvaliacao).toFixed(2).replace('.', ',') : 'Consulte'}</div>
             </div>
         `;
 
@@ -1270,24 +1298,95 @@
 
     // ============ MODAL AVALIAÇÃO FÍSICA ============
     let avFisicaPersonalId = null;
+    let avFisicaSelecao = null; // { kind:'pacote'|'avulso', id, tipo, valor, label }
+
+    function avfEsc(s) {
+        return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    }
+    function moneyBR(v) { return 'R$ ' + (parseFloat(v) || 0).toFixed(2).replace('.', ','); }
 
     function abrirAvFisicaDoDetalhes() {
         const personal = window.personalsData[personalSelecionadoId];
         fecharDetalhesPersonal();
-        abrirAvFisicaModal(personalSelecionadoId, personal.nome, personal.valor_avaliacao);
+        abrirAvFisicaModal(personalSelecionadoId, personal.nome);
     }
 
-    function abrirAvFisicaModal(id, nome, valorAvaliacao) {
-        const v = parseFloat(valorAvaliacao) || 0;
-        if (v <= 0) {
-            alert('Este personal ainda não definiu o valor da avaliação física. Entre em contato com ele.');
-            return;
-        }
+    function abrirAvFisicaModal(id, nome) {
+        const personal = window.personalsData[id];
+        if (!personal) return;
+
         avFisicaPersonalId = id;
+        avFisicaSelecao = null;
         document.getElementById('nomeAvFisicaPersonal').innerText = 'Avaliação Física — ' + nome;
-        document.getElementById('avFisicaValorDisplay').textContent = 'R$ ' + v.toFixed(2).replace('.', ',');
         document.getElementById('avFisicaObs').value = '';
+        document.getElementById('avFisicaFooter').style.display = 'none';
+
+        const precos  = personal.precos_avaliacao || {};
+        const pacotes = personal.pacotes_avaliacao || [];
+        const tipos   = window.avaliacaoTipos || [];
+        const meta    = window.avaliacaoMeta || {};
+
+        // tipos que aparecem em algum pacote
+        const emPacote = {};
+        pacotes.forEach(p => (p.tipos || []).forEach(t => { emPacote[t] = true; }));
+
+        let html = '';
+
+        // PACOTES
+        if (pacotes.length) {
+            html += '<div style="margin-bottom:18px;"><div class="avf-sec-title"><i class="fas fa-box"></i> Pacotes</div>';
+            pacotes.forEach(p => {
+                const chips = (p.tipos || []).map(t => '<span class="avf-chip">' + avfEsc(meta[t]?.label || t) + '</span>').join('');
+                html += '<div class="avf-opt" data-kind="pacote" data-id="' + p.id + '" data-valor="' + p.valor + '" data-label="' + avfEsc(p.nome) + '">'
+                    + '<div style="flex:1; min-width:0;"><div class="avf-opt-nome">' + avfEsc(p.nome) + '</div><div class="avf-chips">' + chips + '</div></div>'
+                    + '<div class="avf-opt-valor">' + moneyBR(p.valor) + '</div></div>';
+            });
+            html += '</div>';
+        }
+
+        // AVULSAS
+        let avulsas = '';
+        tipos.forEach(t => {
+            const label = meta[t]?.label || t;
+            const icon  = meta[t]?.icon || 'fa-clipboard';
+            const preco = parseFloat(precos[t]) || 0;
+            if (preco > 0) {
+                avulsas += '<div class="avf-opt" data-kind="avulso" data-tipo="' + t + '" data-valor="' + preco + '" data-label="' + avfEsc(label) + '">'
+                    + '<div class="avf-opt-nome"><i class="fas ' + icon + '"></i> ' + avfEsc(label) + '</div>'
+                    + '<div class="avf-opt-valor">' + moneyBR(preco) + '</div></div>';
+            } else if (emPacote[t]) {
+                avulsas += '<div class="avf-opt avf-disabled"><div class="avf-opt-nome"><i class="fas ' + icon + '"></i> ' + avfEsc(label) + '</div>'
+                    + '<div class="avf-na">Disponível só no pacote</div></div>';
+            } else {
+                avulsas += '<div class="avf-opt avf-disabled"><div class="avf-opt-nome"><i class="fas ' + icon + '"></i> ' + avfEsc(label) + '</div>'
+                    + '<div class="avf-na">Personal não trabalha com essa avaliação</div></div>';
+            }
+        });
+        html += '<div><div class="avf-sec-title"><i class="fas fa-heart-pulse"></i> Avaliações avulsas</div>' + avulsas + '</div>';
+
+        document.getElementById('avFisicaLista').innerHTML = html;
+
+        document.querySelectorAll('#avFisicaLista .avf-opt:not(.avf-disabled)').forEach(el => {
+            el.addEventListener('click', () => selecionarAvFisica(el));
+        });
+
         document.getElementById('avFisicaModal').style.display = 'flex';
+    }
+
+    function selecionarAvFisica(el) {
+        const ds = el.dataset;
+        avFisicaSelecao = {
+            kind:  ds.kind,
+            id:    ds.id ? parseInt(ds.id) : null,
+            tipo:  ds.tipo || null,
+            valor: parseFloat(ds.valor) || 0,
+            label: ds.label,
+        };
+        document.querySelectorAll('#avFisicaLista .avf-opt').forEach(o => o.classList.remove('avf-selected'));
+        el.classList.add('avf-selected');
+        document.getElementById('avFisicaSelLabel').textContent = avFisicaSelecao.label;
+        document.getElementById('avFisicaValorDisplay').textContent = moneyBR(avFisicaSelecao.valor);
+        document.getElementById('avFisicaFooter').style.display = 'block';
     }
 
     function fecharAvFisicaModal() {
@@ -1295,23 +1394,25 @@
     }
 
     function getAvFisicaPayload() {
-        return {
+        const base = {
             tipo:        'avaliacao',
             personal_id: avFisicaPersonalId,
             observacoes: document.getElementById('avFisicaObs').value.trim() || null,
         };
+        if (avFisicaSelecao?.kind === 'pacote') base.pacote_avaliacao_id = avFisicaSelecao.id;
+        else if (avFisicaSelecao?.kind === 'avulso') base.avaliacao_tipo = avFisicaSelecao.tipo;
+        return base;
     }
 
     async function pagarAvFisicaPix() {
+        if (!avFisicaSelecao) { alert('Selecione um pacote ou uma avaliação.'); return; }
         const payload = getAvFisicaPayload();
-
-        const personal = window.personalsData[avFisicaPersonalId];
-        const valor = parseFloat(personal?.valor_avaliacao) || 0;
+        const valor = avFisicaSelecao.valor;
 
         fecharAvFisicaModal();
         document.getElementById('pixQrCodeImg').src = '';
         document.getElementById('pixCopiaCola').value = '';
-        document.getElementById('pixValor').textContent = 'R$ ' + valor.toFixed(2).replace('.', ',');
+        document.getElementById('pixValor').textContent = moneyBR(valor);
         document.getElementById('pixStatusMsg').style.display = 'none';
         document.getElementById('modalPix').style.display = 'flex';
         clearInterval(pixPollingInterval);
@@ -1327,7 +1428,7 @@
 
             document.getElementById('pixQrCodeImg').src = 'data:image/png;base64,' + pix.pixQrCode;
             document.getElementById('pixCopiaCola').value = pix.pixPayload;
-            document.getElementById('pixValor').textContent = 'R$ ' + parseFloat(pix.amount).toFixed(2).replace('.', ',');
+            document.getElementById('pixValor').textContent = moneyBR(pix.amount);
 
             pixPollingInterval = setInterval(async () => {
                 try {
@@ -1349,18 +1450,18 @@
     }
 
     function pagarAvFisicaCartao() {
+        if (!avFisicaSelecao) { alert('Selecione um pacote ou uma avaliação.'); return; }
         const payload = getAvFisicaPayload();
-
+        const valor = avFisicaSelecao.valor;
         const personal = window.personalsData[avFisicaPersonalId];
-        const valor    = parseFloat(personal?.valor_avaliacao) || 0;
 
         cartaoCtx = {
             modo: 'avaliacao',
             payload: payload,
         };
 
-        document.getElementById('cartaoDescricao').textContent = 'Avaliação Física — ' + (personal?.nome || 'Personal');
-        document.getElementById('cartaoValor').textContent = 'R$ ' + valor.toFixed(2).replace('.', ',');
+        document.getElementById('cartaoDescricao').textContent = (avFisicaSelecao.label || 'Avaliação Física') + ' — ' + (personal?.nome || 'Personal');
+        document.getElementById('cartaoValor').textContent = moneyBR(valor);
         resetarFormCartao();
         document.getElementById('cartaoTelefone').value = '{!! $cliente->whatsapp ?? '' !!}';
         document.getElementById('cartaoCEP').value = '{{ $cliente->cep ?? '' }}';

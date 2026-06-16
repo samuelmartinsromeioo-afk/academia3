@@ -45,6 +45,8 @@ class PaymentController extends Controller
             'personal_id'       => 'required|integer|exists:personals,id',
             'tipo'              => 'required|in:aula_avulsa,pacote,ficha,avaliacao',
             'pacote_id'         => 'nullable|integer|exists:pacotes,id',
+            'pacote_avaliacao_id'=> 'nullable|integer|exists:pacotes_avaliacao,id',
+            'avaliacao_tipo'    => 'nullable|string|max:40',
             'frequencia'        => 'nullable|integer|min:1|max:7',
             'valor_pacote'      => 'nullable|numeric',
             'dias_selecionados' => 'nullable|string',
@@ -71,9 +73,31 @@ class PaymentController extends Controller
             $amount      = (float) ($personal->valor_ficha ?? 0);
             $description = "Ficha Personalizada — {$personal->nome}";
         } elseif ($validated['tipo'] === 'avaliacao') {
-            $pacote      = null;
-            $amount      = (float) ($personal->valor_avaliacao ?? 0);
-            $description = "Avaliação Física — {$personal->nome}";
+            $pacote = null;
+            $avaliacaoPacoteId = null;
+            $avaliacaoTipos    = null;
+
+            if (!empty($validated['pacote_avaliacao_id'])) {
+                $pacoteAv = \App\Models\PacoteAvaliacao::where('personal_id', $personal->id)
+                    ->findOrFail($validated['pacote_avaliacao_id']);
+                $amount            = (float) $pacoteAv->valor;
+                $description       = "Pacote de Avaliação: {$pacoteAv->nome} — {$personal->nome}";
+                $avaliacaoPacoteId = $pacoteAv->id;
+                $avaliacaoTipos    = $pacoteAv->tipos;
+            } elseif (!empty($validated['avaliacao_tipo'])) {
+                $precos = $personal->precos_avaliacao ?? [];
+                $tipoAv = $validated['avaliacao_tipo'];
+                if (!isset($precos[$tipoAv]) || (float) $precos[$tipoAv] <= 0) {
+                    return response()->json(['error' => 'Este personal não trabalha com essa avaliação.'], 422);
+                }
+                $label          = \App\Models\AvaliacaoFisica::META[$tipoAv]['label'] ?? $tipoAv;
+                $amount         = (float) $precos[$tipoAv];
+                $description    = "Avaliação: {$label} — {$personal->nome}";
+                $avaliacaoTipos = [$tipoAv];
+            } else {
+                $amount      = (float) ($personal->valor_avaliacao ?? 0);
+                $description = "Avaliação Física — {$personal->nome}";
+            }
         } else {
             $pacote      = null;
             $amount      = (float) ($personal->valor_secao ?? 0);
@@ -96,6 +120,8 @@ class PaymentController extends Controller
             'condicoes_clinicas'=> $validated['condicoes_clinicas'] ?? null,
             'nivel_experiencia' => $validated['nivel_experiencia'] ?? null,
             'observacoes_ficha' => $validated['observacoes'] ?? null,
+            'avaliacao_pacote_id' => $avaliacaoPacoteId ?? null,
+            'avaliacao_tipos'     => $avaliacaoTipos ?? null,
         ];
 
         try {
@@ -378,12 +404,14 @@ class PaymentController extends Controller
             if (($booking['tipo'] ?? '') === 'avaliacao') {
                 try {
                     $solicitacao = \App\Models\SolicitacaoAvaliacao::create([
-                        'personal_id'      => $booking['personal_id'],
-                        'cliente_id'       => $booking['cliente_id'],
-                        'observacoes'      => $booking['observacoes_ficha'] ?? null,
-                        'valor'            => $payment->amount_total,
-                        'payment_status'   => 'pago',
-                        'asaas_payment_id' => $payment->stripe_payment_intent_id,
+                        'personal_id'         => $booking['personal_id'],
+                        'cliente_id'          => $booking['cliente_id'],
+                        'pacote_avaliacao_id' => $booking['avaliacao_pacote_id'] ?? null,
+                        'observacoes'         => $booking['observacoes_ficha'] ?? null,
+                        'tipos'               => $booking['avaliacao_tipos'] ?? null,
+                        'valor'               => $payment->amount_total,
+                        'payment_status'      => 'pago',
+                        'asaas_payment_id'    => $payment->stripe_payment_intent_id,
                     ]);
 
                     $personal = \App\Models\Cadastro\Personal::find($booking['personal_id']);
@@ -771,6 +799,8 @@ class PaymentController extends Controller
             'personal_id'       => 'required|integer|exists:personals,id',
             'tipo'              => 'required|in:aula_avulsa,pacote,ficha,avaliacao',
             'pacote_id'         => 'nullable|integer|exists:pacotes,id',
+            'pacote_avaliacao_id'=> 'nullable|integer|exists:pacotes_avaliacao,id',
+            'avaliacao_tipo'    => 'nullable|string|max:40',
             'frequencia'        => 'nullable|integer|min:1|max:7',
             'valor_pacote'      => 'nullable|numeric',
             'dias_selecionados' => 'nullable|string',
@@ -805,9 +835,31 @@ class PaymentController extends Controller
             $amount      = (float) ($personal->valor_ficha ?? 0);
             $description = "Ficha Personalizada — {$personal->nome}";
         } elseif ($validated['tipo'] === 'avaliacao') {
-            $pacote      = null;
-            $amount      = (float) ($personal->valor_avaliacao ?? 0);
-            $description = "Avaliação Física — {$personal->nome}";
+            $pacote = null;
+            $avaliacaoPacoteId = null;
+            $avaliacaoTipos    = null;
+
+            if (!empty($validated['pacote_avaliacao_id'])) {
+                $pacoteAv = \App\Models\PacoteAvaliacao::where('personal_id', $personal->id)
+                    ->findOrFail($validated['pacote_avaliacao_id']);
+                $amount            = (float) $pacoteAv->valor;
+                $description       = "Pacote de Avaliação: {$pacoteAv->nome} — {$personal->nome}";
+                $avaliacaoPacoteId = $pacoteAv->id;
+                $avaliacaoTipos    = $pacoteAv->tipos;
+            } elseif (!empty($validated['avaliacao_tipo'])) {
+                $precos = $personal->precos_avaliacao ?? [];
+                $tipoAv = $validated['avaliacao_tipo'];
+                if (!isset($precos[$tipoAv]) || (float) $precos[$tipoAv] <= 0) {
+                    return response()->json(['error' => 'Este personal não trabalha com essa avaliação.'], 422);
+                }
+                $label          = \App\Models\AvaliacaoFisica::META[$tipoAv]['label'] ?? $tipoAv;
+                $amount         = (float) $precos[$tipoAv];
+                $description    = "Avaliação: {$label} — {$personal->nome}";
+                $avaliacaoTipos = [$tipoAv];
+            } else {
+                $amount      = (float) ($personal->valor_avaliacao ?? 0);
+                $description = "Avaliação Física — {$personal->nome}";
+            }
         } else {
             $pacote      = null;
             $amount      = (float) ($personal->valor_secao ?? 0);
@@ -830,6 +882,8 @@ class PaymentController extends Controller
             'condicoes_clinicas'=> $validated['condicoes_clinicas'] ?? null,
             'nivel_experiencia' => $validated['nivel_experiencia'] ?? null,
             'observacoes_ficha' => $validated['observacoes'] ?? null,
+            'avaliacao_pacote_id' => $avaliacaoPacoteId ?? null,
+            'avaliacao_tipos'     => $avaliacaoTipos ?? null,
         ];
 
         try {

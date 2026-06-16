@@ -48,6 +48,11 @@ class Personal extends Model
         'asaas_api_key',
         'valor_ficha',
         'valor_avaliacao',
+        'precos_avaliacao',
+    ];
+
+    protected $casts = [
+        'precos_avaliacao' => 'array',
     ];
 
     public function agendas() {
@@ -61,6 +66,10 @@ class Personal extends Model
 
     public function pacotes() {
         return $this->hasMany(Pacote::class, 'personal_id');
+    }
+
+    public function pacotesAvaliacao() {
+        return $this->hasMany(\App\Models\PacoteAvaliacao::class, 'personal_id');
     }
 
     public function fotos()
