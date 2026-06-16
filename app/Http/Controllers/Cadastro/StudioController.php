@@ -9,6 +9,8 @@ use App\Models\Cadastro\Cliente;
 use App\Models\Cadastro\Personal;
 use App\Models\Cadastro\Studio;
 use App\Models\Cadastro\StudioHorario;
+use App\Models\Cadastro\StudioAula;
+use App\Models\Cadastro\StudioProfessor;
 use App\Models\Cadastro\StudioPlano;
 use App\Models\Payment;
 use Illuminate\Http\Request;
@@ -275,6 +277,12 @@ class StudioController extends Controller
         }
 
         $horarios = StudioHorario::where('studio_id', $studio->id)->orderBy('dia_semana')->get();
+        $aulas = StudioAula::with('professor')
+            ->where('studio_id', $studio->id)
+            ->orderBy('dia_semana')
+            ->orderBy('hora_inicio')
+            ->get();
+        $professores = StudioProfessor::where('studio_id', $studio->id)->orderBy('nome')->get();
 
         $dataSelecionada = $request->query('data', today()->format('Y-m-d'));
         if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $dataSelecionada)) {
@@ -290,7 +298,142 @@ class StudioController extends Controller
             ->orderBy('hora_inicio')
             ->get();
 
-        return view('studio.horarios', compact('studio', 'horarios', 'slots', 'bloqueios', 'dataSelecionada'));
+        return view('studio.horarios', compact('studio', 'horarios', 'aulas', 'professores', 'slots', 'bloqueios', 'dataSelecionada'));
+    }
+
+    // ==========================================
+    // PROFISSIONAIS DO STUDIO
+    // ==========================================
+
+    public function storeProfessor(Request $request)
+    {
+        $studio = $this->studioLogado();
+        if (!$studio) {
+            return redirect()->route('login.index');
+        }
+
+        $request->validate([
+            'nome'   => 'required|string|max:120',
+            'resumo' => 'nullable|string|max:2000',
+        ]);
+
+        StudioProfessor::create([
+            'studio_id' => $studio->id,
+            'nome'      => $request->nome,
+            'resumo'    => $request->resumo,
+            'ativo'     => true,
+        ]);
+
+        return redirect()->back()->with('success', 'Profissional cadastrado!');
+    }
+
+    public function updateProfessor(Request $request, $id)
+    {
+        $studio = $this->studioLogado();
+        if (!$studio) {
+            return redirect()->route('login.index');
+        }
+
+        $request->validate([
+            'nome'   => 'required|string|max:120',
+            'resumo' => 'nullable|string|max:2000',
+        ]);
+
+        $professor = StudioProfessor::where('studio_id', $studio->id)->findOrFail($id);
+        $professor->update([
+            'nome'   => $request->nome,
+            'resumo' => $request->resumo,
+        ]);
+
+        // Mantém o nome desnormalizado nas aulas sincronizado.
+        StudioAula::where('studio_id', $studio->id)
+            ->where('professor_id', $professor->id)
+            ->update(['profissional' => $professor->nome]);
+
+        return redirect()->back()->with('success', 'Profissional atualizado!');
+    }
+
+    public function destroyProfessor($id)
+    {
+        $studio = $this->studioLogado();
+        if (!$studio) {
+            return redirect()->route('login.index');
+        }
+
+        StudioProfessor::where('studio_id', $studio->id)->findOrFail($id)->delete();
+
+        return redirect()->back()->with('success', 'Profissional removido!');
+    }
+
+    public function storeAula(Request $request)
+    {
+        $studio = $this->studioLogado();
+        if (!$studio) {
+            return redirect()->route('login.index');
+        }
+
+        $request->validate([
+            'dia_semana'   => 'required|integer|min:0|max:6',
+            'hora_inicio'  => 'required|date_format:H:i',
+            'duracao_min'  => 'required|integer|min:5|max:600',
+            'professor_id' => 'nullable|integer',
+            'capacidade'   => 'nullable|integer|min:1|max:500',
+        ]);
+
+        // Resolve o profissional escolhido (cadastro reutilizável).
+        $professorId = null;
+        $profNome    = null;
+        if ($request->filled('professor_id')) {
+            $professor = StudioProfessor::where('studio_id', $studio->id)->find($request->professor_id);
+            if ($professor) {
+                $professorId = $professor->id;
+                $profNome    = $professor->nome;
+            }
+        }
+
+        // A aula precisa caber dentro do horário de funcionamento do dia.
+        $func = StudioHorario::where('studio_id', $studio->id)
+            ->where('dia_semana', $request->dia_semana)
+            ->where('ativo', true)
+            ->first();
+
+        if (!$func) {
+            return redirect()->back()->with('error', 'Defina primeiro o horário de funcionamento desse dia antes de cadastrar aulas.');
+        }
+
+        $inicio = \Carbon\Carbon::parse($request->hora_inicio);
+        $fim    = $inicio->copy()->addMinutes((int) $request->duracao_min);
+        $abertura   = \Carbon\Carbon::parse(substr($func->hora_abertura, 0, 5));
+        $fechamento = \Carbon\Carbon::parse(substr($func->hora_fechamento, 0, 5));
+
+        if ($inicio->lt($abertura) || $fim->gt($fechamento)) {
+            return redirect()->back()->with('error', 'A aula deve estar dentro do funcionamento do dia (' . substr($func->hora_abertura, 0, 5) . ' às ' . substr($func->hora_fechamento, 0, 5) . ').');
+        }
+
+        StudioAula::create([
+            'studio_id'    => $studio->id,
+            'dia_semana'   => $request->dia_semana,
+            'hora_inicio'  => $request->hora_inicio,
+            'duracao_min'  => $request->duracao_min,
+            'profissional' => $profNome,
+            'professor_id' => $professorId,
+            'capacidade'   => $request->capacidade,
+            'ativo'        => true,
+        ]);
+
+        return redirect()->back()->with('success', 'Horário de aula adicionado!');
+    }
+
+    public function destroyAula($id)
+    {
+        $studio = $this->studioLogado();
+        if (!$studio) {
+            return redirect()->route('login.index');
+        }
+
+        StudioAula::where('id', $id)->where('studio_id', $studio->id)->firstOrFail()->delete();
+
+        return redirect()->back()->with('success', 'Horário de aula removido!');
     }
 
     public function storeHorario(Request $request)

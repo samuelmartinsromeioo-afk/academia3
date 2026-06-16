@@ -231,6 +231,45 @@
             .top-bar { padding: 14px 20px; }
             .section { padding: 20px; }
         }
+
+        /* PROFISSIONAIS */
+        .prof-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 14px;
+            background: var(--input-bg);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 14px 16px;
+            margin-bottom: 10px;
+        }
+        .prof-item .nome { font-weight: 800; font-size: 0.92rem; }
+        .prof-item .resumo { color: var(--text-muted); font-size: 0.8rem; margin-top: 4px; line-height: 1.5; white-space: pre-line; }
+        .prof-actions { display: flex; gap: 8px; flex-shrink: 0; }
+        textarea {
+            width: 100%;
+            background: var(--input-bg);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 11px 13px;
+            color: var(--text-main);
+            font-family: inherit;
+            font-size: 0.88rem;
+            outline: none;
+            resize: vertical;
+            min-height: 80px;
+        }
+        textarea:focus { border-color: var(--primary); }
+
+        /* MODAL */
+        .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 2000; justify-content: center; align-items: center; backdrop-filter: blur(6px); padding: 20px; }
+        .modal-overlay.aberto { display: flex; }
+        .modal-box { background: var(--card-bg); border: 1px solid var(--border); border-radius: 18px; padding: 28px; width: 100%; max-width: 480px; position: relative; }
+        .modal-box h3 { font-size: 1.05rem; font-weight: 800; margin-bottom: 18px; }
+        .modal-box .fg { margin-bottom: 14px; }
+        .modal-close { position: absolute; top: 16px; right: 18px; cursor: pointer; color: var(--text-muted); font-size: 1.1rem; background: none; border: none; }
+        .modal-close:hover { color: var(--error); }
     </style>
 </head>
 <body>
@@ -336,6 +375,138 @@
         </div>
     </div>
 
+    <!-- PROFISSIONAIS -->
+    <div class="section">
+        <div class="section-title">
+            <i class="fas fa-user-tie"></i> Profissionais
+            <span class="hint">Cadastre uma vez com um breve resumo e reutilize em vários horários de aula.</span>
+        </div>
+
+        <form method="POST" action="{{ route('studio.professores.store') }}">
+            @csrf
+            <div class="form-grid" style="align-items: start;">
+                <div>
+                    <label for="prof_nome">Nome do profissional</label>
+                    <input type="text" name="nome" id="prof_nome" placeholder="Ex: Prof. Ana Souza" maxlength="120" required>
+                </div>
+                <div style="grid-column: 1 / -1;">
+                    <label for="prof_resumo">Breve resumo</label>
+                    <textarea name="resumo" id="prof_resumo" maxlength="2000" placeholder="Ex: Educadora física (CREF 12345), especialista em pilates e reabilitação, 8 anos de experiência."></textarea>
+                </div>
+                <button type="submit" class="btn"><i class="fas fa-plus"></i> Cadastrar profissional</button>
+            </div>
+        </form>
+
+        <div style="margin-top: 24px;">
+            @if ($professores->isEmpty())
+                <p class="empty"><i class="fas fa-info-circle"></i> Nenhum profissional cadastrado ainda.</p>
+            @else
+                @foreach ($professores as $prof)
+                    <div class="prof-item">
+                        <div>
+                            <div class="nome"><i class="fas fa-user-tie" style="color: var(--primary);"></i> {{ $prof->nome }}</div>
+                            @if ($prof->resumo)
+                                <div class="resumo">{{ $prof->resumo }}</div>
+                            @else
+                                <div class="resumo"><em>Sem resumo cadastrado.</em></div>
+                            @endif
+                        </div>
+                        <div class="prof-actions">
+                            <button type="button" class="btn-danger" style="border-color: var(--border); color: var(--text-main);"
+                                onclick='abrirEditarProfessor(@json($prof->id), @json($prof->nome), @json($prof->resumo))'><i class="fas fa-pen"></i></button>
+                            <form method="POST" action="{{ route('studio.professores.destroy', $prof->id) }}" onsubmit="return confirm('Remover este profissional? Ele será desvinculado das aulas.');">
+                                @csrf
+                                @method('DELETE')
+                                <button type="submit" class="btn-danger"><i class="fas fa-trash"></i></button>
+                            </form>
+                        </div>
+                    </div>
+                @endforeach
+            @endif
+        </div>
+    </div>
+
+    <!-- HORÁRIOS DE AULA -->
+    <div class="section">
+        <div class="section-title">
+            <i class="fas fa-chalkboard-teacher"></i> Horários de aula
+            <span class="hint">Defina horário de início, duração e o profissional. Quando há aulas num dia, elas substituem os slots automáticos de 1h.</span>
+        </div>
+
+        <form method="POST" action="{{ route('studio.aulas.store') }}">
+            @csrf
+            <div class="form-grid">
+                <div>
+                    <label for="aula_dia">Dia da semana</label>
+                    <select name="dia_semana" id="aula_dia" required>
+                        @foreach ($diasSemana as $num => $nome)
+                            <option value="{{ $num }}">{{ $nome }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <div>
+                    <label for="aula_inicio">Início da aula</label>
+                    <input type="time" name="hora_inicio" id="aula_inicio" value="08:00" required>
+                </div>
+                <div>
+                    <label for="aula_duracao">Duração (min)</label>
+                    <input type="number" name="duracao_min" id="aula_duracao" min="5" max="600" step="5" value="60" required>
+                </div>
+                <div>
+                    <label for="aula_prof">Profissional</label>
+                    <select name="professor_id" id="aula_prof">
+                        <option value="">— Sem profissional —</option>
+                        @foreach ($professores as $prof)
+                            <option value="{{ $prof->id }}">{{ $prof->nome }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <div>
+                    <label for="aula_cap">Capacidade</label>
+                    <input type="number" name="capacidade" id="aula_cap" min="1" max="500" placeholder="Padrão: {{ $studio->capacidade_padrao }}">
+                </div>
+                <button type="submit" class="btn"><i class="fas fa-plus"></i> Adicionar aula</button>
+            </div>
+        </form>
+
+        <div style="margin-top: 24px;">
+            @if ($aulas->isEmpty())
+                <p class="empty"><i class="fas fa-info-circle"></i> Nenhum horário de aula cadastrado. Sem aulas, os clientes verão slots automáticos de 1h dentro do funcionamento.</p>
+            @else
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Dia</th>
+                            <th>Início</th>
+                            <th>Duração</th>
+                            <th>Profissional</th>
+                            <th>Capacidade</th>
+                            <th style="text-align:right;">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach ($aulas as $a)
+                            <tr>
+                                <td><strong>{{ $diasSemana[$a->dia_semana] ?? $a->dia_semana }}</strong></td>
+                                <td>{{ substr($a->hora_inicio, 0, 5) }}</td>
+                                <td>{{ $a->duracao_min }} min</td>
+                                <td>{{ $a->profissional ?: '—' }}</td>
+                                <td><span class="badge-cap">{{ $a->capacidade ?? $studio->capacidade_padrao }} alunos</span></td>
+                                <td style="text-align:right;">
+                                    <form method="POST" action="{{ route('studio.aulas.destroy', $a->id) }}" style="display:inline;" onsubmit="return confirm('Remover esta aula?');">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit" class="btn-danger"><i class="fas fa-trash"></i> Remover</button>
+                                    </form>
+                                </td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            @endif
+        </div>
+    </div>
+
     <!-- SLOTS DO DIA -->
     <div class="section">
         <div class="section-title">
@@ -356,7 +527,10 @@
             <div class="slots-grid">
                 @foreach ($slots as $slot)
                     <div class="slot-card {{ $slot['vagas'] === 0 ? 'lotado' : '' }}">
-                        <div class="slot-hora"><i class="far fa-clock" style="color: var(--primary);"></i> {{ $slot['label'] }}</div>
+                        <div class="slot-hora"><i class="far fa-clock" style="color: var(--primary);"></i> {{ $slot['label'] }} <span style="color:var(--text-muted); font-weight:600; font-size:0.78rem;">· {{ $slot['duracao'] ?? 60 }}min</span></div>
+                        @if (!empty($slot['profissional']))
+                            <div class="slot-vagas" style="margin-bottom:6px;"><i class="fas fa-chalkboard-teacher" style="color: var(--primary);"></i> {{ $slot['profissional'] }}</div>
+                        @endif
                         <div class="slot-vagas">
                             <strong>{{ $slot['vagas'] }}</strong> de {{ $slot['capacidade'] }} vagas livres
                             ({{ $slot['ocupacao'] }} ocupada{{ $slot['ocupacao'] === 1 ? '' : 's' }})
@@ -402,6 +576,45 @@
         @endif
     </div>
 </div>
+
+<!-- MODAL EDITAR PROFISSIONAL -->
+<div class="modal-overlay" id="modalProfessor">
+    <div class="modal-box">
+        <button type="button" class="modal-close" onclick="fecharEditarProfessor()"><i class="fas fa-times"></i></button>
+        <h3><i class="fas fa-user-pen" style="color: var(--primary);"></i> Editar profissional</h3>
+        <form method="POST" id="formEditarProfessor">
+            @csrf
+            @method('PUT')
+            <div class="fg">
+                <label for="edit_prof_nome">Nome</label>
+                <input type="text" name="nome" id="edit_prof_nome" maxlength="120" required>
+            </div>
+            <div class="fg">
+                <label for="edit_prof_resumo">Breve resumo</label>
+                <textarea name="resumo" id="edit_prof_resumo" maxlength="2000"></textarea>
+            </div>
+            <button type="submit" class="btn" style="width: 100%;"><i class="fas fa-save"></i> Salvar alterações</button>
+        </form>
+    </div>
+</div>
+
+<script>
+    const rotaProfessorUpdateBase = "{{ url('/studio/profissionais') }}";
+
+    function abrirEditarProfessor(id, nome, resumo) {
+        const form = document.getElementById('formEditarProfessor');
+        form.action = rotaProfessorUpdateBase + '/' + id;
+        document.getElementById('edit_prof_nome').value = nome || '';
+        document.getElementById('edit_prof_resumo').value = resumo || '';
+        document.getElementById('modalProfessor').classList.add('aberto');
+    }
+    function fecharEditarProfessor() {
+        document.getElementById('modalProfessor').classList.remove('aberto');
+    }
+    document.getElementById('modalProfessor').addEventListener('click', function (e) {
+        if (e.target === this) fecharEditarProfessor();
+    });
+</script>
 
 </body>
 </html>

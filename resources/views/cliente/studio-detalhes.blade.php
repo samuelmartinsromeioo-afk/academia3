@@ -567,6 +567,15 @@
     </div>
 </div>
 
+<!-- MODAL PROFISSIONAL -->
+<div class="modal-overlay" id="profModal">
+    <div class="modal-box">
+        <button class="modal-fechar" onclick="fecharProfModal()">✕</button>
+        <h3><i class="fas fa-user-tie"></i> <span id="profModalNome">Profissional</span></h3>
+        <p id="profModalResumo" style="color: var(--text-muted); font-size: 0.9rem; line-height: 1.6; white-space: pre-line; margin-top: 12px;"></p>
+    </div>
+</div>
+
 <!-- MODAL PIX -->
 <div class="modal-overlay" id="modalPix">
     <div class="modal-box">
@@ -652,11 +661,17 @@
 
     // ============ SLOTS DE AULA AVULSA ============
     let slotSelecionado = null;
+    let slotsCarregados = [];
+
+    function escHtml(s) {
+        return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    }
 
     async function carregarSlots() {
         const data = document.getElementById('dataAula').value;
         const container = document.getElementById('slotsContainer');
         slotSelecionado = null;
+        slotsCarregados = [];
         document.getElementById('slotAcao').classList.remove('visivel');
 
         if (!data) return;
@@ -676,10 +691,12 @@
                 return;
             }
 
+            slotsCarregados = slots;
             container.innerHTML = '<div class="slots-grid">' + slots.map((s, i) => `
                 <div class="slot-card ${s.vagas === 0 ? 'lotado' : ''}" id="slot-${i}"
-                     onclick="${s.vagas === 0 ? '' : `selecionarSlot(${i}, '${s.inicio}', '${s.fim}', '${s.label}')`}">
-                    <div class="hora">${s.label}</div>
+                     ${s.vagas === 0 ? '' : `onclick="selecionarSlot(${i})"`}>
+                    <div class="hora">${escHtml(s.label)}${s.duracao ? ` <span style="color:var(--text-muted); font-weight:600; font-size:0.74rem;">· ${s.duracao}min</span>` : ''}</div>
+                    ${s.profissional ? `<div class="vagas" style="margin-bottom:4px;"><i class="fas fa-chalkboard-teacher" style="color:var(--studio-color);"></i> ${s.professor_resumo ? `<a href="#" onclick="event.stopPropagation(); verProfessor(${i}); return false;" style="color:var(--studio-color); text-decoration:underline; font-weight:700;">${escHtml(s.profissional)}</a>` : escHtml(s.profissional)}</div>` : ''}
                     <div class="vagas"><strong>${s.vagas}</strong>/${s.capacidade} vagas</div>
                 </div>
             `).join('') + '</div>';
@@ -688,13 +705,27 @@
         }
     }
 
-    function selecionarSlot(index, inicio, fim, label) {
-        slotSelecionado = { inicio, fim, label };
+    function selecionarSlot(index) {
+        const s = slotsCarregados[index];
+        if (!s) return;
+        slotSelecionado = { inicio: s.inicio, fim: s.fim, label: s.label, profissional: s.profissional || '' };
         document.querySelectorAll('.slot-card').forEach(c => c.classList.remove('selected'));
         document.getElementById('slot-' + index).classList.add('selected');
-        document.getElementById('slotSelecionadoLabel').textContent =
-            label + ' em ' + document.getElementById('dataAula').value.split('-').reverse().join('/');
+        const dataFmt = document.getElementById('dataAula').value.split('-').reverse().join('/');
+        const profTxt = s.profissional ? ' · ' + s.profissional : '';
+        document.getElementById('slotSelecionadoLabel').textContent = s.label + profTxt + ' em ' + dataFmt;
         document.getElementById('slotAcao').classList.add('visivel');
+    }
+
+    function verProfessor(index) {
+        const s = slotsCarregados[index];
+        if (!s) return;
+        document.getElementById('profModalNome').textContent = s.profissional || 'Profissional';
+        document.getElementById('profModalResumo').textContent = s.professor_resumo || 'Sem resumo disponível.';
+        document.getElementById('profModal').classList.add('aberto');
+    }
+    function fecharProfModal() {
+        document.getElementById('profModal').classList.remove('aberto');
     }
 
     document.getElementById('dataAula').addEventListener('change', carregarSlots);
@@ -772,7 +803,7 @@
         iniciarPix(
             '/api/criar-pagamento-aula-studio',
             { studio_id: STUDIO_ID, data: document.getElementById('dataAula').value, hora_inicio: slotSelecionado.inicio, hora_fim: slotSelecionado.fim },
-            `Aula ${slotSelecionado.label} — ${STUDIO_NOME}`,
+            `Aula ${slotSelecionado.label}${slotSelecionado.profissional ? ' com ' + slotSelecionado.profissional : ''} — ${STUDIO_NOME}`,
             '✅ Pagamento confirmado! Sua vaga está garantida!'
         );
     }
@@ -814,7 +845,7 @@
         abrirModalCartao(
             '/api/criar-pagamento-cartao-aula-studio',
             { studio_id: STUDIO_ID, data: document.getElementById('dataAula').value, hora_inicio: slotSelecionado.inicio, hora_fim: slotSelecionado.fim },
-            `Aula ${slotSelecionado.label} — ${STUDIO_NOME}`,
+            `Aula ${slotSelecionado.label}${slotSelecionado.profissional ? ' com ' + slotSelecionado.profissional : ''} — ${STUDIO_NOME}`,
             VALOR_AULA
         );
     }

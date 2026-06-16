@@ -64,6 +64,16 @@ class Studio extends Model
         return $this->hasMany(StudioHorario::class, 'studio_id');
     }
 
+    public function aulas(): HasMany
+    {
+        return $this->hasMany(StudioAula::class, 'studio_id');
+    }
+
+    public function professores(): HasMany
+    {
+        return $this->hasMany(StudioProfessor::class, 'studio_id');
+    }
+
     public function agendas(): HasMany
     {
         return $this->hasMany(Agenda::class, 'studio_id');
@@ -98,45 +108,94 @@ class Studio extends Model
             ->where('ativo', true)
             ->first();
 
+        // Sem funcionamento definido no dia => studio fechado (nada agendável).
         if (!$horario) {
             return [];
         }
 
-        $capacidade = $horario->capacidade ?? $this->capacidade_padrao ?? 10;
+        $capPadrao  = $horario->capacidade ?? $this->capacidade_padrao ?? 10;
+        $abertura   = \Carbon\Carbon::parse($data . ' ' . $horario->hora_abertura);
+        $fechamento = \Carbon\Carbon::parse($data . ' ' . $horario->hora_fechamento);
 
         $agendasDoDia = Agenda::where('studio_id', $this->id)
             ->whereDate('data', $data)
             ->where('cancelado', false)
             ->get();
 
-        $slots = [];
-        $cursor = \Carbon\Carbon::parse($data . ' ' . $horario->hora_abertura);
-        $fechamento = \Carbon\Carbon::parse($data . ' ' . $horario->hora_fechamento);
+        // Aulas específicas do dia (com horário de início, duração e profissional).
+        $aulas = $this->aulas()
+            ->with('professor')
+            ->where('dia_semana', $dia->dayOfWeek)
+            ->where('ativo', true)
+            ->orderBy('hora_inicio')
+            ->get();
 
-        while ($cursor->copy()->addHour()->lte($fechamento)) {
-            $slotInicio = $cursor->format('H:i:s');
-            $slotFim = $cursor->copy()->addHour()->format('H:i:s');
+        // Monta as "janelas" de aula. Se houver aulas cadastradas, usa-as
+        // (somente as que ficam dentro do funcionamento do dia); caso contrário,
+        // mantém o comportamento antigo (slots de 1h pelo funcionamento).
+        $janelas = [];
+
+        if ($aulas->isNotEmpty()) {
+            foreach ($aulas as $aula) {
+                $inicio = \Carbon\Carbon::parse($data . ' ' . $aula->hora_inicio);
+                $fim    = $inicio->copy()->addMinutes((int) ($aula->duracao_min ?: 60));
+
+                // Ignora aulas que extrapolam o horário de funcionamento do dia.
+                if ($inicio->lt($abertura) || $fim->gt($fechamento)) {
+                    continue;
+                }
+
+                $janelas[] = [
+                    'inicio'           => $inicio,
+                    'fim'              => $fim,
+                    'capacidade'       => $aula->capacidade ?? $capPadrao,
+                    'profissional'     => $aula->professor->nome ?? $aula->profissional,
+                    'professor_resumo' => $aula->professor->resumo ?? null,
+                    'duracao'          => (int) ($aula->duracao_min ?: 60),
+                ];
+            }
+        } else {
+            $cursor = $abertura->copy();
+            while ($cursor->copy()->addHour()->lte($fechamento)) {
+                $janelas[] = [
+                    'inicio'           => $cursor->copy(),
+                    'fim'              => $cursor->copy()->addHour(),
+                    'capacidade'       => $capPadrao,
+                    'profissional'     => null,
+                    'professor_resumo' => null,
+                    'duracao'          => 60,
+                ];
+                $cursor->addHour();
+            }
+        }
+
+        $slots = [];
+        foreach ($janelas as $j) {
+            $slotInicio = $j['inicio']->format('H:i:s');
+            $slotFim    = $j['fim']->format('H:i:s');
 
             $sobrepostas = $agendasDoDia->filter(function ($agenda) use ($slotInicio, $slotFim) {
                 return $agenda->hora_inicio < $slotFim && $agenda->hora_fim > $slotInicio;
             });
 
-            $bloqueado = $sobrepostas->contains(fn ($a) => $a->tipo_aula === 'bloqueio');
-
-            if (!$bloqueado) {
-                $ocupacao = $sobrepostas->where('tipo_aula', '!=', 'bloqueio')->count();
-
-                $slots[] = [
-                    'inicio'     => substr($slotInicio, 0, 5),
-                    'fim'        => substr($slotFim, 0, 5),
-                    'label'      => substr($slotInicio, 0, 5) . ' - ' . substr($slotFim, 0, 5),
-                    'capacidade' => (int) $capacidade,
-                    'ocupacao'   => $ocupacao,
-                    'vagas'      => max(0, (int) $capacidade - $ocupacao),
-                ];
+            if ($sobrepostas->contains(fn ($a) => $a->tipo_aula === 'bloqueio')) {
+                continue;
             }
 
-            $cursor->addHour();
+            $ocupacao   = $sobrepostas->where('tipo_aula', '!=', 'bloqueio')->count();
+            $capacidade = (int) $j['capacidade'];
+
+            $slots[] = [
+                'inicio'           => substr($slotInicio, 0, 5),
+                'fim'              => substr($slotFim, 0, 5),
+                'label'            => substr($slotInicio, 0, 5) . ' - ' . substr($slotFim, 0, 5),
+                'capacidade'       => $capacidade,
+                'ocupacao'         => $ocupacao,
+                'vagas'            => max(0, $capacidade - $ocupacao),
+                'profissional'     => $j['profissional'],
+                'professor_resumo' => $j['professor_resumo'] ?? null,
+                'duracao'          => $j['duracao'],
+            ];
         }
 
         return $slots;

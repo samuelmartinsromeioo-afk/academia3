@@ -234,6 +234,11 @@ Route::middleware('check.login')->group(function () {
     Route::get('/studio/horarios', [StudioController::class, 'horarios'])->name('studio.horarios');
     Route::post('/studio/horarios', [StudioController::class, 'storeHorario'])->name('studio.horarios.store');
     Route::delete('/studio/horarios/{id}', [StudioController::class, 'destroyHorario'])->name('studio.horarios.destroy');
+    Route::post('/studio/aulas', [StudioController::class, 'storeAula'])->name('studio.aulas.store');
+    Route::delete('/studio/aulas/{id}', [StudioController::class, 'destroyAula'])->name('studio.aulas.destroy');
+    Route::post('/studio/profissionais', [StudioController::class, 'storeProfessor'])->name('studio.professores.store');
+    Route::put('/studio/profissionais/{id}', [StudioController::class, 'updateProfessor'])->name('studio.professores.update');
+    Route::delete('/studio/profissionais/{id}', [StudioController::class, 'destroyProfessor'])->name('studio.professores.destroy');
     Route::post('/studio/bloquear-slot', [StudioController::class, 'bloquearSlot'])->name('studio.bloquear-slot');
     Route::delete('/studio/bloqueios/{id}', [StudioController::class, 'desbloquearSlot'])->name('studio.desbloquear-slot');
 
