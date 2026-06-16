@@ -514,6 +514,16 @@
 
                 <div class="info-item">
                     <div class="info-icon">
+                        <i class="fas fa-id-badge"></i>
+                    </div>
+                    <div class="info-content">
+                        <h3>CREF</h3>
+                        <p>{{ $personal->cref ?? 'Não informado' }}</p>
+                    </div>
+                </div>
+
+                <div class="info-item">
+                    <div class="info-icon">
                         <i class="fas fa-calendar"></i>
                     </div>
                     <div class="info-content">

@@ -26,6 +26,7 @@ class Personal extends Model
         'senha',
         'email',
         'certificado',
+        'cref',
         'resultados',
         'avaliacao',
         'valor_secao',

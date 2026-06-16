@@ -394,10 +394,10 @@
             </div>
 
             <div class="form-group">
-                <label>Certificado (PDF/IMG)</label>
+                <label>CREF</label>
                 <div class="input-wrapper">
-                    <i class="fa-solid fa-file-contract"></i>
-                    <input type="file" name="certificado" required>
+                    <i class="fa-solid fa-id-badge"></i>
+                    <input type="text" name="cref" value="{{ old('cref') }}" placeholder="Ex: 123456-G/SP" required>
                 </div>
             </div>
 

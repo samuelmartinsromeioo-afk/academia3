@@ -37,7 +37,7 @@ class PersonalController extends Controller
                 }
             }],
             'email'         => 'required|email|unique:personals,email',
-            'certificado'   => 'required|file|mimes:pdf,jpg,jpeg,png,heic,heif|max:10240',
+            'cref'          => 'required|string|max:30',
             'foto'          => 'required|file|mimes:jpeg,jpg,png,gif,webp,heic,heif|max:10240',
             'valor_secao'   => 'required|numeric',
             'senha'         => 'required|string|min:8|confirmed',
@@ -52,11 +52,6 @@ class PersonalController extends Controller
         if ($request->hasFile('foto')) {
             $path = $request->file('foto')->store('personals', 'public');
             $dados['foto'] = $path;
-        }
-
-        if ($request->hasFile('certificado')) {
-            $pathCert = $request->file('certificado')->store('certificados', 'public');
-            $dados['certificado'] = $pathCert;
         }
 
         $dados['senha']     = Hash::make($request->senha);
