@@ -137,6 +137,7 @@ Route::middleware('check.login')->group(function () {
     Route::get('/academias/{id}/detalhes', [ClienteController::class, 'detalhesAcademia'])->name('academias.detalhes');
     Route::get('/studios/explorar', [ClienteController::class, 'listarStudios'])->name('studios.explorar');
     Route::get('/studios/{id}/detalhes', [ClienteController::class, 'detalheStudio'])->name('studios.detalhes');
+    Route::get('/personais/explorar', [ClienteController::class, 'listarPersonais'])->name('personais.explorar');
     Route::post('/academias/contratar', [ClienteController::class, 'contratarAcademia'])->name('academias.contratar');
     Route::get('/pacotes/personal/{id}', [PacoteController::class, 'show'])->name('pacotes.show');
     Route::get('/cliente/minhas-fichas-solicitadas', [ClienteController::class, 'minhasSolicitacoesFicha'])->name('cliente.solicitacoes-ficha');

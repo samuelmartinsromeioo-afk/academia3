@@ -573,8 +573,20 @@ class ClienteController extends Controller
     public function listarAcademias()
     {
         $cliente   = Cliente::find(session('cliente_id'));
-        $academias = Academia::all();
+        $academias = Academia::with(['fotos', 'planos' => fn($q) => $q->orderBy('valor')])
+            ->orderBy('nome')
+            ->get();
         return view('cliente.academias', compact('academias', 'cliente'));
+    }
+
+    public function listarPersonais()
+    {
+        $cliente   = Cliente::find(session('cliente_id'));
+        $personais = Personal::where('status', 'aprovado')
+            ->with(['fotos', 'avaliacoes'])
+            ->orderBy('nome')
+            ->get();
+        return view('cliente.personais', compact('personais', 'cliente'));
     }
 
     public function detalheAcademia($id)

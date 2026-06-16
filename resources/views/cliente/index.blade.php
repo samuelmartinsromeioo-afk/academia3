@@ -371,6 +371,8 @@
             <button type="button" onclick="abrirHistoricoModal()"><i class="fas fa-history"></i> Ver Histórico</button>
             <button type="button" onclick="window.location.href='{{ route('mapa.index') }}'"><i class="fas fa-map-marked-alt"></i> Ver Mapa</button>
             <button type="button" onclick="window.location.href='{{ route('studios.explorar') }}'"><i class="fas fa-spa"></i> Explorar Studios</button>
+            <button type="button" onclick="window.location.href='{{ route('academias.explorar') }}'"><i class="fas fa-building"></i> Explorar Academias</button>
+            <button type="button" onclick="window.location.href='{{ route('personais.explorar') }}'"><i class="fas fa-user-tie"></i> Explorar Personais</button>
             <form action="{{ route('login.logout') }}" method="POST">
                 @csrf
                 <button type="submit" style="color: #ff4444;"><i class="fas fa-power-off"></i> Sair</button>
@@ -1052,6 +1054,30 @@
     // ============ META DOS TIPOS DE AVALIAÇÃO ============
     window.avaliacaoTipos = {!! json_encode(\App\Models\AvaliacaoFisica::TIPOS) !!};
     window.avaliacaoMeta  = {!! json_encode(\App\Models\AvaliacaoFisica::META) !!};
+
+    // ============ DADOS DAS ACADEMIAS (p/ deep-link de "Explorar Academias") ============
+    window.academiasData = {
+        @foreach($academias as $a)
+        {{ $a->id }}: {
+            id: {{ $a->id }},
+            nome: '{{ addslashes($a->nome) }}',
+            planos: {!! json_encode($a->planos->map(fn($p) => ['id'=>$p->id,'nome'=>$p->nome,'valor'=>$p->valor,'duracao'=>$p->duracao_meses,'descricao'=>$p->descricao])) !!}
+        },
+        @endforeach
+    };
+
+    // Abre automaticamente o modal certo quando se chega via "Explorar Academias/Personais"
+    window.addEventListener('load', () => {
+        const params = new URLSearchParams(window.location.search);
+        const pid = params.get('personal');
+        const aid = params.get('academia');
+        if (pid && window.personalsData && window.personalsData[pid] && typeof abrirDetalhesPersonal === 'function') {
+            abrirDetalhesPersonal(parseInt(pid));
+        } else if (aid && window.academiasData && window.academiasData[aid] && typeof abrirPlanosAcademia === 'function') {
+            const a = window.academiasData[aid];
+            abrirPlanosAcademia(a.id, a.nome, a.planos);
+        }
+    });
 
     // ============ DADOS DOS PERSONALS ============
     window.personalsData = {
