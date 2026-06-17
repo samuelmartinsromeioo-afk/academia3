@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Sem conexão — SnrFit</title>
+    <link rel="icon" type="image/png" href="/SnrFit.png">
+    <style>
+        :root { --primary: #d4ff00; --bg-dark: #0a0b0d; --text-muted: #a0a0a0; }
+        * { box-sizing: border-box; }
+        body {
+            margin: 0; min-height: 100vh; background: linear-gradient(135deg, var(--bg-dark) 0%, #0f1217 100%);
+            color: #fff; font-family: 'Inter', system-ui, sans-serif;
+            display: flex; align-items: center; justify-content: center; text-align: center; padding: 24px;
+        }
+        .box { max-width: 360px; }
+        img { width: 84px; height: 84px; border-radius: 20px; border: 2px solid var(--primary); margin-bottom: 22px; }
+        h1 { font-size: 1.4rem; font-weight: 900; margin: 0 0 8px; }
+        h1 span { color: var(--primary); }
+        p { color: var(--text-muted); font-size: 0.9rem; line-height: 1.6; margin: 0 0 26px; }
+        button {
+            background: var(--primary); color: #000; border: none; padding: 13px 24px; border-radius: 12px;
+            font-weight: 900; font-size: 0.85rem; text-transform: uppercase; cursor: pointer; font-family: inherit;
+        }
+    </style>
+</head>
+<body>
+    <div class="box">
+        <img src="/icons/icon-192.png" alt="SnrFit">
+        <h1>Você está <span>offline</span></h1>
+        <p>Não foi possível carregar esta página. Verifique sua conexão com a internet e tente novamente.</p>
+        <button onclick="location.reload()">Tentar de novo</button>
+    </div>
+</body>
+</html>

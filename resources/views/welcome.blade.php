@@ -6,6 +6,7 @@
 
         <title>Laravel</title>
     <link rel="icon" type="image/png" href="{{ asset('SnrFit.png') }}">
+    @include('partials.pwa')
 
         <!-- Fonts -->
         <link rel="preconnect" href="https://fonts.bunny.net">
