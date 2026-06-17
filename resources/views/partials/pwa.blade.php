@@ -24,6 +24,9 @@
         button, .btn, .btn-primary, a.btn, input[type="submit"] { min-height: 44px; }
         /* Evita zoom automático do iOS ao focar campos */
         input, select, textarea { font-size: 16px; }
+        /* Tabelas: rolagem horizontal no celular, sem cortar o conteúdo */
+        table { display: block; width: 100%; max-width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+        table thead th, table tbody td { white-space: nowrap; }
     }
 </style>
 
