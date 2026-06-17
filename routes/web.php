@@ -173,6 +173,12 @@ Route::middleware('check.login')->group(function () {
     Route::post('/personal/aulas/{id}/finalizar', [PersonalController::class, 'finalizarAula'])->name('aulas.finalizar');
     Route::post('/personal/aulas/{id}/concluir', [PersonalController::class, 'finalizarAula'])->name('aulas.concluir');
 
+    // Frequência dos Alunos
+    Route::get('/personal/frequencia', [PersonalController::class, 'frequencia'])->name('personal.frequencia');
+    Route::post('/personal/frequencia/marcar', [PersonalController::class, 'marcarPresenca'])->name('personal.frequencia.marcar');
+    Route::delete('/personal/frequencia/registro/{id}', [PersonalController::class, 'removerPresenca'])->name('personal.frequencia.remover');
+    Route::get('/personal/frequencia/{clienteId}', [PersonalController::class, 'frequenciaAluno'])->name('personal.frequencia.aluno');
+
     // Solicitações de Ficha
     Route::get('/personal/solicitacoes-ficha', [PersonalController::class, 'listarSolicitacoesFicha'])->name('personal.solicitacoes-ficha');
     Route::post('/personal/solicitacoes-ficha/{id}/concluir', [PersonalController::class, 'concluirSolicitacaoFicha'])->name('personal.solicitacoes-ficha.concluir');

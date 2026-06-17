@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use App\Models\Cadastro\Personal;
 use App\Models\Agenda;
 use App\Models\Cadastro\Cliente;
+use App\Models\Presenca;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Mail;
@@ -303,6 +304,160 @@ class PersonalController extends Controller
             ->unique('cliente_id');
 
         return view('personal.meus-alunos', compact('meusAlunos'));
+    }
+
+    // ==========================================
+    // FREQUÊNCIA DOS ALUNOS
+    // ==========================================
+
+    /** Alunos do personal (clientes com agenda não cancelada ou vinculados). */
+    private function alunosDoPersonal(int $personalId)
+    {
+        $ids = Agenda::where('personal_id', $personalId)
+            ->where('cancelado', false)
+            ->whereNotNull('cliente_id')
+            ->pluck('cliente_id')
+            ->merge(Cliente::where('personal_id', $personalId)->pluck('id'))
+            ->unique();
+
+        return Cliente::whereIn('id', $ids)->orderBy('nome')->get();
+    }
+
+    /** Classificação de frequência a partir da taxa de presença. */
+    private function classificarFrequencia(int $total, int $presentes): array
+    {
+        if ($total === 0) {
+            return ['key' => 'sem_registro', 'label' => 'Sem registros', 'cor' => '#a0a0a0', 'taxa' => null];
+        }
+        $taxa = $presentes / $total;
+        if ($taxa >= 0.8) return ['key' => 'frequente', 'label' => 'Frequente',      'cor' => '#00ff88', 'taxa' => $taxa];
+        if ($taxa >= 0.5) return ['key' => 'medio',     'label' => 'Mais ou menos',  'cor' => '#ffaa00', 'taxa' => $taxa];
+        return            ['key' => 'ausente',   'label' => 'Pouco frequente', 'cor' => '#ff4444', 'taxa' => $taxa];
+    }
+
+    public function frequencia()
+    {
+        $personalId = session('personal_id');
+        if (!$personalId) return redirect()->route('login.index');
+
+        $personal = Personal::findOrFail($personalId);
+        $alunos   = $this->alunosDoPersonal($personalId);
+
+        $presencas = Presenca::where('personal_id', $personalId)->get()->groupBy('cliente_id');
+
+        $stats = [];
+        foreach ($alunos as $aluno) {
+            $regs      = $presencas->get($aluno->id, collect());
+            $total     = $regs->count();
+            $presentes = $regs->where('presente', true)->count();
+            $stats[$aluno->id] = [
+                'total'         => $total,
+                'presentes'     => $presentes,
+                'faltas'        => $total - $presentes,
+                'classificacao' => $this->classificarFrequencia($total, $presentes),
+            ];
+        }
+
+        return view('personal.frequencia', compact('personal', 'alunos', 'stats'));
+    }
+
+    public function frequenciaAluno(Request $request, $clienteId)
+    {
+        $personalId = session('personal_id');
+        if (!$personalId) return redirect()->route('login.index');
+
+        $personal = Personal::findOrFail($personalId);
+
+        $alunoIds = $this->alunosDoPersonal($personalId)->pluck('id');
+        if (!$alunoIds->contains((int) $clienteId)) {
+            abort(403);
+        }
+
+        $cliente = Cliente::findOrFail($clienteId);
+
+        $mes = $request->query('mes', now()->format('Y-m'));
+        if (!preg_match('/^\d{4}-\d{2}$/', $mes)) $mes = now()->format('Y-m');
+
+        $todas     = Presenca::where('personal_id', $personalId)->where('cliente_id', $clienteId)
+            ->orderByDesc('data')->get();
+        $total     = $todas->count();
+        $presentes = $todas->where('presente', true)->count();
+        $faltas    = $total - $presentes;
+        $classificacao = $this->classificarFrequencia($total, $presentes);
+
+        $diasSemana = [0 => 'Domingo', 1 => 'Segunda-feira', 2 => 'Terça-feira', 3 => 'Quarta-feira', 4 => 'Quinta-feira', 5 => 'Sexta-feira', 6 => 'Sábado'];
+
+        // Faltas agrupadas por dia da semana
+        $faltasPorDia = $todas->where('presente', false)
+            ->groupBy(fn ($p) => $p->data->dayOfWeek)
+            ->map->count();
+
+        $diaMaisFalta = null;
+        if ($faltasPorDia->isNotEmpty()) {
+            $maxDow = $faltasPorDia->sortDesc()->keys()->first();
+            $diaMaisFalta = ['nome' => $diasSemana[$maxDow], 'qtd' => $faltasPorDia[$maxDow]];
+        }
+
+        $faltasMes = $todas->where('presente', false)
+            ->filter(fn ($p) => $p->data->format('Y-m') === now()->format('Y-m'))
+            ->count();
+
+        // Dias de aula agendados no mês escolhido (para marcação rápida)
+        $diasAgenda = Agenda::where('personal_id', $personalId)
+            ->where('cliente_id', $clienteId)
+            ->where('cancelado', false)
+            ->where('tipo_aula', '!=', 'bloqueio')
+            ->whereYear('data', substr($mes, 0, 4))
+            ->whereMonth('data', substr($mes, 5, 2))
+            ->get()
+            ->map(fn ($a) => $a->data->format('Y-m-d'))
+            ->unique()->sort()->values();
+
+        $presencasPorData = $todas->keyBy(fn ($p) => $p->data->format('Y-m-d'));
+
+        $mesesDisponiveis = Presenca::where('personal_id', $personalId)->where('cliente_id', $clienteId)
+            ->selectRaw("DATE_FORMAT(data, '%Y-%m') as mes")
+            ->distinct()->orderByDesc('mes')->pluck('mes');
+
+        return view('personal.frequencia_aluno', compact(
+            'personal', 'cliente', 'todas', 'total', 'presentes', 'faltas', 'classificacao',
+            'diaMaisFalta', 'faltasMes', 'diasAgenda', 'presencasPorData', 'mes', 'mesesDisponiveis',
+            'faltasPorDia', 'diasSemana'
+        ));
+    }
+
+    public function marcarPresenca(Request $request)
+    {
+        $personalId = session('personal_id');
+        if (!$personalId) return redirect()->route('login.index');
+
+        $dados = $request->validate([
+            'cliente_id' => 'required|integer',
+            'data'       => 'required|date',
+            'presente'   => 'required|in:0,1',
+        ]);
+
+        $alunoIds = $this->alunosDoPersonal($personalId)->pluck('id');
+        if (!$alunoIds->contains((int) $dados['cliente_id'])) {
+            abort(403);
+        }
+
+        Presenca::updateOrCreate(
+            ['personal_id' => $personalId, 'cliente_id' => $dados['cliente_id'], 'data' => $dados['data']],
+            ['presente' => (bool) $dados['presente']]
+        );
+
+        return redirect()->back()->with('success', 'Frequência registrada!');
+    }
+
+    public function removerPresenca($id)
+    {
+        $personalId = session('personal_id');
+        if (!$personalId) return redirect()->route('login.index');
+
+        Presenca::where('personal_id', $personalId)->where('id', $id)->firstOrFail()->delete();
+
+        return redirect()->back()->with('success', 'Registro removido.');
     }
 
     public function cancelarDia(Request $request)
