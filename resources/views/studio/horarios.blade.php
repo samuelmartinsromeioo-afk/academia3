@@ -346,7 +346,7 @@
             @if ($horarios->isEmpty())
                 <p class="empty"><i class="fas fa-info-circle"></i> Nenhum horário cadastrado ainda. Enquanto não houver funcionamento definido, os clientes não verão horários disponíveis.</p>
             @else
-                <table>
+                <table class="resp-cards">
                     <thead>
                         <tr>
                             <th>Dia</th>
@@ -358,10 +358,10 @@
                     <tbody>
                         @foreach ($horarios as $h)
                             <tr>
-                                <td><strong>{{ $diasSemana[$h->dia_semana] ?? $h->dia_semana }}</strong></td>
-                                <td>{{ substr($h->hora_abertura, 0, 5) }} às {{ substr($h->hora_fechamento, 0, 5) }}</td>
-                                <td><span class="badge-cap">{{ $h->capacidade ?? $studio->capacidade_padrao }} alunos/horário</span></td>
-                                <td style="text-align:right;">
+                                <td data-label="Dia"><strong>{{ $diasSemana[$h->dia_semana] ?? $h->dia_semana }}</strong></td>
+                                <td data-label="Funcionamento">{{ substr($h->hora_abertura, 0, 5) }} às {{ substr($h->hora_fechamento, 0, 5) }}</td>
+                                <td data-label="Capacidade"><span class="badge-cap">{{ $h->capacidade ?? $studio->capacidade_padrao }} alunos/horário</span></td>
+                                <td data-label="Ações" style="text-align:right;">
                                     <form method="POST" action="{{ route('studio.horarios.destroy', $h->id) }}" style="display:inline;" onsubmit="return confirm('Remover o funcionamento de {{ $diasSemana[$h->dia_semana] ?? '' }}?');">
                                         @csrf
                                         @method('DELETE')
@@ -474,7 +474,7 @@
             @if ($aulas->isEmpty())
                 <p class="empty"><i class="fas fa-info-circle"></i> Nenhum horário de aula cadastrado. Sem aulas, os clientes verão slots automáticos de 1h dentro do funcionamento.</p>
             @else
-                <table>
+                <table class="resp-cards">
                     <thead>
                         <tr>
                             <th>Dia</th>
@@ -488,12 +488,12 @@
                     <tbody>
                         @foreach ($aulas as $a)
                             <tr>
-                                <td><strong>{{ $diasSemana[$a->dia_semana] ?? $a->dia_semana }}</strong></td>
-                                <td>{{ substr($a->hora_inicio, 0, 5) }}</td>
-                                <td>{{ $a->duracao_min }} min</td>
-                                <td>{{ $a->profissional ?: '—' }}</td>
-                                <td><span class="badge-cap">{{ $a->capacidade ?? $studio->capacidade_padrao }} alunos</span></td>
-                                <td style="text-align:right;">
+                                <td data-label="Dia"><strong>{{ $diasSemana[$a->dia_semana] ?? $a->dia_semana }}</strong></td>
+                                <td data-label="Início">{{ substr($a->hora_inicio, 0, 5) }}</td>
+                                <td data-label="Duração">{{ $a->duracao_min }} min</td>
+                                <td data-label="Profissional">{{ $a->profissional ?: '—' }}</td>
+                                <td data-label="Capacidade"><span class="badge-cap">{{ $a->capacidade ?? $studio->capacidade_padrao }} alunos</span></td>
+                                <td data-label="Ações" style="text-align:right;">
                                     <form method="POST" action="{{ route('studio.aulas.destroy', $a->id) }}" style="display:inline;" onsubmit="return confirm('Remover esta aula?');">
                                         @csrf
                                         @method('DELETE')

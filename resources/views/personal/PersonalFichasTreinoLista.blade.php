@@ -716,7 +716,7 @@
                             @if($ficha->exercicios->isEmpty())
                                 <p class="empty-ex">Nenhum exercício adicionado</p>
                             @else
-                                <table class="exercicios-table">
+                                <table class="exercicios-table resp-cards">
                                     <thead>
                                         <tr>
                                             <th>Exercício</th>
@@ -729,10 +729,10 @@
                                     <tbody>
                                         @foreach($ficha->exercicios as $exercicio)
                                         <tr>
-                                            <td>{{ $exercicio->nome_exercicio }}</td>
-                                            <td style="text-align: center;">{{ $exercicio->series }}</td>
-                                            <td style="text-align: center;">{{ $exercicio->repeticoes }}</td>
-                                            <td style="text-align: center;">{{ $exercicio->peso ? $exercicio->peso . ' kg' : '-' }}</td>
+                                            <td data-label="Exercício">{{ $exercicio->nome_exercicio }}</td>
+                                            <td data-label="Séries" style="text-align: center;">{{ $exercicio->series }}</td>
+                                            <td data-label="Reps" style="text-align: center;">{{ $exercicio->repeticoes }}</td>
+                                            <td data-label="Peso" style="text-align: center;">{{ $exercicio->peso ? $exercicio->peso . ' kg' : '-' }}</td>
                                             <td style="text-align: center;">
                                                 <button class="btn-delete-ex" onclick="deletarExercicio({{ $exercicio->id }})">
                                                     <i class="fas fa-times"></i>

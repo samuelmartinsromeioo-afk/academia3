@@ -522,7 +522,7 @@
                                     @if($ficha->exercicios->isEmpty())
                                         <p class="empty-ex">Nenhum exercício</p>
                                     @else
-                                        <table class="exercicios-table">
+                                        <table class="exercicios-table resp-cards">
                                             <thead>
                                                 <tr>
                                                     <th>Exercício</th>
@@ -534,15 +534,15 @@
                                             <tbody>
                                                 @foreach($ficha->exercicios as $exercicio)
                                                 <tr>
-                                                    <td>
+                                                    <td data-label="Exercício">
                                                         <div class="ex-nome">{{ $exercicio->nome_exercicio }}</div>
                                                         @if($exercicio->observacoes)
                                                             <div class="ex-obs">{{ $exercicio->observacoes }}</div>
                                                         @endif
                                                     </td>
-                                                    <td style="text-align: center;">{{ $exercicio->series }}</td>
-                                                    <td style="text-align: center;">{{ $exercicio->repeticoes }}</td>
-                                                    <td style="text-align: center;">{{ $exercicio->peso ? $exercicio->peso . ' kg' : '-' }}</td>
+                                                    <td data-label="Séries" style="text-align: center;">{{ $exercicio->series }}</td>
+                                                    <td data-label="Reps" style="text-align: center;">{{ $exercicio->repeticoes }}</td>
+                                                    <td data-label="Peso" style="text-align: center;">{{ $exercicio->peso ? $exercicio->peso . ' kg' : '-' }}</td>
                                                 </tr>
                                                 @endforeach
                                             </tbody>
