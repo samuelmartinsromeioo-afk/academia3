@@ -167,7 +167,6 @@ class PersonalController extends Controller
             'valor_secao'  => 'required|numeric',
             'valor_ficha'  => 'nullable|numeric|min:0',
             'avaliacao'    => 'nullable|string',
-            'certificado'  => 'nullable|file|mimes:pdf,jpg,jpeg,png,heic,heif|max:10240',
             'foto'         => 'nullable|file|mimes:jpeg,jpg,png,gif,webp,heic,heif|max:10240',
             'senha'        => 'nullable|string|min:8|confirmed',
             'chave_pix'    => 'nullable|string|max:255',
@@ -182,13 +181,6 @@ class PersonalController extends Controller
                 Storage::disk('public')->delete($personal->foto);
             }
             $dados['foto'] = $request->file('foto')->store('personals', 'public');
-        }
-
-        if ($request->hasFile('certificado')) {
-            if ($personal->certificado) {
-                Storage::disk('public')->delete($personal->certificado);
-            }
-            $dados['certificado'] = $request->file('certificado')->store('certificados', 'public');
         }
 
         if ($request->filled('senha')) {

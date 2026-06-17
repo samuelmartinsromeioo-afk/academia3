@@ -928,6 +928,10 @@
                         <div class="input-wrapper"><i class="fas fa-user"></i><input type="text" name="nome" value="{{ $personal->nome }}" required></div>
                     </div>
                     <div>
+                        <label>CREF (não editável)</label>
+                        <div class="input-wrapper" style="opacity: 0.7;"><i class="fas fa-id-badge"></i><input type="text" value="{{ $personal->cref ?? 'Não informado' }}" disabled></div>
+                    </div>
+                    <div>
                         <label>Valor por Seção (R$)</label>
                         <div class="input-wrapper"><i class="fas fa-dollar-sign"></i><input type="number" step="0.01" name="valor_secao" value="{{ $personal->valor_secao }}"></div>
                     </div>
