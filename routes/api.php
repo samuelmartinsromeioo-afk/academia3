@@ -16,7 +16,11 @@ Route::middleware(['web'])->group(function () {
     Route::post('/criar-pagamento-academia', [PaymentController::class, 'criarPagamentoAcademia']);
     Route::post('/criar-pagamento-cartao', [PaymentController::class, 'criarPagamentoCartao']);
     Route::post('/criar-pagamento-cartao-academia', [PaymentController::class, 'criarPagamentoCartaoAcademia']);
+    Route::post('/academia/criar-conta-asaas', [PaymentController::class, 'criarContaAsaasAcademia']);
+    Route::get('/academia/saldo', [PaymentController::class, 'saldoAcademia']);
+    Route::post('/academia/sacar', [PaymentController::class, 'sacarAcademia']);
     Route::get('/pagamento/status/{asaasPaymentId}', [PaymentController::class, 'verificarStatusPagamento']);
+    Route::post('/assinaturas/{id}/cancelar', [PaymentController::class, 'cancelarAssinatura']);
     Route::get('/payments/history', [PaymentController::class, 'listPaymentHistory']);
     Route::get('/trainer/payouts', [PaymentController::class, 'listPayouts']);
     Route::get('/personal/saldo', [PaymentController::class, 'saldoPersonal']);

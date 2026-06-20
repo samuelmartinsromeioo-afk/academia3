@@ -21,6 +21,7 @@ class Payment extends Model
         'company_fee',
         'trainer_amount',
         'stripe_payment_intent_id',
+        'asaas_subscription_id',
         'status',
         'payment_method',
         'receipt_url',
@@ -73,6 +74,11 @@ class Payment extends Model
     public function studioPlano()
     {
         return $this->belongsTo(\App\Models\Cadastro\StudioPlano::class, 'studio_plano_id');
+    }
+
+    public function subscription()
+    {
+        return $this->belongsTo(Subscription::class, 'asaas_subscription_id', 'asaas_subscription_id');
     }
 
     public function confirmation()

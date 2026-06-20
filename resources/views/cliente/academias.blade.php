@@ -236,7 +236,7 @@
 
                         <div class="card-footer">
                             <div class="preco">R$ {{ number_format($academia->valor_mensalidade ?? 0, 2, ',', '.') }} <small>/mês</small></div>
-                            <a href="{{ route('cliente.index') }}?academia={{ $academia->id }}" class="btn-detalhes">Ver detalhes <i class="fas fa-arrow-right"></i></a>
+                            <a href="{{ route('academias.detalhes', $academia->id) }}" class="btn-detalhes">Ver detalhes <i class="fas fa-arrow-right"></i></a>
                         </div>
                     </div>
                 </div>

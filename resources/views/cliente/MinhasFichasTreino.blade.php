@@ -308,6 +308,16 @@
             margin-top: 3px;
         }
 
+        .ex-click {
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            transition: color 0.2s;
+        }
+        .ex-click:hover { color: var(--primary); }
+        .ex-info { color: var(--primary); font-size: 0.75rem; opacity: 0.8; }
+
         .empty-ex {
             text-align: center;
             color: var(--text-muted);
@@ -474,11 +484,11 @@
         </div>
         @endif
 
-        @if($fichasPorPersonal->isEmpty())
+        @if($fichasPorPersonal->isEmpty() && (!isset($fichasAcademia) || $fichasAcademia->isEmpty()))
             <div class="empty-state">
                 <i class="fas fa-calendar"></i>
                 <p>Você não possui fichas de treino.</p>
-                <small>Seu personal criará suas fichas assim que você contratar um pacote!</small>
+                <small>Seu personal ou sua academia criará suas fichas em breve!</small>
             </div>
         @else
             @foreach($fichasPorPersonal as $personalId => $fichasDoPersonal)
@@ -536,10 +546,10 @@
                                                 @foreach($ficha->exercicios as $exercicio)
                                                 <tr>
                                                     <td data-label="Exercício">
-                                                        <div class="ex-nome">{{ $exercicio->nome_exercicio }}</div>
-                                                        @if($exercicio->observacoes)
-                                                            <div class="ex-obs">{{ $exercicio->observacoes }}</div>
-                                                        @endif
+                                                        <div class="ex-nome ex-click" onclick="abrirExercicio({!! htmlspecialchars(json_encode($exercicio->nome_exercicio), ENT_QUOTES) !!}, {!! htmlspecialchars(json_encode($exercicio->observacoes), ENT_QUOTES) !!}, {!! htmlspecialchars(json_encode($exercicio->video ? asset('storage/' . $exercicio->video) : ''), ENT_QUOTES) !!})">
+                                                            {{ $exercicio->nome_exercicio }}
+                                                            <i class="fas fa-circle-info ex-info"></i>
+                                                        </div>
                                                     </td>
                                                     <td data-label="Séries" style="text-align: center;">{{ $exercicio->series }}</td>
                                                     <td data-label="Reps" style="text-align: center;">{{ $exercicio->repeticoes }}</td>
@@ -555,6 +565,86 @@
                     </div>
                 </div>
             @endforeach
+
+            @if(isset($fichasAcademia))
+                @foreach($fichasAcademia as $academiaId => $fichasDaAcademia)
+                    @php
+                        $academia = $fichasDaAcademia->first()->academia;
+                        $dias = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
+                    @endphp
+
+                    <div class="personal-section">
+                        <div class="personal-header">
+                            @if($academia && $academia->fotos && $academia->fotos->isNotEmpty())
+                                <img src="{{ asset('storage/' . $academia->fotos->first()->path) }}" alt="{{ $academia->nome }}">
+                            @else
+                                <img src="https://cdn-icons-png.flaticon.com/512/2966/2966486.png" alt="{{ $academia->nome ?? 'Academia' }}">
+                            @endif
+                            <h2>{{ $academia->nome ?? 'Academia' }} <span style="font-size:0.7rem; color:var(--primary); text-transform:uppercase; letter-spacing:1px;">· Academia</span></h2>
+                        </div>
+
+                        <div class="fichas-grid">
+                            @foreach($fichasDaAcademia as $ficha)
+                                @php
+                                    $concluido = $ficha->treino_de_hoje();
+                                    $estaConcluido = $concluido && $concluido->concluido;
+                                @endphp
+
+                                <div class="ficha-card">
+                                    <div class="ficha-header">
+                                        <h3><i class="fas fa-calendar-day"></i> {{ $dias[$ficha->dia_semana] }}</h3>
+                                        <button class="btn-marcar {{ $estaConcluido ? 'concluido' : '' }}"
+                                            onclick="marcarConcluido({{ $ficha->id }})">
+                                            <i class="fas {{ $estaConcluido ? 'fa-check' : 'fa-square' }}"></i>
+                                            {{ $estaConcluido ? 'CONCLUÍDO' : 'MARCAR' }}
+                                        </button>
+                                    </div>
+
+                                    <p class="ficha-nome">{{ $ficha->nome_treino }}</p>
+
+                                    @if($ficha->observacoes)
+                                        <p class="ficha-obs">{{ $ficha->observacoes }}</p>
+                                    @endif
+
+                                    <div class="exercicios-box">
+                                        <p class="exercicios-title"><i class="fas fa-list-ul"></i> Exercícios</p>
+
+                                        @if($ficha->exercicios->isEmpty())
+                                            <p class="empty-ex">Nenhum exercício</p>
+                                        @else
+                                            <table class="exercicios-table resp-cards">
+                                                <thead>
+                                                    <tr>
+                                                        <th>Exercício</th>
+                                                        <th style="text-align: center;">Séries</th>
+                                                        <th style="text-align: center;">Reps</th>
+                                                        <th style="text-align: center;">Peso</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    @foreach($ficha->exercicios as $exercicio)
+                                                    <tr>
+                                                        <td data-label="Exercício">
+                                                            <div class="ex-nome ex-click" onclick="abrirExercicio({!! htmlspecialchars(json_encode($exercicio->nome_exercicio), ENT_QUOTES) !!}, {!! htmlspecialchars(json_encode($exercicio->observacoes), ENT_QUOTES) !!}, {!! htmlspecialchars(json_encode($exercicio->video ? asset('storage/' . $exercicio->video) : ''), ENT_QUOTES) !!})">
+                                                                {{ $exercicio->nome_exercicio }}
+                                                                <i class="fas fa-circle-info ex-info"></i>
+                                                            </div>
+                                                        </td>
+                                                        <td data-label="Séries" style="text-align: center;">{{ $exercicio->series }}</td>
+                                                        <td data-label="Reps" style="text-align: center;">{{ $exercicio->repeticoes }}</td>
+                                                        <td data-label="Peso" style="text-align: center;">{{ $exercicio->peso ? $exercicio->peso . ' kg' : '-' }}</td>
+                                                    </tr>
+                                                    @endforeach
+                                                </tbody>
+                                            </table>
+                                        @endif
+                                    </div>
+                                </div>
+                            @endforeach
+                        </div>
+                    </div>
+                @endforeach
+            @endif
         @endif
     </div>
 
@@ -602,7 +692,41 @@
                 fecharModalMarcarConcluido();
             }
         });
+
+        function abrirExercicio(nome, resumo, videoUrl) {
+            document.getElementById('exModalNome').textContent = nome || 'Exercício';
+
+            const video = document.getElementById('exModalVideo');
+            if (videoUrl) {
+                video.src = videoUrl;
+                video.style.display = 'block';
+            } else {
+                video.pause(); video.src = '';
+                video.style.display = 'none';
+            }
+
+            const resumoEl = document.getElementById('exModalResumo');
+            resumoEl.textContent = resumo && resumo.trim() ? resumo : 'Sem observações para este exercício.';
+
+            document.getElementById('exercicioModal').style.display = 'flex';
+        }
+        function fecharExercicio() {
+            const video = document.getElementById('exModalVideo');
+            video.pause(); video.src = '';
+            document.getElementById('exercicioModal').style.display = 'none';
+        }
     </script>
+
+    <!-- MODAL EXERCÍCIO (vídeo + resumo) -->
+    <div id="exercicioModal" onclick="if(event.target===this)fecharExercicio()" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.9); z-index:99999; justify-content:center; align-items:center; padding:20px;">
+        <div style="background:#16181d; border:1px solid rgba(255,255,255,0.1); border-radius:18px; max-width:520px; width:100%; padding:26px; position:relative; max-height:90vh; overflow-y:auto;">
+            <button onclick="fecharExercicio()" style="position:absolute; top:14px; right:16px; background:none; border:none; color:#a0a0a0; font-size:1.3rem; cursor:pointer;">✕</button>
+            <h2 id="exModalNome" style="color:#fff; font-size:1.2rem; font-weight:900; margin:0 32px 4px 0;"></h2>
+            <video id="exModalVideo" controls playsinline style="display:none; width:100%; border-radius:12px; background:#000; margin:14px 0;"></video>
+            <p style="color:#d4ff00; font-size:0.7rem; text-transform:uppercase; letter-spacing:1px; font-weight:800; margin:16px 0 6px;"><i class="fas fa-circle-info"></i> Resumo / Técnica</p>
+            <p id="exModalResumo" style="color:#cfcfcf; font-size:0.9rem; line-height:1.6; white-space:pre-line; margin:0;"></p>
+        </div>
+    </div>
 
 </body>
 

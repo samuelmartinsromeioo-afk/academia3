@@ -584,6 +584,9 @@
         <h3><i class="fas fa-qrcode"></i> PAGAMENTO PIX</h3>
         <p class="modal-sub" id="pixDescricao"></p>
         <p class="modal-valor" id="pixValor">Gerando QR Code...</p>
+        <p id="pixRecorrenteNota" style="display:none; color:#d4ff00; font-size:0.78rem; font-weight:700; margin:0 0 12px; background:rgba(212,255,0,0.08); border:1px solid rgba(212,255,0,0.25); border-radius:10px; padding:8px 12px;">
+            🔁 Assinatura mensal — uma nova cobrança PIX é gerada todo mês.
+        </p>
         <img class="pix-qr" id="pixQr" src="" alt="QR Code PIX">
         <div class="pix-copia-wrap">
             <input type="text" id="pixCopia" readonly>
@@ -769,6 +772,7 @@
             document.getElementById('pixQr').src = 'data:image/png;base64,' + data.pixQrCode;
             document.getElementById('pixCopia').value = data.pixPayload;
             document.getElementById('pixValor').textContent = 'R$ ' + parseFloat(data.amount).toFixed(2).replace('.', ',');
+            document.getElementById('pixRecorrenteNota').style.display = data.recorrente ? 'block' : 'none';
 
             pixPolling = setInterval(async () => {
                 try {

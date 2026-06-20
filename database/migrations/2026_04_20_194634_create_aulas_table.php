@@ -1,5 +1,3 @@
-{{-- Arquivo: database/migrations/YYYY_MM_DD_HHMMSS_create_aulas_table.php --}}
-
 <?php
 
 use Illuminate\Database\Migrations\Migration;

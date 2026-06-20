@@ -14,21 +14,30 @@ return new class extends Migration
         // ========================================
         // CRIAR TABELA DE ADMINISTRADOR
         // ========================================
-        Schema::create('admins', function (Blueprint $table) {
-            $table->id();
-            $table->string('nome');
-            $table->string('email')->unique();
-            $table->string('senha');
-            $table->timestamps();
-        });
+        if (! Schema::hasTable('admins')) {
+            Schema::create('admins', function (Blueprint $table) {
+                $table->id();
+                $table->string('nome');
+                $table->string('email')->unique();
+                $table->string('senha');
+                $table->timestamps();
+            });
+        }
 
         // ========================================
         // ADICIONAR COLUNAS NA TABELA PERSONALS
+        // (podem já ter sido criadas pela migration 2026_05_15_150014)
         // ========================================
         Schema::table('personals', function (Blueprint $table) {
-            $table->enum('status', ['pendente', 'aprovado', 'rejeitado'])->default('pendente')->after('id');
-            $table->text('motivo_rejeicao')->nullable()->after('status');
-            $table->timestamp('data_aprovacao')->nullable()->after('motivo_rejeicao');
+            if (! Schema::hasColumn('personals', 'status')) {
+                $table->enum('status', ['pendente', 'aprovado', 'rejeitado'])->default('pendente')->after('id');
+            }
+            if (! Schema::hasColumn('personals', 'motivo_rejeicao')) {
+                $table->text('motivo_rejeicao')->nullable();
+            }
+            if (! Schema::hasColumn('personals', 'data_aprovacao')) {
+                $table->timestamp('data_aprovacao')->nullable();
+            }
         });
     }
 

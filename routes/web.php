@@ -134,7 +134,7 @@ Route::middleware('check.login')->group(function () {
     // ✅ CORRIGIDO: Rota para agendamento de aula AVULSA do cliente
     Route::post('/agendar', [ClienteController::class, 'reservarHorario'])->name('agendar.horario');
     Route::get('/academias/explorar', [ClienteController::class, 'listarAcademias'])->name('academias.explorar');
-    Route::get('/academias/{id}/detalhes', [ClienteController::class, 'detalhesAcademia'])->name('academias.detalhes');
+    Route::get('/academias/{id}/detalhes', [ClienteController::class, 'detalheAcademia'])->name('academias.detalhes');
     Route::get('/studios/explorar', [ClienteController::class, 'listarStudios'])->name('studios.explorar');
     Route::get('/studios/{id}/detalhes', [ClienteController::class, 'detalheStudio'])->name('studios.detalhes');
     Route::get('/personais/explorar', [ClienteController::class, 'listarPersonais'])->name('personais.explorar');
@@ -216,6 +216,24 @@ Route::middleware('check.login')->group(function () {
     Route::post('/academia/filiais', [AcademiaController::class, 'storeFilial'])->name('academia.filiais.store');
     Route::put('/academia/filiais/{id}', [AcademiaController::class, 'updateFilial'])->name('academia.filiais.update');
     Route::delete('/academia/filiais/{id}', [AcademiaController::class, 'destroyFilial'])->name('academia.filiais.destroy');
+
+    // Gestão da Academia: profissionais, aulas e infraestrutura
+    Route::get('/academia/gestao', [AcademiaController::class, 'gestao'])->name('academia.gestao');
+    Route::post('/academia/infraestrutura', [AcademiaController::class, 'atualizarInfraestrutura'])->name('academia.infraestrutura');
+    Route::post('/academia/profissionais', [AcademiaController::class, 'storeProfessor'])->name('academia.professores.store');
+    Route::put('/academia/profissionais/{id}', [AcademiaController::class, 'updateProfessor'])->name('academia.professores.update');
+    Route::delete('/academia/profissionais/{id}', [AcademiaController::class, 'destroyProfessor'])->name('academia.professores.destroy');
+    Route::post('/academia/aulas', [AcademiaController::class, 'storeAula'])->name('academia.aulas.store');
+    Route::put('/academia/aulas/{id}', [AcademiaController::class, 'updateAula'])->name('academia.aulas.update');
+    Route::delete('/academia/aulas/{id}', [AcademiaController::class, 'destroyAula'])->name('academia.aulas.destroy');
+
+    // Fichas de treino criadas pela academia
+    Route::get('/academia/alunos/{clienteId}/fichas', [FichaTreinoController::class, 'fichasDoAlunoAcademia'])->name('academia.aluno-fichas');
+    Route::post('/academia/fichas/criar', [FichaTreinoController::class, 'criarFichaAcademia'])->name('academia.fichas.criar');
+    Route::post('/academia/fichas/{fichaId}/exercicio', [FichaTreinoController::class, 'adicionarExercicioAcademia'])->name('academia.fichas.exercicio.adicionar');
+    Route::put('/academia/fichas/exercicio/{exercicioId}', [FichaTreinoController::class, 'editarExercicioAcademia'])->name('academia.fichas.exercicio.editar');
+    Route::delete('/academia/fichas/{fichaId}', [FichaTreinoController::class, 'deletarFichaAcademia'])->name('academia.fichas.deletar');
+    Route::delete('/academia/fichas/exercicio/{exercicioId}', [FichaTreinoController::class, 'deletarExercicioAcademia'])->name('academia.fichas.exercicio.deletar');
 });
 
 
@@ -269,6 +287,7 @@ Route::middleware('check.login')->group(function () {
     Route::get('/personal/fichas-treino/{clienteId}', [FichaTreinoController::class, 'fichasDoAluno'])->name('fichas-treino.aluno');
     Route::post('/personal/fichas-treino/criar', [FichaTreinoController::class, 'criarFicha'])->name('fichas-treino.criar');
     Route::post('/personal/fichas-treino/{fichaId}/exercicio', [FichaTreinoController::class, 'adicionarExercicio'])->name('fichas-treino.exercicio.adicionar');
+    Route::put('/personal/fichas-treino/exercicio/{exercicioId}', [FichaTreinoController::class, 'editarExercicio'])->name('fichas-treino.exercicio.editar');
     Route::put('/personal/fichas-treino/{fichaId}/editar', [FichaTreinoController::class, 'editarFicha'])->name('fichas-treino.editar');
     Route::delete('/personal/fichas-treino/{fichaId}', [FichaTreinoController::class, 'deletarFicha'])->name('fichas-treino.deletar');
     Route::delete('/personal/fichas-treino/exercicio/{exercicioId}', [FichaTreinoController::class, 'deletarExercicio'])->name('fichas-treino.exercicio.deletar');

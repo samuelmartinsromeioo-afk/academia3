@@ -802,14 +802,6 @@ class PersonalController extends Controller
     private function notificarClienteWhatsApp($nomeCliente, $tipoAula, $whatsappCliente, $aula, $nomePersonal)
     {
         try {
-            $apiToken = config('services.zenvia.token');
-            $from     = config('services.zenvia.from');
-
-            if (!$apiToken || !$from) {
-                Log::warning("Zenvia não configurado - notificação não enviada");
-                return;
-            }
-
             $data = $aula->data instanceof \Carbon\Carbon ?
                 $aula->data->format('d/m/Y') :
                 \Carbon\Carbon::parse($aula->data)->format('d/m/Y');
@@ -828,19 +820,12 @@ class PersonalController extends Controller
 
             $mensagem .= "\nObrigado por treinar conosco! 💪";
 
-            $phone = preg_replace('/\D/', '', $whatsappCliente);
-            if (!str_starts_with($phone, '55')) {
-                $phone = '55' . $phone;
-            }
-
-            $response = Http::withHeaders(['X-API-TOKEN' => $apiToken])
-                ->post('https://api.zenvia.com/v2/channels/whatsapp/messages', [
-                    'from'     => $from,
-                    'to'       => $phone,
-                    'contents' => [['type' => 'text', 'text' => $mensagem]],
-                ]);
-
-            Log::info('Notificação enviada ao cliente via Zenvia - id: ' . ($response->json('id') ?? 'n/a'));
+            \App\Services\WhatsAppService::notificar(
+                $whatsappCliente,
+                $mensagem,
+                'aula_finalizada_aluno',
+                [$nomeCliente, $nomePersonal, $data, "{$aula->hora_inicio} - {$aula->hora_fim}"]
+            );
         } catch (\Exception $e) {
             Log::error('Erro ao notificar cliente: ' . $e->getMessage());
         }
@@ -877,26 +862,17 @@ class PersonalController extends Controller
         $cliente  = $solicitacao->cliente;
 
         if ($cliente && $cliente->whatsapp) {
-            try {
-                $apiToken = config('services.zenvia.token');
-                $from     = config('services.zenvia.from');
-                $phone    = preg_replace('/\D/', '', $cliente->whatsapp);
-                if (!str_starts_with($phone, '55')) $phone = '55' . $phone;
+            $mensagem = "🏋️ *Sua Ficha Está Pronta!*\n\n" .
+                "Olá, *{$cliente->nome}*!\n" .
+                "Seu personal *{$personal->nome}* acabou de montar sua ficha de treino personalizada.\n" .
+                "Acesse o aplicativo para visualizá-la. 💪";
 
-                $mensagem = "🏋️ *Sua Ficha Está Pronta!*\n\n" .
-                    "Olá, *{$cliente->nome}*!\n" .
-                    "Seu personal *{$personal->nome}* acabou de montar sua ficha de treino personalizada.\n" .
-                    "Acesse o aplicativo para visualizá-la. 💪";
-
-                Http::withHeaders(['X-API-TOKEN' => $apiToken])
-                    ->post('https://api.zenvia.com/v2/channels/whatsapp/messages', [
-                        'from'     => $from,
-                        'to'       => $phone,
-                        'contents' => [['type' => 'text', 'text' => $mensagem]],
-                    ]);
-            } catch (\Exception $e) {
-                Log::warning('concluirSolicitacaoFicha: whatsapp falhou', ['error' => $e->getMessage()]);
-            }
+            \App\Services\WhatsAppService::notificar(
+                $cliente->whatsapp,
+                $mensagem,
+                'ficha_pronta',
+                [$cliente->nome, $personal->nome]
+            );
         }
 
         return back()->with('success', 'Ficha marcada como concluída! O aluno foi notificado.');

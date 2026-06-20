@@ -76,7 +76,38 @@ class ClienteController extends Controller
             }
         }
 
-        return view('cliente.index', compact('cliente', 'personals', 'meusAgendamentos', 'horariosDisponiveis', 'academias', 'historico'));
+        // Assinaturas ativas/em atraso do aluno (para cancelamento no perfil)
+        $assinaturas = \App\Models\Subscription::where('user_id', $id)
+            ->whereIn('status', ['active', 'overdue'])
+            ->orderByDesc('created_at')
+            ->get()
+            ->map(function ($s) {
+                if ($s->tipo === 'pacote') {
+                    $p     = \App\Models\Cadastro\Personal::find($s->trainer_id);
+                    $label = 'Pacote com ' . ($p->nome ?? 'Personal');
+                } elseif ($s->tipo === 'academia') {
+                    $a     = \App\Models\Cadastro\Academia::find($s->academia_id);
+                    $pl    = \App\Models\Cadastro\Plano::find($s->plano_id);
+                    $label = 'Academia ' . ($a->nome ?? '') . ($pl ? ' — ' . $pl->nome : '');
+                } elseif ($s->tipo === 'studio_plano') {
+                    $st    = \App\Models\Cadastro\Studio::find($s->studio_id);
+                    $pl    = \App\Models\Cadastro\StudioPlano::find($s->studio_plano_id);
+                    $label = 'Studio ' . ($st->nome ?? '') . ($pl ? ' — ' . $pl->nome : '');
+                } else {
+                    $label = 'Assinatura';
+                }
+
+                return (object) [
+                    'id'         => $s->id,
+                    'label'      => $label,
+                    'valor'      => $s->amount_total,
+                    'metodo'     => $s->payment_method,
+                    'status'     => $s->status,
+                    'acesso_ate' => $s->acesso_ate ? \Carbon\Carbon::parse($s->acesso_ate)->format('d/m/Y') : null,
+                ];
+            });
+
+        return view('cliente.index', compact('cliente', 'personals', 'meusAgendamentos', 'horariosDisponiveis', 'academias', 'historico', 'assinaturas'));
     }
 
     public function update(Request $request, $id)
@@ -466,8 +497,13 @@ class ClienteController extends Controller
                 ], function ($message) use ($personal) {
                     $message->to($personal->email)->subject('🎉 Novo pacote contratado - SnrFit');
                 });
-            } catch (\Exception $e) {}
+            } catch (\Exception $e) {
+                Log::error('agendarAulasInterno: falha ao enviar e-mail ao personal', ['error' => $e->getMessage()]);
+            }
         }
+
+        // Notifica o personal por WhatsApp (mesmo canal usado na aula avulsa).
+        $this->notificarPersonalWhatsApp($clienteId, $personalId, 'pacote', null, $frequencia, $agendamentosCriados);
 
         Log::info('agendarAulasInterno: aulas criadas', [
             'cliente_id'  => $clienteId,
@@ -591,8 +627,15 @@ class ClienteController extends Controller
 
     public function detalheAcademia($id)
     {
-        $academia = Academia::findOrFail($id);
-        return view('cliente.academia-detalhes', compact('academia'));
+        $cliente  = Cliente::find(session('cliente_id'));
+        $academia = Academia::with([
+            'fotos',
+            'planos'      => fn ($q) => $q->orderBy('valor'),
+            'professores' => fn ($q) => $q->where('ativo', true)->orderBy('nome'),
+            'aulas'       => fn ($q) => $q->where('ativo', true)->with('professor')->orderBy('nome'),
+        ])->findOrFail($id);
+
+        return view('cliente.academia-detalhes', compact('academia', 'cliente'));
     }
 
     public function listarStudios()
@@ -631,14 +674,6 @@ class ClienteController extends Controller
                 return;
             }
 
-            $apiToken = config('services.zenvia.token');
-            $from     = config('services.zenvia.from');
-
-            if (!$apiToken || !$from) {
-                Log::warning("Zenvia não configurado");
-                return;
-            }
-
             if ($tipo === 'avulsa') {
                 $data = $agenda->data instanceof Carbon ?
                     $agenda->data->format('d/m/Y') :
@@ -649,25 +684,21 @@ class ClienteController extends Controller
                 $mensagem .= "📅 *Data:* {$data}\n";
                 $mensagem .= "⏰ *Horário:* {$agenda->hora_inicio} - {$agenda->hora_fim}\n\n";
                 $mensagem .= "Acesse seu painel para confirmar se o cliente compareceu.";
+
+                $template = 'aula_avulsa_agendada';
+                $params   = [$cliente->nome, $data, "{$agenda->hora_inicio} - {$agenda->hora_fim}"];
             } else {
                 $mensagem  = "🎉 *Novo Pacote Contratado*\n\n";
                 $mensagem .= "👤 *Cliente:* {$cliente->nome}\n";
                 $mensagem .= "📦 *Frequência:* {$frequencia}x por semana\n";
                 $mensagem .= "🗓️ *Aulas Agendadas:* {$diasTotal} treino(s)\n\n";
                 $mensagem .= "Acesse seu painel para confirmar presença do cliente.";
+
+                $template = 'pacote_contratado_personal';
+                $params   = [$cliente->nome, (string) $frequencia, (string) $diasTotal];
             }
 
-            $phone = preg_replace('/\D/', '', $personal->whatsapp);
-            if (!str_starts_with($phone, '55')) $phone = '55' . $phone;
-
-            $response = Http::withHeaders(['X-API-TOKEN' => $apiToken])
-                ->post('https://api.zenvia.com/v2/channels/whatsapp/messages', [
-                    'from'     => $from,
-                    'to'       => $phone,
-                    'contents' => [['type' => 'text', 'text' => $mensagem]],
-                ]);
-
-            Log::info("✅ WhatsApp enviado via Zenvia para personal {$personalId} - id: " . ($response->json('id') ?? 'n/a'));
+            \App\Services\WhatsAppService::notificar($personal->whatsapp, $mensagem, $template, $params);
 
         } catch (\Exception $e) {
             Log::error("❌ Erro ao notificar personal: " . $e->getMessage());

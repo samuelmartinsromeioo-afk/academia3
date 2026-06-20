@@ -524,7 +524,65 @@
 
             <button type="submit" class="btn-action">Atualizar Perfil Completo</button>
         </form>
+
+        {{-- MINHAS ASSINATURAS --}}
+        <div class="profile-card" style="margin-top: 20px;">
+            <div class="section-title">Minhas Assinaturas</div>
+            <p style="color: var(--text-muted); font-size: 0.8rem; margin: -10px 0 15px 0;">
+                <i class="fas fa-info-circle" style="color: var(--primary);"></i>
+                Ao cancelar, não há mais cobranças mensais — mas o acesso continua até o fim do período já pago (30 dias a partir do último pagamento).
+            </p>
+
+            @forelse($assinaturas as $assinatura)
+                <div id="assinatura-{{ $assinatura->id }}"
+                     style="display:flex; align-items:center; justify-content:space-between; gap:12px; background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); border-radius:12px; padding:14px 16px; margin-bottom:10px; flex-wrap:wrap;">
+                    <div>
+                        <strong style="display:block; font-size:0.95rem;">{{ $assinatura->label }}</strong>
+                        <span style="color:var(--text-muted); font-size:0.78rem;">
+                            R$ {{ number_format($assinatura->valor, 2, ',', '.') }}/mês •
+                            {{ $assinatura->metodo === 'credit_card' ? 'Cartão (débito automático)' : 'PIX mensal' }}
+                            @if($assinatura->status === 'overdue') • <span style="color:#ffa500;">em atraso</span> @endif
+                            @if($assinatura->acesso_ate) • acesso até {{ $assinatura->acesso_ate }} @endif
+                        </span>
+                    </div>
+                    <button type="button" id="btnCancelar-{{ $assinatura->id }}" onclick="cancelarAssinatura({{ $assinatura->id }})"
+                        style="background:rgba(255,68,68,0.1); color:#ff6b6b; border:1px solid rgba(255,68,68,0.3); border-radius:10px; padding:9px 14px; font-weight:700; font-size:0.8rem; cursor:pointer; white-space:nowrap;">
+                        <i class="fas fa-times-circle"></i> Cancelar
+                    </button>
+                </div>
+            @empty
+                <p style="color: var(--text-muted); font-size: 0.85rem;">Você não tem assinaturas ativas no momento.</p>
+            @endforelse
+        </div>
     </div>
+
+    <script>
+        async function cancelarAssinatura(id) {
+            if (!confirm('Cancelar esta assinatura? Não haverá mais cobranças mensais. Seu acesso continua até o fim do período já pago.')) return;
+            try {
+                const res = await fetch('/api/assinaturas/' + id + '/cancelar', {
+                    method:  'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}' },
+                });
+                const data = await res.json();
+                if (!res.ok || !data.success) throw new Error(data.error || 'Não foi possível cancelar.');
+
+                // Mantém a linha mas indica o cancelamento + até quando o acesso vale.
+                const btn = document.getElementById('btnCancelar-' + id);
+                if (btn) {
+                    btn.disabled = true;
+                    btn.style.opacity = '0.5';
+                    btn.style.cursor = 'default';
+                    btn.innerHTML = '<i class="fas fa-check"></i> Cancelada';
+                }
+                alert(data.acesso_ate
+                    ? ('Assinatura cancelada. Sem novas cobranças. Seu acesso continua até ' + data.acesso_ate + '.')
+                    : 'Assinatura cancelada. Não haverá mais cobranças.');
+            } catch (err) {
+                alert('Erro ao cancelar: ' + err.message);
+            }
+        }
+    </script>
 
     <div id="dashboardSummary">
         {{-- PERSONALS --}}
@@ -613,14 +671,12 @@
                         </div>
                     </div>
 
-                    <div>
+                    <div style="display:flex; flex-direction:column; gap:8px; align-items:flex-end;">
+                        <a href="{{ route('academias.detalhes', $academia->id) }}" class="btn-action btn-outline" style="margin:0; padding: 9px 18px; width: auto; font-size: 0.7rem; text-decoration:none; display:inline-flex; align-items:center; gap:6px;">
+                            <i class="fas fa-eye"></i> Ver Detalhes
+                        </a>
                         @if($cliente->academia_id == $academia->id)
                             <div class="badge-status" style="background: var(--primary); color: #000;">Meu Plano</div>
-                        @else
-                            <button class="btn-action" style="margin:0; padding: 10px 20px; width: auto; font-size: 0.7rem;"
-                                onclick="abrirPlanosAcademia({{ $academia->id }}, '{{ addslashes($academia->nome) }}', {!! json_encode($academia->planos->map(fn($p) => ['id'=>$p->id,'nome'=>$p->nome,'valor'=>$p->valor,'duracao'=>$p->duracao_meses,'descricao'=>$p->descricao])) !!})">
-                                <i class="fas fa-tags"></i> Ver Planos
-                            </button>
                         @endif
                     </div>
                 </div>
@@ -2232,6 +2288,7 @@
             document.getElementById('pixQrCodeImg').src = 'data:image/png;base64,' + data.pixQrCode;
             document.getElementById('pixCopiaCola').value = data.pixPayload;
             document.getElementById('pixValor').textContent = 'R$ ' + parseFloat(data.amount).toFixed(2).replace('.', ',');
+            document.getElementById('pixRecorrenteNota').style.display = data.recorrente ? 'block' : 'none';
             document.getElementById('modalPix').style.display = 'flex';
 
             // Inicia polling
@@ -2261,6 +2318,8 @@
 
     function fecharModalPix() {
         document.getElementById('modalPix').style.display = 'none';
+        const nota = document.getElementById('pixRecorrenteNota');
+        if (nota) nota.style.display = 'none';
         clearInterval(pixPollingInterval);
     }
 
@@ -2281,6 +2340,10 @@
 
         <h3 style="color:var(--primary); font-size:1.1rem; font-weight:900; margin:0 0 4px;">PAGAMENTO VIA PIX</h3>
         <p id="pixValor" style="color:#fff; font-size:1.5rem; font-weight:700; margin:0 0 20px;"></p>
+
+        <p id="pixRecorrenteNota" style="display:none; color:#d4ff00; font-size:0.78rem; font-weight:700; margin:-10px 0 16px; background:rgba(212,255,0,0.08); border:1px solid rgba(212,255,0,0.25); border-radius:10px; padding:8px 12px;">
+            🔁 Assinatura mensal — uma nova cobrança PIX é gerada todo mês.
+        </p>
 
         <img id="pixQrCodeImg" src="" alt="QR Code Pix" style="width:200px; height:200px; border-radius:12px; background:#fff; padding:8px; margin-bottom:16px;">
 
@@ -2319,6 +2382,9 @@
         <h3 style="color:#d4ff00; font-size:1.1rem; font-weight:900; margin:0 0 4px;">PAGAMENTO VIA PIX</h3>
         <p id="pixAcademiaDescricao" style="color:#a0a0a0; font-size:0.8rem; margin:0 0 8px;"></p>
         <p id="pixAcademiaValor" style="color:#fff; font-size:1.5rem; font-weight:700; margin:0 0 20px;"></p>
+        <p style="color:#d4ff00; font-size:0.78rem; font-weight:700; margin:-10px 0 16px; background:rgba(212,255,0,0.08); border:1px solid rgba(212,255,0,0.25); border-radius:10px; padding:8px 12px;">
+            🔁 Assinatura mensal — uma nova cobrança PIX é gerada todo mês.
+        </p>
         <img id="pixAcademiaQr" src="" alt="QR Code" style="width:200px; height:200px; border-radius:12px; background:#fff; padding:8px; margin-bottom:16px;">
         <p style="color:#a0a0a0; font-size:0.8rem; margin:0 0 8px;">Ou copie o código Pix:</p>
         <div style="display:flex; gap:8px; margin-bottom:16px;">

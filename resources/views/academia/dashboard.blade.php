@@ -308,8 +308,17 @@
             <button type="button" onclick="document.getElementById('modalUpdate').style.display='block'; toggleMenu();">
                 <i class="fas fa-building"></i> Meu Perfil
             </button>
+            <button type="button" onclick="window.location.href='{{ route('academia.alunos') }}'">
+                <i class="fas fa-users"></i> Alunos
+            </button>
+            <button type="button" onclick="abrirCarteira(); toggleMenu();">
+                <i class="fas fa-piggy-bank" style="color: var(--primary);"></i> Minha Carteira
+            </button>
             <button type="button" onclick="window.location.href='{{ route('academia.filiais') }}'">
                 <i class="fas fa-map-marker-alt"></i> Filiais
+            </button>
+            <button type="button" onclick="window.location.href='{{ route('academia.gestao') }}'">
+                <i class="fas fa-user-tie"></i> Profissionais & Aulas
             </button>
             <button type="button" onclick="document.getElementById('modalGaleriaAcademia').style.display='block'; toggleMenu();">
                 <i class="fas fa-images"></i> Galeria de Fotos
@@ -514,6 +523,8 @@
             <div class="input-wrapper"><i class="fas fa-dollar-sign"></i><input type="number" step="0.01" name="valor_mensalidade" value="{{ $academia->valor_mensalidade }}"></div>
             <label>Descrição</label>
             <div class="input-wrapper"><i class="fas fa-pen"></i><textarea name="descricao">{{ $academia->descricao }}</textarea></div>
+            <label>Chave PIX (para receber os repasses)</label>
+            <div class="input-wrapper"><i class="fas fa-key"></i><input type="text" name="chave_pix" value="{{ $academia->chave_pix }}" placeholder="CPF/CNPJ, e-mail, telefone ou chave aleatória"></div>
             <div style="display: flex; gap: 10px; margin-top: 20px;">
                 <button type="button" onclick="document.getElementById('modalUpdate').style.display='none'" class="btn-save btn-cancel">Cancelar</button>
                 <button type="submit" class="btn-save">Salvar</button>
@@ -580,6 +591,66 @@
     </div>
 </div>
 
+{{-- MODAL CARTEIRA ASAAS --}}
+<div id="modalCarteira" class="modal-overlay">
+    <div class="modal-content" style="max-width: 480px;">
+        <h2 style="color: var(--primary); font-size: 1.4rem; margin-top: 0; font-weight: 900; text-align: center;">
+            <i class="fas fa-piggy-bank"></i> CARTEIRA DA ACADEMIA
+        </h2>
+
+        <div id="carteiraLoading" style="text-align:center; padding:30px 0; color: var(--text-muted);">
+            <i class="fas fa-spinner fa-spin fa-2x"></i><br><br>Consultando saldo...
+        </div>
+
+        <div id="carteiraConteudo" style="display:none;">
+            <div style="background:rgba(212,255,0,0.07); border:1px solid rgba(212,255,0,0.3); border-radius:16px; padding:24px; text-align:center; margin-bottom:20px;">
+                <p style="margin:0; color: var(--text-muted); font-size:0.75rem; text-transform:uppercase; margin-bottom:8px;">Saldo disponível</p>
+                <p id="carteiraValor" style="margin:0; color:#fff; font-size:2rem; font-weight:900;">R$ 0,00</p>
+            </div>
+
+            <div id="carteiraSemPix" style="display:none; background:rgba(255,165,0,0.1); border:1px solid rgba(255,165,0,0.3); border-radius:12px; padding:14px; margin-bottom:16px; font-size:0.82rem; color:#ffa500; text-align:center;">
+                <i class="fas fa-exclamation-triangle"></i> Cadastre sua chave PIX em "Meu Perfil" para poder sacar.
+            </div>
+
+            <div id="carteiraSaqueForm">
+                <label style="margin-top:0;">Valor a sacar (R$)</label>
+                <div style="display:flex; gap:10px; margin-bottom:16px;">
+                    <input id="carteiraValorSaque" type="number" min="0.01" step="0.01" placeholder="0,00"
+                        style="flex:1; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.12); border-radius:10px; padding:11px 14px; color:#fff; font-size:1rem; outline:none;">
+                    <button type="button" onclick="sacarTudo()" style="background:rgba(255,255,255,0.07); color:#fff; border:1px solid rgba(255,255,255,0.15); border-radius:10px; padding:10px 14px; font-size:0.8rem; cursor:pointer; white-space:nowrap;">
+                        Tudo
+                    </button>
+                </div>
+
+                <p id="carteiraSaqueErro" style="display:none; color:#ff6b6b; font-size:0.82rem; background:rgba(255,107,107,0.1); border:1px solid rgba(255,107,107,0.3); border-radius:8px; padding:10px 14px; margin-bottom:14px;"></p>
+                <p id="carteiraSaqueSucesso" style="display:none; color: var(--success); font-weight:700; text-align:center; padding:8px 0; font-size:0.9rem;">✅ Saque solicitado! O valor chegará via PIX em instantes.</p>
+
+                <button type="button" id="btnSacar" onclick="confirmarSaque()"
+                    style="width:100%; background:var(--primary); color:#000; border:none; border-radius:12px; padding:14px; font-weight:900; font-size:0.95rem; cursor:pointer;">
+                    <i class="fas fa-arrow-down"></i> Sacar via PIX
+                </button>
+            </div>
+
+            <p style="color: var(--text-muted); font-size:0.7rem; text-align:center; margin-top:14px; margin-bottom:0;">
+                O valor é transferido direto para a chave PIX cadastrada no seu perfil.
+            </p>
+        </div>
+
+        <div id="carteiraSemConta" style="display:none; text-align:center; padding:10px 0;">
+            <i class="fas fa-piggy-bank fa-2x" style="margin-bottom:12px; display:block; color: var(--primary);"></i>
+            <p style="color: var(--text-muted); font-size:0.85rem; margin-bottom:18px;">
+                Ative os recebimentos para que as mensalidades dos planos caiam direto na sua conta (com repasse automático de 90%).
+            </p>
+            <p id="carteiraContaErro" style="display:none; color:#ff6b6b; font-size:0.82rem; background:rgba(255,107,107,0.1); border:1px solid rgba(255,107,107,0.3); border-radius:8px; padding:10px 14px; margin-bottom:14px;"></p>
+            <button type="button" id="btnAtivarConta" onclick="ativarRecebimentos()" class="btn-save" style="margin-top:0;">
+                <i class="fas fa-bolt"></i> Ativar recebimentos
+            </button>
+        </div>
+
+        <button type="button" onclick="fecharCarteira()" class="btn-save btn-cancel" style="margin-top:14px;">Fechar</button>
+    </div>
+</div>
+
 <script>
     function toggleMenu() {
         const m = document.getElementById('dropdownMenu');
@@ -597,12 +668,118 @@
     }
 
     window.onclick = (e) => {
-        ['modalNovoPLano','modalEditarPlano','modalUpdate','modalGaleriaAcademia'].forEach(id => {
+        ['modalNovoPLano','modalEditarPlano','modalUpdate','modalGaleriaAcademia','modalCarteira'].forEach(id => {
             const el = document.getElementById(id);
             if (e.target == el) el.style.display = 'none';
         });
         if (!e.target.closest('.menu-container')) {
             document.getElementById('dropdownMenu').style.display = 'none';
+        }
+    }
+
+    // ── CARTEIRA ASAAS ──────────────────────────────
+    let carteiraSaldoAtual = 0;
+
+    async function abrirCarteira() {
+        document.getElementById('modalCarteira').style.display = 'block';
+        document.getElementById('carteiraLoading').style.display = 'block';
+        document.getElementById('carteiraConteudo').style.display = 'none';
+        document.getElementById('carteiraSemConta').style.display = 'none';
+        document.getElementById('carteiraSaqueErro').style.display = 'none';
+        document.getElementById('carteiraSaqueSucesso').style.display = 'none';
+        document.getElementById('carteiraContaErro').style.display = 'none';
+
+        try {
+            const res  = await fetch('/api/academia/saldo', {
+                headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}' }
+            });
+            const data = await res.json();
+
+            document.getElementById('carteiraLoading').style.display = 'none';
+
+            if (data.sem_conta) {
+                document.getElementById('carteiraSemConta').style.display = 'block';
+                return;
+            }
+
+            carteiraSaldoAtual = parseFloat(data.saldo) || 0;
+            document.getElementById('carteiraValor').textContent = 'R$ ' + carteiraSaldoAtual.toFixed(2).replace('.', ',');
+            document.getElementById('carteiraValorSaque').value = carteiraSaldoAtual > 0 ? carteiraSaldoAtual.toFixed(2) : '';
+            document.getElementById('carteiraSemPix').style.display = data.tem_pix ? 'none' : 'block';
+            document.getElementById('carteiraSaqueForm').style.display = data.tem_pix ? 'block' : 'none';
+            document.getElementById('carteiraConteudo').style.display = 'block';
+        } catch (_) {
+            document.getElementById('carteiraLoading').style.display = 'none';
+            document.getElementById('carteiraSemConta').style.display = 'block';
+        }
+    }
+
+    function fecharCarteira() {
+        document.getElementById('modalCarteira').style.display = 'none';
+    }
+
+    function sacarTudo() {
+        document.getElementById('carteiraValorSaque').value = carteiraSaldoAtual > 0 ? carteiraSaldoAtual.toFixed(2) : '';
+    }
+
+    async function ativarRecebimentos() {
+        const btn = document.getElementById('btnAtivarConta');
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Ativando...';
+        document.getElementById('carteiraContaErro').style.display = 'none';
+
+        try {
+            const res  = await fetch('/api/academia/criar-conta-asaas', {
+                method:  'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}' },
+            });
+            const data = await res.json();
+
+            if (!res.ok || !data.success) throw new Error(data.error || 'Não foi possível ativar os recebimentos.');
+
+            // Conta criada — recarrega a carteira já no estado de saldo.
+            abrirCarteira();
+        } catch (err) {
+            document.getElementById('carteiraContaErro').textContent = err.message;
+            document.getElementById('carteiraContaErro').style.display = 'block';
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-bolt"></i> Ativar recebimentos';
+        }
+    }
+
+    async function confirmarSaque() {
+        const valor = parseFloat(document.getElementById('carteiraValorSaque').value);
+        if (!valor || valor <= 0) {
+            document.getElementById('carteiraSaqueErro').textContent = 'Informe um valor válido.';
+            document.getElementById('carteiraSaqueErro').style.display = 'block';
+            return;
+        }
+
+        const btn = document.getElementById('btnSacar');
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processando...';
+        document.getElementById('carteiraSaqueErro').style.display = 'none';
+
+        try {
+            const res  = await fetch('/api/academia/sacar', {
+                method:  'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}' },
+                body:    JSON.stringify({ valor }),
+            });
+            const data = await res.json();
+
+            if (!res.ok) throw new Error(data.error || 'Erro ao processar saque.');
+
+            document.getElementById('carteiraSaqueSucesso').style.display = 'block';
+            document.getElementById('carteiraSaqueForm').style.display = 'none';
+            carteiraSaldoAtual = 0;
+            document.getElementById('carteiraValor').textContent = 'R$ 0,00';
+        } catch (err) {
+            document.getElementById('carteiraSaqueErro').textContent = err.message;
+            document.getElementById('carteiraSaqueErro').style.display = 'block';
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-arrow-down"></i> Sacar via PIX';
         }
     }
 </script>

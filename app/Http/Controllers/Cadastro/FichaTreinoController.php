@@ -3,22 +3,39 @@
 namespace App\Http\Controllers\Cadastro;
 
 use App\Http\Controllers\Controller;
-use App\Models\Cadastro\FichaTreino;
-use App\Models\Cadastro\ExercicioFicha;
-use App\Models\Cadastro\TreinoConcluido;
-use App\Models\Cadastro\Personal;
-use App\Models\Cadastro\Cliente;
 use App\Models\Agenda;
+use App\Models\Cadastro\Cliente;
+use App\Models\Cadastro\ExercicioFicha;
+use App\Models\Cadastro\FichaTreino;
+use App\Models\Cadastro\Personal;
+use App\Models\Cadastro\TreinoConcluido;
 use Illuminate\Http\Request;
-use Carbon\Carbon;
+use Illuminate\Support\Facades\Storage;
 
 class FichaTreinoController extends Controller
 {
+    // Regra de validação do vídeo demonstrativo (limite de 15s é validado no navegador).
+    private array $videoRules = [
+        'video' => 'nullable|file|mimetypes:video/mp4,video/quicktime,video/webm,video/3gpp,video/x-msvideo|max:51200',
+    ];
+
+    // Salva o vídeo enviado (se houver) e retorna o caminho; senão, null.
+    private function uploadVideoExercicio(Request $request): ?string
+    {
+        if ($request->hasFile('video')) {
+            return $request->file('video')->store('fichas/videos', 'public');
+        }
+
+        return null;
+    }
+
     // ✅ PERSONAL: Ver seus alunos com pacote
     public function meusAlunos()
     {
         $personalId = session('personal_id');
-        if (!$personalId) return redirect()->route('login.index');
+        if (! $personalId) {
+            return redirect()->route('login.index');
+        }
 
         // Alunos com pacote ativo (frequencia_pacote preenchido)
         $alunos = Agenda::with('cliente')
@@ -36,7 +53,9 @@ class FichaTreinoController extends Controller
     public function fichasDoAluno($clienteId)
     {
         $personalId = session('personal_id');
-        if (!$personalId) return redirect()->route('login.index');
+        if (! $personalId) {
+            return redirect()->route('login.index');
+        }
 
         $cliente = Cliente::findOrFail($clienteId);
         $fichas = FichaTreino::with('exercicios')
@@ -47,6 +66,7 @@ class FichaTreinoController extends Controller
             ->get();
 
         $exerciciosData = $this->getExerciciosData();
+
         return view('personal.PersonalFichasTreinoLista', compact('cliente', 'fichas', 'exerciciosData'));
     }
 
@@ -54,7 +74,9 @@ class FichaTreinoController extends Controller
     public function criarFicha(Request $request)
     {
         $personalId = session('personal_id');
-        if (!$personalId) return redirect()->route('login.index');
+        if (! $personalId) {
+            return redirect()->route('login.index');
+        }
 
         $request->validate([
             'cliente_id' => 'required|exists:clientes,id',
@@ -96,22 +118,24 @@ class FichaTreinoController extends Controller
     public function adicionarExercicio(Request $request, $fichaId)
     {
         $personalId = session('personal_id');
-        if (!$personalId) return redirect()->route('login.index');
+        if (! $personalId) {
+            return redirect()->route('login.index');
+        }
 
         $ficha = FichaTreino::findOrFail($fichaId);
-        
+
         // Verificar se personal é o dono
         if ($ficha->personal_id != $personalId) {
             return redirect()->back()->with('error', 'Acesso negado!');
         }
 
-        $request->validate([
+        $request->validate(array_merge([
             'nome_exercicio' => 'required|string|max:255',
             'series' => 'required|integer|min:1',
             'repeticoes' => 'required|integer|min:1',
             'peso' => 'nullable|numeric|min:0',
             'observacoes' => 'nullable|string',
-        ]);
+        ], $this->videoRules));
 
         // Encontrar maior ordem para adicionar ao final
         $ultimaOrdem = ExercicioFicha::where('ficha_id', $fichaId)->max('ordem') ?? 0;
@@ -123,6 +147,7 @@ class FichaTreinoController extends Controller
             'repeticoes' => $request->repeticoes,
             'peso' => $request->peso,
             'observacoes' => $request->observacoes,
+            'video' => $this->uploadVideoExercicio($request),
             'ordem' => $ultimaOrdem + 1,
         ]);
 
@@ -130,14 +155,63 @@ class FichaTreinoController extends Controller
             ->with('success', 'Exercício adicionado!');
     }
 
+    // ✅ PERSONAL: Editar exercício
+    public function editarExercicio(Request $request, $exercicioId)
+    {
+        $personalId = session('personal_id');
+        if (! $personalId) {
+            return redirect()->route('login.index');
+        }
+
+        $exercicio = ExercicioFicha::findOrFail($exercicioId);
+        $ficha = $exercicio->ficha;
+
+        if (! $ficha || $ficha->personal_id != $personalId) {
+            return redirect()->back()->with('error', 'Acesso negado!');
+        }
+
+        $request->validate(array_merge([
+            'nome_exercicio' => 'required|string|max:255',
+            'series' => 'required|integer|min:1',
+            'repeticoes' => 'required|integer|min:1',
+            'peso' => 'nullable|numeric|min:0',
+            'observacoes' => 'nullable|string',
+        ], $this->videoRules));
+
+        $dados = [
+            'nome_exercicio' => $request->nome_exercicio,
+            'series' => $request->series,
+            'repeticoes' => $request->repeticoes,
+            'peso' => $request->peso,
+            'observacoes' => $request->observacoes,
+        ];
+
+        if ($request->hasFile('video')) {
+            if ($exercicio->video) {
+                Storage::disk('public')->delete($exercicio->video);
+            }
+            $dados['video'] = $this->uploadVideoExercicio($request);
+        } elseif ($request->boolean('remover_video') && $exercicio->video) {
+            Storage::disk('public')->delete($exercicio->video);
+            $dados['video'] = null;
+        }
+
+        $exercicio->update($dados);
+
+        return redirect()->route('fichas-treino.aluno', $ficha->cliente_id)
+            ->with('success', 'Exercício atualizado!');
+    }
+
     // ✅ PERSONAL: Editar ficha
     public function editarFicha(Request $request, $fichaId)
     {
         $personalId = session('personal_id');
-        if (!$personalId) return redirect()->route('login.index');
+        if (! $personalId) {
+            return redirect()->route('login.index');
+        }
 
         $ficha = FichaTreino::findOrFail($fichaId);
-        
+
         if ($ficha->personal_id != $personalId) {
             return redirect()->back()->with('error', 'Acesso negado!');
         }
@@ -160,7 +234,9 @@ class FichaTreinoController extends Controller
     public function deletarExercicio($exercicioId)
     {
         $personalId = session('personal_id');
-        if (!$personalId) return redirect()->route('login.index');
+        if (! $personalId) {
+            return redirect()->route('login.index');
+        }
 
         $exercicio = ExercicioFicha::findOrFail($exercicioId);
         $ficha = $exercicio->ficha;
@@ -180,10 +256,12 @@ class FichaTreinoController extends Controller
     public function deletarFicha($fichaId)
     {
         $personalId = session('personal_id');
-        if (!$personalId) return redirect()->route('login.index');
+        if (! $personalId) {
+            return redirect()->route('login.index');
+        }
 
         $ficha = FichaTreino::findOrFail($fichaId);
-        
+
         if ($ficha->personal_id != $personalId) {
             return redirect()->back()->with('error', 'Acesso negado!');
         }
@@ -195,11 +273,216 @@ class FichaTreinoController extends Controller
             ->with('success', 'Ficha deletada!');
     }
 
+    // ==========================================
+    // ACADEMIA: fichas de treino para seus alunos
+    // ==========================================
+
+    // ✅ ACADEMIA: Ver/gerenciar fichas de um aluno
+    public function fichasDoAlunoAcademia($clienteId)
+    {
+        $academiaId = session('academia_id');
+        if (! $academiaId) {
+            return redirect()->route('login.index');
+        }
+
+        $cliente = Cliente::where('id', $clienteId)
+            ->where('academia_id', $academiaId)
+            ->firstOrFail();
+
+        $fichas = FichaTreino::with('exercicios')
+            ->where('academia_id', $academiaId)
+            ->where('cliente_id', $clienteId)
+            ->where('ativo', true)
+            ->orderBy('dia_semana')
+            ->get();
+
+        $exerciciosData = $this->getExerciciosData();
+
+        return view('academia.aluno-fichas', compact('cliente', 'fichas', 'exerciciosData'));
+    }
+
+    // ✅ ACADEMIA: Criar nova ficha
+    public function criarFichaAcademia(Request $request)
+    {
+        $academiaId = session('academia_id');
+        if (! $academiaId) {
+            return redirect()->route('login.index');
+        }
+
+        $request->validate([
+            'cliente_id' => 'required|exists:clientes,id',
+            'dia_semana' => 'required|integer|min:0|max:6',
+            'nome_treino' => 'required|string|max:255',
+            'observacoes' => 'nullable|string',
+            'nivel' => 'required|in:iniciante,avancado',
+            'divisao' => 'nullable|string|max:100',
+        ]);
+
+        // O aluno precisa pertencer a esta academia.
+        Cliente::where('id', $request->cliente_id)
+            ->where('academia_id', $academiaId)
+            ->firstOrFail();
+
+        $jaExiste = FichaTreino::where('academia_id', $academiaId)
+            ->where('cliente_id', $request->cliente_id)
+            ->where('dia_semana', $request->dia_semana)
+            ->where('ativo', true)
+            ->exists();
+
+        if ($jaExiste) {
+            return redirect()->route('academia.aluno-fichas', $request->cliente_id)
+                ->with('error', 'Já existe uma ficha para este dia da semana!');
+        }
+
+        FichaTreino::create([
+            'academia_id' => $academiaId,
+            'cliente_id' => $request->cliente_id,
+            'dia_semana' => $request->dia_semana,
+            'nome_treino' => $request->nome_treino,
+            'observacoes' => $request->observacoes,
+            'ativo' => true,
+            'nivel' => $request->nivel,
+            'divisao' => $request->nivel === 'avancado' ? $request->divisao : null,
+        ]);
+
+        return redirect()->route('academia.aluno-fichas', $request->cliente_id)
+            ->with('success', 'Ficha criada com sucesso!');
+    }
+
+    // ✅ ACADEMIA: Adicionar exercício à ficha
+    public function adicionarExercicioAcademia(Request $request, $fichaId)
+    {
+        $academiaId = session('academia_id');
+        if (! $academiaId) {
+            return redirect()->route('login.index');
+        }
+
+        $ficha = FichaTreino::findOrFail($fichaId);
+        if ($ficha->academia_id != $academiaId) {
+            return redirect()->back()->with('error', 'Acesso negado!');
+        }
+
+        $request->validate(array_merge([
+            'nome_exercicio' => 'required|string|max:255',
+            'series' => 'required|integer|min:1',
+            'repeticoes' => 'required|integer|min:1',
+            'peso' => 'nullable|numeric|min:0',
+            'observacoes' => 'nullable|string',
+        ], $this->videoRules));
+
+        $ultimaOrdem = ExercicioFicha::where('ficha_id', $fichaId)->max('ordem') ?? 0;
+
+        ExercicioFicha::create([
+            'ficha_id' => $fichaId,
+            'nome_exercicio' => $request->nome_exercicio,
+            'series' => $request->series,
+            'repeticoes' => $request->repeticoes,
+            'peso' => $request->peso,
+            'observacoes' => $request->observacoes,
+            'video' => $this->uploadVideoExercicio($request),
+            'ordem' => $ultimaOrdem + 1,
+        ]);
+
+        return redirect()->route('academia.aluno-fichas', $ficha->cliente_id)
+            ->with('success', 'Exercício adicionado!');
+    }
+
+    // ✅ ACADEMIA: Editar exercício
+    public function editarExercicioAcademia(Request $request, $exercicioId)
+    {
+        $academiaId = session('academia_id');
+        if (! $academiaId) {
+            return redirect()->route('login.index');
+        }
+
+        $exercicio = ExercicioFicha::findOrFail($exercicioId);
+        $ficha = $exercicio->ficha;
+
+        if (! $ficha || $ficha->academia_id != $academiaId) {
+            return redirect()->back()->with('error', 'Acesso negado!');
+        }
+
+        $request->validate(array_merge([
+            'nome_exercicio' => 'required|string|max:255',
+            'series' => 'required|integer|min:1',
+            'repeticoes' => 'required|integer|min:1',
+            'peso' => 'nullable|numeric|min:0',
+            'observacoes' => 'nullable|string',
+        ], $this->videoRules));
+
+        $dados = [
+            'nome_exercicio' => $request->nome_exercicio,
+            'series' => $request->series,
+            'repeticoes' => $request->repeticoes,
+            'peso' => $request->peso,
+            'observacoes' => $request->observacoes,
+        ];
+
+        if ($request->hasFile('video')) {
+            if ($exercicio->video) {
+                Storage::disk('public')->delete($exercicio->video);
+            }
+            $dados['video'] = $this->uploadVideoExercicio($request);
+        } elseif ($request->boolean('remover_video') && $exercicio->video) {
+            Storage::disk('public')->delete($exercicio->video);
+            $dados['video'] = null;
+        }
+
+        $exercicio->update($dados);
+
+        return redirect()->route('academia.aluno-fichas', $ficha->cliente_id)
+            ->with('success', 'Exercício atualizado!');
+    }
+
+    // ✅ ACADEMIA: Deletar exercício
+    public function deletarExercicioAcademia($exercicioId)
+    {
+        $academiaId = session('academia_id');
+        if (! $academiaId) {
+            return redirect()->route('login.index');
+        }
+
+        $exercicio = ExercicioFicha::findOrFail($exercicioId);
+        $ficha = $exercicio->ficha;
+
+        if (! $ficha || $ficha->academia_id != $academiaId) {
+            return redirect()->back()->with('error', 'Acesso negado!');
+        }
+
+        $clienteId = $ficha->cliente_id;
+        $exercicio->delete();
+
+        return redirect()->route('academia.aluno-fichas', $clienteId)
+            ->with('success', 'Exercício removido!');
+    }
+
+    // ✅ ACADEMIA: Deletar ficha inteira
+    public function deletarFichaAcademia($fichaId)
+    {
+        $academiaId = session('academia_id');
+        if (! $academiaId) {
+            return redirect()->route('login.index');
+        }
+
+        $ficha = FichaTreino::findOrFail($fichaId);
+        if ($ficha->academia_id != $academiaId) {
+            return redirect()->back()->with('error', 'Acesso negado!');
+        }
+
+        $clienteId = $ficha->cliente_id;
+        $ficha->delete();
+
+        return redirect()->route('academia.aluno-fichas', $clienteId)
+            ->with('success', 'Ficha deletada!');
+    }
+
     // ✅ CLIENTE: Ver suas fichas de treino
     public function minhasFichas()
     {
         $clienteId = session('cliente_id');
-        if (!$clienteId) return redirect()->route('login.index');
+        if (! $clienteId) {
+            return redirect()->route('login.index');
+        }
 
         $cliente = Cliente::findOrFail($clienteId);
 
@@ -221,17 +504,28 @@ class FichaTreinoController extends Controller
         // Agrupar por personal
         $fichasPorPersonal = $fichas->groupBy('personal_id');
 
-        return view('cliente.MinhasFichasTreino', compact('cliente', 'fichasPorPersonal'));
+        // Fichas criadas pela academia (não dependem de pacote com personal)
+        $fichasAcademia = FichaTreino::with('exercicios', 'academia')
+            ->where('cliente_id', $clienteId)
+            ->whereNotNull('academia_id')
+            ->where('ativo', true)
+            ->orderBy('dia_semana')
+            ->get()
+            ->groupBy('academia_id');
+
+        return view('cliente.MinhasFichasTreino', compact('cliente', 'fichasPorPersonal', 'fichasAcademia'));
     }
 
     // ✅ CLIENTE: Marcar treino como concluído
     public function marcarConcluido(Request $request, $fichaId)
     {
         $clienteId = session('cliente_id');
-        if (!$clienteId) return redirect()->route('login.index');
+        if (! $clienteId) {
+            return redirect()->route('login.index');
+        }
 
         $ficha = FichaTreino::findOrFail($fichaId);
-        
+
         if ($ficha->cliente_id != $clienteId) {
             return redirect()->back()->with('error', 'Acesso negado!');
         }
@@ -257,7 +551,7 @@ class FichaTreinoController extends Controller
         );
 
         // Se já existia, apenas atualiza
-        if (!$treino->wasRecentlyCreated) {
+        if (! $treino->wasRecentlyCreated) {
             $treino->update([
                 'concluido' => true,
                 'observacoes' => $request->observacoes,
@@ -272,10 +566,12 @@ class FichaTreinoController extends Controller
     public function desmarcarConcluido($fichaId)
     {
         $clienteId = session('cliente_id');
-        if (!$clienteId) return redirect()->route('login.index');
+        if (! $clienteId) {
+            return redirect()->route('login.index');
+        }
 
         $ficha = FichaTreino::findOrFail($fichaId);
-        
+
         if ($ficha->cliente_id != $clienteId) {
             return redirect()->back()->with('error', 'Acesso negado!');
         }
@@ -296,7 +592,7 @@ class FichaTreinoController extends Controller
     {
         $ficha = FichaTreino::with('exercicios')->findOrFail($fichaId);
 
-        $clienteId  = session('cliente_id');
+        $clienteId = session('cliente_id');
         $personalId = session('personal_id');
 
         if ($ficha->cliente_id !== $clienteId && $ficha->personal_id !== $personalId) {

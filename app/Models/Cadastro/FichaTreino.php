@@ -10,6 +10,7 @@ class FichaTreino extends Model
     
     protected $fillable = [
         'personal_id',
+        'academia_id',
         'cliente_id',
         'dia_semana',
         'nome_treino',
@@ -23,6 +24,11 @@ class FichaTreino extends Model
     public function personal()
     {
         return $this->belongsTo(Personal::class, 'personal_id');
+    }
+
+    public function academia()
+    {
+        return $this->belongsTo(Academia::class, 'academia_id');
     }
 
     public function cliente()

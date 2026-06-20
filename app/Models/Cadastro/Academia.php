@@ -30,8 +30,13 @@ class Academia extends Model
         'senha',
         'cnpj',
         'tipos_aulas',
+        'infraestrutura',
         'latitude',
         'longitude',
+        'chave_pix',
+        'asaas_account_id',
+        'asaas_wallet_id',
+        'asaas_api_key',
                             ];
 
     //garante com que os dados saiam de forma correta do banco de dados 
@@ -57,6 +62,16 @@ class Academia extends Model
     public function filiais(): HasMany
     {
         return $this->hasMany(Filial::class);
+    }
+
+    public function professores(): HasMany
+    {
+        return $this->hasMany(AcademiaProfessor::class, 'academia_id');
+    }
+
+    public function aulas(): HasMany
+    {
+        return $this->hasMany(AcademiaAula::class, 'academia_id');
     }
 
     use HasFactory;

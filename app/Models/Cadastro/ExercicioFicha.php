@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 class ExercicioFicha extends Model
 {
     protected $table = 'exercicios_ficha';
-    
+
     protected $fillable = [
         'ficha_id',
         'nome_exercicio',
@@ -15,7 +15,8 @@ class ExercicioFicha extends Model
         'repeticoes',
         'peso',
         'observacoes',
-        'ordem'
+        'video',
+        'ordem',
     ];
 
     protected $casts = [

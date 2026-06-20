@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Cadastro;
 
 use App\Http\Controllers\Controller;
 use App\Models\Cadastro\Academia;
+use App\Models\Cadastro\AcademiaAula;
+use App\Models\Cadastro\AcademiaProfessor;
 use App\Models\Cadastro\Cliente;
 use App\Models\Cadastro\Filial;
 use App\Models\Cadastro\Personal;
@@ -116,9 +118,43 @@ class AcademiaController extends Controller
             return redirect()->route('login.index');
         }
 
-        // Buscamos TODOS os alunos 
-        $todosAlunos = Cliente::where('academia_id', $academia_id)->orderBy('nome', 'asc')->get();
-        return $this->dashboard($todosAlunos);
+        $academia = Academia::find($academia_id);
+        if (!$academia) {
+            session()->forget('academia_id');
+            return redirect()->route('login.index')->withErrors(['login' => 'Conta de academia não encontrada.']);
+        }
+
+        // Todos os alunos vinculados a esta academia
+        $alunos = Cliente::where('academia_id', $academia_id)
+            ->orderBy('nome', 'asc')
+            ->get();
+
+        return view('academia.alunos', compact('academia', 'alunos'));
+    }
+
+    /**
+     * Atualiza o perfil da academia (nome, cidade, mensalidade, descrição e chave PIX).
+     */
+    public function update(Request $request, $id)
+    {
+        $academia_id = session('academia_id');
+        if (!$academia_id || (int) $academia_id !== (int) $id) {
+            return redirect()->route('login.index')->withErrors(['login' => 'Acesso negado.']);
+        }
+
+        $academia = Academia::findOrFail($id);
+
+        $dados = $request->validate([
+            'nome'              => 'required|string|max:255',
+            'cidade'            => 'required|string|max:200',
+            'valor_mensalidade' => 'nullable|numeric|min:0',
+            'descricao'         => 'nullable|string|max:500',
+            'chave_pix'         => 'nullable|string|max:255',
+        ]);
+
+        $academia->update($dados);
+
+        return redirect()->route('academia.dashboard')->with('success', 'Perfil atualizado com sucesso!');
     }
 
         public function storePlano(Request $request)
@@ -250,5 +286,190 @@ class AcademiaController extends Controller
             ->delete();
 
         return redirect()->back()->with('success', 'Filial removida com sucesso!');
+    }
+
+    // ==========================================
+    // GESTÃO: PROFISSIONAIS, AULAS E INFRAESTRUTURA
+    // ==========================================
+
+    private function academiaLogada(): ?Academia
+    {
+        $academiaId = session('academia_id');
+        if (!$academiaId) {
+            return null;
+        }
+
+        return Academia::find($academiaId);
+    }
+
+    public function gestao()
+    {
+        $academia = $this->academiaLogada();
+        if (!$academia) {
+            return redirect()->route('login.index');
+        }
+
+        $professores = AcademiaProfessor::where('academia_id', $academia->id)->orderBy('nome')->get();
+        $aulas = AcademiaAula::with('professor')
+            ->where('academia_id', $academia->id)
+            ->orderBy('nome')
+            ->get();
+
+        return view('academia.gestao', compact('academia', 'professores', 'aulas'));
+    }
+
+    public function atualizarInfraestrutura(Request $request)
+    {
+        $academia = $this->academiaLogada();
+        if (!$academia) {
+            return redirect()->route('login.index');
+        }
+
+        $request->validate([
+            'infraestrutura' => 'nullable|string|max:2000',
+        ]);
+
+        $academia->update(['infraestrutura' => $request->infraestrutura]);
+
+        return redirect()->back()->with('success', 'Infraestrutura atualizada!');
+    }
+
+    public function storeProfessor(Request $request)
+    {
+        $academia = $this->academiaLogada();
+        if (!$academia) {
+            return redirect()->route('login.index');
+        }
+
+        $request->validate([
+            'nome'   => 'required|string|max:120',
+            'resumo' => 'nullable|string|max:2000',
+        ]);
+
+        AcademiaProfessor::create([
+            'academia_id' => $academia->id,
+            'nome'        => $request->nome,
+            'resumo'      => $request->resumo,
+            'ativo'       => true,
+        ]);
+
+        return redirect()->back()->with('success', 'Profissional cadastrado!');
+    }
+
+    public function updateProfessor(Request $request, $id)
+    {
+        $academia = $this->academiaLogada();
+        if (!$academia) {
+            return redirect()->route('login.index');
+        }
+
+        $request->validate([
+            'nome'   => 'required|string|max:120',
+            'resumo' => 'nullable|string|max:2000',
+        ]);
+
+        $professor = AcademiaProfessor::where('academia_id', $academia->id)->findOrFail($id);
+        $professor->update([
+            'nome'   => $request->nome,
+            'resumo' => $request->resumo,
+        ]);
+
+        return redirect()->back()->with('success', 'Profissional atualizado!');
+    }
+
+    public function destroyProfessor($id)
+    {
+        $academia = $this->academiaLogada();
+        if (!$academia) {
+            return redirect()->route('login.index');
+        }
+
+        AcademiaProfessor::where('academia_id', $academia->id)->findOrFail($id)->delete();
+
+        return redirect()->back()->with('success', 'Profissional removido!');
+    }
+
+    public function storeAula(Request $request)
+    {
+        $academia = $this->academiaLogada();
+        if (!$academia) {
+            return redirect()->route('login.index');
+        }
+
+        $request->validate([
+            'nome'         => 'required|string|max:120',
+            'resumo'       => 'nullable|string|max:2000',
+            'professor_id' => 'nullable|integer',
+            'dia_semana'   => 'nullable|integer|min:0|max:6',
+            'hora_inicio'  => 'nullable|date_format:H:i',
+            'duracao_min'  => 'nullable|integer|min:5|max:600',
+        ]);
+
+        $professorId = null;
+        if ($request->filled('professor_id')) {
+            $professor = AcademiaProfessor::where('academia_id', $academia->id)->find($request->professor_id);
+            $professorId = $professor?->id;
+        }
+
+        AcademiaAula::create([
+            'academia_id'  => $academia->id,
+            'nome'         => $request->nome,
+            'resumo'       => $request->resumo,
+            'professor_id' => $professorId,
+            'dia_semana'   => $request->dia_semana,
+            'hora_inicio'  => $request->hora_inicio,
+            'duracao_min'  => $request->duracao_min,
+            'ativo'        => true,
+        ]);
+
+        return redirect()->back()->with('success', 'Aula adicionada!');
+    }
+
+    public function updateAula(Request $request, $id)
+    {
+        $academia = $this->academiaLogada();
+        if (!$academia) {
+            return redirect()->route('login.index');
+        }
+
+        $request->validate([
+            'nome'         => 'required|string|max:120',
+            'resumo'       => 'nullable|string|max:2000',
+            'professor_id' => 'nullable|integer',
+            'dia_semana'   => 'nullable|integer|min:0|max:6',
+            'hora_inicio'  => 'nullable|date_format:H:i',
+            'duracao_min'  => 'nullable|integer|min:5|max:600',
+        ]);
+
+        $aula = AcademiaAula::where('academia_id', $academia->id)->findOrFail($id);
+
+        $professorId = null;
+        if ($request->filled('professor_id')) {
+            $professor = AcademiaProfessor::where('academia_id', $academia->id)->find($request->professor_id);
+            $professorId = $professor?->id;
+        }
+
+        $aula->update([
+            'nome'         => $request->nome,
+            'resumo'       => $request->resumo,
+            'professor_id' => $professorId,
+            'dia_semana'   => $request->dia_semana,
+            'hora_inicio'  => $request->hora_inicio,
+            'duracao_min'  => $request->duracao_min,
+        ]);
+
+        return redirect()->back()->with('success', 'Aula atualizada!');
+    }
+
+    public function destroyAula($id)
+    {
+        $academia = $this->academiaLogada();
+        if (!$academia) {
+            return redirect()->route('login.index');
+        }
+
+        AcademiaAula::where('academia_id', $academia->id)->findOrFail($id)->delete();
+
+        return redirect()->back()->with('success', 'Aula removida!');
     }
 }

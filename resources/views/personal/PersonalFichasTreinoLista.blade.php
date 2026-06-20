@@ -729,12 +729,22 @@
                                     <tbody>
                                         @foreach($ficha->exercicios as $exercicio)
                                         <tr>
-                                            <td data-label="Exercício">{{ $exercicio->nome_exercicio }}</td>
+                                            <td data-label="Exercício">
+                                                {{ $exercicio->nome_exercicio }}
+                                                @if($exercicio->observacoes)<div style="color:var(--text-muted); font-size:0.72rem; margin-top:2px;">{{ $exercicio->observacoes }}</div>@endif
+                                                @if($exercicio->video)
+                                                    <button type="button" onclick="abrirVideo('{{ asset('storage/' . $exercicio->video) }}')" style="margin-top:4px; background:none; border:none; color:var(--primary); font-size:0.72rem; font-weight:700; cursor:pointer; padding:0; display:inline-flex; align-items:center; gap:5px;"><i class="fas fa-play-circle"></i> Ver vídeo</button>
+                                                @endif
+                                            </td>
                                             <td data-label="Séries" style="text-align: center;">{{ $exercicio->series }}</td>
                                             <td data-label="Reps" style="text-align: center;">{{ $exercicio->repeticoes }}</td>
                                             <td data-label="Peso" style="text-align: center;">{{ $exercicio->peso ? $exercicio->peso . ' kg' : '-' }}</td>
-                                            <td style="text-align: center;">
-                                                <button class="btn-delete-ex" onclick="deletarExercicio({{ $exercicio->id }})">
+                                            <td style="text-align: center; white-space:nowrap;">
+                                                <button class="btn-delete-ex" style="color:var(--primary);" title="Editar"
+                                                    onclick="editarExercicioModal({{ $exercicio->id }}, {!! htmlspecialchars(json_encode($exercicio->nome_exercicio), ENT_QUOTES) !!}, {{ $exercicio->series }}, {{ $exercicio->repeticoes }}, {!! htmlspecialchars(json_encode($exercicio->peso), ENT_QUOTES) !!}, {!! htmlspecialchars(json_encode($exercicio->observacoes), ENT_QUOTES) !!}, {!! htmlspecialchars(json_encode($exercicio->video ? asset('storage/' . $exercicio->video) : ''), ENT_QUOTES) !!})">
+                                                    <i class="fas fa-pen"></i>
+                                                </button>
+                                                <button class="btn-delete-ex" onclick="deletarExercicio({{ $exercicio->id }})" title="Remover">
                                                     <i class="fas fa-times"></i>
                                                 </button>
                                             </td>
@@ -853,7 +863,7 @@
         <div class="modal-content">
             <h2><i class="fas fa-dumbbell"></i> ADICIONAR EXERCÍCIO</h2>
 
-            <form id="formAdicionarExercicio" method="POST">
+            <form id="formAdicionarExercicio" method="POST" enctype="multipart/form-data">
                 @csrf
                 <input type="hidden" name="nome_exercicio" id="hiddenNomeExercicio">
 
@@ -906,11 +916,79 @@
                     <textarea id="obsExercicio" name="observacoes" placeholder="Técnica, cuidados, etc"></textarea>
                 </div>
 
+                <div class="form-group">
+                    <label><i class="fas fa-video"></i> Vídeo demonstrativo (máx. 15s)</label>
+                    <input type="file" name="video" accept="video/*" onchange="validarVideo15s(this)">
+                </div>
+
                 <div class="modal-buttons">
                     <button type="button" class="btn-cancel" onclick="fecharModalAdicionarExercicio()">CANCELAR</button>
                     <button type="submit" id="btnAdicionarExercicio" class="btn-submit" disabled style="opacity:.5;cursor:not-allowed">ADICIONAR</button>
                 </div>
             </form>
+        </div>
+    </div>
+
+    <!-- MODAL EDITAR EXERCÍCIO -->
+    <div id="modalEditarExercicio" class="modal-overlay">
+        <div class="modal-content">
+            <h2><i class="fas fa-pen"></i> EDITAR EXERCÍCIO</h2>
+
+            <form id="formEditarExercicio" method="POST" enctype="multipart/form-data">
+                @csrf
+                @method('PUT')
+
+                <div class="form-group">
+                    <label>Nome do Exercício</label>
+                    <input type="text" name="nome_exercicio" id="editNomeExercicio" required>
+                </div>
+
+                <div class="form-grid-2">
+                    <div class="form-group">
+                        <label>Séries</label>
+                        <input type="number" name="series" id="editSeries" min="1" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Repetições</label>
+                        <input type="number" name="repeticoes" id="editReps" min="1" required>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Peso (kg)</label>
+                    <input type="number" name="peso" id="editPeso" min="0" step="0.5">
+                </div>
+
+                <div class="form-group">
+                    <label>Observações / Técnica</label>
+                    <textarea name="observacoes" id="editObs"></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label><i class="fas fa-video"></i> Vídeo demonstrativo (máx. 15s)</label>
+                    <div id="editVideoAtual" style="display:none; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom:8px;">
+                        <button type="button" class="btn-cancel" style="padding:8px 12px;" onclick="abrirVideo(editVideoUrlAtual)"><i class="fas fa-play"></i> Ver vídeo atual</button>
+                        <label style="display:flex; align-items:center; gap:6px;">
+                            <input type="checkbox" name="remover_video" value="1"> Remover vídeo
+                        </label>
+                    </div>
+                    <input type="file" name="video" accept="video/*" onchange="validarVideo15s(this)">
+                    <small style="color:var(--text-muted);">Envie um arquivo para substituir o atual.</small>
+                </div>
+
+                <div class="modal-buttons">
+                    <button type="button" class="btn-cancel" onclick="fecharModalEditarExercicio()">CANCELAR</button>
+                    <button type="submit" class="btn-submit">SALVAR</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL VÍDEO -->
+    <div id="videoModal" onclick="if(event.target===this)fecharVideo()" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.9); z-index:99999; justify-content:center; align-items:center; padding:20px;">
+        <div style="position:relative; max-width:520px; width:100%;">
+            <button onclick="fecharVideo()" style="position:absolute; top:-38px; right:0; background:none; border:none; color:#fff; font-size:1.4rem; cursor:pointer;">✕</button>
+            <video id="videoPlayer" controls playsinline style="width:100%; border-radius:14px; background:#000;"></video>
         </div>
     </div>
 
@@ -998,6 +1076,57 @@
             form.innerHTML = '@csrf @method("DELETE")';
             document.body.appendChild(form);
             form.submit();
+        }
+
+        // ─── EDITAR EXERCÍCIO ───────────────────────────────────────────────
+        let editVideoUrlAtual = '';
+        function editarExercicioModal(id, nome, series, reps, peso, obs, videoUrl) {
+            const form = document.getElementById('formEditarExercicio');
+            form.action = `/personal/fichas-treino/exercicio/${id}`;
+            document.getElementById('editNomeExercicio').value = nome || '';
+            document.getElementById('editSeries').value = series || '';
+            document.getElementById('editReps').value = reps || '';
+            document.getElementById('editPeso').value = (peso === null || peso === undefined) ? '' : peso;
+            document.getElementById('editObs').value = obs || '';
+
+            const chk = form.querySelector('input[name="remover_video"]');
+            if (chk) chk.checked = false;
+            const fileInput = form.querySelector('input[name="video"]');
+            if (fileInput) fileInput.value = '';
+
+            editVideoUrlAtual = videoUrl || '';
+            document.getElementById('editVideoAtual').style.display = editVideoUrlAtual ? 'flex' : 'none';
+
+            document.getElementById('modalEditarExercicio').classList.add('active');
+        }
+        function fecharModalEditarExercicio() {
+            document.getElementById('modalEditarExercicio').classList.remove('active');
+        }
+
+        // ─── VÍDEO DEMONSTRATIVO ────────────────────────────────────────────
+        function validarVideo15s(input) {
+            const file = input.files[0];
+            if (!file) return;
+            const v = document.createElement('video');
+            v.preload = 'metadata';
+            v.onloadedmetadata = function () {
+                window.URL.revokeObjectURL(v.src);
+                if (v.duration > 15.5) {
+                    alert('O vídeo deve ter no máximo 15 segundos. O selecionado tem ' + Math.round(v.duration) + 's.');
+                    input.value = '';
+                }
+            };
+            v.src = window.URL.createObjectURL(file);
+        }
+        function abrirVideo(url) {
+            if (!url) return;
+            document.getElementById('videoPlayer').src = url;
+            document.getElementById('videoModal').style.display = 'flex';
+        }
+        function fecharVideo() {
+            const p = document.getElementById('videoPlayer');
+            p.pause(); p.src = '';
+            document.getElementById('videoModal').style.display = 'none';
         }
 
         // ─── NOVA FICHA: NÍVEL / DIVISÃO ────────────────────────────────────

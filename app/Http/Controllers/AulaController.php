@@ -73,40 +73,23 @@ class AulaController extends Controller
      */
     private function notificarPersonalWhatsApp($nomeCliente, $tipoAula, $whatsappPersonal, $aula)
     {
-        try {
-            if (!$whatsappPersonal) {
-                Log::warning("Personal sem WhatsApp configurado - ID: {$aula->personal_id}");
-                return;
-            }
-
-            $apiToken = config('services.zenvia.token');
-            $from     = config('services.zenvia.from');
-
-            if (!$apiToken || !$from) {
-                Log::error("Zenvia não configurado no .env");
-                throw new \Exception("Zenvia não configurado");
-            }
-
-            $mensagem = $this->formatarMensagem($nomeCliente, $tipoAula, $aula);
-            $phone = preg_replace('/\D/', '', $whatsappPersonal);
-            if (!str_starts_with($phone, '55')) {
-                $phone = '55' . $phone;
-            }
-
-            $response = Http::withHeaders(['X-API-TOKEN' => $apiToken])
-                ->post('https://api.zenvia.com/v2/channels/whatsapp/messages', [
-                    'from'     => $from,
-                    'to'       => $phone,
-                    'contents' => [['type' => 'text', 'text' => $mensagem]],
-                ]);
-
-            Log::info('WhatsApp enviado via Zenvia para personal - id: ' . ($response->json('id') ?? 'n/a'));
-
-            return $response->json('id');
-
-        } catch (\Exception $e) {
-            Log::error('Erro ao enviar WhatsApp: ' . $e->getMessage());
+        if (!$whatsappPersonal) {
+            Log::warning("Personal sem WhatsApp configurado - ID: {$aula->personal_id}");
+            return;
         }
+
+        $mensagem = $this->formatarMensagem($nomeCliente, $tipoAula, $aula);
+
+        $data = $aula->data instanceof \Carbon\Carbon
+            ? $aula->data->format('d/m/Y')
+            : \Carbon\Carbon::parse($aula->data)->format('d/m/Y');
+
+        \App\Services\WhatsAppService::notificar(
+            $whatsappPersonal,
+            $mensagem,
+            'aula_concluida_personal',
+            [$nomeCliente, $data, "{$aula->hora_inicio} - {$aula->hora_fim}"]
+        );
     }
 
     /**

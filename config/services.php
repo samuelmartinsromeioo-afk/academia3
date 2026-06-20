@@ -34,6 +34,9 @@ return [
     'whatsapp' => [
         'token'           => env('WHATSAPP_TOKEN'),
         'phone_number_id' => env('WHATSAPP_PHONE_NUMBER_ID'),
+        // Ligue (=true) depois de criar/aprovar os templates na Meta. Enquanto
+        // false, as notificações proativas saem como texto livre (janela 24h).
+        'use_templates'   => env('WHATSAPP_USE_TEMPLATES', false),
     ],
 
     'stripe' => [

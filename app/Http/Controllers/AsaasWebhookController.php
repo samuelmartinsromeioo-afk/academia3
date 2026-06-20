@@ -26,24 +26,37 @@ class AsaasWebhookController extends Controller
     }
 
     $payment = $request->input('payment', []);
-    Log::info('Asaas webhook recebido', ['event' => $event, 'payment_id' => $payment['id'] ?? null]);
+    Log::info('Asaas webhook recebido', [
+        'event'        => $event,
+        'payment_id'   => $payment['id'] ?? null,
+        'subscription' => $payment['subscription'] ?? null,
+    ]);
 
     $confirmedEvents = ['PAYMENT_CONFIRMED', 'PAYMENT_RECEIVED', 'PAYMENT_RECEIVED_IN_CASH'];
+    $overdueEvents   = ['PAYMENT_OVERDUE'];
+
+    $asaasPaymentId = $payment['id']           ?? null;
+    $subscriptionId = $payment['subscription'] ?? null;
 
     if (in_array($event, $confirmedEvents)) {
-        $asaasPaymentId = $payment['id'] ?? null;
         if (!$asaasPaymentId) return response()->json(['received' => true]);
 
         $dbPayment = Payment::where('stripe_payment_intent_id', $asaasPaymentId)->first();
 
-        if (!$dbPayment) {
+        if ($dbPayment) {
+            // Cobrança já conhecida (1ª cobrança ou já registrada): fluxo normal.
+            if ($dbPayment->status !== 'succeeded') {
+                app(PaymentController::class)->processarPagamentoConfirmado($dbPayment);
+            }
+        } elseif ($subscriptionId) {
+            // Cobrança nova de uma assinatura existente = renovação mensal.
+            app(PaymentController::class)->processarRenovacaoAssinatura($subscriptionId, $payment);
+        } else {
             Log::warning('Asaas webhook: pagamento não encontrado', ['asaas_payment_id' => $asaasPaymentId]);
-            return response()->json(['received' => true]);
         }
-
-        if ($dbPayment->status !== 'succeeded') {
-            app(PaymentController::class)->processarPagamentoConfirmado($dbPayment);
-        }
+    } elseif (in_array($event, $overdueEvents) && $subscriptionId) {
+        // Mensalidade vencida sem pagamento: suspende o acesso até regularizar.
+        app(PaymentController::class)->processarVencimentoAssinatura($subscriptionId);
     }
 
     return response()->json(['received' => true]);

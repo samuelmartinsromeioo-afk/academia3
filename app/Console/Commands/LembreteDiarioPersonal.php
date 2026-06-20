@@ -67,32 +67,24 @@ class LembreteDiarioPersonal extends Command
                 continue;
             }
 
-            $phone = preg_replace('/\D/', '', $personal->whatsapp);
-            if (!str_starts_with($phone, '55')) {
-                $phone = '55' . $phone;
-            }
-
             $mensagem = $this->montarMensagem($personal, $agendas, $hoje);
 
-            try {
-                $response = Http::withToken($token)
-                    ->post("https://graph.facebook.com/v19.0/{$phoneNumberId}/messages", [
-                        'messaging_product' => 'whatsapp',
-                        'to'                => $phone,
-                        'type'              => 'text',
-                        'text'              => ['body' => $mensagem],
-                    ]);
+            $primeiroNome    = explode(' ', trim($personal->nome))[0];
+            $primeiroHorario = substr($agendas->first()->hora_inicio, 0, 5);
 
-                if ($response->successful()) {
-                    Cache::put($cacheKey, true, now()->addHours(2));
-                    Log::info("Lembrete enviado ao personal {$personal->id} ({$personal->nome})");
-                    $this->line("✓ {$personal->nome}");
-                } else {
-                    throw new \Exception($response->body());
-                }
-            } catch (\Exception $e) {
-                Log::error("Erro ao enviar lembrete para personal {$personal->id}: " . $e->getMessage());
-                $this->warn("✗ {$personal->nome}: " . $e->getMessage());
+            $enviado = \App\Services\WhatsAppService::notificar(
+                $personal->whatsapp,
+                $mensagem,
+                'lembrete_diario',
+                [$primeiroNome, $agendas->count(), $primeiroHorario]
+            );
+
+            if ($enviado) {
+                Cache::put($cacheKey, true, now()->addHours(2));
+                Log::info("Lembrete enviado ao personal {$personal->id} ({$personal->nome})");
+                $this->line("✓ {$personal->nome}");
+            } else {
+                $this->warn("✗ {$personal->nome}: falha no envio");
             }
 
             usleep(500000);
