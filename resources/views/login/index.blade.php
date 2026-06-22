@@ -418,11 +418,11 @@
 </nav>
 
 <main class="hero">
-    <div class="hero-badge">Para Personal Trainers</div>
+    <div class="hero-badge">A plataforma completa do mundo fitness</div>
 
-    <h1>Transforme sua carreira de personal em um <em>negócio profissional</em>.</h1>
+    <h1>Tudo o que o fitness precisa, reunido em <em>uma só plataforma</em>.</h1>
 
-    <p>Seja encontrado por novos alunos e centralize sua rotina: agenda organizada, gestão de alunos, controle financeiro, divulgação do seu trabalho e fichas de treino — tudo em uma única plataforma.</p>
+    <p>Chega de espalhar a rotina por dezenas de serviços diferentes. Profissionais centralizam agenda, alunos, financeiro, divulgação e fichas de treino num único painel — mais tempo para o que importa e total independência de ferramentas de terceiros. E os alunos encontram personais, academias, planos e todo o universo fitness reunido em um só lugar, sem precisar procurar em mil cantos.</p>
 
     <div class="hero-cta">
         <a href="{{ route('cadastro.SelecaoCadastro') }}" class="btn btn-solid">
