@@ -222,6 +222,8 @@
         <button class="dots-btn" id="btnMenu" onclick="toggleMenu()"><i class="fas fa-bars"></i></button>
         <div class="dropdown-menu" id="dropdownMenu">
             <button type="button" id="btnOpenNovo"><i class="fas fa-plus" style="color: var(--primary);"></i> Novo Produto</button>
+            <button type="button" id="btnOpenPedidos"><i class="fas fa-receipt"></i> Pedidos</button>
+            <button type="button" id="btnOpenCarteira"><i class="fas fa-piggy-bank" style="color: var(--primary);"></i> Minha Carteira</button>
             <button type="button" id="btnOpenPerfil"><i class="fas fa-store"></i> Editar Loja</button>
             <a href="{{ route('lojas.detalhes', $loja->id) }}" target="_blank"><i class="fas fa-eye"></i> Ver minha vitrine</a>
             <form action="{{ route('login.logout') }}" method="POST" style="margin:0;">
@@ -284,6 +286,16 @@
             <div class="stat-value" style="font-size:1.3rem;">R$ {{ number_format($valorEstoque, 2, ',', '.') }}</div>
             <div class="stat-label">Valor em estoque</div>
         </div>
+        <div class="stat-card">
+            <div class="stat-icon"><i class="fas fa-receipt"></i></div>
+            <div class="stat-value">{{ $totalPedidos }}</div>
+            <div class="stat-label">Pedidos recebidos</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon"><i class="fas fa-cash-register"></i></div>
+            <div class="stat-value" style="font-size:1.3rem;">R$ {{ number_format($faturamentoMes, 2, ',', '.') }}</div>
+            <div class="stat-label">Vendas no mês</div>
+        </div>
     </div>
 
     {{-- PRODUTOS --}}
@@ -333,8 +345,14 @@
                                 @endif
                             </td>
                             <td style="text-align:right; white-space:nowrap;">
-                                <button type="button" class="btn-sm outline"
-                                    onclick="abrirEditar({{ $produto->id }}, {!! json_encode($produto->nome) !!}, {!! json_encode($produto->descricao ?? '') !!}, {!! json_encode($produto->categoria ?? '') !!}, {{ $produto->preco }}, {{ $produto->estoque }}, {{ $produto->ativo ? 'true' : 'false' }})">
+                                <button type="button" class="btn-sm outline btn-editar-produto"
+                                    data-id="{{ $produto->id }}"
+                                    data-nome="{{ $produto->nome }}"
+                                    data-descricao="{{ $produto->descricao }}"
+                                    data-categoria="{{ $produto->categoria }}"
+                                    data-preco="{{ $produto->preco }}"
+                                    data-estoque="{{ $produto->estoque }}"
+                                    data-ativo="{{ $produto->ativo ? '1' : '0' }}">
                                     <i class="fas fa-pen"></i>
                                 </button>
                                 <form method="POST" action="{{ route('loja.produtos.destroy', $produto->id) }}" onsubmit="return confirm('Excluir o produto {{ addslashes($produto->nome) }}?');" style="display:inline; margin:0;">
@@ -464,6 +482,10 @@
                 <input type="text" name="estado" maxlength="2" value="{{ old('estado', $loja->estado) }}">
             </div>
             <div class="form-group full-width">
+                <label>Chave PIX (para receber os saques)</label>
+                <input type="text" name="chave_pix" value="{{ old('chave_pix', $loja->chave_pix) }}" placeholder="CPF/CNPJ, e-mail, telefone ou chave aleatória">
+            </div>
+            <div class="form-group full-width">
                 <label>Descrição</label>
                 <textarea name="descricao" rows="3">{{ old('descricao', $loja->descricao) }}</textarea>
             </div>
@@ -474,14 +496,139 @@
     </div>
 </div>
 
+{{-- MODAL PEDIDOS --}}
+<div id="modalPedidos" class="modal-overlay">
+    <div class="modal-content" style="max-width: 820px;">
+        <button type="button" class="modal-close" onclick="document.getElementById('modalPedidos').style.display='none'">&times;</button>
+        <h2 style="color: var(--primary);"><i class="fas fa-receipt"></i> Pedidos ({{ $pedidos->count() }})</h2>
+        @forelse($pedidos as $pedido)
+            <div style="border:1px solid var(--border); border-radius:14px; padding:18px; margin-bottom:14px;">
+                <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:12px; flex-wrap:wrap;">
+                    <div>
+                        <strong style="font-size:0.95rem;">Pedido #{{ $pedido->id }}</strong>
+                        @if($pedido->status === 'concluido')
+                            <span class="badge badge-ok">Concluído</span>
+                        @else
+                            <span class="badge" style="background:rgba(212,255,0,0.12); color:var(--primary);">Pago</span>
+                        @endif
+                        <div style="color:var(--text-muted); font-size:0.78rem; margin-top:4px;">
+                            <i class="fas fa-user"></i> {{ $pedido->cliente->nome ?? 'Cliente' }}
+                            @if($pedido->cliente && $pedido->cliente->whatsapp) · <i class="fab fa-whatsapp"></i> {{ $pedido->cliente->whatsapp }} @endif
+                            · {{ $pedido->created_at->format('d/m/Y H:i') }}
+                        </div>
+                    </div>
+                    <div style="text-align:right;">
+                        <div class="preco" style="font-size:1.1rem;">R$ {{ number_format($pedido->valor_total, 2, ',', '.') }}</div>
+                        @if($pedido->entrega_tipo === 'entrega')
+                            <span class="badge" style="background:rgba(255,157,46,0.15); color:#ff9d2e;"><i class="fas fa-truck"></i> Entrega</span>
+                        @else
+                            <span class="badge badge-off"><i class="fas fa-store"></i> Retirada</span>
+                        @endif
+                    </div>
+                </div>
+
+                <div style="margin-top:12px; padding-top:12px; border-top:1px solid var(--border); font-size:0.85rem;">
+                    @foreach($pedido->itens as $item)
+                        <div style="display:flex; justify-content:space-between; padding:3px 0;">
+                            <span>{{ $item->quantidade }}x {{ $item->nome }}</span>
+                            <span style="color:var(--text-muted);">R$ {{ number_format($item->subtotal, 2, ',', '.') }}</span>
+                        </div>
+                    @endforeach
+                </div>
+
+                @if($pedido->entrega_tipo === 'entrega')
+                    <div style="margin-top:10px; font-size:0.8rem; color:var(--text-muted);">
+                        <i class="fas fa-map-marker-alt" style="color:#ff9d2e;"></i>
+                        {{ $pedido->endereco_entrega }}
+                        @if($pedido->entrega_nome) — Receber com: {{ $pedido->entrega_nome }} ({{ $pedido->entrega_telefone }}) @endif
+                    </div>
+                @endif
+                @if($pedido->observacao)
+                    <div style="margin-top:6px; font-size:0.8rem; color:var(--text-muted);"><i class="fas fa-comment"></i> {{ $pedido->observacao }}</div>
+                @endif
+
+                @if($pedido->status === 'pago')
+                    <div style="margin-top:12px; text-align:right;">
+                        <form method="POST" action="{{ route('loja.pedidos.concluir', $pedido->id) }}" style="margin:0;">
+                            @csrf
+                            @method('PUT')
+                            <button type="submit" class="btn-sm outline"><i class="fas fa-check"></i> Marcar como concluído</button>
+                        </form>
+                    </div>
+                @endif
+            </div>
+        @empty
+            <p class="empty"><i class="fas fa-receipt" style="font-size:2rem; display:block; margin-bottom:12px; opacity:0.4;"></i> Nenhum pedido ainda. Quando um cliente comprar, o pedido aparece aqui.</p>
+        @endforelse
+    </div>
+</div>
+
+{{-- MODAL CARTEIRA --}}
+<div id="modalCarteira" class="modal-overlay">
+    <div class="modal-content" style="max-width:480px;">
+        <button type="button" class="modal-close" onclick="document.getElementById('modalCarteira').style.display='none'">&times;</button>
+        <h2 style="color:var(--primary); text-align:center;"><i class="fas fa-piggy-bank"></i> Carteira da Loja</h2>
+
+        <div id="carteiraLoading" style="text-align:center; padding:30px 0; color:var(--text-muted);">
+            <i class="fas fa-spinner fa-spin fa-2x"></i><br><br>Consultando saldo...
+        </div>
+
+        {{-- Sem conta de recebimento ainda --}}
+        <div id="carteiraAtivar" style="display:none; text-align:center; padding:10px 0;">
+            <p style="color:var(--text-muted); font-size:0.88rem; margin-bottom:16px;">
+                Ative os recebimentos para que o dinheiro das vendas caia direto na sua conta e você possa sacar via PIX.
+            </p>
+            <button id="btnAtivarConta" onclick="ativarConta()" class="btn-save" style="width:100%;">
+                <i class="fas fa-bolt"></i> Ativar recebimentos
+            </button>
+            <p id="ativarErro" style="display:none; color:#ff6b6b; font-size:0.82rem; margin-top:12px;"></p>
+        </div>
+
+        <div id="carteiraConteudo" style="display:none;">
+            <div style="background:rgba(212,255,0,0.07); border:1px solid rgba(212,255,0,0.3); border-radius:16px; padding:24px; text-align:center; margin-bottom:20px;">
+                <p style="margin:0; color:var(--text-muted); font-size:0.75rem; text-transform:uppercase; margin-bottom:8px;">Saldo disponível</p>
+                <p id="carteiraValor" style="margin:0; color:#fff; font-size:2rem; font-weight:900;">R$ 0,00</p>
+            </div>
+
+            <div id="carteiraSemPix" style="display:none; background:rgba(255,165,0,0.1); border:1px solid rgba(255,165,0,0.3); border-radius:12px; padding:14px; margin-bottom:16px; font-size:0.82rem; color:#ffa500; text-align:center;">
+                <i class="fas fa-exclamation-triangle"></i> Cadastre sua chave PIX em "Editar Loja" para poder sacar.
+            </div>
+
+            <div id="carteiraSaqueForm">
+                <label style="color:var(--text-muted); font-size:0.75rem; display:block; margin-bottom:6px;">Valor a sacar (R$)</label>
+                <div style="display:flex; gap:10px; margin-bottom:16px;">
+                    <input id="carteiraValorSaque" type="number" min="0.01" step="0.01" placeholder="0,00"
+                        style="flex:1; background:var(--input-bg); border:1px solid var(--border); border-radius:10px; padding:11px 14px; color:#fff; font-size:1rem; outline:none;">
+                    <button onclick="sacarTudo()" style="background:rgba(255,255,255,0.07); color:#fff; border:1px solid var(--border); border-radius:10px; padding:10px 14px; font-size:0.8rem; cursor:pointer; white-space:nowrap;">Tudo</button>
+                </div>
+                <p id="carteiraSaqueErro" style="display:none; color:#ff6b6b; font-size:0.82rem; background:rgba(255,107,107,0.1); border:1px solid rgba(255,107,107,0.3); border-radius:8px; padding:10px 14px; margin-bottom:14px;"></p>
+                <p id="carteiraSaqueSucesso" style="display:none; color:#4caf50; font-weight:700; text-align:center; padding:8px 0; font-size:0.9rem;">✅ Saque solicitado! O valor chega via PIX em instantes.</p>
+                <button id="btnSacar" onclick="confirmarSaque()" class="btn-save" style="width:100%;">
+                    <i class="fas fa-arrow-down"></i> Sacar via PIX
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
     function toggleMenu() {
         const m = document.getElementById('dropdownMenu');
         m.style.display = m.style.display === 'block' ? 'none' : 'block';
     }
 
+    const CSRF = '{{ csrf_token() }}';
+
     document.getElementById('btnOpenNovo').onclick = () => {
         document.getElementById('modalNovo').style.display = 'block';
+        toggleMenu();
+    };
+    document.getElementById('btnOpenPedidos').onclick = () => {
+        document.getElementById('modalPedidos').style.display = 'block';
+        toggleMenu();
+    };
+    document.getElementById('btnOpenCarteira').onclick = () => {
+        abrirCarteira();
         toggleMenu();
     };
     document.getElementById('btnOpenPerfil').onclick = () => {
@@ -489,11 +636,118 @@
         toggleMenu();
     };
 
+    // ── CARTEIRA ─────────────────────────────
+    let carteiraSaldoAtual = 0;
+
+    async function abrirCarteira() {
+        const modal = document.getElementById('modalCarteira');
+        modal.style.display = 'block';
+        document.getElementById('carteiraLoading').style.display = 'block';
+        document.getElementById('carteiraConteudo').style.display = 'none';
+        document.getElementById('carteiraAtivar').style.display = 'none';
+        document.getElementById('carteiraSaqueErro').style.display = 'none';
+        document.getElementById('carteiraSaqueSucesso').style.display = 'none';
+
+        try {
+            const res = await fetch('/api/loja/saldo', { headers: { 'X-CSRF-TOKEN': CSRF } });
+            const data = await res.json();
+            document.getElementById('carteiraLoading').style.display = 'none';
+
+            if (data.sem_conta) {
+                document.getElementById('carteiraAtivar').style.display = 'block';
+                return;
+            }
+
+            carteiraSaldoAtual = parseFloat(data.saldo) || 0;
+            document.getElementById('carteiraValor').textContent = 'R$ ' + carteiraSaldoAtual.toFixed(2).replace('.', ',');
+            document.getElementById('carteiraValorSaque').value = carteiraSaldoAtual > 0 ? carteiraSaldoAtual.toFixed(2) : '';
+            document.getElementById('carteiraSemPix').style.display = data.tem_pix ? 'none' : 'block';
+            document.getElementById('carteiraSaqueForm').style.display = data.tem_pix ? 'block' : 'none';
+            document.getElementById('carteiraConteudo').style.display = 'block';
+        } catch (_) {
+            document.getElementById('carteiraLoading').style.display = 'none';
+            document.getElementById('carteiraAtivar').style.display = 'block';
+        }
+    }
+
+    async function ativarConta() {
+        const btn = document.getElementById('btnAtivarConta');
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Ativando...';
+        document.getElementById('ativarErro').style.display = 'none';
+        try {
+            const res = await fetch('/api/loja/criar-conta-asaas', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': CSRF },
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || 'Falha ao ativar.');
+            abrirCarteira();
+        } catch (err) {
+            const e = document.getElementById('ativarErro');
+            e.textContent = err.message;
+            e.style.display = 'block';
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-bolt"></i> Ativar recebimentos';
+        }
+    }
+
+    function sacarTudo() {
+        document.getElementById('carteiraValorSaque').value = carteiraSaldoAtual > 0 ? carteiraSaldoAtual.toFixed(2) : '';
+    }
+
+    async function confirmarSaque() {
+        const valor = parseFloat(document.getElementById('carteiraValorSaque').value);
+        if (!valor || valor <= 0) {
+            const e = document.getElementById('carteiraSaqueErro');
+            e.textContent = 'Informe um valor válido.';
+            e.style.display = 'block';
+            return;
+        }
+        const btn = document.getElementById('btnSacar');
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processando...';
+        document.getElementById('carteiraSaqueErro').style.display = 'none';
+        try {
+            const res = await fetch('/api/loja/sacar', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': CSRF },
+                body: JSON.stringify({ valor }),
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || 'Erro ao sacar.');
+            document.getElementById('carteiraSaqueSucesso').style.display = 'block';
+            document.getElementById('carteiraSaqueForm').style.display = 'none';
+            carteiraSaldoAtual = 0;
+            document.getElementById('carteiraValor').textContent = 'R$ 0,00';
+        } catch (err) {
+            const e = document.getElementById('carteiraSaqueErro');
+            e.textContent = err.message;
+            e.style.display = 'block';
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-arrow-down"></i> Sacar via PIX';
+        }
+    }
+
     document.addEventListener('click', (e) => {
         const menu = document.getElementById('dropdownMenu');
         if (menu.style.display === 'block' && !e.target.closest('.menu-container')) {
             menu.style.display = 'none';
         }
+    });
+
+    document.querySelectorAll('.btn-editar-produto').forEach(btn => {
+        btn.addEventListener('click', () => {
+            abrirEditar(
+                parseInt(btn.dataset.id, 10),
+                btn.dataset.nome,
+                btn.dataset.descricao,
+                btn.dataset.categoria,
+                parseFloat(btn.dataset.preco),
+                parseInt(btn.dataset.estoque, 10),
+                btn.dataset.ativo === '1'
+            );
+        });
     });
 
     function abrirEditar(id, nome, descricao, categoria, preco, estoque, ativo) {

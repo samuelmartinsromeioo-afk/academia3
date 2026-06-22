@@ -31,6 +31,12 @@ Route::middleware(['web'])->group(function () {
     Route::post('/criar-pagamento-cartao-aula-studio', [PaymentController::class, 'criarPagamentoCartaoAulaStudio']);
     Route::get('/studio/saldo', [PaymentController::class, 'saldoStudio']);
     Route::post('/studio/sacar', [PaymentController::class, 'sacarStudio']);
+    // Loja de suplementos — checkout de produtos e carteira
+    Route::post('/criar-pagamento-loja', [PaymentController::class, 'criarPagamentoLoja']);
+    Route::post('/criar-pagamento-cartao-loja', [PaymentController::class, 'criarPagamentoCartaoLoja']);
+    Route::post('/loja/criar-conta-asaas', [PaymentController::class, 'criarContaAsaasLoja']);
+    Route::get('/loja/saldo', [PaymentController::class, 'saldoLoja']);
+    Route::post('/loja/sacar', [PaymentController::class, 'sacarLoja']);
 });
 
 // Webhook Asaas — sem sessão/CSRF; autenticidade verificada pelo IP/token Asaas.

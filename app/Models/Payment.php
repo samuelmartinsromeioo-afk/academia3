@@ -17,6 +17,7 @@ class Payment extends Model
         'plano_id',
         'studio_id',
         'studio_plano_id',
+        'loja_id',
         'amount_total',
         'company_fee',
         'trainer_amount',
@@ -74,6 +75,11 @@ class Payment extends Model
     public function studioPlano()
     {
         return $this->belongsTo(\App\Models\Cadastro\StudioPlano::class, 'studio_plano_id');
+    }
+
+    public function loja()
+    {
+        return $this->belongsTo(\App\Models\Cadastro\Loja::class, 'loja_id');
     }
 
     public function subscription()

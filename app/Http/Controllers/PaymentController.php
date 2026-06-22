@@ -8,6 +8,10 @@ use App\Models\Cadastro\Pacote;
 use App\Models\Cadastro\Personal;
 use App\Models\Cadastro\Studio;
 use App\Models\Cadastro\StudioPlano;
+use App\Models\Cadastro\Loja;
+use App\Models\Cadastro\Produto;
+use App\Models\Cadastro\Pedido;
+use App\Models\Cadastro\PedidoItem;
 use App\Models\MembershipConfirmation;
 use App\Models\Payment;
 use App\Models\Subscription;
@@ -465,6 +469,17 @@ class PaymentController extends Controller
                     }
                 } catch (\Exception $e) {
                     Log::error('processarPagamentoConfirmado: avaliacao falhou', [
+                        'error' => $e->getMessage(),
+                        'booking' => $booking,
+                    ]);
+                }
+            }
+
+            if (($booking['tipo'] ?? '') === 'loja_pedido') {
+                try {
+                    $this->fulfillLojaPedido($payment, $booking);
+                } catch (\Exception $e) {
+                    Log::error('processarPagamentoConfirmado: loja_pedido falhou', [
                         'error' => $e->getMessage(),
                         'booking' => $booking,
                     ]);
@@ -2096,6 +2111,641 @@ class PaymentController extends Controller
             'success' => true,
             'transfer_id' => $data['id'] ?? null,
             'valor' => $validated['valor'],
+        ]);
+    }
+
+    // ═════════════════════════════════════════════
+    // LOJA DE SUPLEMENTOS — COMPRA DE PRODUTOS
+    // ═════════════════════════════════════════════
+
+    private function splitLoja(Loja $loja, float $amount): ?array
+    {
+        if ($loja->asaas_wallet_id) {
+            return [['walletId' => $loja->asaas_wallet_id, 'percentualValue' => 90]];
+        }
+
+        Log::warning('Asaas: split não aplicado — loja sem walletId', ['loja_id' => $loja->id]);
+
+        return null;
+    }
+
+    /**
+     * Valida os itens do carrinho contra a loja (produtos ativos e com estoque)
+     * e devolve [itens normalizados com snapshot, total].
+     *
+     * @return array{0: array, 1: float}
+     */
+    private function montarCarrinhoLoja(array $itensInput, Loja $loja): array
+    {
+        $ids = collect($itensInput)->pluck('produto_id')->filter()->unique()->values();
+        if ($ids->isEmpty()) {
+            abort(response()->json(['error' => 'Seu carrinho está vazio.'], 422));
+        }
+
+        $produtos = Produto::where('loja_id', $loja->id)
+            ->where('ativo', true)
+            ->whereIn('id', $ids)
+            ->get()
+            ->keyBy('id');
+
+        $itens = [];
+        $total = 0.0;
+
+        foreach ($itensInput as $linha) {
+            $pid = (int) ($linha['produto_id'] ?? 0);
+            $qtd = (int) ($linha['quantidade'] ?? 0);
+            $produto = $produtos->get($pid);
+
+            if (! $produto) {
+                abort(response()->json(['error' => 'Um dos produtos não está mais disponível.'], 422));
+            }
+            if ($qtd < 1) {
+                abort(response()->json(['error' => "Quantidade inválida para {$produto->nome}."], 422));
+            }
+            if ($produto->estoque < $qtd) {
+                abort(response()->json(['error' => "Estoque insuficiente para {$produto->nome} (restam {$produto->estoque})."], 422));
+            }
+
+            $sub = round((float) $produto->preco * $qtd, 2);
+            $total += $sub;
+
+            $itens[] = [
+                'produto_id' => $produto->id,
+                'nome'       => $produto->nome,
+                'preco'      => (float) $produto->preco,
+                'quantidade' => $qtd,
+                'subtotal'   => $sub,
+            ];
+        }
+
+        return [$itens, round($total, 2)];
+    }
+
+    /** Valida e normaliza os dados de entrega/retirada do checkout. */
+    private function montarEntregaLoja(array $validated): array
+    {
+        $tipo = $validated['entrega_tipo'] ?? 'retirada';
+
+        if ($tipo !== 'entrega') {
+            return ['entrega_tipo' => 'retirada', 'entrega' => null];
+        }
+
+        $obrigatorios = ['entrega_nome', 'entrega_telefone', 'entrega_cep', 'entrega_rua', 'entrega_numero', 'entrega_bairro', 'entrega_cidade', 'entrega_estado'];
+        foreach ($obrigatorios as $campo) {
+            if (empty($validated[$campo])) {
+                abort(response()->json(['error' => 'Preencha o endereço de entrega completo.'], 422));
+            }
+        }
+
+        return [
+            'entrega_tipo' => 'entrega',
+            'entrega' => [
+                'nome'        => $validated['entrega_nome'],
+                'telefone'    => $validated['entrega_telefone'],
+                'cep'         => $validated['entrega_cep'],
+                'rua'         => $validated['entrega_rua'],
+                'numero'      => $validated['entrega_numero'],
+                'complemento' => $validated['entrega_complemento'] ?? null,
+                'bairro'      => $validated['entrega_bairro'],
+                'cidade'      => $validated['entrega_cidade'],
+                'estado'      => $validated['entrega_estado'],
+            ],
+        ];
+    }
+
+    private function regrasEntregaLoja(): array
+    {
+        return [
+            'items'                 => 'required|array|min:1',
+            'items.*.produto_id'    => 'required|integer',
+            'items.*.quantidade'    => 'required|integer|min:1|max:999',
+            'entrega_tipo'          => 'required|in:retirada,entrega',
+            'entrega_nome'          => 'nullable|string|max:120',
+            'entrega_telefone'      => 'nullable|string|max:20',
+            'entrega_cep'           => 'nullable|string|max:9',
+            'entrega_rua'           => 'nullable|string|max:255',
+            'entrega_numero'        => 'nullable|string|max:20',
+            'entrega_complemento'   => 'nullable|string|max:120',
+            'entrega_bairro'        => 'nullable|string|max:120',
+            'entrega_cidade'        => 'nullable|string|max:120',
+            'entrega_estado'        => 'nullable|string|max:2',
+            'observacao'            => 'nullable|string|max:500',
+        ];
+    }
+
+    private function lojaDescricaoPedido(Loja $loja, array $itens): string
+    {
+        $qtd = array_sum(array_column($itens, 'quantidade'));
+
+        return "Pedido ({$qtd} ".($qtd == 1 ? 'item' : 'itens').") — {$loja->nome}";
+    }
+
+    // ─────────────────────────────────────────────
+    // CRIAR PAGAMENTO PIX — PEDIDO DE LOJA
+    // ─────────────────────────────────────────────
+    public function criarPagamentoLoja(Request $request)
+    {
+        $clienteId = session('cliente_id');
+        if (! $clienteId) {
+            return response()->json(['error' => 'Não autenticado.'], 401);
+        }
+
+        $validated = $request->validate(array_merge(
+            ['loja_id' => 'required|integer|exists:lojas,id'],
+            $this->regrasEntregaLoja()
+        ));
+
+        $cliente = \App\Models\Cadastro\Cliente::findOrFail($clienteId);
+        $loja = Loja::where('id', $validated['loja_id'])->where('status', 'aprovado')->first();
+        if (! $loja) {
+            return response()->json(['error' => 'Loja não encontrada.'], 404);
+        }
+
+        [$itens, $total] = $this->montarCarrinhoLoja($validated['items'], $loja);
+        if ($total <= 0) {
+            return response()->json(['error' => 'Valor do pedido inválido.'], 422);
+        }
+
+        $entrega = $this->montarEntregaLoja($validated);
+        $description = $this->lojaDescricaoPedido($loja, $itens);
+
+        $bookingData = [
+            'tipo'         => 'loja_pedido',
+            'loja_id'      => $loja->id,
+            'cliente_id'   => $clienteId,
+            'itens'        => $itens,
+            'entrega_tipo' => $entrega['entrega_tipo'],
+            'entrega'      => $entrega['entrega'],
+            'observacao'   => $validated['observacao'] ?? null,
+        ];
+
+        try {
+            $asaasCustomerId = $this->obterOuCriarClienteAsaas($cliente);
+
+            $pixPayload = [
+                'customer'          => $asaasCustomerId,
+                'billingType'       => 'PIX',
+                'value'             => $total,
+                'dueDate'           => now()->addDay()->format('Y-m-d'),
+                'description'       => $description,
+                'externalReference' => 'loja_'.$clienteId.'_'.$loja->id.'_'.time(),
+            ];
+
+            if ($split = $this->splitLoja($loja, $total)) {
+                $pixPayload['split'] = $split;
+            }
+
+            $paymentRes = Http::withHeaders($this->asaasHeaders())
+                ->post($this->asaas().'/payments', $pixPayload);
+
+            if ($paymentRes->failed()) {
+                Log::error('Asaas loja: falha ao criar pagamento', ['body' => $paymentRes->json()]);
+
+                return response()->json(['error' => 'Falha ao gerar cobrança. Tente novamente.'], 500);
+            }
+
+            $asaasPaymentId = $paymentRes->json()['id'];
+
+            $qrRes = Http::withHeaders($this->asaasHeaders())
+                ->get($this->asaas()."/payments/{$asaasPaymentId}/pixQrCode");
+            $qrData = $qrRes->json();
+
+            $valores = $this->calculateSplit($total);
+            $payment = Payment::create([
+                'user_id'                  => $clienteId,
+                'loja_id'                  => $loja->id,
+                'amount_total'             => $valores['amount_total'],
+                'company_fee'              => $valores['company_fee'],
+                'trainer_amount'           => $valores['trainer_amount'],
+                'stripe_payment_intent_id' => $asaasPaymentId,
+                'status'                   => 'pending',
+                'payment_method'           => 'pix',
+                'idempotency_key'          => 'loja_'.$asaasPaymentId,
+                'booking_data'             => json_encode($bookingData),
+            ]);
+
+            Log::info('Asaas loja: pagamento Pix criado', [
+                'payment_id'       => $payment->id,
+                'asaas_payment_id' => $asaasPaymentId,
+                'loja_id'          => $loja->id,
+                'total'            => $total,
+            ]);
+
+            return response()->json([
+                'paymentId'      => $payment->id,
+                'asaasPaymentId' => $asaasPaymentId,
+                'pixPayload'     => $qrData['payload'] ?? '',
+                'pixQrCode'      => $qrData['encodedImage'] ?? '',
+                'amount'         => $total,
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Asaas loja: exception', ['error' => $e->getMessage()]);
+
+            return response()->json(['error' => 'Erro interno. Tente novamente.'], 500);
+        }
+    }
+
+    // ─────────────────────────────────────────────
+    // CRIAR PAGAMENTO CARTÃO — PEDIDO DE LOJA
+    // ─────────────────────────────────────────────
+    public function criarPagamentoCartaoLoja(Request $request)
+    {
+        $clienteId = session('cliente_id');
+        if (! $clienteId) {
+            return response()->json(['error' => 'Não autenticado.'], 401);
+        }
+
+        $validated = $request->validate(array_merge(
+            ['loja_id' => 'required|integer|exists:lojas,id'],
+            $this->regrasEntregaLoja(),
+            [
+                'card_holder'       => 'required|string|max:100',
+                'card_number'       => 'required|string|min:13|max:19',
+                'card_expiry_month' => 'required|string|size:2',
+                'card_expiry_year'  => 'required|string|size:4',
+                'card_ccv'          => 'required|string|min:3|max:4',
+                'cpf'               => 'required|string|min:11|max:18',
+                'cep'               => 'required|string|min:8|max:9',
+                'numero'            => 'required|string|max:20',
+                'telefone'          => 'required|string|min:10|max:15',
+            ]
+        ));
+
+        $cliente = \App\Models\Cadastro\Cliente::findOrFail($clienteId);
+        $loja = Loja::where('id', $validated['loja_id'])->where('status', 'aprovado')->first();
+        if (! $loja) {
+            return response()->json(['error' => 'Loja não encontrada.'], 404);
+        }
+
+        [$itens, $total] = $this->montarCarrinhoLoja($validated['items'], $loja);
+        if ($total <= 0) {
+            return response()->json(['error' => 'Valor do pedido inválido.'], 422);
+        }
+
+        $entrega = $this->montarEntregaLoja($validated);
+        $description = $this->lojaDescricaoPedido($loja, $itens);
+
+        $bookingData = [
+            'tipo'         => 'loja_pedido',
+            'loja_id'      => $loja->id,
+            'cliente_id'   => $clienteId,
+            'itens'        => $itens,
+            'entrega_tipo' => $entrega['entrega_tipo'],
+            'entrega'      => $entrega['entrega'],
+            'observacao'   => $validated['observacao'] ?? null,
+        ];
+
+        try {
+            $asaasCustomerId = $this->obterOuCriarClienteAsaas($cliente);
+
+            $cardNumber = preg_replace('/\D/', '', $validated['card_number']);
+            $cpf = preg_replace('/\D/', '', $validated['cpf']);
+            $cep = preg_replace('/\D/', '', $validated['cep']);
+            $telefone = preg_replace('/\D/', '', $validated['telefone']);
+
+            $ccPayload = [
+                'customer'          => $asaasCustomerId,
+                'billingType'       => 'CREDIT_CARD',
+                'value'             => $total,
+                'dueDate'           => now()->format('Y-m-d'),
+                'description'       => $description,
+                'externalReference' => 'loja_cc_'.$clienteId.'_'.$loja->id.'_'.time(),
+                'creditCard'        => [
+                    'holderName'  => $validated['card_holder'],
+                    'number'      => $cardNumber,
+                    'expiryMonth' => $validated['card_expiry_month'],
+                    'expiryYear'  => $validated['card_expiry_year'],
+                    'ccv'         => $validated['card_ccv'],
+                ],
+                'creditCardHolderInfo' => [
+                    'name'          => $validated['card_holder'],
+                    'email'         => $cliente->email,
+                    'cpfCnpj'       => $cpf,
+                    'postalCode'    => $cep,
+                    'addressNumber' => $validated['numero'],
+                    'phone'         => $telefone,
+                ],
+            ];
+
+            if ($split = $this->splitLoja($loja, $total)) {
+                $ccPayload['split'] = $split;
+            }
+
+            $paymentRes = Http::withHeaders($this->asaasHeaders())
+                ->post($this->asaas().'/payments', $ccPayload);
+
+            $asaasData = $paymentRes->json();
+
+            if (! empty($asaasData['errors'])) {
+                $errMsg = $asaasData['errors'][0]['description'] ?? 'Falha ao processar cartão.';
+                Log::error('Asaas cartão loja: falha', ['body' => $asaasData]);
+
+                return response()->json(['error' => $errMsg], 422);
+            }
+            if ($paymentRes->failed()) {
+                Log::error('Asaas cartão loja: http error', ['body' => $asaasData]);
+
+                return response()->json(['error' => 'Falha ao processar cartão. Tente novamente.'], 500);
+            }
+
+            $asaasPaymentId = $asaasData['id'];
+            $status = $asaasData['status'] ?? 'PENDING';
+
+            $valores = $this->calculateSplit($total);
+            $payment = Payment::create([
+                'user_id'                  => $clienteId,
+                'loja_id'                  => $loja->id,
+                'amount_total'             => $valores['amount_total'],
+                'company_fee'              => $valores['company_fee'],
+                'trainer_amount'           => $valores['trainer_amount'],
+                'stripe_payment_intent_id' => $asaasPaymentId,
+                'status'                   => 'pending',
+                'payment_method'           => 'credit_card',
+                'idempotency_key'          => 'loja_cc_'.$asaasPaymentId,
+                'booking_data'             => json_encode($bookingData),
+            ]);
+
+            $confirmed = in_array($status, ['CONFIRMED', 'RECEIVED', 'RECEIVED_IN_CASH']);
+            if ($confirmed) {
+                $this->processarPagamentoConfirmado($payment);
+            }
+
+            Log::info('Asaas cartão loja: pagamento criado', [
+                'payment_id'       => $payment->id,
+                'asaas_payment_id' => $asaasPaymentId,
+                'status'           => $status,
+                'confirmed'        => $confirmed,
+            ]);
+
+            return response()->json([
+                'paymentId' => $payment->id,
+                'status'    => $status,
+                'confirmed' => $confirmed,
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Asaas cartão loja: exception', ['error' => $e->getMessage()]);
+
+            return response()->json(['error' => 'Erro interno. Tente novamente.'], 500);
+        }
+    }
+
+    /**
+     * Cria o pedido, baixa o estoque e notifica loja/cliente após o pagamento
+     * confirmado. Idempotente: não recria o pedido se ele já existe.
+     */
+    private function fulfillLojaPedido(Payment $payment, array $booking): void
+    {
+        if (Pedido::where('payment_id', $payment->id)->exists()) {
+            return;
+        }
+
+        $entrega = $booking['entrega'] ?? null;
+
+        $pedido = Pedido::create([
+            'loja_id'             => $booking['loja_id'],
+            'cliente_id'          => $booking['cliente_id'],
+            'payment_id'          => $payment->id,
+            'valor_total'         => $payment->amount_total,
+            'entrega_tipo'        => $booking['entrega_tipo'] ?? 'retirada',
+            'entrega_nome'        => $entrega['nome'] ?? null,
+            'entrega_telefone'    => $entrega['telefone'] ?? null,
+            'entrega_cep'         => $entrega['cep'] ?? null,
+            'entrega_rua'         => $entrega['rua'] ?? null,
+            'entrega_numero'      => $entrega['numero'] ?? null,
+            'entrega_complemento' => $entrega['complemento'] ?? null,
+            'entrega_bairro'      => $entrega['bairro'] ?? null,
+            'entrega_cidade'      => $entrega['cidade'] ?? null,
+            'entrega_estado'      => $entrega['estado'] ?? null,
+            'observacao'          => $booking['observacao'] ?? null,
+            'status'              => 'pago',
+        ]);
+
+        foreach (($booking['itens'] ?? []) as $item) {
+            PedidoItem::create([
+                'pedido_id'  => $pedido->id,
+                'produto_id' => $item['produto_id'] ?? null,
+                'nome'       => $item['nome'] ?? 'Produto',
+                'preco'      => $item['preco'] ?? 0,
+                'quantidade' => $item['quantidade'] ?? 1,
+                'subtotal'   => $item['subtotal'] ?? 0,
+            ]);
+
+            // Baixa de estoque (nunca abaixo de zero).
+            if (! empty($item['produto_id'])) {
+                $produto = Produto::find($item['produto_id']);
+                if ($produto) {
+                    $produto->estoque = max(0, $produto->estoque - (int) ($item['quantidade'] ?? 0));
+                    $produto->save();
+                }
+            }
+        }
+
+        $this->notificarPedidoLoja($pedido);
+    }
+
+    private function notificarPedidoLoja(Pedido $pedido): void
+    {
+        try {
+            $pedido->load(['loja', 'cliente', 'itens']);
+            $loja = $pedido->loja;
+            $cliente = $pedido->cliente;
+
+            $linhasItens = $pedido->itens
+                ->map(fn ($i) => "• {$i->quantidade}x {$i->nome} (R$ ".number_format($i->subtotal, 2, ',', '.').')')
+                ->implode("\n");
+
+            $entregaTxt = $pedido->entrega_tipo === 'entrega'
+                ? "🚚 Entrega: {$pedido->endereco_entrega}"
+                : '🏬 Retirada na loja';
+
+            if ($loja && $loja->whatsapp) {
+                $this->notificarWhatsApp(
+                    $loja->whatsapp,
+                    "🛒 *Novo pedido pago!*\n\n".
+                    "Cliente: *{$cliente?->nome}*\n".
+                    ($cliente?->whatsapp ? "Contato: {$cliente->whatsapp}\n" : '').
+                    "\n{$linhasItens}\n\n".
+                    'Total: *R$ '.number_format($pedido->valor_total, 2, ',', '.')."*\n".
+                    $entregaTxt.
+                    ($pedido->observacao ? "\nObs.: {$pedido->observacao}" : '')
+                );
+            }
+
+            if ($cliente && $cliente->whatsapp) {
+                $this->notificarWhatsApp(
+                    $cliente->whatsapp,
+                    "✅ *Pedido confirmado!*\n\n".
+                    "Seu pagamento para *{$loja?->nome}* foi aprovado.\n".
+                    ($pedido->entrega_tipo === 'entrega'
+                        ? 'A loja vai combinar a entrega com você.'
+                        : 'Você já pode retirar na loja.').
+                    "\n\nTotal: R$ ".number_format($pedido->valor_total, 2, ',', '.')
+                );
+            }
+        } catch (\Exception $e) {
+            Log::error('notificarPedidoLoja falhou', ['pedido_id' => $pedido->id, 'error' => $e->getMessage()]);
+        }
+    }
+
+    // ─────────────────────────────────────────────
+    // CARTEIRA DA LOJA — CONTA, SALDO E SAQUE
+    // ─────────────────────────────────────────────
+    public function criarContaAsaasLoja(Request $request)
+    {
+        $lojaId = session('loja_id');
+        if (! $lojaId) {
+            return response()->json(['error' => 'Não autenticado.'], 401);
+        }
+
+        $loja = Loja::find($lojaId);
+        if (! $loja) {
+            return response()->json(['error' => 'Loja não encontrada.'], 404);
+        }
+
+        if ($loja->asaas_wallet_id) {
+            return response()->json(['success' => true, 'ja_existe' => true]);
+        }
+
+        try {
+            // Loja = pessoa jurídica (possui CNPJ).
+            $payload = [
+                'name'          => $loja->nome,
+                'email'         => $loja->email,
+                'cpfCnpj'       => preg_replace('/\D/', '', $loja->cnpj),
+                'personType'    => 'JURIDICA',
+                'companyType'   => 'LIMITED',
+                'incomeValue'   => 10000,
+                'address'       => $loja->rua,
+                'addressNumber' => 'S/N',
+                'province'      => $loja->bairro,
+                'postalCode'    => preg_replace('/\D/', '', $loja->cep),
+                'complement'    => $loja->complemento,
+            ];
+
+            $res = Http::withHeaders([
+                'access_token' => config('services.asaas.key'),
+                'Content-Type' => 'application/json',
+            ])->post($this->asaas().'/accounts', $payload);
+
+            $data = $res->json();
+
+            if ($res->successful() && ! empty($data['walletId'])) {
+                $loja->update([
+                    'asaas_account_id' => $data['id'] ?? null,
+                    'asaas_wallet_id'  => $data['walletId'] ?? null,
+                    'asaas_api_key'    => $data['apiKey'] ?? null,
+                ]);
+
+                Log::info('Asaas: subconta criada para loja (self-service)', [
+                    'loja_id'   => $loja->id,
+                    'wallet_id' => $data['walletId'],
+                ]);
+
+                return response()->json(['success' => true]);
+            }
+
+            $errMsg = $data['errors'][0]['description'] ?? 'Resposta inesperada da Asaas.';
+            Log::warning('Asaas: falha ao criar subconta da loja', ['loja_id' => $loja->id, 'response' => $data]);
+
+            return response()->json(['error' => $errMsg], 422);
+
+        } catch (\Exception $e) {
+            Log::error('Asaas: exceção ao criar subconta da loja', ['loja_id' => $lojaId, 'error' => $e->getMessage()]);
+
+            return response()->json(['error' => 'Erro ao ativar recebimentos. Tente novamente.'], 500);
+        }
+    }
+
+    public function saldoLoja(Request $request)
+    {
+        $lojaId = session('loja_id');
+        if (! $lojaId) {
+            return response()->json(['error' => 'Não autenticado.'], 401);
+        }
+
+        $loja = Loja::find($lojaId);
+
+        if (! $loja?->asaas_api_key) {
+            return response()->json(['saldo' => 0, 'sem_conta' => true]);
+        }
+
+        $res = Http::withHeaders([
+            'access_token' => $loja->asaas_api_key,
+            'Content-Type' => 'application/json',
+        ])->get($this->asaas().'/finance/balance');
+
+        if ($res->failed()) {
+            Log::error('Asaas saldo loja: falha', ['loja_id' => $lojaId, 'body' => $res->json()]);
+
+            return response()->json(['error' => 'Não foi possível consultar o saldo.'], 500);
+        }
+
+        return response()->json([
+            'saldo'     => $res->json()['balance'] ?? 0,
+            'sem_conta' => false,
+            'tem_pix'   => ! empty($loja->chave_pix),
+        ]);
+    }
+
+    public function sacarLoja(Request $request)
+    {
+        $lojaId = session('loja_id');
+        if (! $lojaId) {
+            return response()->json(['error' => 'Não autenticado.'], 401);
+        }
+
+        $loja = Loja::find($lojaId);
+
+        if (! $loja?->asaas_api_key) {
+            return response()->json(['error' => 'Sua conta de recebimentos ainda não foi ativada.'], 422);
+        }
+
+        if (! $loja->chave_pix) {
+            return response()->json(['error' => 'Cadastre sua chave PIX no perfil antes de sacar.'], 422);
+        }
+
+        $validated = $request->validate([
+            'valor' => 'required|numeric|min:0.01',
+        ]);
+
+        $res = Http::withHeaders([
+            'access_token' => $loja->asaas_api_key,
+            'Content-Type' => 'application/json',
+        ])->post($this->asaas().'/transfers', [
+            'operationType'     => 'PIX',
+            'value'             => (float) $validated['valor'],
+            'pixAddressKey'     => $loja->chave_pix,
+            'pixAddressKeyType' => $this->detectarTipoChavePix($loja->chave_pix),
+            'description'       => 'Saque SnrFit',
+        ]);
+
+        $data = $res->json();
+
+        if (! empty($data['errors'])) {
+            $errMsg = $data['errors'][0]['description'] ?? 'Falha ao processar saque.';
+            Log::error('Asaas saque loja: falha', ['loja_id' => $lojaId, 'body' => $data]);
+
+            return response()->json(['error' => $errMsg], 422);
+        }
+
+        if ($res->failed()) {
+            Log::error('Asaas saque loja: http error', ['loja_id' => $lojaId, 'body' => $data]);
+
+            return response()->json(['error' => 'Falha ao processar saque. Tente novamente.'], 500);
+        }
+
+        Log::info('Asaas saque loja realizado', [
+            'loja_id'     => $lojaId,
+            'valor'       => $validated['valor'],
+            'transfer_id' => $data['id'] ?? null,
+        ]);
+
+        return response()->json([
+            'success'     => true,
+            'transfer_id' => $data['id'] ?? null,
+            'valor'       => $validated['valor'],
         ]);
     }
 

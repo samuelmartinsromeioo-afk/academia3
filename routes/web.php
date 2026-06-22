@@ -296,6 +296,9 @@ Route::middleware('check.login')->group(function () {
     Route::put('/loja/produtos/{id}', [LojaController::class, 'updateProduto'])->name('loja.produtos.update');
     Route::put('/loja/produtos/{id}/estoque', [LojaController::class, 'ajustarEstoque'])->name('loja.produtos.estoque');
     Route::delete('/loja/produtos/{id}', [LojaController::class, 'destroyProduto'])->name('loja.produtos.destroy');
+
+    // Pedidos recebidos pela loja
+    Route::put('/loja/pedidos/{id}/concluir', [LojaController::class, 'concluirPedido'])->name('loja.pedidos.concluir');
 });
 
 // ==========================================

@@ -8,6 +8,7 @@ use App\Models\Cadastro\Cliente;
 use App\Models\Cadastro\Loja;
 use App\Models\Cadastro\Personal;
 use App\Models\Cadastro\Produto;
+use App\Models\Cadastro\Pedido;
 use App\Models\Cadastro\Studio;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -109,6 +110,16 @@ class LojaController extends Controller
         $semEstoque       = $produtos->where('estoque', '<=', 0)->count();
         $valorEstoque     = $produtos->sum(fn ($p) => $p->preco * $p->estoque);
 
+        $pedidos = Pedido::where('loja_id', $loja->id)
+            ->with('itens')
+            ->orderByDesc('created_at')
+            ->get();
+
+        $totalPedidos   = $pedidos->count();
+        $faturamentoMes = $pedidos
+            ->where('created_at', '>=', now()->startOfMonth())
+            ->sum('valor_total');
+
         return view('loja.dashboard', compact(
             'loja',
             'produtos',
@@ -116,6 +127,9 @@ class LojaController extends Controller
             'produtosAtivos',
             'semEstoque',
             'valorEstoque',
+            'pedidos',
+            'totalPedidos',
+            'faturamentoMes',
         ));
     }
 
@@ -132,6 +146,7 @@ class LojaController extends Controller
             'descricao' => 'nullable|string|max:500',
             'cidade'    => 'nullable|string|max:200',
             'estado'    => 'nullable|string|max:2',
+            'chave_pix' => 'nullable|string|max:255',
             'logo'      => 'nullable|file|mimes:jpeg,jpg,png,gif,webp|max:5120',
         ]);
 
@@ -227,6 +242,27 @@ class LojaController extends Controller
         $produto->update(['estoque' => $request->estoque]);
 
         return redirect()->back()->with('success', "Estoque de '{$produto->nome}' atualizado para {$request->estoque}.");
+    }
+
+    // ==========================================
+    // PEDIDOS
+    // ==========================================
+
+    public function concluirPedido($id)
+    {
+        $loja = $this->lojaLogada();
+        if (! $loja) {
+            return redirect()->route('login.index');
+        }
+
+        $pedido = Pedido::where('id', $id)->where('loja_id', $loja->id)->firstOrFail();
+
+        if ($pedido->status === 'pago') {
+            $pedido->update(['status' => 'concluido']);
+            return redirect()->back()->with('success', "Pedido #{$pedido->id} marcado como concluído.");
+        }
+
+        return redirect()->back()->with('error', 'Este pedido não pode ser concluído.');
     }
 
     public function destroyProduto($id)

@@ -32,6 +32,10 @@ class Loja extends Model
         'status',
         'data_aprovacao',
         'motivo_rejeicao',
+        'chave_pix',
+        'asaas_account_id',
+        'asaas_wallet_id',
+        'asaas_api_key',
     ];
 
     protected $casts = [
@@ -45,5 +49,10 @@ class Loja extends Model
     public function produtos(): HasMany
     {
         return $this->hasMany(Produto::class, 'loja_id');
+    }
+
+    public function pedidos(): HasMany
+    {
+        return $this->hasMany(Pedido::class, 'loja_id');
     }
 }
