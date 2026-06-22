@@ -178,7 +178,15 @@
                 <div class="label">Mensalidade</div>
                 <div style="color:var(--text-muted); font-size:0.8rem;">Valor base da academia</div>
             </div>
-            <div class="valor">R$ {{ number_format($academia->valor_mensalidade ?? 0, 2, ',', '.') }} <small>/mês</small></div>
+            <div style="text-align:right;">
+                <div class="valor">R$ {{ number_format($academia->valor_mensalidade ?? 0, 2, ',', '.') }} <small>/mês</small></div>
+                @if(($academia->valor_mensalidade ?? 0) > 0)
+                    <div class="botoes-pagamento" style="margin-top:10px; min-width:190px;">
+                        <button class="btn-pix" onclick="pagarMensalidadePix()"><i class="fas fa-qrcode"></i> PIX</button>
+                        <button class="btn-cartao" onclick="pagarMensalidadeCartao()"><i class="fas fa-credit-card"></i> Cartão</button>
+                    </div>
+                @endif
+            </div>
         </div>
 
         @if($academia->planos->isEmpty())
@@ -350,8 +358,9 @@
 </div>
 
 <script>
-    const ACADEMIA_ID   = {!! json_encode($academia->id) !!};
-    const ACADEMIA_NOME = {!! json_encode($academia->nome) !!};
+    const ACADEMIA_ID       = {!! json_encode($academia->id) !!};
+    const ACADEMIA_NOME     = {!! json_encode($academia->nome) !!};
+    const VALOR_MENSALIDADE = {!! json_encode((float) ($academia->valor_mensalidade ?? 0)) !!};
     const CSRF          = '{{ csrf_token() }}';
     const CLIENTE_TEL   = {!! json_encode($cliente->whatsapp ?? '') !!};
     const CLIENTE_CEP   = {!! json_encode($cliente->cep ?? '') !!};
@@ -386,13 +395,19 @@
         document.execCommand('copy');
     }
 
+    // Mensalidade base (sem plano): pagamento direto do valor mensal da academia.
+    function pagarMensalidadePix()    { pagarPlanoPix(null, 'Mensalidade', VALOR_MENSALIDADE); }
+    function pagarMensalidadeCartao() { pagarPlanoCartao(null, 'Mensalidade', VALOR_MENSALIDADE); }
+
     async function pagarPlanoPix(planoId, planoNome, valor) {
-        abrirModalPix(`Plano ${planoNome} — ${ACADEMIA_NOME}`);
+        abrirModalPix(planoId ? `Plano ${planoNome} — ${ACADEMIA_NOME}` : `Mensalidade — ${ACADEMIA_NOME}`);
         try {
+            const body = { academia_id: ACADEMIA_ID };
+            if (planoId) body.plano_id = planoId;
             const res = await fetch('/api/criar-pagamento-academia', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': CSRF },
-                body: JSON.stringify({ academia_id: ACADEMIA_ID, plano_id: planoId }),
+                body: JSON.stringify(body),
             });
             const data = await res.json();
             if (!res.ok) throw new Error(data.error || 'Erro ao gerar pagamento.');
@@ -426,11 +441,13 @@
     let cartaoCtx = null;
 
     function pagarPlanoCartao(planoId, planoNome, valor) {
+        const payload = { academia_id: ACADEMIA_ID };
+        if (planoId) payload.plano_id = planoId;
         cartaoCtx = {
             endpoint: '/api/criar-pagamento-cartao-academia',
-            payload: { academia_id: ACADEMIA_ID, plano_id: planoId },
+            payload,
         };
-        document.getElementById('cartaoDescricao').textContent = `Plano ${planoNome} — ${ACADEMIA_NOME}`;
+        document.getElementById('cartaoDescricao').textContent = planoId ? `Plano ${planoNome} — ${ACADEMIA_NOME}` : `Mensalidade — ${ACADEMIA_NOME}`;
         document.getElementById('cartaoValor').textContent = 'R$ ' + parseFloat(valor).toFixed(2).replace('.', ',');
         document.getElementById('formCartao').reset();
         document.getElementById('cartaoErro').style.display = 'none';

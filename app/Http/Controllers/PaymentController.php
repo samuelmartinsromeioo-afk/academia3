@@ -38,91 +38,91 @@ class PaymentController extends Controller
     public function criarPagamento(Request $request)
     {
         $clienteId = session('cliente_id');
-        if (!$clienteId) {
+        if (! $clienteId) {
             return response()->json(['error' => 'Não autenticado.'], 401);
         }
 
         $validated = $request->validate([
-            'personal_id'       => 'required|integer|exists:personals,id',
-            'tipo'              => 'required|in:aula_avulsa,pacote,ficha,avaliacao',
-            'pacote_id'         => 'nullable|integer|exists:pacotes,id',
-            'pacote_avaliacao_id'=> 'nullable|integer|exists:pacotes_avaliacao,id',
-            'avaliacao_tipo'    => 'nullable|string|max:40',
-            'frequencia'        => 'nullable|integer|min:1|max:7',
-            'valor_pacote'      => 'nullable|numeric',
+            'personal_id' => 'required|integer|exists:personals,id',
+            'tipo' => 'required|in:aula_avulsa,pacote,ficha,avaliacao',
+            'pacote_id' => 'nullable|integer|exists:pacotes,id',
+            'pacote_avaliacao_id' => 'nullable|integer|exists:pacotes_avaliacao,id',
+            'avaliacao_tipo' => 'nullable|string|max:40',
+            'frequencia' => 'nullable|integer|min:1|max:7',
+            'valor_pacote' => 'nullable|numeric',
             'dias_selecionados' => 'nullable|string',
-            'hora_inicio'       => 'nullable|string|max:10',
-            'hora_fim'          => 'nullable|string|max:10',
-            'academia_nome'     => 'nullable|string|max:255',
-            'data'              => 'nullable|date',
+            'hora_inicio' => 'nullable|string|max:10',
+            'hora_fim' => 'nullable|string|max:10',
+            'academia_nome' => 'nullable|string|max:255',
+            'data' => 'nullable|date',
             // campos ficha
-            'objetivos'         => 'nullable|string',
-            'condicoes_clinicas'=> 'nullable|string',
+            'objetivos' => 'nullable|string',
+            'condicoes_clinicas' => 'nullable|string',
             'nivel_experiencia' => 'nullable|string',
-            'observacoes'       => 'nullable|string',
+            'observacoes' => 'nullable|string',
         ]);
 
-        $cliente  = \App\Models\Cadastro\Cliente::findOrFail($clienteId);
+        $cliente = \App\Models\Cadastro\Cliente::findOrFail($clienteId);
         $personal = Personal::findOrFail($validated['personal_id']);
 
         if ($validated['tipo'] === 'pacote') {
-            $pacote      = Pacote::findOrFail($validated['pacote_id']);
-            $amount      = (float) $pacote->valor_mensal;
+            $pacote = Pacote::findOrFail($validated['pacote_id']);
+            $amount = (float) $pacote->valor_mensal;
             $description = "Pacote {$pacote->frequencia}x/semana — {$personal->nome}";
         } elseif ($validated['tipo'] === 'ficha') {
-            $pacote      = null;
-            $amount      = (float) ($personal->valor_ficha ?? 0);
+            $pacote = null;
+            $amount = (float) ($personal->valor_ficha ?? 0);
             $description = "Ficha Personalizada — {$personal->nome}";
         } elseif ($validated['tipo'] === 'avaliacao') {
             $pacote = null;
             $avaliacaoPacoteId = null;
-            $avaliacaoTipos    = null;
+            $avaliacaoTipos = null;
 
-            if (!empty($validated['pacote_avaliacao_id'])) {
+            if (! empty($validated['pacote_avaliacao_id'])) {
                 $pacoteAv = \App\Models\PacoteAvaliacao::where('personal_id', $personal->id)
                     ->findOrFail($validated['pacote_avaliacao_id']);
-                $amount            = (float) $pacoteAv->valor;
-                $description       = "Pacote de Avaliação: {$pacoteAv->nome} — {$personal->nome}";
+                $amount = (float) $pacoteAv->valor;
+                $description = "Pacote de Avaliação: {$pacoteAv->nome} — {$personal->nome}";
                 $avaliacaoPacoteId = $pacoteAv->id;
-                $avaliacaoTipos    = $pacoteAv->tipos;
-            } elseif (!empty($validated['avaliacao_tipo'])) {
+                $avaliacaoTipos = $pacoteAv->tipos;
+            } elseif (! empty($validated['avaliacao_tipo'])) {
                 $precos = $personal->precos_avaliacao ?? [];
                 $tipoAv = $validated['avaliacao_tipo'];
-                if (!isset($precos[$tipoAv]) || (float) $precos[$tipoAv] <= 0) {
+                if (! isset($precos[$tipoAv]) || (float) $precos[$tipoAv] <= 0) {
                     return response()->json(['error' => 'Este personal não trabalha com essa avaliação.'], 422);
                 }
-                $label          = \App\Models\AvaliacaoFisica::META[$tipoAv]['label'] ?? $tipoAv;
-                $amount         = (float) $precos[$tipoAv];
-                $description    = "Avaliação: {$label} — {$personal->nome}";
+                $label = \App\Models\AvaliacaoFisica::META[$tipoAv]['label'] ?? $tipoAv;
+                $amount = (float) $precos[$tipoAv];
+                $description = "Avaliação: {$label} — {$personal->nome}";
                 $avaliacaoTipos = [$tipoAv];
             } else {
-                $amount      = (float) ($personal->valor_avaliacao ?? 0);
+                $amount = (float) ($personal->valor_avaliacao ?? 0);
                 $description = "Avaliação Física — {$personal->nome}";
             }
         } else {
-            $pacote      = null;
-            $amount      = (float) ($personal->valor_secao ?? 0);
+            $pacote = null;
+            $amount = (float) ($personal->valor_secao ?? 0);
             $description = "Aula Avulsa — {$personal->nome}";
         }
 
         $bookingData = [
-            'cliente_id'        => $clienteId,
-            'personal_id'       => $validated['personal_id'],
-            'tipo'              => $validated['tipo'],
-            'pacote_id'         => $validated['pacote_id'] ?? null,
+            'cliente_id' => $clienteId,
+            'personal_id' => $validated['personal_id'],
+            'tipo' => $validated['tipo'],
+            'pacote_id' => $validated['pacote_id'] ?? null,
             'frequencia_pacote' => $validated['frequencia'] ?? null,
-            'valor_pacote'      => $validated['valor_pacote'] ?? $amount,
+            'valor_pacote' => $validated['valor_pacote'] ?? $amount,
             'dias_selecionados' => $validated['dias_selecionados'] ?? '[]',
-            'hora_inicio'       => $validated['hora_inicio'] ?? null,
-            'hora_fim'          => $validated['hora_fim'] ?? null,
-            'academia_nome'     => $validated['academia_nome'] ?? null,
-            'data'              => $validated['data'] ?? null,
-            'objetivos'         => $validated['objetivos'] ?? null,
-            'condicoes_clinicas'=> $validated['condicoes_clinicas'] ?? null,
+            'hora_inicio' => $validated['hora_inicio'] ?? null,
+            'hora_fim' => $validated['hora_fim'] ?? null,
+            'academia_nome' => $validated['academia_nome'] ?? null,
+            'data' => $validated['data'] ?? null,
+            'objetivos' => $validated['objetivos'] ?? null,
+            'condicoes_clinicas' => $validated['condicoes_clinicas'] ?? null,
             'nivel_experiencia' => $validated['nivel_experiencia'] ?? null,
             'observacoes_ficha' => $validated['observacoes'] ?? null,
             'avaliacao_pacote_id' => $avaliacaoPacoteId ?? null,
-            'avaliacao_tipos'     => $avaliacaoTipos ?? null,
+            'avaliacao_tipos' => $avaliacaoTipos ?? null,
         ];
 
         // Pacote = assinatura mensal recorrente (nova cobrança PIX a cada mês).
@@ -132,8 +132,8 @@ class PaymentController extends Controller
                 : null;
 
             return $this->criarAssinaturaPix($cliente, $amount, $description, 'cli', 'sub_cli', $split, [
-                'tipo'          => 'pacote',
-                'trainer_id'    => $personal->id,
+                'tipo' => 'pacote',
+                'trainer_id' => $personal->id,
                 'membership_id' => $validated['pacote_id'] ?? null,
             ], $bookingData);
         }
@@ -142,12 +142,12 @@ class PaymentController extends Controller
             $asaasCustomerId = $this->obterOuCriarClienteAsaas($cliente);
 
             $pixPayload = [
-                'customer'          => $asaasCustomerId,
-                'billingType'       => 'PIX',
-                'value'             => $amount,
-                'dueDate'           => now()->addDay()->format('Y-m-d'),
-                'description'       => $description,
-                'externalReference' => 'cli_' . $clienteId . '_' . time(),
+                'customer' => $asaasCustomerId,
+                'billingType' => 'PIX',
+                'value' => $amount,
+                'dueDate' => now()->addDay()->format('Y-m-d'),
+                'description' => $description,
+                'externalReference' => 'cli_'.$clienteId.'_'.time(),
             ];
 
             if ($personal->asaas_wallet_id) {
@@ -157,52 +157,54 @@ class PaymentController extends Controller
             }
 
             $paymentRes = Http::withHeaders($this->asaasHeaders())
-                ->post($this->asaas() . '/payments', $pixPayload);
+                ->post($this->asaas().'/payments', $pixPayload);
 
             if ($paymentRes->failed()) {
                 Log::error('Asaas: falha ao criar pagamento', ['body' => $paymentRes->json()]);
+
                 return response()->json(['error' => 'Falha ao gerar cobrança. Tente novamente.'], 500);
             }
 
-            $asaasPayment   = $paymentRes->json();
+            $asaasPayment = $paymentRes->json();
             $asaasPaymentId = $asaasPayment['id'];
 
-            $qrRes  = Http::withHeaders($this->asaasHeaders())
-                ->get($this->asaas() . "/payments/{$asaasPaymentId}/pixQrCode");
+            $qrRes = Http::withHeaders($this->asaasHeaders())
+                ->get($this->asaas()."/payments/{$asaasPaymentId}/pixQrCode");
             $qrData = $qrRes->json();
 
-            $split   = $this->calculateSplit($amount);
+            $split = $this->calculateSplit($amount);
             $payment = Payment::create([
-                'user_id'                  => $clienteId,
-                'trainer_id'               => $validated['personal_id'],
-                'membership_id'            => $validated['pacote_id'] ?? null,
-                'amount_total'             => $split['amount_total'],
-                'company_fee'              => $split['company_fee'],
-                'trainer_amount'           => $split['trainer_amount'],
+                'user_id' => $clienteId,
+                'trainer_id' => $validated['personal_id'],
+                'membership_id' => $validated['pacote_id'] ?? null,
+                'amount_total' => $split['amount_total'],
+                'company_fee' => $split['company_fee'],
+                'trainer_amount' => $split['trainer_amount'],
                 'stripe_payment_intent_id' => $asaasPaymentId,
-                'status'                   => 'pending',
-                'payment_method'           => 'pix',
-                'idempotency_key'          => 'asaas_' . $asaasPaymentId,
-                'booking_data'             => json_encode($bookingData),
+                'status' => 'pending',
+                'payment_method' => 'pix',
+                'idempotency_key' => 'asaas_'.$asaasPaymentId,
+                'booking_data' => json_encode($bookingData),
             ]);
 
             Log::info('Asaas: pagamento Pix criado', [
-                'payment_id'      => $payment->id,
+                'payment_id' => $payment->id,
                 'asaas_payment_id' => $asaasPaymentId,
-                'amount'          => $amount,
-                'cliente_id'      => $clienteId,
+                'amount' => $amount,
+                'cliente_id' => $clienteId,
             ]);
 
             return response()->json([
-                'paymentId'      => $payment->id,
+                'paymentId' => $payment->id,
                 'asaasPaymentId' => $asaasPaymentId,
-                'pixPayload'     => $qrData['payload']       ?? '',
-                'pixQrCode'      => $qrData['encodedImage']  ?? '',
-                'amount'         => $amount,
+                'pixPayload' => $qrData['payload'] ?? '',
+                'pixQrCode' => $qrData['encodedImage'] ?? '',
+                'amount' => $amount,
             ]);
 
         } catch (\Exception $e) {
             Log::error('Asaas: exception ao criar pagamento', ['error' => $e->getMessage()]);
+
             return response()->json(['error' => 'Erro interno. Tente novamente.'], 500);
         }
     }
@@ -213,18 +215,18 @@ class PaymentController extends Controller
     public function verificarStatusPagamento(Request $request, string $asaasPaymentId)
     {
         $clienteId = session('cliente_id');
-        if (!$clienteId) {
+        if (! $clienteId) {
             return response()->json(['error' => 'Unauthenticated.'], 401);
         }
 
         $res = Http::withHeaders($this->asaasHeaders())
-            ->get($this->asaas() . "/payments/{$asaasPaymentId}");
+            ->get($this->asaas()."/payments/{$asaasPaymentId}");
 
         if ($res->failed()) {
             return response()->json(['status' => 'PENDING', 'confirmed' => false]);
         }
 
-        $status    = $res->json()['status'] ?? 'PENDING';
+        $status = $res->json()['status'] ?? 'PENDING';
         $confirmed = in_array($status, ['CONFIRMED', 'RECEIVED', 'RECEIVED_IN_CASH']);
 
         if ($confirmed) {
@@ -246,7 +248,9 @@ class PaymentController extends Controller
     public function pagarSucesso(Request $request)
     {
         $clienteId = session('cliente_id');
-        if (!$clienteId) return redirect()->route('login.index');
+        if (! $clienteId) {
+            return redirect()->route('login.index');
+        }
 
         return redirect()->route('cliente.index')
             ->with('success', 'Pagamento confirmado! Seu pacote foi contratado com sucesso.');
@@ -257,9 +261,11 @@ class PaymentController extends Controller
     // ─────────────────────────────────────────────
     public function processarPagamentoConfirmado(Payment $payment): void
     {
-        if ($payment->status === 'succeeded') return;
+        if ($payment->status === 'succeeded') {
+            return;
+        }
 
-        if (!empty($payment->booking_data)) {
+        if (! empty($payment->booking_data)) {
             $booking = json_decode($payment->booking_data, true);
 
             if (($booking['tipo'] ?? '') === 'academia') {
@@ -268,13 +274,13 @@ class PaymentController extends Controller
                     if ($cliente) {
                         $cliente->update([
                             'academia_id' => $booking['academia_id'],
-                            'plano'       => $booking['plano_id'],
+                            'plano' => $booking['plano_id'],
                             'plano_ativo' => true,
                         ]);
                     }
                 } catch (\Exception $e) {
                     Log::error('processarPagamentoConfirmado: academia falhou', [
-                        'error'   => $e->getMessage(),
+                        'error' => $e->getMessage(),
                         'booking' => $booking,
                     ]);
                 }
@@ -285,14 +291,14 @@ class PaymentController extends Controller
                     $cliente = \App\Models\Cadastro\Cliente::find($booking['cliente_id']);
                     if ($cliente) {
                         $cliente->update([
-                            'studio_id'          => $booking['studio_id'],
-                            'studio_plano_id'    => $booking['studio_plano_id'],
+                            'studio_id' => $booking['studio_id'],
+                            'studio_plano_id' => $booking['studio_plano_id'],
                             'studio_plano_ativo' => true,
                         ]);
                     }
                 } catch (\Exception $e) {
                     Log::error('processarPagamentoConfirmado: studio_plano falhou', [
-                        'error'   => $e->getMessage(),
+                        'error' => $e->getMessage(),
                         'booking' => $booking,
                     ]);
                 }
@@ -301,30 +307,30 @@ class PaymentController extends Controller
             if (($booking['tipo'] ?? '') === 'studio_aula') {
                 try {
                     $studio = Studio::find($booking['studio_id']);
-                    $slot   = $studio ? $this->slotStudioDisponivel($studio, $booking['data'], $booking['hora_inicio']) : null;
+                    $slot = $studio ? $this->slotStudioDisponivel($studio, $booking['data'], $booking['hora_inicio']) : null;
 
                     if ($slot) {
                         Agenda::create([
-                            'studio_id'   => $booking['studio_id'],
-                            'cliente_id'  => $booking['cliente_id'],
-                            'data'        => $booking['data'],
+                            'studio_id' => $booking['studio_id'],
+                            'cliente_id' => $booking['cliente_id'],
+                            'data' => $booking['data'],
                             'hora_inicio' => $booking['hora_inicio'],
-                            'hora_fim'    => $booking['hora_fim'],
-                            'tipo_aula'   => 'avulsa',
-                            'descricao'   => 'Aula avulsa no studio',
-                            'cancelado'   => false,
-                            'status'      => 0,
+                            'hora_fim' => $booking['hora_fim'],
+                            'tipo_aula' => 'avulsa',
+                            'descricao' => 'Aula avulsa no studio',
+                            'cancelado' => false,
+                            'status' => 0,
                         ]);
                     } else {
                         Log::critical('processarPagamentoConfirmado: slot do studio lotou entre cobrança e confirmação — ESTORNO MANUAL NECESSÁRIO', [
-                            'payment_id'       => $payment->id,
+                            'payment_id' => $payment->id,
                             'asaas_payment_id' => $payment->stripe_payment_intent_id,
-                            'booking'          => $booking,
+                            'booking' => $booking,
                         ]);
                     }
                 } catch (\Exception $e) {
                     Log::error('processarPagamentoConfirmado: studio_aula falhou', [
-                        'error'   => $e->getMessage(),
+                        'error' => $e->getMessage(),
                         'booking' => $booking,
                     ]);
                 }
@@ -333,18 +339,18 @@ class PaymentController extends Controller
             if (($booking['tipo'] ?? '') === 'pacote') {
                 try {
                     app(\App\Http\Controllers\Cadastro\ClienteController::class)->agendarAulasInterno([
-                        'personal_id'       => $booking['personal_id'],
+                        'personal_id' => $booking['personal_id'],
                         'frequencia_pacote' => $booking['frequencia_pacote'],
-                        'valor_pacote'      => $booking['valor_pacote'],
+                        'valor_pacote' => $booking['valor_pacote'],
                         'dias_selecionados' => $booking['dias_selecionados'],
-                        'hora_inicio'       => $booking['hora_inicio'],
-                        'hora_fim'          => $booking['hora_fim'],
-                        'academia_nome'     => $booking['academia_nome'] ?? null,
-                        'cliente_id'        => $booking['cliente_id'] ?? null,
+                        'hora_inicio' => $booking['hora_inicio'],
+                        'hora_fim' => $booking['hora_fim'],
+                        'academia_nome' => $booking['academia_nome'] ?? null,
+                        'cliente_id' => $booking['cliente_id'] ?? null,
                     ]);
                 } catch (\Exception $e) {
                     Log::error('processarPagamentoConfirmado: contratarPacote falhou', [
-                        'error'   => $e->getMessage(),
+                        'error' => $e->getMessage(),
                         'booking' => $booking,
                     ]);
                 }
@@ -353,16 +359,16 @@ class PaymentController extends Controller
             if (($booking['tipo'] ?? '') === 'aula_avulsa') {
                 try {
                     app(\App\Http\Controllers\Cadastro\ClienteController::class)->agendarAulaAvulsaInterno([
-                        'cliente_id'    => $booking['cliente_id'],
-                        'personal_id'   => $booking['personal_id'],
-                        'data'          => $booking['data'],
-                        'hora_inicio'   => $booking['hora_inicio'],
-                        'hora_fim'      => $booking['hora_fim'],
+                        'cliente_id' => $booking['cliente_id'],
+                        'personal_id' => $booking['personal_id'],
+                        'data' => $booking['data'],
+                        'hora_inicio' => $booking['hora_inicio'],
+                        'hora_fim' => $booking['hora_fim'],
                         'academia_nome' => $booking['academia_nome'] ?? null,
                     ]);
                 } catch (\Exception $e) {
                     Log::error('processarPagamentoConfirmado: avulsa falhou', [
-                        'error'   => $e->getMessage(),
+                        'error' => $e->getMessage(),
                         'booking' => $booking,
                     ]);
                 }
@@ -371,30 +377,30 @@ class PaymentController extends Controller
             if (($booking['tipo'] ?? '') === 'ficha') {
                 try {
                     $solicitacao = \App\Models\SolicitacaoFicha::create([
-                        'personal_id'       => $booking['personal_id'],
-                        'cliente_id'        => $booking['cliente_id'],
-                        'objetivos'         => $booking['objetivos'] ?? '',
-                        'condicoes_clinicas'=> $booking['condicoes_clinicas'] ?? null,
+                        'personal_id' => $booking['personal_id'],
+                        'cliente_id' => $booking['cliente_id'],
+                        'objetivos' => $booking['objetivos'] ?? '',
+                        'condicoes_clinicas' => $booking['condicoes_clinicas'] ?? null,
                         'nivel_experiencia' => $booking['nivel_experiencia'] ?? 'iniciante',
-                        'observacoes'       => $booking['observacoes_ficha'] ?? null,
-                        'valor'             => $payment->amount_total,
-                        'status'            => 'pendente',
-                        'payment_status'    => 'pago',
-                        'asaas_payment_id'  => $payment->stripe_payment_intent_id,
+                        'observacoes' => $booking['observacoes_ficha'] ?? null,
+                        'valor' => $payment->amount_total,
+                        'status' => 'pendente',
+                        'payment_status' => 'pago',
+                        'asaas_payment_id' => $payment->stripe_payment_intent_id,
                     ]);
 
                     $personal = \App\Models\Cadastro\Personal::find($booking['personal_id']);
-                    $cliente  = \App\Models\Cadastro\Cliente::find($booking['cliente_id']);
+                    $cliente = \App\Models\Cadastro\Cliente::find($booking['cliente_id']);
 
                     if ($personal && $personal->whatsapp) {
                         $this->notificarWhatsApp(
                             $personal->whatsapp,
-                            "📋 *Nova Solicitação de Ficha!*\n\n" .
-                            "Aluno: *{$cliente->nome}*\n" .
-                            "Objetivos: {$solicitacao->objetivos}\n" .
-                            "Nível: {$solicitacao->nivel_experiencia}\n" .
-                            ($solicitacao->condicoes_clinicas ? "Condições clínicas: {$solicitacao->condicoes_clinicas}\n" : "") .
-                            ($solicitacao->observacoes ? "Observações: {$solicitacao->observacoes}\n" : "") .
+                            "📋 *Nova Solicitação de Ficha!*\n\n".
+                            "Aluno: *{$cliente->nome}*\n".
+                            "Objetivos: {$solicitacao->objetivos}\n".
+                            "Nível: {$solicitacao->nivel_experiencia}\n".
+                            ($solicitacao->condicoes_clinicas ? "Condições clínicas: {$solicitacao->condicoes_clinicas}\n" : '').
+                            ($solicitacao->observacoes ? "Observações: {$solicitacao->observacoes}\n" : '').
                             "\nAcesse seu painel para montar a ficha. 💪",
                             'ficha_solicitada_personal',
                             [$cliente->nome, (string) $solicitacao->objetivos]
@@ -404,16 +410,16 @@ class PaymentController extends Controller
                     if ($cliente && $cliente->whatsapp) {
                         $this->notificarWhatsApp(
                             $cliente->whatsapp,
-                            "✅ *Solicitação de Ficha Confirmada!*\n\n" .
-                            "Seu pagamento foi confirmado e a solicitação foi enviada para *{$personal->nome}*.\n" .
-                            "Assim que a ficha estiver pronta, você será avisado por aqui. 🏋️",
+                            "✅ *Solicitação de Ficha Confirmada!*\n\n".
+                            "Seu pagamento foi confirmado e a solicitação foi enviada para *{$personal->nome}*.\n".
+                            'Assim que a ficha estiver pronta, você será avisado por aqui. 🏋️',
                             'ficha_confirmada_aluno',
                             [$personal->nome]
                         );
                     }
                 } catch (\Exception $e) {
                     Log::error('processarPagamentoConfirmado: ficha falhou', [
-                        'error'   => $e->getMessage(),
+                        'error' => $e->getMessage(),
                         'booking' => $booking,
                     ]);
                 }
@@ -422,25 +428,25 @@ class PaymentController extends Controller
             if (($booking['tipo'] ?? '') === 'avaliacao') {
                 try {
                     $solicitacao = \App\Models\SolicitacaoAvaliacao::create([
-                        'personal_id'         => $booking['personal_id'],
-                        'cliente_id'          => $booking['cliente_id'],
+                        'personal_id' => $booking['personal_id'],
+                        'cliente_id' => $booking['cliente_id'],
                         'pacote_avaliacao_id' => $booking['avaliacao_pacote_id'] ?? null,
-                        'observacoes'         => $booking['observacoes_ficha'] ?? null,
-                        'tipos'               => $booking['avaliacao_tipos'] ?? null,
-                        'valor'               => $payment->amount_total,
-                        'payment_status'      => 'pago',
-                        'asaas_payment_id'    => $payment->stripe_payment_intent_id,
+                        'observacoes' => $booking['observacoes_ficha'] ?? null,
+                        'tipos' => $booking['avaliacao_tipos'] ?? null,
+                        'valor' => $payment->amount_total,
+                        'payment_status' => 'pago',
+                        'asaas_payment_id' => $payment->stripe_payment_intent_id,
                     ]);
 
                     $personal = \App\Models\Cadastro\Personal::find($booking['personal_id']);
-                    $cliente  = \App\Models\Cadastro\Cliente::find($booking['cliente_id']);
+                    $cliente = \App\Models\Cadastro\Cliente::find($booking['cliente_id']);
 
                     if ($personal && $personal->whatsapp) {
                         $this->notificarWhatsApp(
                             $personal->whatsapp,
-                            "📏 *Nova Avaliação Física Contratada!*\n\n" .
-                            "Aluno: *{$cliente->nome}*\n" .
-                            ($solicitacao->observacoes ? "Observações: {$solicitacao->observacoes}\n" : "") .
+                            "📏 *Nova Avaliação Física Contratada!*\n\n".
+                            "Aluno: *{$cliente->nome}*\n".
+                            ($solicitacao->observacoes ? "Observações: {$solicitacao->observacoes}\n" : '').
                             "\nO aluno já aparece na sua área de Avaliação Física. 💪",
                             'avaliacao_contratada_personal',
                             [$cliente->nome]
@@ -450,24 +456,24 @@ class PaymentController extends Controller
                     if ($cliente && $cliente->whatsapp) {
                         $this->notificarWhatsApp(
                             $cliente->whatsapp,
-                            "✅ *Avaliação Física Confirmada!*\n\n" .
-                            "Seu pagamento foi confirmado e *{$personal->nome}* já foi avisado.\n" .
-                            "Combine com o personal a data da sua avaliação. 🏋️",
+                            "✅ *Avaliação Física Confirmada!*\n\n".
+                            "Seu pagamento foi confirmado e *{$personal->nome}* já foi avisado.\n".
+                            'Combine com o personal a data da sua avaliação. 🏋️',
                             'avaliacao_confirmada_aluno',
                             [$personal->nome]
                         );
                     }
                 } catch (\Exception $e) {
                     Log::error('processarPagamentoConfirmado: avaliacao falhou', [
-                        'error'   => $e->getMessage(),
+                        'error' => $e->getMessage(),
                         'booking' => $booking,
                     ]);
                 }
             }
         }
 
-        $fakeIntent              = new \stdClass();
-        $fakeIntent->id          = $payment->stripe_payment_intent_id;
+        $fakeIntent = new \stdClass;
+        $fakeIntent->id = $payment->stripe_payment_intent_id;
         $fakeIntent->latest_charge = null;
         $this->handleSuccessfulPayment($payment, $fakeIntent);
     }
@@ -478,7 +484,7 @@ class PaymentController extends Controller
     public function listPaymentHistory(Request $request)
     {
         $clienteId = session('cliente_id');
-        if (!$clienteId) {
+        if (! $clienteId) {
             return response()->json(['error' => 'Unauthenticated.'], 401);
         }
 
@@ -493,7 +499,7 @@ class PaymentController extends Controller
     public function listPayouts(Request $request)
     {
         $trainerId = session('personal_id');
-        if (!$trainerId) {
+        if (! $trainerId) {
             return response()->json(['error' => 'Unauthenticated.'], 401);
         }
 
@@ -510,47 +516,48 @@ class PaymentController extends Controller
     public function saldoPersonal(Request $request)
     {
         $personalId = session('personal_id');
-        if (!$personalId) {
+        if (! $personalId) {
             return response()->json(['error' => 'Não autenticado.'], 401);
         }
 
         $personal = Personal::find($personalId);
 
-        if (!$personal?->asaas_api_key) {
+        if (! $personal?->asaas_api_key) {
             return response()->json(['saldo' => 0, 'sem_conta' => true]);
         }
 
         $res = Http::withHeaders([
             'access_token' => $personal->asaas_api_key,
             'Content-Type' => 'application/json',
-        ])->get($this->asaas() . '/finance/balance');
+        ])->get($this->asaas().'/finance/balance');
 
         if ($res->failed()) {
             Log::error('Asaas saldo: falha', ['personal_id' => $personalId, 'body' => $res->json()]);
+
             return response()->json(['error' => 'Não foi possível consultar o saldo.'], 500);
         }
 
         return response()->json([
-            'saldo'     => $res->json()['balance']             ?? 0,
+            'saldo' => $res->json()['balance'] ?? 0,
             'sem_conta' => false,
-            'tem_pix'   => !empty($personal->chave_pix),
+            'tem_pix' => ! empty($personal->chave_pix),
         ]);
     }
 
     public function sacarPersonal(Request $request)
     {
         $personalId = session('personal_id');
-        if (!$personalId) {
+        if (! $personalId) {
             return response()->json(['error' => 'Não autenticado.'], 401);
         }
 
         $personal = Personal::find($personalId);
 
-        if (!$personal?->asaas_api_key) {
+        if (! $personal?->asaas_api_key) {
             return response()->json(['error' => 'Sua conta Asaas ainda não foi configurada.'], 422);
         }
 
-        if (!$personal->chave_pix) {
+        if (! $personal->chave_pix) {
             return response()->json(['error' => 'Cadastre sua chave PIX no perfil antes de sacar.'], 422);
         }
 
@@ -561,24 +568,26 @@ class PaymentController extends Controller
         $res = Http::withHeaders([
             'access_token' => $personal->asaas_api_key,
             'Content-Type' => 'application/json',
-        ])->post($this->asaas() . '/transfers', [
-            'operationType'     => 'PIX',
-            'value'             => (float) $validated['valor'],
-            'pixAddressKey'     => $personal->chave_pix,
+        ])->post($this->asaas().'/transfers', [
+            'operationType' => 'PIX',
+            'value' => (float) $validated['valor'],
+            'pixAddressKey' => $personal->chave_pix,
             'pixAddressKeyType' => $this->detectarTipoChavePix($personal->chave_pix),
-            'description'       => 'Saque SnrFit',
+            'description' => 'Saque SnrFit',
         ]);
 
         $data = $res->json();
 
-        if (!empty($data['errors'])) {
+        if (! empty($data['errors'])) {
             $errMsg = $data['errors'][0]['description'] ?? 'Falha ao processar saque.';
             Log::error('Asaas saque: falha', ['personal_id' => $personalId, 'body' => $data]);
+
             return response()->json(['error' => $errMsg], 422);
         }
 
         if ($res->failed()) {
             Log::error('Asaas saque: http error', ['personal_id' => $personalId, 'body' => $data]);
+
             return response()->json(['error' => 'Falha ao processar saque. Tente novamente.'], 500);
         }
 
@@ -588,14 +597,14 @@ class PaymentController extends Controller
 
         Log::info('Asaas saque realizado', [
             'personal_id' => $personalId,
-            'valor'       => $validated['valor'],
+            'valor' => $validated['valor'],
             'transfer_id' => $data['id'] ?? null,
         ]);
 
         return response()->json([
-            'success'     => true,
+            'success' => true,
             'transfer_id' => $data['id'] ?? null,
-            'valor'       => $validated['valor'],
+            'valor' => $validated['valor'],
         ]);
     }
 
@@ -604,24 +613,26 @@ class PaymentController extends Controller
     // ─────────────────────────────────────────────
     public function calculateSplit(float $amountTotal): array
     {
-        $companyFee    = round($amountTotal * 0.10, 2);
+        $companyFee = round($amountTotal * 0.10, 2);
         $trainerAmount = round($amountTotal - $companyFee, 2);
 
         return [
-            'amount_total'   => $amountTotal,
-            'company_fee'    => $companyFee,
+            'amount_total' => $amountTotal,
+            'company_fee' => $companyFee,
             'trainer_amount' => $trainerAmount,
         ];
     }
 
     public function handleSuccessfulPayment(Payment $payment, $intent): void
     {
-        if ($payment->status === 'succeeded') return;
+        if ($payment->status === 'succeeded') {
+            return;
+        }
 
         $payment->update([
-            'status'            => 'succeeded',
-            'receipt_url'       => '',
-            'paid_at'           => now(),
+            'status' => 'succeeded',
+            'receipt_url' => '',
+            'paid_at' => now(),
             'next_billing_date' => now()->addDays(30)->toDateString(),
         ]);
 
@@ -633,24 +644,24 @@ class PaymentController extends Controller
         }
 
         if ($payment->trainer_id) {
-            $pacote            = Pacote::find($payment->membership_id);
+            $pacote = Pacote::find($payment->membership_id);
             $scheduledSessions = $pacote ? ($pacote->frequencia * 4) : 0;
 
             MembershipConfirmation::updateOrCreate(
                 [
-                    'user_id'       => $payment->user_id,
-                    'trainer_id'    => $payment->trainer_id,
+                    'user_id' => $payment->user_id,
+                    'trainer_id' => $payment->trainer_id,
                     'membership_id' => $payment->membership_id,
                 ],
                 [
-                    'payment_id'         => $payment->id,
-                    'confirmed_at'       => now(),
+                    'payment_id' => $payment->id,
+                    'confirmed_at' => now(),
                     'scheduled_sessions' => $scheduledSessions,
                 ]
             );
 
             \App\Models\Cadastro\Cliente::where('id', $payment->user_id)->update([
-                'plano'       => $payment->membership_id,
+                'plano' => $payment->membership_id,
                 'plano_ativo' => true,
             ]);
 
@@ -658,12 +669,12 @@ class PaymentController extends Controller
 
             TrainerPayout::create([
                 'trainer_id' => $payment->trainer_id,
-                'amount'     => $payment->trainer_amount,
-                'status'     => $personal?->asaas_wallet_id ? 'in_wallet' : 'pending',
+                'amount' => $payment->trainer_amount,
+                'status' => $personal?->asaas_wallet_id ? 'in_wallet' : 'pending',
             ]);
         }
 
-        $cliente  = \App\Models\Cadastro\Cliente::find($payment->user_id);
+        $cliente = \App\Models\Cadastro\Cliente::find($payment->user_id);
         $personal = Personal::find($payment->trainer_id);
 
         if ($cliente) {
@@ -678,7 +689,7 @@ class PaymentController extends Controller
             'payment_id' => $payment->id,
             'cliente_id' => $payment->user_id,
             'trainer_id' => $payment->trainer_id,
-            'amount'     => $payment->amount_total,
+            'amount' => $payment->amount_total,
         ]);
     }
 
@@ -690,15 +701,15 @@ class PaymentController extends Controller
     private function obterOuCriarClienteAsaas(\App\Models\Cadastro\Cliente $cliente): string
     {
         $search = Http::withHeaders($this->asaasHeaders())
-            ->get($this->asaas() . '/customers', ['email' => $cliente->email]);
+            ->get($this->asaas().'/customers', ['email' => $cliente->email]);
 
-        if ($search->successful() && !empty($search->json()['data'])) {
+        if ($search->successful() && ! empty($search->json()['data'])) {
             return $search->json()['data'][0]['id'];
         }
 
         $create = Http::withHeaders($this->asaasHeaders())
-            ->post($this->asaas() . '/customers', [
-                'name'  => $cliente->nome,
+            ->post($this->asaas().'/customers', [
+                'name' => $cliente->nome,
                 'email' => $cliente->email,
             ]);
 
@@ -719,79 +730,83 @@ class PaymentController extends Controller
             $asaasCustomerId = $this->obterOuCriarClienteAsaas($cliente);
 
             $payload = [
-                'customer'          => $asaasCustomerId,
-                'billingType'       => 'PIX',
-                'value'             => $amount,
-                'nextDueDate'       => now()->format('Y-m-d'),
-                'cycle'             => 'MONTHLY',
-                'description'       => $description,
-                'externalReference' => $extRefPrefix . '_' . $cliente->id . '_' . time(),
+                'customer' => $asaasCustomerId,
+                'billingType' => 'PIX',
+                'value' => $amount,
+                'nextDueDate' => now()->format('Y-m-d'),
+                'cycle' => 'MONTHLY',
+                'description' => $description,
+                'externalReference' => $extRefPrefix.'_'.$cliente->id.'_'.time(),
             ];
             if ($split) {
                 $payload['split'] = $split;
             }
 
-            $subRes  = Http::withHeaders($this->asaasHeaders())->post($this->asaas() . '/subscriptions', $payload);
+            $subRes = Http::withHeaders($this->asaasHeaders())->post($this->asaas().'/subscriptions', $payload);
             $subData = $subRes->json();
 
-            if (!empty($subData['errors'])) {
+            if (! empty($subData['errors'])) {
                 $errMsg = $subData['errors'][0]['description'] ?? 'Falha ao criar assinatura.';
                 Log::error('Asaas assinatura PIX: falha', ['body' => $subData]);
+
                 return response()->json(['error' => $errMsg], 422);
             }
             if ($subRes->failed() || empty($subData['id'])) {
                 Log::error('Asaas assinatura PIX: http error', ['body' => $subData]);
+
                 return response()->json(['error' => 'Falha ao gerar assinatura. Tente novamente.'], 500);
             }
 
             $subscriptionId = $subData['id'];
 
             $firstPayment = $this->primeiraCobrancaAssinatura($subscriptionId);
-            if (!$firstPayment || empty($firstPayment['id'])) {
+            if (! $firstPayment || empty($firstPayment['id'])) {
                 Log::error('Asaas assinatura PIX: primeira cobrança indisponível', ['subscription_id' => $subscriptionId]);
+
                 return response()->json(['error' => 'Falha ao gerar a primeira cobrança. Tente novamente.'], 500);
             }
             $asaasPaymentId = $firstPayment['id'];
 
-            $qrRes  = Http::withHeaders($this->asaasHeaders())
-                ->get($this->asaas() . "/payments/{$asaasPaymentId}/pixQrCode");
+            $qrRes = Http::withHeaders($this->asaasHeaders())
+                ->get($this->asaas()."/payments/{$asaasPaymentId}/pixQrCode");
             $qrData = $qrRes->json();
 
             $valores = $this->calculateSplit($amount);
             $this->registrarAssinatura($cliente->id, $subscriptionId, 'pix', $valores, $subFields, $bookingData, $subData['nextDueDate'] ?? null);
 
             $payment = Payment::create(array_merge([
-                'user_id'                  => $cliente->id,
-                'amount_total'             => $valores['amount_total'],
-                'company_fee'              => $valores['company_fee'],
-                'trainer_amount'           => $valores['trainer_amount'],
+                'user_id' => $cliente->id,
+                'amount_total' => $valores['amount_total'],
+                'company_fee' => $valores['company_fee'],
+                'trainer_amount' => $valores['trainer_amount'],
                 'stripe_payment_intent_id' => $asaasPaymentId,
-                'asaas_subscription_id'    => $subscriptionId,
-                'status'                   => 'pending',
-                'payment_method'           => 'pix',
-                'idempotency_key'          => $idemPrefix . '_' . $asaasPaymentId,
-                'booking_data'             => json_encode($bookingData),
+                'asaas_subscription_id' => $subscriptionId,
+                'status' => 'pending',
+                'payment_method' => 'pix',
+                'idempotency_key' => $idemPrefix.'_'.$asaasPaymentId,
+                'booking_data' => json_encode($bookingData),
             ], $this->subFieldsToPayment($subFields)));
 
             Log::info('Asaas assinatura PIX criada', [
-                'payment_id'       => $payment->id,
-                'subscription_id'  => $subscriptionId,
+                'payment_id' => $payment->id,
+                'subscription_id' => $subscriptionId,
                 'asaas_payment_id' => $asaasPaymentId,
-                'cliente_id'       => $cliente->id,
+                'cliente_id' => $cliente->id,
             ]);
 
             return response()->json([
-                'paymentId'      => $payment->id,
+                'paymentId' => $payment->id,
                 'asaasPaymentId' => $asaasPaymentId,
                 'subscriptionId' => $subscriptionId,
-                'pixPayload'     => $qrData['payload']      ?? '',
-                'pixQrCode'      => $qrData['encodedImage'] ?? '',
-                'amount'         => $amount,
-                'recorrente'     => true,
+                'pixPayload' => $qrData['payload'] ?? '',
+                'pixQrCode' => $qrData['encodedImage'] ?? '',
+                'amount' => $amount,
+                'recorrente' => true,
             ]);
 
         } catch (\Exception $e) {
             Log::error('Asaas assinatura PIX: exception', ['error' => $e->getMessage()]);
+
             return response()->json(['error' => 'Erro interno. Tente novamente.'], 500);
         }
     }
@@ -806,49 +821,51 @@ class PaymentController extends Controller
             $asaasCustomerId = $this->obterOuCriarClienteAsaas($cliente);
 
             $cardNumber = preg_replace('/\D/', '', $validated['card_number']);
-            $cpf        = preg_replace('/\D/', '', $validated['cpf']);
-            $cep        = preg_replace('/\D/', '', $validated['cep']);
-            $telefone   = preg_replace('/\D/', '', $validated['telefone']);
+            $cpf = preg_replace('/\D/', '', $validated['cpf']);
+            $cep = preg_replace('/\D/', '', $validated['cep']);
+            $telefone = preg_replace('/\D/', '', $validated['telefone']);
 
             $payload = [
-                'customer'          => $asaasCustomerId,
-                'billingType'       => 'CREDIT_CARD',
-                'value'             => $amount,
-                'nextDueDate'       => now()->format('Y-m-d'),
-                'cycle'             => 'MONTHLY',
-                'description'       => $description,
-                'externalReference' => $extRefPrefix . '_' . $cliente->id . '_' . time(),
-                'creditCard'        => [
-                    'holderName'  => $validated['card_holder'],
-                    'number'      => $cardNumber,
+                'customer' => $asaasCustomerId,
+                'billingType' => 'CREDIT_CARD',
+                'value' => $amount,
+                'nextDueDate' => now()->format('Y-m-d'),
+                'cycle' => 'MONTHLY',
+                'description' => $description,
+                'externalReference' => $extRefPrefix.'_'.$cliente->id.'_'.time(),
+                'creditCard' => [
+                    'holderName' => $validated['card_holder'],
+                    'number' => $cardNumber,
                     'expiryMonth' => $validated['card_expiry_month'],
-                    'expiryYear'  => $validated['card_expiry_year'],
-                    'ccv'         => $validated['card_ccv'],
+                    'expiryYear' => $validated['card_expiry_year'],
+                    'ccv' => $validated['card_ccv'],
                 ],
                 'creditCardHolderInfo' => [
-                    'name'          => $validated['card_holder'],
-                    'email'         => $cliente->email,
-                    'cpfCnpj'       => $cpf,
-                    'postalCode'    => $cep,
+                    'name' => $validated['card_holder'],
+                    'email' => $cliente->email,
+                    'cpfCnpj' => $cpf,
+                    'postalCode' => $cep,
                     'addressNumber' => $validated['numero'],
-                    'phone'         => $telefone,
+                    'phone' => $telefone,
                 ],
-                'remoteIp'          => request()->ip(),
+                'remoteIp' => request()->ip(),
             ];
             if ($split) {
                 $payload['split'] = $split;
             }
 
-            $subRes  = Http::withHeaders($this->asaasHeaders())->post($this->asaas() . '/subscriptions', $payload);
+            $subRes = Http::withHeaders($this->asaasHeaders())->post($this->asaas().'/subscriptions', $payload);
             $subData = $subRes->json();
 
-            if (!empty($subData['errors'])) {
+            if (! empty($subData['errors'])) {
                 $errMsg = $subData['errors'][0]['description'] ?? 'Falha ao processar cartão.';
                 Log::error('Asaas assinatura cartão: falha', ['body' => $subData]);
+
                 return response()->json(['error' => $errMsg], 422);
             }
             if ($subRes->failed() || empty($subData['id'])) {
                 Log::error('Asaas assinatura cartão: http error', ['body' => $subData]);
+
                 return response()->json(['error' => 'Falha ao processar cartão. Tente novamente.'], 500);
             }
 
@@ -857,21 +874,21 @@ class PaymentController extends Controller
             $valores = $this->calculateSplit($amount);
             $this->registrarAssinatura($cliente->id, $subscriptionId, 'credit_card', $valores, $subFields, $bookingData, $subData['nextDueDate'] ?? null);
 
-            $firstPayment   = $this->primeiraCobrancaAssinatura($subscriptionId);
-            $asaasPaymentId = $firstPayment['id']     ?? null;
-            $status         = $firstPayment['status'] ?? 'PENDING';
+            $firstPayment = $this->primeiraCobrancaAssinatura($subscriptionId);
+            $asaasPaymentId = $firstPayment['id'] ?? null;
+            $status = $firstPayment['status'] ?? 'PENDING';
 
             $payment = Payment::create(array_merge([
-                'user_id'                  => $cliente->id,
-                'amount_total'             => $valores['amount_total'],
-                'company_fee'              => $valores['company_fee'],
-                'trainer_amount'           => $valores['trainer_amount'],
+                'user_id' => $cliente->id,
+                'amount_total' => $valores['amount_total'],
+                'company_fee' => $valores['company_fee'],
+                'trainer_amount' => $valores['trainer_amount'],
                 'stripe_payment_intent_id' => $asaasPaymentId,
-                'asaas_subscription_id'    => $subscriptionId,
-                'status'                   => 'pending',
-                'payment_method'           => 'credit_card',
-                'idempotency_key'          => $idemPrefix . '_' . ($asaasPaymentId ?? $subscriptionId),
-                'booking_data'             => json_encode($bookingData),
+                'asaas_subscription_id' => $subscriptionId,
+                'status' => 'pending',
+                'payment_method' => 'credit_card',
+                'idempotency_key' => $idemPrefix.'_'.($asaasPaymentId ?? $subscriptionId),
+                'booking_data' => json_encode($bookingData),
             ], $this->subFieldsToPayment($subFields)));
 
             $confirmed = in_array($status, ['CONFIRMED', 'RECEIVED', 'RECEIVED_IN_CASH']);
@@ -880,22 +897,23 @@ class PaymentController extends Controller
             }
 
             Log::info('Asaas assinatura cartão criada', [
-                'payment_id'      => $payment->id,
+                'payment_id' => $payment->id,
                 'subscription_id' => $subscriptionId,
-                'status'          => $status,
-                'confirmed'       => $confirmed,
+                'status' => $status,
+                'confirmed' => $confirmed,
             ]);
 
             return response()->json([
-                'paymentId'      => $payment->id,
+                'paymentId' => $payment->id,
                 'subscriptionId' => $subscriptionId,
-                'status'         => $status,
-                'confirmed'      => $confirmed,
-                'recorrente'     => true,
+                'status' => $status,
+                'confirmed' => $confirmed,
+                'recorrente' => true,
             ]);
 
         } catch (\Exception $e) {
             Log::error('Asaas assinatura cartão: exception', ['error' => $e->getMessage()]);
+
             return response()->json(['error' => 'Erro interno. Tente novamente.'], 500);
         }
     }
@@ -907,11 +925,11 @@ class PaymentController extends Controller
     private function primeiraCobrancaAssinatura(string $subscriptionId): ?array
     {
         for ($i = 0; $i < 3; $i++) {
-            $res  = Http::withHeaders($this->asaasHeaders())
-                ->get($this->asaas() . "/subscriptions/{$subscriptionId}/payments");
+            $res = Http::withHeaders($this->asaasHeaders())
+                ->get($this->asaas()."/subscriptions/{$subscriptionId}/payments");
             $data = $res->json();
 
-            if (!empty($data['data'][0]['id'])) {
+            if (! empty($data['data'][0]['id'])) {
                 return $data['data'][0];
             }
             usleep(700000); // 0,7s
@@ -925,14 +943,14 @@ class PaymentController extends Controller
         return Subscription::updateOrCreate(
             ['asaas_subscription_id' => $subscriptionId],
             array_merge([
-                'user_id'        => $userId,
+                'user_id' => $userId,
                 'payment_method' => $method,
-                'amount_total'   => $valores['amount_total'],
-                'company_fee'    => $valores['company_fee'],
+                'amount_total' => $valores['amount_total'],
+                'company_fee' => $valores['company_fee'],
                 'trainer_amount' => $valores['trainer_amount'],
-                'status'         => 'active',
-                'next_due_date'  => $nextDueDate,
-                'booking_data'   => json_encode($bookingData),
+                'status' => 'active',
+                'next_due_date' => $nextDueDate,
+                'booking_data' => json_encode($bookingData),
             ], $subFields)
         );
     }
@@ -952,13 +970,14 @@ class PaymentController extends Controller
     public function processarRenovacaoAssinatura(string $asaasSubscriptionId, array $asaasPayment): void
     {
         $sub = Subscription::where('asaas_subscription_id', $asaasSubscriptionId)->first();
-        if (!$sub) {
+        if (! $sub) {
             Log::warning('Renovação: assinatura não encontrada', ['subscription_id' => $asaasSubscriptionId]);
+
             return;
         }
 
         $asaasPaymentId = $asaasPayment['id'] ?? null;
-        if (!$asaasPaymentId) {
+        if (! $asaasPaymentId) {
             return;
         }
 
@@ -972,16 +991,16 @@ class PaymentController extends Controller
         ]));
 
         $payment = Payment::create(array_merge([
-            'user_id'                  => $sub->user_id,
-            'amount_total'             => $sub->amount_total,
-            'company_fee'              => $sub->company_fee,
-            'trainer_amount'           => $sub->trainer_amount,
+            'user_id' => $sub->user_id,
+            'amount_total' => $sub->amount_total,
+            'company_fee' => $sub->company_fee,
+            'trainer_amount' => $sub->trainer_amount,
             'stripe_payment_intent_id' => $asaasPaymentId,
-            'asaas_subscription_id'    => $sub->asaas_subscription_id,
-            'status'                   => 'pending',
-            'payment_method'           => $sub->payment_method,
-            'idempotency_key'          => 'renew_' . $asaasPaymentId,
-            'booking_data'             => $sub->booking_data,
+            'asaas_subscription_id' => $sub->asaas_subscription_id,
+            'status' => 'pending',
+            'payment_method' => $sub->payment_method,
+            'idempotency_key' => 'renew_'.$asaasPaymentId,
+            'booking_data' => $sub->booking_data,
         ], $vinculos));
 
         $sub->update(['status' => 'active']);
@@ -991,7 +1010,7 @@ class PaymentController extends Controller
 
         Log::info('Assinatura renovada e processada', [
             'subscription_id' => $asaasSubscriptionId,
-            'payment_id'      => $payment->id,
+            'payment_id' => $payment->id,
         ]);
     }
 
@@ -1003,7 +1022,7 @@ class PaymentController extends Controller
     public function recalcularAcessoCliente(int $clienteId): void
     {
         $cliente = \App\Models\Cadastro\Cliente::find($clienteId);
-        if (!$cliente) {
+        if (! $cliente) {
             return;
         }
 
@@ -1011,18 +1030,19 @@ class PaymentController extends Controller
 
         $temAcesso = function (array $tipos) use ($subs) {
             return $subs->contains(function ($s) use ($tipos) {
-                if (!in_array($s->tipo, $tipos)) {
+                if (! in_array($s->tipo, $tipos)) {
                     return false;
                 }
                 if ($s->status === 'active') {
                     return true;
                 }
+
                 return $s->acesso_ate && \Carbon\Carbon::parse($s->acesso_ate)->gte(today());
             });
         };
 
         $cliente->update([
-            'plano_ativo'        => $temAcesso(['pacote', 'academia']),
+            'plano_ativo' => $temAcesso(['pacote', 'academia']),
             'studio_plano_ativo' => $temAcesso(['studio_plano']),
         ]);
     }
@@ -1035,12 +1055,12 @@ class PaymentController extends Controller
     public function cancelarAssinatura(Request $request, $id)
     {
         $clienteId = session('cliente_id');
-        if (!$clienteId) {
+        if (! $clienteId) {
             return response()->json(['error' => 'Não autenticado.'], 401);
         }
 
         $sub = Subscription::where('id', $id)->where('user_id', $clienteId)->first();
-        if (!$sub) {
+        if (! $sub) {
             return response()->json(['error' => 'Assinatura não encontrada.'], 404);
         }
 
@@ -1050,13 +1070,13 @@ class PaymentController extends Controller
 
         try {
             $res = Http::withHeaders($this->asaasHeaders())
-                ->delete($this->asaas() . '/subscriptions/' . $sub->asaas_subscription_id);
+                ->delete($this->asaas().'/subscriptions/'.$sub->asaas_subscription_id);
 
             if ($res->failed()) {
                 // Não trava o aluno: registra e segue cancelando localmente.
                 Log::warning('Asaas: falha ao cancelar assinatura', [
                     'subscription_id' => $sub->asaas_subscription_id,
-                    'body'            => $res->json(),
+                    'body' => $res->json(),
                 ]);
             }
         } catch (\Exception $e) {
@@ -1070,13 +1090,13 @@ class PaymentController extends Controller
 
         Log::info('Assinatura cancelada pelo aluno', [
             'subscription_id' => $sub->asaas_subscription_id,
-            'cliente_id'      => $clienteId,
-            'tipo'            => $sub->tipo,
-            'acesso_ate'      => $sub->acesso_ate,
+            'cliente_id' => $clienteId,
+            'tipo' => $sub->tipo,
+            'acesso_ate' => $sub->acesso_ate,
         ]);
 
         return response()->json([
-            'success'    => true,
+            'success' => true,
             'acesso_ate' => $sub->acesso_ate ? \Carbon\Carbon::parse($sub->acesso_ate)->format('d/m/Y') : null,
         ]);
     }
@@ -1088,7 +1108,7 @@ class PaymentController extends Controller
     public function processarVencimentoAssinatura(string $asaasSubscriptionId): void
     {
         $sub = Subscription::where('asaas_subscription_id', $asaasSubscriptionId)->first();
-        if (!$sub) {
+        if (! $sub) {
             return;
         }
 
@@ -1100,9 +1120,9 @@ class PaymentController extends Controller
 
         Log::info('Assinatura vencida (em atraso)', [
             'subscription_id' => $asaasSubscriptionId,
-            'tipo'            => $sub->tipo,
-            'cliente_id'      => $sub->user_id,
-            'acesso_ate'      => $sub->acesso_ate,
+            'tipo' => $sub->tipo,
+            'cliente_id' => $sub->user_id,
+            'acesso_ate' => $sub->acesso_ate,
         ]);
     }
 
@@ -1112,39 +1132,59 @@ class PaymentController extends Controller
     public function criarPagamentoAcademia(Request $request)
     {
         $clienteId = session('cliente_id');
-        if (!$clienteId) {
+        if (! $clienteId) {
             return response()->json(['error' => 'Não autenticado.'], 401);
         }
 
         $validated = $request->validate([
             'academia_id' => 'required|integer|exists:academias,id',
-            'plano_id'    => 'required|integer|exists:planos,id',
+            'plano_id' => 'nullable|integer|exists:planos,id',
         ]);
 
-        $cliente  = \App\Models\Cadastro\Cliente::findOrFail($clienteId);
+        $cliente = \App\Models\Cadastro\Cliente::findOrFail($clienteId);
         $academia = \App\Models\Cadastro\Academia::findOrFail($validated['academia_id']);
-        $plano    = \App\Models\Cadastro\Plano::findOrFail($validated['plano_id']);
 
-        if ((int) $plano->academia_id !== (int) $validated['academia_id']) {
-            return response()->json(['error' => 'Plano inválido para esta academia.'], 422);
-        }
+        // Sem plano_id => contratação da mensalidade base da academia.
+        [$amount, $description, $planoId] = $this->resolverItemAcademia($academia, $validated['plano_id'] ?? null);
 
-        $amount      = (float) $plano->valor;
-        $description = "Plano {$plano->nome} — {$academia->nome}";
-
-        // Plano de academia = assinatura mensal recorrente.
+        // Plano/mensalidade de academia = assinatura mensal recorrente.
         $split = $this->splitAcademia($academia, $amount);
 
         return $this->criarAssinaturaPix($cliente, $amount, $description, 'aca', 'sub_aca', $split, [
-            'tipo'        => 'academia',
+            'tipo' => 'academia',
             'academia_id' => $validated['academia_id'],
-            'plano_id'    => $validated['plano_id'],
+            'plano_id' => $planoId,
         ], [
-            'tipo'        => 'academia',
+            'tipo' => 'academia',
             'academia_id' => $validated['academia_id'],
-            'plano_id'    => $validated['plano_id'],
-            'cliente_id'  => $clienteId,
+            'plano_id' => $planoId,
+            'cliente_id' => $clienteId,
         ]);
+    }
+
+    /**
+     * Resolve o item a ser cobrado na academia: um plano específico ou,
+     * quando não houver plano_id, a mensalidade base da academia.
+     *
+     * @return array{0: float, 1: string, 2: int|null} [valor, descrição, plano_id]
+     */
+    private function resolverItemAcademia(\App\Models\Cadastro\Academia $academia, $planoId): array
+    {
+        if (! empty($planoId)) {
+            $plano = \App\Models\Cadastro\Plano::findOrFail($planoId);
+            if ((int) $plano->academia_id !== (int) $academia->id) {
+                abort(response()->json(['error' => 'Plano inválido para esta academia.'], 422));
+            }
+
+            return [(float) $plano->valor, "Plano {$plano->nome} — {$academia->nome}", $plano->id];
+        }
+
+        $amount = (float) ($academia->valor_mensalidade ?? 0);
+        if ($amount <= 0) {
+            abort(response()->json(['error' => 'Esta academia ainda não definiu o valor da mensalidade.'], 422));
+        }
+
+        return [$amount, "Mensalidade — {$academia->nome}", null];
     }
 
     // ─────────────────────────────────────────────
@@ -1153,99 +1193,99 @@ class PaymentController extends Controller
     public function criarPagamentoCartao(Request $request)
     {
         $clienteId = session('cliente_id');
-        if (!$clienteId) {
+        if (! $clienteId) {
             return response()->json(['error' => 'Não autenticado.'], 401);
         }
 
         $validated = $request->validate([
-            'personal_id'       => 'required|integer|exists:personals,id',
-            'tipo'              => 'required|in:aula_avulsa,pacote,ficha,avaliacao',
-            'pacote_id'         => 'nullable|integer|exists:pacotes,id',
-            'pacote_avaliacao_id'=> 'nullable|integer|exists:pacotes_avaliacao,id',
-            'avaliacao_tipo'    => 'nullable|string|max:40',
-            'frequencia'        => 'nullable|integer|min:1|max:7',
-            'valor_pacote'      => 'nullable|numeric',
+            'personal_id' => 'required|integer|exists:personals,id',
+            'tipo' => 'required|in:aula_avulsa,pacote,ficha,avaliacao',
+            'pacote_id' => 'nullable|integer|exists:pacotes,id',
+            'pacote_avaliacao_id' => 'nullable|integer|exists:pacotes_avaliacao,id',
+            'avaliacao_tipo' => 'nullable|string|max:40',
+            'frequencia' => 'nullable|integer|min:1|max:7',
+            'valor_pacote' => 'nullable|numeric',
             'dias_selecionados' => 'nullable|string',
-            'hora_inicio'       => 'nullable|string|max:10',
-            'hora_fim'          => 'nullable|string|max:10',
-            'academia_nome'     => 'nullable|string|max:255',
-            'data'              => 'nullable|date',
-            'objetivos'         => 'nullable|string',
-            'condicoes_clinicas'=> 'nullable|string',
+            'hora_inicio' => 'nullable|string|max:10',
+            'hora_fim' => 'nullable|string|max:10',
+            'academia_nome' => 'nullable|string|max:255',
+            'data' => 'nullable|date',
+            'objetivos' => 'nullable|string',
+            'condicoes_clinicas' => 'nullable|string',
             'nivel_experiencia' => 'nullable|string',
-            'observacoes'       => 'nullable|string',
-            'card_holder'       => 'required|string|max:100',
-            'card_number'       => 'required|string|min:13|max:19',
+            'observacoes' => 'nullable|string',
+            'card_holder' => 'required|string|max:100',
+            'card_number' => 'required|string|min:13|max:19',
             'card_expiry_month' => 'required|string|size:2',
-            'card_expiry_year'  => 'required|string|size:4',
-            'card_ccv'          => 'required|string|min:3|max:4',
-            'cpf'               => 'required|string|min:11|max:18',
-            'cep'               => 'required|string|min:8|max:9',
-            'numero'            => 'required|string|max:20',
-            'telefone'          => 'required|string|min:10|max:15',
+            'card_expiry_year' => 'required|string|size:4',
+            'card_ccv' => 'required|string|min:3|max:4',
+            'cpf' => 'required|string|min:11|max:18',
+            'cep' => 'required|string|min:8|max:9',
+            'numero' => 'required|string|max:20',
+            'telefone' => 'required|string|min:10|max:15',
         ]);
 
-        $cliente  = \App\Models\Cadastro\Cliente::findOrFail($clienteId);
+        $cliente = \App\Models\Cadastro\Cliente::findOrFail($clienteId);
         $personal = Personal::findOrFail($validated['personal_id']);
 
         if ($validated['tipo'] === 'pacote') {
-            $pacote      = Pacote::findOrFail($validated['pacote_id']);
-            $amount      = (float) $pacote->valor_mensal;
+            $pacote = Pacote::findOrFail($validated['pacote_id']);
+            $amount = (float) $pacote->valor_mensal;
             $description = "Pacote {$pacote->frequencia}x/semana — {$personal->nome}";
         } elseif ($validated['tipo'] === 'ficha') {
-            $pacote      = null;
-            $amount      = (float) ($personal->valor_ficha ?? 0);
+            $pacote = null;
+            $amount = (float) ($personal->valor_ficha ?? 0);
             $description = "Ficha Personalizada — {$personal->nome}";
         } elseif ($validated['tipo'] === 'avaliacao') {
             $pacote = null;
             $avaliacaoPacoteId = null;
-            $avaliacaoTipos    = null;
+            $avaliacaoTipos = null;
 
-            if (!empty($validated['pacote_avaliacao_id'])) {
+            if (! empty($validated['pacote_avaliacao_id'])) {
                 $pacoteAv = \App\Models\PacoteAvaliacao::where('personal_id', $personal->id)
                     ->findOrFail($validated['pacote_avaliacao_id']);
-                $amount            = (float) $pacoteAv->valor;
-                $description       = "Pacote de Avaliação: {$pacoteAv->nome} — {$personal->nome}";
+                $amount = (float) $pacoteAv->valor;
+                $description = "Pacote de Avaliação: {$pacoteAv->nome} — {$personal->nome}";
                 $avaliacaoPacoteId = $pacoteAv->id;
-                $avaliacaoTipos    = $pacoteAv->tipos;
-            } elseif (!empty($validated['avaliacao_tipo'])) {
+                $avaliacaoTipos = $pacoteAv->tipos;
+            } elseif (! empty($validated['avaliacao_tipo'])) {
                 $precos = $personal->precos_avaliacao ?? [];
                 $tipoAv = $validated['avaliacao_tipo'];
-                if (!isset($precos[$tipoAv]) || (float) $precos[$tipoAv] <= 0) {
+                if (! isset($precos[$tipoAv]) || (float) $precos[$tipoAv] <= 0) {
                     return response()->json(['error' => 'Este personal não trabalha com essa avaliação.'], 422);
                 }
-                $label          = \App\Models\AvaliacaoFisica::META[$tipoAv]['label'] ?? $tipoAv;
-                $amount         = (float) $precos[$tipoAv];
-                $description    = "Avaliação: {$label} — {$personal->nome}";
+                $label = \App\Models\AvaliacaoFisica::META[$tipoAv]['label'] ?? $tipoAv;
+                $amount = (float) $precos[$tipoAv];
+                $description = "Avaliação: {$label} — {$personal->nome}";
                 $avaliacaoTipos = [$tipoAv];
             } else {
-                $amount      = (float) ($personal->valor_avaliacao ?? 0);
+                $amount = (float) ($personal->valor_avaliacao ?? 0);
                 $description = "Avaliação Física — {$personal->nome}";
             }
         } else {
-            $pacote      = null;
-            $amount      = (float) ($personal->valor_secao ?? 0);
+            $pacote = null;
+            $amount = (float) ($personal->valor_secao ?? 0);
             $description = "Aula Avulsa — {$personal->nome}";
         }
 
         $bookingData = [
-            'cliente_id'        => $clienteId,
-            'personal_id'       => $validated['personal_id'],
-            'tipo'              => $validated['tipo'],
-            'pacote_id'         => $validated['pacote_id'] ?? null,
+            'cliente_id' => $clienteId,
+            'personal_id' => $validated['personal_id'],
+            'tipo' => $validated['tipo'],
+            'pacote_id' => $validated['pacote_id'] ?? null,
             'frequencia_pacote' => $validated['frequencia'] ?? null,
-            'valor_pacote'      => $validated['valor_pacote'] ?? $amount,
+            'valor_pacote' => $validated['valor_pacote'] ?? $amount,
             'dias_selecionados' => $validated['dias_selecionados'] ?? '[]',
-            'hora_inicio'       => $validated['hora_inicio'] ?? null,
-            'hora_fim'          => $validated['hora_fim'] ?? null,
-            'academia_nome'     => $validated['academia_nome'] ?? null,
-            'data'              => $validated['data'] ?? null,
-            'objetivos'         => $validated['objetivos'] ?? null,
-            'condicoes_clinicas'=> $validated['condicoes_clinicas'] ?? null,
+            'hora_inicio' => $validated['hora_inicio'] ?? null,
+            'hora_fim' => $validated['hora_fim'] ?? null,
+            'academia_nome' => $validated['academia_nome'] ?? null,
+            'data' => $validated['data'] ?? null,
+            'objetivos' => $validated['objetivos'] ?? null,
+            'condicoes_clinicas' => $validated['condicoes_clinicas'] ?? null,
             'nivel_experiencia' => $validated['nivel_experiencia'] ?? null,
             'observacoes_ficha' => $validated['observacoes'] ?? null,
             'avaliacao_pacote_id' => $avaliacaoPacoteId ?? null,
-            'avaliacao_tipos'     => $avaliacaoTipos ?? null,
+            'avaliacao_tipos' => $avaliacaoTipos ?? null,
         ];
 
         // Pacote = assinatura mensal recorrente (débito automático no cartão).
@@ -1255,8 +1295,8 @@ class PaymentController extends Controller
                 : null;
 
             return $this->criarAssinaturaCartao($cliente, $amount, $description, 'cli_cc', 'sub_cli_cc', $split, [
-                'tipo'          => 'pacote',
-                'trainer_id'    => $personal->id,
+                'tipo' => 'pacote',
+                'trainer_id' => $personal->id,
                 'membership_id' => $validated['pacote_id'] ?? null,
             ], $bookingData, $validated);
         }
@@ -1265,31 +1305,31 @@ class PaymentController extends Controller
             $asaasCustomerId = $this->obterOuCriarClienteAsaas($cliente);
 
             $cardNumber = preg_replace('/\D/', '', $validated['card_number']);
-            $cpf        = preg_replace('/\D/', '', $validated['cpf']);
-            $cep        = preg_replace('/\D/', '', $validated['cep']);
-            $telefone   = preg_replace('/\D/', '', $validated['telefone']);
+            $cpf = preg_replace('/\D/', '', $validated['cpf']);
+            $cep = preg_replace('/\D/', '', $validated['cep']);
+            $telefone = preg_replace('/\D/', '', $validated['telefone']);
 
             $ccPayload = [
-                'customer'          => $asaasCustomerId,
-                'billingType'       => 'CREDIT_CARD',
-                'value'             => $amount,
-                'dueDate'           => now()->format('Y-m-d'),
-                'description'       => $description,
-                'externalReference' => 'cli_cc_' . $clienteId . '_' . time(),
-                'creditCard'        => [
-                    'holderName'  => $validated['card_holder'],
-                    'number'      => $cardNumber,
+                'customer' => $asaasCustomerId,
+                'billingType' => 'CREDIT_CARD',
+                'value' => $amount,
+                'dueDate' => now()->format('Y-m-d'),
+                'description' => $description,
+                'externalReference' => 'cli_cc_'.$clienteId.'_'.time(),
+                'creditCard' => [
+                    'holderName' => $validated['card_holder'],
+                    'number' => $cardNumber,
                     'expiryMonth' => $validated['card_expiry_month'],
-                    'expiryYear'  => $validated['card_expiry_year'],
-                    'ccv'         => $validated['card_ccv'],
+                    'expiryYear' => $validated['card_expiry_year'],
+                    'ccv' => $validated['card_ccv'],
                 ],
                 'creditCardHolderInfo' => [
-                    'name'          => $validated['card_holder'],
-                    'email'         => $cliente->email,
-                    'cpfCnpj'       => $cpf,
-                    'postalCode'    => $cep,
+                    'name' => $validated['card_holder'],
+                    'email' => $cliente->email,
+                    'cpfCnpj' => $cpf,
+                    'postalCode' => $cep,
                     'addressNumber' => $validated['numero'],
-                    'phone'         => $telefone,
+                    'phone' => $telefone,
                 ],
             ];
 
@@ -1300,37 +1340,39 @@ class PaymentController extends Controller
             }
 
             $paymentRes = Http::withHeaders($this->asaasHeaders())
-                ->post($this->asaas() . '/payments', $ccPayload);
+                ->post($this->asaas().'/payments', $ccPayload);
 
             $asaasData = $paymentRes->json();
 
-            if (!empty($asaasData['errors'])) {
+            if (! empty($asaasData['errors'])) {
                 $errMsg = $asaasData['errors'][0]['description'] ?? 'Falha ao processar cartão.';
                 Log::error('Asaas cartão: falha', ['body' => $asaasData]);
+
                 return response()->json(['error' => $errMsg], 422);
             }
 
             if ($paymentRes->failed()) {
                 Log::error('Asaas cartão: http error', ['body' => $asaasData]);
+
                 return response()->json(['error' => 'Falha ao processar cartão. Tente novamente.'], 500);
             }
 
             $asaasPaymentId = $asaasData['id'];
-            $status         = $asaasData['status'] ?? 'PENDING';
+            $status = $asaasData['status'] ?? 'PENDING';
 
-            $split   = $this->calculateSplit($amount);
+            $split = $this->calculateSplit($amount);
             $payment = Payment::create([
-                'user_id'                  => $clienteId,
-                'trainer_id'               => $validated['personal_id'],
-                'membership_id'            => $validated['pacote_id'] ?? null,
-                'amount_total'             => $split['amount_total'],
-                'company_fee'              => $split['company_fee'],
-                'trainer_amount'           => $split['trainer_amount'],
+                'user_id' => $clienteId,
+                'trainer_id' => $validated['personal_id'],
+                'membership_id' => $validated['pacote_id'] ?? null,
+                'amount_total' => $split['amount_total'],
+                'company_fee' => $split['company_fee'],
+                'trainer_amount' => $split['trainer_amount'],
                 'stripe_payment_intent_id' => $asaasPaymentId,
-                'status'                   => 'pending',
-                'payment_method'           => 'credit_card',
-                'idempotency_key'          => 'cc_' . $asaasPaymentId,
-                'booking_data'             => json_encode($bookingData),
+                'status' => 'pending',
+                'payment_method' => 'credit_card',
+                'idempotency_key' => 'cc_'.$asaasPaymentId,
+                'booking_data' => json_encode($bookingData),
             ]);
 
             $confirmed = in_array($status, ['CONFIRMED', 'RECEIVED', 'RECEIVED_IN_CASH']);
@@ -1340,20 +1382,21 @@ class PaymentController extends Controller
             }
 
             Log::info('Asaas cartão: pagamento criado', [
-                'payment_id'       => $payment->id,
+                'payment_id' => $payment->id,
                 'asaas_payment_id' => $asaasPaymentId,
-                'status'           => $status,
-                'confirmed'        => $confirmed,
+                'status' => $status,
+                'confirmed' => $confirmed,
             ]);
 
             return response()->json([
                 'paymentId' => $payment->id,
-                'status'    => $status,
+                'status' => $status,
                 'confirmed' => $confirmed,
             ]);
 
         } catch (\Exception $e) {
             Log::error('Asaas cartão: exception', ['error' => $e->getMessage()]);
+
             return response()->json(['error' => 'Erro interno. Tente novamente.'], 500);
         }
     }
@@ -1364,47 +1407,42 @@ class PaymentController extends Controller
     public function criarPagamentoCartaoAcademia(Request $request)
     {
         $clienteId = session('cliente_id');
-        if (!$clienteId) {
+        if (! $clienteId) {
             return response()->json(['error' => 'Não autenticado.'], 401);
         }
 
         $validated = $request->validate([
-            'academia_id'       => 'required|integer|exists:academias,id',
-            'plano_id'          => 'required|integer|exists:planos,id',
-            'card_holder'       => 'required|string|max:100',
-            'card_number'       => 'required|string|min:13|max:19',
+            'academia_id' => 'required|integer|exists:academias,id',
+            'plano_id' => 'nullable|integer|exists:planos,id',
+            'card_holder' => 'required|string|max:100',
+            'card_number' => 'required|string|min:13|max:19',
             'card_expiry_month' => 'required|string|size:2',
-            'card_expiry_year'  => 'required|string|size:4',
-            'card_ccv'          => 'required|string|min:3|max:4',
-            'cpf'               => 'required|string|min:11|max:18',
-            'cep'               => 'required|string|min:8|max:9',
-            'numero'            => 'required|string|max:20',
-            'telefone'          => 'required|string|min:10|max:15',
+            'card_expiry_year' => 'required|string|size:4',
+            'card_ccv' => 'required|string|min:3|max:4',
+            'cpf' => 'required|string|min:11|max:18',
+            'cep' => 'required|string|min:8|max:9',
+            'numero' => 'required|string|max:20',
+            'telefone' => 'required|string|min:10|max:15',
         ]);
 
-        $cliente  = \App\Models\Cadastro\Cliente::findOrFail($clienteId);
+        $cliente = \App\Models\Cadastro\Cliente::findOrFail($clienteId);
         $academia = \App\Models\Cadastro\Academia::findOrFail($validated['academia_id']);
-        $plano    = \App\Models\Cadastro\Plano::findOrFail($validated['plano_id']);
 
-        if ((int) $plano->academia_id !== (int) $validated['academia_id']) {
-            return response()->json(['error' => 'Plano inválido para esta academia.'], 422);
-        }
+        // Sem plano_id => contratação da mensalidade base da academia.
+        [$amount, $description, $planoId] = $this->resolverItemAcademia($academia, $validated['plano_id'] ?? null);
 
-        $amount      = (float) $plano->valor;
-        $description = "Plano {$plano->nome} — {$academia->nome}";
-
-        // Plano de academia = assinatura mensal recorrente (débito automático no cartão).
+        // Plano/mensalidade de academia = assinatura mensal recorrente (débito automático no cartão).
         $split = $this->splitAcademia($academia, $amount);
 
         return $this->criarAssinaturaCartao($cliente, $amount, $description, 'aca_cc', 'sub_aca_cc', $split, [
-            'tipo'        => 'academia',
+            'tipo' => 'academia',
             'academia_id' => $validated['academia_id'],
-            'plano_id'    => $validated['plano_id'],
+            'plano_id' => $planoId,
         ], [
-            'tipo'        => 'academia',
+            'tipo' => 'academia',
             'academia_id' => $validated['academia_id'],
-            'plano_id'    => $validated['plano_id'],
-            'cliente_id'  => $clienteId,
+            'plano_id' => $planoId,
+            'cliente_id' => $clienteId,
         ], $validated);
     }
 
@@ -1425,12 +1463,12 @@ class PaymentController extends Controller
     private function validarStudioPlano(int $studioId, int $planoId): array
     {
         $studio = Studio::where('id', $studioId)->where('status', 'aprovado')->first();
-        if (!$studio) {
+        if (! $studio) {
             abort(response()->json(['error' => 'Studio não encontrado.'], 404));
         }
 
         $plano = StudioPlano::find($planoId);
-        if (!$plano || (int) $plano->studio_id !== (int) $studioId || !$plano->ativo) {
+        if (! $plano || (int) $plano->studio_id !== (int) $studioId || ! $plano->ativo) {
             abort(response()->json(['error' => 'Plano inválido para este studio.'], 422));
         }
 
@@ -1444,6 +1482,7 @@ class PaymentController extends Controller
         }
 
         Log::warning('Asaas: split não aplicado — studio sem walletId', ['studio_id' => $studio->id]);
+
         return null;
     }
 
@@ -1454,6 +1493,7 @@ class PaymentController extends Controller
         }
 
         Log::warning('Asaas: split não aplicado — academia sem walletId', ['academia_id' => $academia->id]);
+
         return null;
     }
 
@@ -1463,33 +1503,33 @@ class PaymentController extends Controller
     public function criarPagamentoStudioPlano(Request $request)
     {
         $clienteId = session('cliente_id');
-        if (!$clienteId) {
+        if (! $clienteId) {
             return response()->json(['error' => 'Não autenticado.'], 401);
         }
 
         $validated = $request->validate([
             'studio_id' => 'required|integer|exists:studios,id',
-            'plano_id'  => 'required|integer|exists:studio_planos,id',
+            'plano_id' => 'required|integer|exists:studio_planos,id',
         ]);
 
         $cliente = \App\Models\Cadastro\Cliente::findOrFail($clienteId);
         [$studio, $plano] = $this->validarStudioPlano($validated['studio_id'], $validated['plano_id']);
 
-        $amount      = (float) $plano->valor;
+        $amount = (float) $plano->valor;
         $description = "Plano {$plano->nome} — {$studio->nome}";
 
         // Plano de studio = assinatura mensal recorrente (nova cobrança PIX a cada mês).
         $split = $this->splitStudio($studio, $amount);
 
         return $this->criarAssinaturaPix($cliente, $amount, $description, 'stu', 'sub_stu', $split, [
-            'tipo'            => 'studio_plano',
-            'studio_id'       => $studio->id,
+            'tipo' => 'studio_plano',
+            'studio_id' => $studio->id,
             'studio_plano_id' => $plano->id,
         ], [
-            'tipo'            => 'studio_plano',
-            'studio_id'       => $studio->id,
+            'tipo' => 'studio_plano',
+            'studio_id' => $studio->id,
             'studio_plano_id' => $plano->id,
-            'cliente_id'      => $clienteId,
+            'cliente_id' => $clienteId,
         ]);
     }
 
@@ -1499,25 +1539,25 @@ class PaymentController extends Controller
     public function criarPagamentoAulaStudio(Request $request)
     {
         $clienteId = session('cliente_id');
-        if (!$clienteId) {
+        if (! $clienteId) {
             return response()->json(['error' => 'Não autenticado.'], 401);
         }
 
         $validated = $request->validate([
-            'studio_id'   => 'required|integer|exists:studios,id',
-            'data'        => 'required|date_format:Y-m-d|after_or_equal:today',
+            'studio_id' => 'required|integer|exists:studios,id',
+            'data' => 'required|date_format:Y-m-d|after_or_equal:today',
             'hora_inicio' => 'required|date_format:H:i',
-            'hora_fim'    => 'required|date_format:H:i|after:hora_inicio',
+            'hora_fim' => 'required|date_format:H:i|after:hora_inicio',
         ]);
 
         $cliente = \App\Models\Cadastro\Cliente::findOrFail($clienteId);
-        $studio  = Studio::where('id', $validated['studio_id'])->where('status', 'aprovado')->first();
+        $studio = Studio::where('id', $validated['studio_id'])->where('status', 'aprovado')->first();
 
-        if (!$studio) {
+        if (! $studio) {
             return response()->json(['error' => 'Studio não encontrado.'], 404);
         }
 
-        if (!$this->slotStudioDisponivel($studio, $validated['data'], $validated['hora_inicio'])) {
+        if (! $this->slotStudioDisponivel($studio, $validated['data'], $validated['hora_inicio'])) {
             return response()->json(['error' => 'Este horário não está mais disponível. Escolha outro.'], 422);
         }
 
@@ -1532,12 +1572,12 @@ class PaymentController extends Controller
             $asaasCustomerId = $this->obterOuCriarClienteAsaas($cliente);
 
             $pixPayload = [
-                'customer'          => $asaasCustomerId,
-                'billingType'       => 'PIX',
-                'value'             => $amount,
-                'dueDate'           => now()->addDay()->format('Y-m-d'),
-                'description'       => $description,
-                'externalReference' => 'stu_aula_' . $clienteId . '_' . $studio->id . '_' . time(),
+                'customer' => $asaasCustomerId,
+                'billingType' => 'PIX',
+                'value' => $amount,
+                'dueDate' => now()->addDay()->format('Y-m-d'),
+                'description' => $description,
+                'externalReference' => 'stu_aula_'.$clienteId.'_'.$studio->id.'_'.time(),
             ];
 
             if ($split = $this->splitStudio($studio, $amount)) {
@@ -1545,59 +1585,61 @@ class PaymentController extends Controller
             }
 
             $paymentRes = Http::withHeaders($this->asaasHeaders())
-                ->post($this->asaas() . '/payments', $pixPayload);
+                ->post($this->asaas().'/payments', $pixPayload);
 
             if ($paymentRes->failed()) {
                 Log::error('Asaas studio aula: falha ao criar pagamento', ['body' => $paymentRes->json()]);
+
                 return response()->json(['error' => 'Falha ao gerar cobrança. Tente novamente.'], 500);
             }
 
             $asaasPaymentId = $paymentRes->json()['id'];
 
-            $qrRes  = Http::withHeaders($this->asaasHeaders())
-                ->get($this->asaas() . "/payments/{$asaasPaymentId}/pixQrCode");
+            $qrRes = Http::withHeaders($this->asaasHeaders())
+                ->get($this->asaas()."/payments/{$asaasPaymentId}/pixQrCode");
             $qrData = $qrRes->json();
 
             $valores = $this->calculateSplit($amount);
             $payment = Payment::create([
-                'user_id'                  => $clienteId,
-                'trainer_id'               => null,
-                'membership_id'            => null,
-                'studio_id'                => $studio->id,
-                'amount_total'             => $valores['amount_total'],
-                'company_fee'              => $valores['company_fee'],
-                'trainer_amount'           => $valores['trainer_amount'],
+                'user_id' => $clienteId,
+                'trainer_id' => null,
+                'membership_id' => null,
+                'studio_id' => $studio->id,
+                'amount_total' => $valores['amount_total'],
+                'company_fee' => $valores['company_fee'],
+                'trainer_amount' => $valores['trainer_amount'],
                 'stripe_payment_intent_id' => $asaasPaymentId,
-                'status'                   => 'pending',
-                'payment_method'           => 'pix',
-                'idempotency_key'          => 'stu_aula_' . $asaasPaymentId,
-                'booking_data'             => json_encode([
-                    'tipo'        => 'studio_aula',
-                    'studio_id'   => $studio->id,
-                    'cliente_id'  => $clienteId,
-                    'data'        => $validated['data'],
+                'status' => 'pending',
+                'payment_method' => 'pix',
+                'idempotency_key' => 'stu_aula_'.$asaasPaymentId,
+                'booking_data' => json_encode([
+                    'tipo' => 'studio_aula',
+                    'studio_id' => $studio->id,
+                    'cliente_id' => $clienteId,
+                    'data' => $validated['data'],
                     'hora_inicio' => $validated['hora_inicio'],
-                    'hora_fim'    => $validated['hora_fim'],
+                    'hora_fim' => $validated['hora_fim'],
                 ]),
             ]);
 
             Log::info('Asaas studio aula: pagamento Pix criado', [
-                'payment_id'       => $payment->id,
+                'payment_id' => $payment->id,
                 'asaas_payment_id' => $asaasPaymentId,
-                'studio_id'        => $studio->id,
-                'cliente_id'       => $clienteId,
+                'studio_id' => $studio->id,
+                'cliente_id' => $clienteId,
             ]);
 
             return response()->json([
-                'paymentId'      => $payment->id,
+                'paymentId' => $payment->id,
                 'asaasPaymentId' => $asaasPaymentId,
-                'pixPayload'     => $qrData['payload']      ?? '',
-                'pixQrCode'      => $qrData['encodedImage'] ?? '',
-                'amount'         => $amount,
+                'pixPayload' => $qrData['payload'] ?? '',
+                'pixQrCode' => $qrData['encodedImage'] ?? '',
+                'amount' => $amount,
             ]);
 
         } catch (\Exception $e) {
             Log::error('Asaas studio aula: exception', ['error' => $e->getMessage()]);
+
             return response()->json(['error' => 'Erro interno. Tente novamente.'], 500);
         }
     }
@@ -1608,42 +1650,42 @@ class PaymentController extends Controller
     public function criarPagamentoCartaoStudioPlano(Request $request)
     {
         $clienteId = session('cliente_id');
-        if (!$clienteId) {
+        if (! $clienteId) {
             return response()->json(['error' => 'Não autenticado.'], 401);
         }
 
         $validated = $request->validate([
-            'studio_id'         => 'required|integer|exists:studios,id',
-            'plano_id'          => 'required|integer|exists:studio_planos,id',
-            'card_holder'       => 'required|string|max:100',
-            'card_number'       => 'required|string|min:13|max:19',
+            'studio_id' => 'required|integer|exists:studios,id',
+            'plano_id' => 'required|integer|exists:studio_planos,id',
+            'card_holder' => 'required|string|max:100',
+            'card_number' => 'required|string|min:13|max:19',
             'card_expiry_month' => 'required|string|size:2',
-            'card_expiry_year'  => 'required|string|size:4',
-            'card_ccv'          => 'required|string|min:3|max:4',
-            'cpf'               => 'required|string|min:11|max:18',
-            'cep'               => 'required|string|min:8|max:9',
-            'numero'            => 'required|string|max:20',
-            'telefone'          => 'required|string|min:10|max:15',
+            'card_expiry_year' => 'required|string|size:4',
+            'card_ccv' => 'required|string|min:3|max:4',
+            'cpf' => 'required|string|min:11|max:18',
+            'cep' => 'required|string|min:8|max:9',
+            'numero' => 'required|string|max:20',
+            'telefone' => 'required|string|min:10|max:15',
         ]);
 
         $cliente = \App\Models\Cadastro\Cliente::findOrFail($clienteId);
         [$studio, $plano] = $this->validarStudioPlano($validated['studio_id'], $validated['plano_id']);
 
-        $amount      = (float) $plano->valor;
+        $amount = (float) $plano->valor;
         $description = "Plano {$plano->nome} — {$studio->nome}";
 
         // Plano de studio = assinatura mensal recorrente (débito automático no cartão).
         $split = $this->splitStudio($studio, $amount);
 
         return $this->criarAssinaturaCartao($cliente, $amount, $description, 'stu_cc', 'sub_stu_cc', $split, [
-            'tipo'            => 'studio_plano',
-            'studio_id'       => $studio->id,
+            'tipo' => 'studio_plano',
+            'studio_id' => $studio->id,
             'studio_plano_id' => $plano->id,
         ], [
-            'tipo'            => 'studio_plano',
-            'studio_id'       => $studio->id,
+            'tipo' => 'studio_plano',
+            'studio_id' => $studio->id,
             'studio_plano_id' => $plano->id,
-            'cliente_id'      => $clienteId,
+            'cliente_id' => $clienteId,
         ], $validated);
     }
 
@@ -1653,34 +1695,34 @@ class PaymentController extends Controller
     public function criarPagamentoCartaoAulaStudio(Request $request)
     {
         $clienteId = session('cliente_id');
-        if (!$clienteId) {
+        if (! $clienteId) {
             return response()->json(['error' => 'Não autenticado.'], 401);
         }
 
         $validated = $request->validate([
-            'studio_id'         => 'required|integer|exists:studios,id',
-            'data'              => 'required|date_format:Y-m-d|after_or_equal:today',
-            'hora_inicio'       => 'required|date_format:H:i',
-            'hora_fim'          => 'required|date_format:H:i|after:hora_inicio',
-            'card_holder'       => 'required|string|max:100',
-            'card_number'       => 'required|string|min:13|max:19',
+            'studio_id' => 'required|integer|exists:studios,id',
+            'data' => 'required|date_format:Y-m-d|after_or_equal:today',
+            'hora_inicio' => 'required|date_format:H:i',
+            'hora_fim' => 'required|date_format:H:i|after:hora_inicio',
+            'card_holder' => 'required|string|max:100',
+            'card_number' => 'required|string|min:13|max:19',
             'card_expiry_month' => 'required|string|size:2',
-            'card_expiry_year'  => 'required|string|size:4',
-            'card_ccv'          => 'required|string|min:3|max:4',
-            'cpf'               => 'required|string|min:11|max:18',
-            'cep'               => 'required|string|min:8|max:9',
-            'numero'            => 'required|string|max:20',
-            'telefone'          => 'required|string|min:10|max:15',
+            'card_expiry_year' => 'required|string|size:4',
+            'card_ccv' => 'required|string|min:3|max:4',
+            'cpf' => 'required|string|min:11|max:18',
+            'cep' => 'required|string|min:8|max:9',
+            'numero' => 'required|string|max:20',
+            'telefone' => 'required|string|min:10|max:15',
         ]);
 
         $cliente = \App\Models\Cadastro\Cliente::findOrFail($clienteId);
-        $studio  = Studio::where('id', $validated['studio_id'])->where('status', 'aprovado')->first();
+        $studio = Studio::where('id', $validated['studio_id'])->where('status', 'aprovado')->first();
 
-        if (!$studio) {
+        if (! $studio) {
             return response()->json(['error' => 'Studio não encontrado.'], 404);
         }
 
-        if (!$this->slotStudioDisponivel($studio, $validated['data'], $validated['hora_inicio'])) {
+        if (! $this->slotStudioDisponivel($studio, $validated['data'], $validated['hora_inicio'])) {
             return response()->json(['error' => 'Este horário não está mais disponível. Escolha outro.'], 422);
         }
 
@@ -1692,18 +1734,19 @@ class PaymentController extends Controller
         $description = "Aula avulsa {$validated['hora_inicio']} — {$studio->nome}";
 
         $bookingData = [
-            'tipo'        => 'studio_aula',
-            'studio_id'   => $studio->id,
-            'cliente_id'  => $clienteId,
-            'data'        => $validated['data'],
+            'tipo' => 'studio_aula',
+            'studio_id' => $studio->id,
+            'cliente_id' => $clienteId,
+            'data' => $validated['data'],
             'hora_inicio' => $validated['hora_inicio'],
-            'hora_fim'    => $validated['hora_fim'],
+            'hora_fim' => $validated['hora_fim'],
         ];
 
         try {
             return $this->processarCartaoStudio($cliente, $studio, $amount, $description, $validated, $bookingData, []);
         } catch (\Exception $e) {
             Log::error('Asaas cartão studio aula: exception', ['error' => $e->getMessage()]);
+
             return response()->json(['error' => 'Erro interno. Tente novamente.'], 500);
         }
     }
@@ -1713,31 +1756,31 @@ class PaymentController extends Controller
         $asaasCustomerId = $this->obterOuCriarClienteAsaas($cliente);
 
         $cardNumber = preg_replace('/\D/', '', $validated['card_number']);
-        $cpf        = preg_replace('/\D/', '', $validated['cpf']);
-        $cep        = preg_replace('/\D/', '', $validated['cep']);
-        $telefone   = preg_replace('/\D/', '', $validated['telefone']);
+        $cpf = preg_replace('/\D/', '', $validated['cpf']);
+        $cep = preg_replace('/\D/', '', $validated['cep']);
+        $telefone = preg_replace('/\D/', '', $validated['telefone']);
 
         $ccPayload = [
-            'customer'          => $asaasCustomerId,
-            'billingType'       => 'CREDIT_CARD',
-            'value'             => $amount,
-            'dueDate'           => now()->format('Y-m-d'),
-            'description'       => $description,
-            'externalReference' => 'stu_cc_' . $cliente->id . '_' . $studio->id . '_' . time(),
-            'creditCard'        => [
-                'holderName'  => $validated['card_holder'],
-                'number'      => $cardNumber,
+            'customer' => $asaasCustomerId,
+            'billingType' => 'CREDIT_CARD',
+            'value' => $amount,
+            'dueDate' => now()->format('Y-m-d'),
+            'description' => $description,
+            'externalReference' => 'stu_cc_'.$cliente->id.'_'.$studio->id.'_'.time(),
+            'creditCard' => [
+                'holderName' => $validated['card_holder'],
+                'number' => $cardNumber,
                 'expiryMonth' => $validated['card_expiry_month'],
-                'expiryYear'  => $validated['card_expiry_year'],
-                'ccv'         => $validated['card_ccv'],
+                'expiryYear' => $validated['card_expiry_year'],
+                'ccv' => $validated['card_ccv'],
             ],
             'creditCardHolderInfo' => [
-                'name'          => $validated['card_holder'],
-                'email'         => $cliente->email,
-                'cpfCnpj'       => $cpf,
-                'postalCode'    => $cep,
+                'name' => $validated['card_holder'],
+                'email' => $cliente->email,
+                'cpfCnpj' => $cpf,
+                'postalCode' => $cep,
                 'addressNumber' => $validated['numero'],
-                'phone'         => $telefone,
+                'phone' => $telefone,
             ],
         ];
 
@@ -1746,38 +1789,40 @@ class PaymentController extends Controller
         }
 
         $paymentRes = Http::withHeaders($this->asaasHeaders())
-            ->post($this->asaas() . '/payments', $ccPayload);
+            ->post($this->asaas().'/payments', $ccPayload);
 
         $asaasData = $paymentRes->json();
 
-        if (!empty($asaasData['errors'])) {
+        if (! empty($asaasData['errors'])) {
             $errMsg = $asaasData['errors'][0]['description'] ?? 'Falha ao processar cartão.';
             Log::error('Asaas cartão studio: falha', ['body' => $asaasData]);
+
             return response()->json(['error' => $errMsg], 422);
         }
 
         if ($paymentRes->failed()) {
             Log::error('Asaas cartão studio: http error', ['body' => $asaasData]);
+
             return response()->json(['error' => 'Falha ao processar cartão. Tente novamente.'], 500);
         }
 
         $asaasPaymentId = $asaasData['id'];
-        $status         = $asaasData['status'] ?? 'PENDING';
+        $status = $asaasData['status'] ?? 'PENDING';
 
         $valores = $this->calculateSplit($amount);
         $payment = Payment::create(array_merge([
-            'user_id'                  => $cliente->id,
-            'trainer_id'               => null,
-            'membership_id'            => null,
-            'studio_id'                => $studio->id,
-            'amount_total'             => $valores['amount_total'],
-            'company_fee'              => $valores['company_fee'],
-            'trainer_amount'           => $valores['trainer_amount'],
+            'user_id' => $cliente->id,
+            'trainer_id' => null,
+            'membership_id' => null,
+            'studio_id' => $studio->id,
+            'amount_total' => $valores['amount_total'],
+            'company_fee' => $valores['company_fee'],
+            'trainer_amount' => $valores['trainer_amount'],
             'stripe_payment_intent_id' => $asaasPaymentId,
-            'status'                   => 'pending',
-            'payment_method'           => 'credit_card',
-            'idempotency_key'          => 'stu_cc_' . $asaasPaymentId,
-            'booking_data'             => json_encode($bookingData),
+            'status' => 'pending',
+            'payment_method' => 'credit_card',
+            'idempotency_key' => 'stu_cc_'.$asaasPaymentId,
+            'booking_data' => json_encode($bookingData),
         ], $extraPaymentFields));
 
         $confirmed = in_array($status, ['CONFIRMED', 'RECEIVED', 'RECEIVED_IN_CASH']);
@@ -1787,15 +1832,15 @@ class PaymentController extends Controller
         }
 
         Log::info('Asaas cartão studio: pagamento criado', [
-            'payment_id'       => $payment->id,
+            'payment_id' => $payment->id,
             'asaas_payment_id' => $asaasPaymentId,
-            'status'           => $status,
-            'tipo'             => $bookingData['tipo'],
+            'status' => $status,
+            'tipo' => $bookingData['tipo'],
         ]);
 
         return response()->json([
             'paymentId' => $payment->id,
-            'status'    => $status,
+            'status' => $status,
             'confirmed' => $confirmed,
         ]);
     }
@@ -1806,47 +1851,48 @@ class PaymentController extends Controller
     public function saldoStudio(Request $request)
     {
         $studioId = session('studio_id');
-        if (!$studioId) {
+        if (! $studioId) {
             return response()->json(['error' => 'Não autenticado.'], 401);
         }
 
         $studio = Studio::find($studioId);
 
-        if (!$studio?->asaas_api_key) {
+        if (! $studio?->asaas_api_key) {
             return response()->json(['saldo' => 0, 'sem_conta' => true]);
         }
 
         $res = Http::withHeaders([
             'access_token' => $studio->asaas_api_key,
             'Content-Type' => 'application/json',
-        ])->get($this->asaas() . '/finance/balance');
+        ])->get($this->asaas().'/finance/balance');
 
         if ($res->failed()) {
             Log::error('Asaas saldo studio: falha', ['studio_id' => $studioId, 'body' => $res->json()]);
+
             return response()->json(['error' => 'Não foi possível consultar o saldo.'], 500);
         }
 
         return response()->json([
-            'saldo'     => $res->json()['balance']           ?? 0,
+            'saldo' => $res->json()['balance'] ?? 0,
             'sem_conta' => false,
-            'tem_pix'   => !empty($studio->chave_pix),
+            'tem_pix' => ! empty($studio->chave_pix),
         ]);
     }
 
     public function sacarStudio(Request $request)
     {
         $studioId = session('studio_id');
-        if (!$studioId) {
+        if (! $studioId) {
             return response()->json(['error' => 'Não autenticado.'], 401);
         }
 
         $studio = Studio::find($studioId);
 
-        if (!$studio?->asaas_api_key) {
+        if (! $studio?->asaas_api_key) {
             return response()->json(['error' => 'Sua conta Asaas ainda não foi configurada.'], 422);
         }
 
-        if (!$studio->chave_pix) {
+        if (! $studio->chave_pix) {
             return response()->json(['error' => 'Cadastre sua chave PIX no perfil antes de sacar.'], 422);
         }
 
@@ -1857,37 +1903,39 @@ class PaymentController extends Controller
         $res = Http::withHeaders([
             'access_token' => $studio->asaas_api_key,
             'Content-Type' => 'application/json',
-        ])->post($this->asaas() . '/transfers', [
-            'operationType'     => 'PIX',
-            'value'             => (float) $validated['valor'],
-            'pixAddressKey'     => $studio->chave_pix,
+        ])->post($this->asaas().'/transfers', [
+            'operationType' => 'PIX',
+            'value' => (float) $validated['valor'],
+            'pixAddressKey' => $studio->chave_pix,
             'pixAddressKeyType' => $this->detectarTipoChavePix($studio->chave_pix),
-            'description'       => 'Saque SnrFit',
+            'description' => 'Saque SnrFit',
         ]);
 
         $data = $res->json();
 
-        if (!empty($data['errors'])) {
+        if (! empty($data['errors'])) {
             $errMsg = $data['errors'][0]['description'] ?? 'Falha ao processar saque.';
             Log::error('Asaas saque studio: falha', ['studio_id' => $studioId, 'body' => $data]);
+
             return response()->json(['error' => $errMsg], 422);
         }
 
         if ($res->failed()) {
             Log::error('Asaas saque studio: http error', ['studio_id' => $studioId, 'body' => $data]);
+
             return response()->json(['error' => 'Falha ao processar saque. Tente novamente.'], 500);
         }
 
         Log::info('Asaas saque studio realizado', [
-            'studio_id'   => $studioId,
-            'valor'       => $validated['valor'],
+            'studio_id' => $studioId,
+            'valor' => $validated['valor'],
             'transfer_id' => $data['id'] ?? null,
         ]);
 
         return response()->json([
-            'success'     => true,
+            'success' => true,
             'transfer_id' => $data['id'] ?? null,
-            'valor'       => $validated['valor'],
+            'valor' => $validated['valor'],
         ]);
     }
 
@@ -1897,12 +1945,12 @@ class PaymentController extends Controller
     public function criarContaAsaasAcademia(Request $request)
     {
         $academiaId = session('academia_id');
-        if (!$academiaId) {
+        if (! $academiaId) {
             return response()->json(['error' => 'Não autenticado.'], 401);
         }
 
         $academia = \App\Models\Cadastro\Academia::find($academiaId);
-        if (!$academia) {
+        if (! $academia) {
             return response()->json(['error' => 'Academia não encontrada.'], 404);
         }
 
@@ -1913,36 +1961,36 @@ class PaymentController extends Controller
         try {
             // Academia = pessoa jurídica (possui CNPJ).
             $payload = [
-                'name'          => $academia->nome,
-                'email'         => $academia->email,
-                'cpfCnpj'       => preg_replace('/\D/', '', $academia->cnpj),
-                'personType'    => 'JURIDICA',
-                'companyType'   => 'LIMITED',
-                'incomeValue'   => 10000,
-                'address'       => $academia->rua,
+                'name' => $academia->nome,
+                'email' => $academia->email,
+                'cpfCnpj' => preg_replace('/\D/', '', $academia->cnpj),
+                'personType' => 'JURIDICA',
+                'companyType' => 'LIMITED',
+                'incomeValue' => 10000,
+                'address' => $academia->rua,
                 'addressNumber' => 'S/N',
-                'province'      => $academia->bairro,
-                'postalCode'    => preg_replace('/\D/', '', $academia->cep),
-                'complement'    => $academia->complemento,
+                'province' => $academia->bairro,
+                'postalCode' => preg_replace('/\D/', '', $academia->cep),
+                'complement' => $academia->complemento,
             ];
 
-            $res  = Http::withHeaders([
+            $res = Http::withHeaders([
                 'access_token' => config('services.asaas.key'),
                 'Content-Type' => 'application/json',
-            ])->post($this->asaas() . '/accounts', $payload);
+            ])->post($this->asaas().'/accounts', $payload);
 
             $data = $res->json();
 
-            if ($res->successful() && !empty($data['walletId'])) {
+            if ($res->successful() && ! empty($data['walletId'])) {
                 $academia->update([
-                    'asaas_account_id' => $data['id']       ?? null,
-                    'asaas_wallet_id'  => $data['walletId'] ?? null,
-                    'asaas_api_key'    => $data['apiKey']   ?? null,
+                    'asaas_account_id' => $data['id'] ?? null,
+                    'asaas_wallet_id' => $data['walletId'] ?? null,
+                    'asaas_api_key' => $data['apiKey'] ?? null,
                 ]);
 
                 Log::info('Asaas: subconta criada para academia (self-service)', [
                     'academia_id' => $academia->id,
-                    'wallet_id'   => $data['walletId'],
+                    'wallet_id' => $data['walletId'],
                 ]);
 
                 return response()->json(['success' => true]);
@@ -1950,10 +1998,12 @@ class PaymentController extends Controller
 
             $errMsg = $data['errors'][0]['description'] ?? 'Resposta inesperada da Asaas.';
             Log::warning('Asaas: falha ao criar subconta da academia', ['academia_id' => $academia->id, 'response' => $data]);
+
             return response()->json(['error' => $errMsg], 422);
 
         } catch (\Exception $e) {
             Log::error('Asaas: exceção ao criar subconta da academia', ['academia_id' => $academiaId, 'error' => $e->getMessage()]);
+
             return response()->json(['error' => 'Erro ao ativar recebimentos. Tente novamente.'], 500);
         }
     }
@@ -1961,47 +2011,48 @@ class PaymentController extends Controller
     public function saldoAcademia(Request $request)
     {
         $academiaId = session('academia_id');
-        if (!$academiaId) {
+        if (! $academiaId) {
             return response()->json(['error' => 'Não autenticado.'], 401);
         }
 
         $academia = \App\Models\Cadastro\Academia::find($academiaId);
 
-        if (!$academia?->asaas_api_key) {
+        if (! $academia?->asaas_api_key) {
             return response()->json(['saldo' => 0, 'sem_conta' => true]);
         }
 
         $res = Http::withHeaders([
             'access_token' => $academia->asaas_api_key,
             'Content-Type' => 'application/json',
-        ])->get($this->asaas() . '/finance/balance');
+        ])->get($this->asaas().'/finance/balance');
 
         if ($res->failed()) {
             Log::error('Asaas saldo academia: falha', ['academia_id' => $academiaId, 'body' => $res->json()]);
+
             return response()->json(['error' => 'Não foi possível consultar o saldo.'], 500);
         }
 
         return response()->json([
-            'saldo'     => $res->json()['balance']           ?? 0,
+            'saldo' => $res->json()['balance'] ?? 0,
             'sem_conta' => false,
-            'tem_pix'   => !empty($academia->chave_pix),
+            'tem_pix' => ! empty($academia->chave_pix),
         ]);
     }
 
     public function sacarAcademia(Request $request)
     {
         $academiaId = session('academia_id');
-        if (!$academiaId) {
+        if (! $academiaId) {
             return response()->json(['error' => 'Não autenticado.'], 401);
         }
 
         $academia = \App\Models\Cadastro\Academia::find($academiaId);
 
-        if (!$academia?->asaas_api_key) {
+        if (! $academia?->asaas_api_key) {
             return response()->json(['error' => 'Sua conta de recebimentos ainda não foi ativada.'], 422);
         }
 
-        if (!$academia->chave_pix) {
+        if (! $academia->chave_pix) {
             return response()->json(['error' => 'Cadastre sua chave PIX no perfil antes de sacar.'], 422);
         }
 
@@ -2012,47 +2063,58 @@ class PaymentController extends Controller
         $res = Http::withHeaders([
             'access_token' => $academia->asaas_api_key,
             'Content-Type' => 'application/json',
-        ])->post($this->asaas() . '/transfers', [
-            'operationType'     => 'PIX',
-            'value'             => (float) $validated['valor'],
-            'pixAddressKey'     => $academia->chave_pix,
+        ])->post($this->asaas().'/transfers', [
+            'operationType' => 'PIX',
+            'value' => (float) $validated['valor'],
+            'pixAddressKey' => $academia->chave_pix,
             'pixAddressKeyType' => $this->detectarTipoChavePix($academia->chave_pix),
-            'description'       => 'Saque SnrFit',
+            'description' => 'Saque SnrFit',
         ]);
 
         $data = $res->json();
 
-        if (!empty($data['errors'])) {
+        if (! empty($data['errors'])) {
             $errMsg = $data['errors'][0]['description'] ?? 'Falha ao processar saque.';
             Log::error('Asaas saque academia: falha', ['academia_id' => $academiaId, 'body' => $data]);
+
             return response()->json(['error' => $errMsg], 422);
         }
 
         if ($res->failed()) {
             Log::error('Asaas saque academia: http error', ['academia_id' => $academiaId, 'body' => $data]);
+
             return response()->json(['error' => 'Falha ao processar saque. Tente novamente.'], 500);
         }
 
         Log::info('Asaas saque academia realizado', [
             'academia_id' => $academiaId,
-            'valor'       => $validated['valor'],
+            'valor' => $validated['valor'],
             'transfer_id' => $data['id'] ?? null,
         ]);
 
         return response()->json([
-            'success'     => true,
+            'success' => true,
             'transfer_id' => $data['id'] ?? null,
-            'valor'       => $validated['valor'],
+            'valor' => $validated['valor'],
         ]);
     }
 
     private function detectarTipoChavePix(string $chave): string
     {
-        if (filter_var($chave, FILTER_VALIDATE_EMAIL)) return 'EMAIL';
+        if (filter_var($chave, FILTER_VALIDATE_EMAIL)) {
+            return 'EMAIL';
+        }
         $digits = preg_replace('/\D/', '', $chave);
-        if (strlen($digits) === 11) return 'CPF';
-        if (strlen($digits) === 14) return 'CNPJ';
-        if (strlen($digits) >= 10 && strlen($digits) <= 11) return 'PHONE';
+        if (strlen($digits) === 11) {
+            return 'CPF';
+        }
+        if (strlen($digits) === 14) {
+            return 'CNPJ';
+        }
+        if (strlen($digits) >= 10 && strlen($digits) <= 11) {
+            return 'PHONE';
+        }
+
         return 'EVP';
     }
 }

@@ -235,11 +235,15 @@
                         @endif
 
                         <div class="rating">
-                            @php $media = (float) $personal->media_avaliacao; @endphp
-                            @for ($i = 1; $i <= 5; $i++)
-                                <i class="fa-star {{ $i <= round($media) ? 'fas' : 'far' }}"></i>
-                            @endfor
-                            <span class="num">{{ $personal->media_avaliacao }} ({{ $personal->avaliacoes->count() }})</span>
+                            @if($personal->eh_novo_profissional)
+                                <span class="num" style="color: var(--primary);"><i class="fas fa-seedling"></i> Novo profissional</span>
+                            @else
+                                @php $media = (float) $personal->media_avaliacao; @endphp
+                                @for ($i = 1; $i <= 5; $i++)
+                                    <i class="fa-star {{ $i <= round($media) ? 'fas' : 'far' }}"></i>
+                                @endfor
+                                <span class="num">{{ $personal->media_avaliacao }} ({{ $personal->avaliacoes->count() }})</span>
+                            @endif
                         </div>
 
                         <div class="card-footer">

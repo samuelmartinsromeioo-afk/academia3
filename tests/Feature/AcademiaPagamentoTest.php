@@ -13,7 +13,9 @@ class AcademiaPagamentoTest extends TestCase
     use DatabaseTransactions;
 
     private int $academiaId;
+
     private int $clienteId;
+
     private Plano $plano;
 
     protected function setUp(): void
@@ -159,14 +161,44 @@ class AcademiaPagamentoTest extends TestCase
         ]);
     }
 
-    public function test_rejeita_plano_sem_id(): void
+    public function test_pagamento_mensalidade_base_sem_plano(): void
     {
-        $this->withSession(['cliente_id' => $this->clienteId])
+        // Sem plano_id => cobra a mensalidade base da academia (150).
+        Http::fake(function ($request) {
+            $url = $request->url();
+
+            if (str_contains($url, '/pixQrCode')) {
+                return Http::response(['payload' => 'PIXMENSAL123', 'encodedImage' => 'BASE64IMG'], 200);
+            }
+            if (str_contains($url, '/subscriptions/') && str_contains($url, '/payments')) {
+                return Http::response(['data' => [['id' => 'pay_mensal_1', 'status' => 'PENDING']]], 200);
+            }
+            if (str_contains($url, '/subscriptions') && $request->method() === 'POST') {
+                return Http::response(['id' => 'sub_mensal_1', 'nextDueDate' => now()->addMonth()->format('Y-m-d')], 200);
+            }
+            if (str_contains($url, '/customers')) {
+                return Http::response(['data' => [['id' => 'cus_test_1']]], 200);
+            }
+
+            return Http::response([], 200);
+        });
+
+        $resp = $this->withSession(['cliente_id' => $this->clienteId])
             ->postJson('/api/criar-pagamento-academia', [
                 'academia_id' => $this->academiaId,
-            ])
-            ->assertStatus(422)
-            ->assertJsonValidationErrors('plano_id');
+            ]);
+
+        $resp->assertOk();
+        $this->assertEquals(150, $resp->json('amount'));
+
+        $this->assertDatabaseHas('payments', [
+            'user_id' => $this->clienteId,
+            'academia_id' => $this->academiaId,
+            'plano_id' => null,
+            'asaas_subscription_id' => 'sub_mensal_1',
+            'payment_method' => 'pix',
+            'status' => 'pending',
+        ]);
     }
 
     public function test_exige_autenticacao(): void

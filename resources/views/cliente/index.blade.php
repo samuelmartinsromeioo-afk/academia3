@@ -601,8 +601,12 @@
                      onmouseover="this.style.background='rgba(255, 215, 0, 0.3)'"
                      onmouseout="this.style.background='rgba(255, 215, 0, 0.1)'"
                      title="Clique para avaliar {{ $p->nome }}">
-                    <i class="fas fa-star"></i> 
-                    <strong style="color: white; font-size: 0.9rem;">{{ $p->media_avaliacao }}</strong>
+                    @if($p->eh_novo_profissional)
+                        <strong style="color: white; font-size: 0.78rem;">Novo profissional</strong>
+                    @else
+                        <i class="fas fa-star"></i>
+                        <strong style="color: white; font-size: 0.9rem;">{{ $p->media_avaliacao }}</strong>
+                    @endif
                 </div>
 
                 <div style="display: flex; align-items: center; gap: 15px;">
@@ -1155,7 +1159,8 @@
                 { url: '{{ asset("storage/" . $foto->path) }}', legenda: '{{ addslashes($foto->legenda ?? "") }}' },
                 @endforeach
             ],
-            total_avaliacoes: {{ $p->avaliacoes->count() ?? 0 }}
+            total_avaliacoes: {{ $p->avaliacoes->count() ?? 0 }},
+            eh_novo: {{ $p->eh_novo_profissional ? 'true' : 'false' }}
         },
         @endforeach
     };
@@ -1192,8 +1197,9 @@
                 <h2>${personal.nome}</h2>
                 <p>Personal Trainer Certificado</p>
                 <div class="detalhes-avaliacao">
-                    <i class="fas fa-star"></i> ${personal.avaliacao} 
-                    <span style="color: var(--text-muted); font-size: 0.7rem;">(${personal.total_avaliacoes} avaliações)</span>
+                    ${personal.eh_novo
+                        ? `<span style="color: var(--primary);"><i class="fas fa-seedling"></i> Novo profissional</span>`
+                        : `<i class="fas fa-star"></i> ${personal.avaliacao} <span style="color: var(--text-muted); font-size: 0.7rem;">(${personal.total_avaliacoes} avaliações)</span>`}
                 </div>
             </div>
         `;

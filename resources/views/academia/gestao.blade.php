@@ -164,7 +164,7 @@
                         <div class="meta">
                             @if(!is_null($aula->dia_semana))<i class="fas fa-calendar-day"></i> {{ $dias[$aula->dia_semana] ?? '' }}@endif
                             @if($aula->hora_inicio) · {{ \Illuminate\Support\Str::substr($aula->hora_inicio, 0, 5) }}@endif
-                            @if($aula->duracao_min) · {{ $aula->duracao_min }}min@endif
+                            @if($aula->duracao_min) · {{ $aula->duracao_min . 'min' }}@endif
                             @if($aula->professor) · <i class="fas fa-user-tie"></i> {{ $aula->professor->nome }}@endif
                             @if($aula->resumo)<br>{{ $aula->resumo }}@endif
                         </div>
