@@ -263,6 +263,19 @@
                     </div>
                 </div>
             </a>
+
+            <a href="{{ route('cadastro.ir', ['tipo' => 'loja']) }}" class="card-link">
+                <div class="card">
+                    <div class="icon-wrapper">
+                        <i class="fa-solid fa-store"></i>
+                    </div>
+                    <h3>Loja de Suplementos</h3>
+                    <p>Cadastre seus produtos fitness, defina preços, controle o estoque e venda direto para os alunos da plataforma.</p>
+                    <div class="card-footer">
+                        <span class="go-btn">Cadastrar loja <i class="fa-solid fa-arrow-right"></i></span>
+                    </div>
+                </div>
+            </a>
         </div>
     </main>
 

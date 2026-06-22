@@ -10,7 +10,7 @@ class CheckLogin
     public function handle(Request $request, Closure $next)
     {
         // Verifica se algum tipo de usuário está logado na sessão
-        if (!session('cliente_id') && !session('personal_id') && !session('academia_id') && !session('studio_id')) {
+        if (!session('cliente_id') && !session('personal_id') && !session('academia_id') && !session('studio_id') && !session('loja_id')) {
             return redirect()->route('login.create');
         }
 

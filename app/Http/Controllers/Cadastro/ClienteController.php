@@ -7,6 +7,7 @@ use App\Models\Cadastro\Cliente;
 use App\Models\Cadastro\Personal;
 use App\Models\Cadastro\Academia as Academia;
 use App\Models\Cadastro\Studio;
+use App\Models\Cadastro\Loja;
 use App\Models\Agenda;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Http\Request;
@@ -661,6 +662,27 @@ class ClienteController extends Controller
             ->findOrFail($id);
 
         return view('cliente.studio-detalhes', compact('studio', 'cliente'));
+    }
+
+    public function listarLojas()
+    {
+        $cliente = Cliente::find(session('cliente_id'));
+        $lojas = Loja::where('status', 'aprovado')
+            ->withCount(['produtos' => fn($q) => $q->where('ativo', true)])
+            ->orderBy('nome')
+            ->get();
+
+        return view('cliente.lojas', compact('lojas', 'cliente'));
+    }
+
+    public function detalheLoja($id)
+    {
+        $cliente = Cliente::find(session('cliente_id'));
+        $loja = Loja::where('status', 'aprovado')
+            ->with(['produtos' => fn($q) => $q->where('ativo', true)->orderBy('nome')])
+            ->findOrFail($id);
+
+        return view('cliente.loja-detalhes', compact('loja', 'cliente'));
     }
 
     private function notificarPersonalWhatsApp($clienteId, $personalId, $tipo, $agenda = null, $frequencia = null, $diasTotal = null)

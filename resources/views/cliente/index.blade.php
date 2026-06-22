@@ -374,6 +374,7 @@
             <button type="button" onclick="window.location.href='{{ route('studios.explorar') }}'"><i class="fas fa-spa"></i> Explorar Studios</button>
             <button type="button" onclick="window.location.href='{{ route('academias.explorar') }}'"><i class="fas fa-building"></i> Explorar Academias</button>
             <button type="button" onclick="window.location.href='{{ route('personais.explorar') }}'"><i class="fas fa-user-tie"></i> Explorar Personais</button>
+            <button type="button" onclick="window.location.href='{{ route('lojas.explorar') }}'"><i class="fas fa-store"></i> Explorar Lojas</button>
             <form action="{{ route('login.logout') }}" method="POST">
                 @csrf
                 <button type="submit" style="color: #ff4444;"><i class="fas fa-power-off"></i> Sair</button>

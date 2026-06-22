@@ -10,6 +10,7 @@ use App\Http\Controllers\Cadastro\ClienteController;
 use App\Http\Controllers\Cadastro\PersonalController;
 use App\Http\Controllers\Cadastro\AcademiaController;
 use App\Http\Controllers\Cadastro\StudioController;
+use App\Http\Controllers\Cadastro\LojaController;
 use App\Http\Controllers\App\MapaController;
 use App\Http\Controllers\Cadastro\PacoteController;
 use App\Http\Controllers\App\FotoController;
@@ -48,6 +49,13 @@ Route::middleware('check.admin')->group(function () {
     Route::post('/admin/studios/{id}/rejeitar', [AdminController::class, 'rejeitarStudio'])->name('admin.studios.rejeitar');
     Route::delete('/admin/studios/{id}', [AdminController::class, 'deletarStudio'])->name('admin.studios.deletar');
     Route::post('/admin/studios/{id}/criar-asaas', [AdminController::class, 'criarSubcontaAsaasStudio'])->name('admin.studios.criar-asaas');
+
+    // Gerenciar Lojas de Suplementos
+    Route::get('/admin/lojas', [AdminController::class, 'listarLojas'])->name('admin.lojas.lista');
+    Route::get('/admin/lojas/{id}/detalhes', [AdminController::class, 'verDetalhesLoja'])->name('admin.lojas.detalhes');
+    Route::post('/admin/lojas/{id}/bloquear', [AdminController::class, 'bloquearLoja'])->name('admin.lojas.bloquear');
+    Route::post('/admin/lojas/{id}/reativar', [AdminController::class, 'reativarLoja'])->name('admin.lojas.reativar');
+    Route::delete('/admin/lojas/{id}', [AdminController::class, 'deletarLoja'])->name('admin.lojas.deletar');
 
     // Relatórios Financeiros
     Route::get('/admin/relatorio-financeiro', [AdminController::class, 'relatorioFinanceiro'])->name('admin.relatorio-financeiro');
@@ -106,6 +114,10 @@ Route::post('/cadastro/academia', [AcademiaController::class, 'store'])->name('a
 Route::get('/cadastro/studio', [StudioController::class, 'create'])->name('form.studio');
 Route::post('/cadastro/studio', [StudioController::class, 'store'])->name('studio.store');
 
+// Cadastro - Loja de Suplementos
+Route::get('/cadastro/loja', [LojaController::class, 'create'])->name('form.loja');
+Route::post('/cadastro/loja', [LojaController::class, 'store'])->name('loja.store');
+
 
 // ==========================================
 // RECURSOS GERAIS (Mapas, Fotos e Avaliações)
@@ -137,6 +149,8 @@ Route::middleware('check.login')->group(function () {
     Route::get('/academias/{id}/detalhes', [ClienteController::class, 'detalheAcademia'])->name('academias.detalhes');
     Route::get('/studios/explorar', [ClienteController::class, 'listarStudios'])->name('studios.explorar');
     Route::get('/studios/{id}/detalhes', [ClienteController::class, 'detalheStudio'])->name('studios.detalhes');
+    Route::get('/lojas/explorar', [ClienteController::class, 'listarLojas'])->name('lojas.explorar');
+    Route::get('/lojas/{id}/detalhes', [ClienteController::class, 'detalheLoja'])->name('lojas.detalhes');
     Route::get('/personais/explorar', [ClienteController::class, 'listarPersonais'])->name('personais.explorar');
     Route::post('/academias/contratar', [ClienteController::class, 'contratarAcademia'])->name('academias.contratar');
     Route::get('/pacotes/personal/{id}', [PacoteController::class, 'show'])->name('pacotes.show');
@@ -268,6 +282,20 @@ Route::middleware('check.login')->group(function () {
 
     // Agenda do dia
     Route::get('/studio/agenda/{data}', [StudioController::class, 'getAgendaDia'])->name('studio.getAgenda');
+});
+
+// ==========================================
+// ÁREA DA LOJA DE SUPLEMENTOS
+// ==========================================
+Route::middleware('check.login')->group(function () {
+    Route::get('/loja/dashboard', [LojaController::class, 'dashboard'])->name('loja.dashboard');
+    Route::put('/loja/update/{id}', [LojaController::class, 'update'])->name('loja.update');
+
+    // Gestão de produtos e estoque
+    Route::post('/loja/produtos', [LojaController::class, 'storeProduto'])->name('loja.produtos.store');
+    Route::put('/loja/produtos/{id}', [LojaController::class, 'updateProduto'])->name('loja.produtos.update');
+    Route::put('/loja/produtos/{id}/estoque', [LojaController::class, 'ajustarEstoque'])->name('loja.produtos.estoque');
+    Route::delete('/loja/produtos/{id}', [LojaController::class, 'destroyProduto'])->name('loja.produtos.destroy');
 });
 
 // ==========================================

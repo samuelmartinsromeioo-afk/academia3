@@ -6,6 +6,7 @@ use App\Models\Cadastro\Academia as ModelsAcademia;
 use App\Models\Cadastro\Cliente as ModelsCliente;
 use App\Models\Cadastro\Personal as ModelsPersonal;
 use App\Models\Cadastro\Studio as ModelsStudio;
+use App\Models\Cadastro\Loja as ModelsLoja;
 use App\Models\Admin;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -94,14 +95,30 @@ class loginController extends Controller
             return redirect()->route('studio.dashboard');
         }
 
-        // 5. Se não encontrou em nenhum lugar
+        // 5. Tentar LOJA (busca por email OU cnpj)
+        $loja = ModelsLoja::where(function ($query) use ($loginInput) {
+            $query->where('email', $loginInput)
+                  ->orWhere('cnpj', $loginInput);
+        })->first();
+
+        if ($loja && Hash::check($senha, $loja->senha)) {
+            if ($loja->status === 'rejeitado') {
+                return back()->withErrors(['login' => '🚫 O acesso desta loja foi bloqueado pelo administrador.'])->withInput();
+            }
+
+            session(['loja_id' => $loja->id]);
+            session()->save();
+            return redirect()->route('loja.dashboard');
+        }
+
+        // 6. Se não encontrou em nenhum lugar
         return back()->withErrors(['login' => 'E-mail, CNPJ ou senha incorretos.'])->withInput();
     }
     
     public function logout(Request $request)
     {
         // Limpa todas as possíveis sessões de login
-        session()->forget(['admin_id', 'admin_nome', 'personal_id', 'cliente_id', 'academia_id', 'studio_id']);
+        session()->forget(['admin_id', 'admin_nome', 'personal_id', 'cliente_id', 'academia_id', 'studio_id', 'loja_id']);
         return redirect()->route('login.index')->with('sucesso', 'Você saiu do sistema.');
     }
 }

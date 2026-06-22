@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Cadastro\Personal;
 use App\Models\Cadastro\Cliente;
 use App\Models\Cadastro\Studio;
+use App\Models\Cadastro\Loja;
 use App\Models\Admin;
 use App\Models\Agenda;
 use Illuminate\Http\Request;
@@ -548,6 +549,122 @@ class AdminController extends Controller
             Log::error("Admin: exceção ao criar subconta Asaas do studio", ['studio_id' => $studio->id, 'error' => $e->getMessage()]);
             return redirect()->back()->with('error', "Erro ao criar conta Asaas: {$e->getMessage()}");
         }
+    }
+
+    // ==========================================
+    // LOJAS DE SUPLEMENTOS
+    // ==========================================
+
+    public function listarLojas(Request $request)
+    {
+        if (!session('admin_id')) {
+            return redirect()->route('admin.login');
+        }
+
+        $filtro = $request->query('status', 'todos');
+        $busca = $request->query('busca', '');
+
+        $query = Loja::withCount('produtos');
+
+        if ($filtro !== 'todos') {
+            $query->where('status', $filtro);
+        }
+
+        if ($busca) {
+            $query->where(function ($q) use ($busca) {
+                $q->where('nome', 'LIKE', "%$busca%")
+                  ->orWhere('email', 'LIKE', "%$busca%")
+                  ->orWhere('cnpj', 'LIKE', "%$busca%");
+            });
+        }
+
+        $lojas = $query->orderBy('nome')->get();
+
+        return view('admin.lojas.lista', [
+            'lojas'  => $lojas,
+            'filtro' => $filtro,
+            'busca'  => $busca,
+        ]);
+    }
+
+    public function verDetalhesLoja($id)
+    {
+        if (!session('admin_id')) {
+            return redirect()->route('admin.login');
+        }
+
+        $loja = Loja::with(['produtos' => fn($q) => $q->orderBy('nome')])->findOrFail($id);
+
+        return view('admin.lojas.detalhes', [
+            'loja' => $loja,
+        ]);
+    }
+
+    public function bloquearLoja($id, Request $request)
+    {
+        if (!session('admin_id')) {
+            return redirect()->route('admin.login');
+        }
+
+        $request->validate([
+            'motivo' => 'required|string|min:10|max:500',
+        ], [
+            'motivo.required' => 'Você deve informar o motivo do bloqueio.',
+            'motivo.min'      => 'O motivo deve ter pelo menos 10 caracteres.',
+        ]);
+
+        $loja = Loja::findOrFail($id);
+        $loja->update([
+            'status'          => 'rejeitado',
+            'motivo_rejeicao' => $request->motivo,
+        ]);
+
+        return redirect()->back()->with('success', "Loja '{$loja->nome}' bloqueada.");
+    }
+
+    public function reativarLoja($id)
+    {
+        if (!session('admin_id')) {
+            return redirect()->route('admin.login');
+        }
+
+        $loja = Loja::findOrFail($id);
+        $loja->update([
+            'status'          => 'aprovado',
+            'data_aprovacao'  => now(),
+            'motivo_rejeicao' => null,
+        ]);
+
+        return redirect()->back()->with('success', "Loja '{$loja->nome}' reativada com sucesso! ✅");
+    }
+
+    public function deletarLoja($id)
+    {
+        if (!session('admin_id')) {
+            return redirect()->route('admin.login');
+        }
+
+        $loja = Loja::findOrFail($id);
+        $nome = $loja->nome;
+
+        // Remove as imagens dos produtos e o logo do disco antes de apagar.
+        foreach ($loja->produtos as $produto) {
+            if ($produto->imagem) {
+                \Illuminate\Support\Facades\Storage::disk('public')->delete($produto->imagem);
+            }
+        }
+        if ($loja->logo) {
+            \Illuminate\Support\Facades\Storage::disk('public')->delete($loja->logo);
+        }
+
+        // produtos têm cascadeOnDelete, mas removemos explicitamente por clareza.
+        $loja->produtos()->delete();
+        $loja->delete();
+
+        Log::info("Loja '{$nome}' (ID: {$id}) foi deletada pelo admin");
+
+        return redirect()->route('admin.lojas.lista')
+            ->with('success', "Loja '{$nome}' e todos os seus produtos foram deletados permanentemente.");
     }
 
     // ==========================================
