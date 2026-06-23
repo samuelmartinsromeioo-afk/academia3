@@ -424,25 +424,6 @@
                 </div>
             </div>
 
-            <!-- SEÇÃO DE PACOTES -->
-            <div class="packages-section">
-                <div class="packages-title">
-                    <i class="fa-solid fa-tags"></i> Definir Pacotes Mensais
-                </div>
-                <div class="packages-grid">
-                    @for ($i = 1; $i <= 5; $i++)
-                    <div class="package-item">
-                        <label>{{ $i }}x na Semana</label>
-                        <div class="package-input-group">
-                            <span>R$</span>
-                            <input type="number" step="0.01" name="precos[{{ $i }}]" placeholder="0,00" value="{{ old('precos.'.$i) }}">
-                        </div>
-                    </div>
-                    @endfor
-                </div>
-                <p style="font-size: 0.6rem; color: var(--text-dim); margin-top: 10px;">* Informe o valor total mensal para cada frequência.</p>
-            </div>
-
             <!-- CHECKBOX TERMOS DE USO -->
             <div class="terms-section">
                 <input type="checkbox" id="termsCheckbox" name="aceita_termos" value="1" required>
