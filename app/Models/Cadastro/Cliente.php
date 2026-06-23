@@ -60,5 +60,9 @@ class Cliente extends Model
         public function studioPlano() {
             return $this->belongsTo(\App\Models\Cadastro\StudioPlano::class, 'studio_plano_id');
         }
+
+        public function anamnese() {
+            return $this->hasOne(\App\Models\Anamnese::class, 'cliente_id');
+        }
     use HasFactory;
 }

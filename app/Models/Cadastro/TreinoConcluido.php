@@ -30,4 +30,9 @@ class TreinoConcluido extends Model
     {
         return $this->belongsTo(Cliente::class, 'cliente_id');
     }
+
+    public function registros()
+    {
+        return $this->hasMany(RegistroExercicio::class, 'treino_concluido_id');
+    }
 }

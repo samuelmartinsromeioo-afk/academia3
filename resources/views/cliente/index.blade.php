@@ -368,6 +368,9 @@
             <button type="button" onclick="window.location.href='{{ route('cliente.index') }}'"><i class="fas fa-chart-line"></i> Menu Principal</button>
             <button type="button" onclick="toggleEditForm()"><i class="fas fa-user-edit"></i> Editar Perfil</button>
             <button type="button" onclick="window.location.href='{{ route('fichas-treino.minhas') }}'"><i class="fas fa-dumbbell"></i> Minha Ficha</button>
+            <button type="button" onclick="window.location.href='{{ route('periodizacao.treino-do-dia') }}'"><i class="fas fa-layer-group"></i> Treino do Dia</button>
+            <button type="button" onclick="window.location.href='{{ route('desempenho.meu') }}'"><i class="fas fa-bolt"></i> Meu Desempenho</button>
+            <button type="button" onclick="window.location.href='{{ route('anamnese.form') }}'"><i class="fas fa-file-medical"></i> Anamnese</button>
             <button type="button" onclick="window.location.href='{{ route('cliente.avaliacao-fisica') }}'"><i class="fas fa-heart-pulse"></i> Avaliação Física</button>
             <button type="button" onclick="abrirHistoricoModal()"><i class="fas fa-history"></i> Ver Histórico</button>
             <button type="button" onclick="window.location.href='{{ route('mapa.index') }}'"><i class="fas fa-map-marked-alt"></i> Ver Mapa</button>
@@ -392,6 +395,17 @@
 </div>
 
 <div class="container">
+    @if(!$cliente->anamnese)
+        <a href="{{ route('anamnese.form') }}" style="display:flex; align-items:center; gap:14px; background:rgba(244,190,22,0.1); border:1px solid #F4BE16; border-radius:14px; padding:16px 18px; margin-bottom:20px; color:#fff;">
+            <i class="fas fa-file-medical" style="color:#F4BE16; font-size:1.5rem;"></i>
+            <div style="flex:1;">
+                <div style="font-weight:800;">Complete sua anamnese</div>
+                <div style="font-size:0.8rem; color:#bdbdbd;">Leva 2 minutos e ajuda seu personal a montar um treino seguro pra você.</div>
+            </div>
+            <i class="fas fa-chevron-right" style="color:#F4BE16;"></i>
+        </a>
+    @endif
+
     @if(session('success'))
         <div id="avisoSucesso" style="background: rgba(40,167,69,0.2); border: 1px solid var(--success); color: #fff; padding: 15px; border-radius: 12px; margin-bottom: 20px;">
             {{ session('success') }}

@@ -647,9 +647,23 @@
                     <i class="fas fa-dumbbell"></i> FICHAS DE {{ strtoupper($cliente->nome) }}
                 </h1>
             </div>
-            <button id="btnNovaFicha" class="btn-nova-ficha">
-                <i class="fas fa-plus"></i> NOVA FICHA
-            </button>
+            <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+                <a href="{{ route('evolucao-carga.aluno', $cliente->id) }}"
+                   style="display:inline-flex; align-items:center; gap:8px; background:#F4BE16; color:#000; padding:12px 18px; border-radius:10px; font-weight:900; font-size:0.85rem; text-transform:uppercase; letter-spacing:0.5px; box-shadow:0 0 16px rgba(244,190,22,0.25);">
+                    <i class="fas fa-bolt"></i> Evolução
+                </a>
+                <a href="{{ route('periodizacao.aluno', $cliente->id) }}"
+                   style="display:inline-flex; align-items:center; gap:8px; background:transparent; color:#F4BE16; border:1px solid #F4BE16; padding:12px 18px; border-radius:10px; font-weight:900; font-size:0.85rem; text-transform:uppercase; letter-spacing:0.5px;">
+                    <i class="fas fa-layer-group"></i> Periodização
+                </a>
+                <a href="{{ route('anamnese.personal', $cliente->id) }}"
+                   style="display:inline-flex; align-items:center; gap:8px; background:transparent; color:#F4BE16; border:1px solid #F4BE16; padding:12px 18px; border-radius:10px; font-weight:900; font-size:0.85rem; text-transform:uppercase; letter-spacing:0.5px;">
+                    <i class="fas fa-file-medical"></i> Anamnese
+                </a>
+                <button id="btnNovaFicha" class="btn-nova-ficha">
+                    <i class="fas fa-plus"></i> NOVA FICHA
+                </button>
+            </div>
         </div>
 
         @if(session('success'))

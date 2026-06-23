@@ -8,6 +8,7 @@ use App\Models\Cadastro\Cliente;
 use App\Models\Cadastro\ExercicioFicha;
 use App\Models\Cadastro\FichaTreino;
 use App\Models\Cadastro\Personal;
+use App\Models\Cadastro\RegistroExercicio;
 use App\Models\Cadastro\TreinoConcluido;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -524,7 +525,7 @@ class FichaTreinoController extends Controller
             return redirect()->route('login.index');
         }
 
-        $ficha = FichaTreino::findOrFail($fichaId);
+        $ficha = FichaTreino::with('exercicios')->findOrFail($fichaId);
 
         if ($ficha->cliente_id != $clienteId) {
             return redirect()->back()->with('error', 'Acesso negado!');
@@ -533,6 +534,10 @@ class FichaTreinoController extends Controller
         $request->validate([
             'data_treino' => 'required|date',
             'observacoes' => 'nullable|string',
+            'registros' => 'nullable|array',
+            'registros.*.peso' => 'nullable|numeric|min:0|max:9999',
+            'registros.*.repeticoes' => 'nullable|integer|min:0|max:9999',
+            'registros.*.series' => 'nullable|integer|min:0|max:999',
         ]);
 
         $data = $request->data_treino;
@@ -556,6 +561,32 @@ class FichaTreinoController extends Controller
                 'concluido' => true,
                 'observacoes' => $request->observacoes,
             ]);
+        }
+
+        // ✅ FEATURE 1: histórico de carga executada por exercício
+        $registros = $request->input('registros', []);
+        foreach ($ficha->exercicios as $exercicio) {
+            $dados = $registros[$exercicio->id] ?? [];
+
+            // Sem informe do aluno → assume a prescrição da ficha.
+            $peso       = array_key_exists('peso', $dados) ? $dados['peso'] : $exercicio->peso;
+            $repeticoes = array_key_exists('repeticoes', $dados) ? $dados['repeticoes'] : $exercicio->repeticoes;
+            $series     = array_key_exists('series', $dados) ? $dados['series'] : $exercicio->series;
+
+            RegistroExercicio::updateOrCreate(
+                [
+                    'treino_concluido_id' => $treino->id,
+                    'nome_exercicio'      => $exercicio->nome_exercicio,
+                ],
+                [
+                    'cliente_id'         => $clienteId,
+                    'exercicio_ficha_id' => $exercicio->id,
+                    'data_treino'        => $data,
+                    'peso'               => ($peso === '' || $peso === null) ? null : $peso,
+                    'repeticoes'         => ($repeticoes === '' || $repeticoes === null) ? null : $repeticoes,
+                    'series'             => ($series === '' || $series === null) ? null : $series,
+                ]
+            );
         }
 
         return redirect()->route('fichas-treino.minhas')
@@ -607,6 +638,292 @@ class FichaTreinoController extends Controller
             'ficha' => $ficha,
             'treino' => $treino,
         ]);
+    }
+
+    // ==========================================================
+    // FEATURE 1 — Evolução de carga por exercício
+    // ==========================================================
+
+    // ✅ CLIENTE: tela de evolução de carga (próprios dados)
+    public function evolucaoCarga()
+    {
+        $clienteId = session('cliente_id');
+        if (! $clienteId) {
+            return redirect()->route('login.index');
+        }
+
+        $cliente = Cliente::findOrFail($clienteId);
+
+        return view('cliente.EvolucaoCarga', [
+            'cliente'    => $cliente,
+            'exercicios' => $this->exerciciosComRegistro($clienteId),
+            'modo'       => 'cliente',
+            'dadosUrl'   => route('evolucao-carga.dados', ['cliente_id' => $clienteId]),
+            'voltarUrl'  => route('fichas-treino.minhas'),
+        ]);
+    }
+
+    // ✅ PERSONAL: evolução de carga de um aluno
+    public function evolucaoCargaAluno($clienteId)
+    {
+        $personalId = session('personal_id');
+        if (! $personalId) {
+            return redirect()->route('login.index');
+        }
+
+        if (! $this->personalPodeVerCliente($personalId, $clienteId)) {
+            return redirect()->route('fichas-treino.alunos')->with('error', 'Acesso negado!');
+        }
+
+        $cliente = Cliente::findOrFail($clienteId);
+
+        return view('cliente.EvolucaoCarga', [
+            'cliente'    => $cliente,
+            'exercicios' => $this->exerciciosComRegistro($clienteId),
+            'modo'       => 'personal',
+            'dadosUrl'   => route('evolucao-carga.dados', ['cliente_id' => $clienteId]),
+            'voltarUrl'  => route('fichas-treino.aluno', $clienteId),
+        ]);
+    }
+
+    // ✅ API: série temporal de carga de um exercício
+    public function evolucaoCargaDados(Request $request)
+    {
+        $clienteId = (int) $request->query('cliente_id');
+
+        // Autorização: aluno só vê os próprios dados; personal só de seus alunos.
+        $sessCliente  = session('cliente_id');
+        $sessPersonal = session('personal_id');
+
+        if ($sessCliente) {
+            if ($clienteId !== (int) $sessCliente) {
+                return response()->json(['error' => 'Não autorizado'], 403);
+            }
+        } elseif ($sessPersonal) {
+            if (! $this->personalPodeVerCliente($sessPersonal, $clienteId)) {
+                return response()->json(['error' => 'Não autorizado'], 403);
+            }
+        } else {
+            return response()->json(['error' => 'Não autenticado'], 401);
+        }
+
+        $exercicio = $request->query('exercicio');
+
+        $dias = (int) $request->query('dias', 90);
+        if (! in_array($dias, [30, 90, 180], true)) {
+            $dias = 90;
+        }
+
+        $query = RegistroExercicio::where('cliente_id', $clienteId)
+            ->whereNotNull('peso')
+            ->where('data_treino', '>=', now()->subDays($dias)->format('Y-m-d'));
+
+        if ($exercicio) {
+            $query->where('nome_exercicio', $exercicio);
+        }
+
+        $registros = $query->orderBy('data_treino')
+            ->get(['data_treino', 'peso', 'repeticoes', 'series']);
+
+        // Um ponto por data: a maior carga do dia.
+        $porData = [];
+        foreach ($registros as $r) {
+            $d = $r->data_treino->format('Y-m-d');
+            if (! isset($porData[$d]) || (float) $r->peso > $porData[$d]['peso']) {
+                $porData[$d] = [
+                    'peso'   => (float) $r->peso,
+                    'reps'   => $r->repeticoes,
+                    'series' => $r->series,
+                ];
+            }
+        }
+        ksort($porData);
+
+        return response()->json([
+            'labels' => array_map(fn ($d) => \Carbon\Carbon::parse($d)->format('d/m/Y'), array_keys($porData)),
+            'pesos'  => array_values(array_map(fn ($v) => $v['peso'], $porData)),
+            'reps'   => array_values(array_map(fn ($v) => $v['reps'], $porData)),
+            'series' => array_values(array_map(fn ($v) => $v['series'], $porData)),
+        ]);
+    }
+
+    // Nomes de exercícios que já têm carga registrada para o aluno.
+    private function exerciciosComRegistro($clienteId): array
+    {
+        return RegistroExercicio::where('cliente_id', $clienteId)
+            ->distinct()
+            ->orderBy('nome_exercicio')
+            ->pluck('nome_exercicio')
+            ->toArray();
+    }
+
+    // O personal pode ver o aluno se já montou ficha ou se há agendamento entre eles.
+    private function personalPodeVerCliente($personalId, $clienteId): bool
+    {
+        return FichaTreino::where('personal_id', $personalId)->where('cliente_id', $clienteId)->exists()
+            || Agenda::where('personal_id', $personalId)->where('cliente_id', $clienteId)->where('cancelado', false)->exists();
+    }
+
+    // ==========================================================
+    // FEATURE 2 — Dashboard de frequência e aderência
+    // ==========================================================
+
+    // Dias sem treino para considerar um aluno "sumido".
+    private const DIAS_SUMIDO = 7;
+
+    // ✅ PERSONAL: aderência de todos os seus alunos no mês
+    public function dashboardAderencia()
+    {
+        $personalId = session('personal_id');
+        if (! $personalId) {
+            return redirect()->route('login.index');
+        }
+
+        $personal = Personal::findOrFail($personalId);
+
+        // Alunos com ficha ativa montada por este personal.
+        $fichas = FichaTreino::where('personal_id', $personalId)->where('ativo', true)->get();
+        $fichasPorCliente = $fichas->groupBy('cliente_id');
+
+        $clientes = Cliente::whereIn('id', $fichasPorCliente->keys())->orderBy('nome')->get();
+
+        $alunos = [];
+        $somaAderencia = 0;
+        $comPlano = 0;
+        $sumidos = 0;
+
+        foreach ($clientes as $cliente) {
+            $resumo = $this->aderenciaResumo($cliente->id, $fichasPorCliente->get($cliente->id, collect()));
+            $resumo['cliente'] = $cliente;
+            $alunos[] = $resumo;
+
+            if ($resumo['aderencia'] !== null) {
+                $somaAderencia += $resumo['aderencia'];
+                $comPlano++;
+            }
+            if ($resumo['sumido']) {
+                $sumidos++;
+            }
+        }
+
+        // Sumidos primeiro; depois menor aderência no topo (precisa de atenção).
+        usort($alunos, function ($a, $b) {
+            if ($a['sumido'] !== $b['sumido']) {
+                return $b['sumido'] <=> $a['sumido'];
+            }
+            return ($a['aderencia'] ?? 101) <=> ($b['aderencia'] ?? 101);
+        });
+
+        $resumoGeral = [
+            'totalAlunos'    => count($alunos),
+            'mediaAderencia' => $comPlano > 0 ? (int) round($somaAderencia / $comPlano) : null,
+            'sumidos'        => $sumidos,
+        ];
+
+        return view('personal.Aderencia', compact('personal', 'alunos', 'resumoGeral'));
+    }
+
+    // ✅ ALUNO: meu desempenho do mês + sequência (streak)
+    public function meuDesempenho()
+    {
+        $clienteId = session('cliente_id');
+        if (! $clienteId) {
+            return redirect()->route('login.index');
+        }
+
+        $cliente = Cliente::findOrFail($clienteId);
+
+        $fichas = FichaTreino::where('cliente_id', $clienteId)->where('ativo', true)->get();
+        $resumo = $this->aderenciaResumo($clienteId, $fichas);
+
+        $datas = TreinoConcluido::where('cliente_id', $clienteId)
+            ->where('concluido', true)
+            ->orderBy('data_treino')
+            ->pluck('data_treino')
+            ->map(fn ($d) => \Carbon\Carbon::parse($d)->toDateString())
+            ->toArray();
+
+        $streak = \App\Services\EstatisticasTreino::streak($datas);
+        $game = \App\Services\EstatisticasTreino::gamificacao($streak['atual'], $streak['recorde']);
+
+        // Heatmap de consistência: últimas 12 semanas (domingo a sábado).
+        $treinados = array_flip($datas);
+        $hojeDia = \Carbon\Carbon::today();
+        $cursor = $hojeDia->copy()->startOfWeek(\Carbon\Carbon::SUNDAY)->subWeeks(11);
+        $heatmap = [];
+        for ($w = 0; $w < 12; $w++) {
+            $semana = [];
+            for ($d = 0; $d < 7; $d++) {
+                $ds = $cursor->toDateString();
+                $semana[] = [
+                    'treinou' => isset($treinados[$ds]),
+                    'futuro'  => $cursor->gt($hojeDia),
+                    'rotulo'  => $cursor->format('d/m/Y'),
+                ];
+                $cursor->addDay();
+            }
+            $heatmap[] = $semana;
+        }
+
+        return view('cliente.MeuDesempenho', compact('cliente', 'resumo', 'streak', 'game', 'heatmap'));
+    }
+
+    // Resumo de aderência do mês para um cliente, dado seu conjunto de fichas.
+    private function aderenciaResumo($clienteId, $fichas): array
+    {
+        $inicio = now()->startOfMonth();
+        $hoje   = now();
+
+        $planejados = 0;
+        foreach ($fichas as $f) {
+            $planejados += $this->ocorrenciasDiaSemana((int) $f->dia_semana, $inicio, $hoje);
+        }
+
+        $fichaIds = $fichas->pluck('id');
+
+        $realizados = $fichaIds->isEmpty() ? 0 : TreinoConcluido::whereIn('ficha_id', $fichaIds)
+            ->where('cliente_id', $clienteId)
+            ->where('concluido', true)
+            ->whereBetween('data_treino', [$inicio->toDateString(), $hoje->toDateString()])
+            ->count();
+
+        $aderencia = $planejados > 0 ? min(100, (int) round($realizados / $planejados * 100)) : null;
+
+        $ultimo = $fichaIds->isEmpty() ? null : TreinoConcluido::whereIn('ficha_id', $fichaIds)
+            ->where('cliente_id', $clienteId)
+            ->where('concluido', true)
+            ->max('data_treino');
+
+        $diasSemTreino = $ultimo
+            ? (int) \Carbon\Carbon::parse($ultimo)->startOfDay()->diffInDays(now()->startOfDay())
+            : null;
+
+        $sumido = $diasSemTreino === null || $diasSemTreino >= self::DIAS_SUMIDO;
+
+        return [
+            'planejados'    => $planejados,
+            'realizados'    => $realizados,
+            'aderencia'     => $aderencia,
+            'ultimo'        => $ultimo ? \Carbon\Carbon::parse($ultimo) : null,
+            'diasSemTreino' => $diasSemTreino,
+            'sumido'        => $sumido,
+            'fichasAtivas'  => $fichas->count(),
+        ];
+    }
+
+    // Quantas vezes um dia da semana (0=Dom..6=Sáb) ocorre no intervalo.
+    private function ocorrenciasDiaSemana(int $diaSemana, $inicio, $fim): int
+    {
+        $count = 0;
+        $d = $inicio->copy()->startOfDay();
+        $limite = $fim->copy()->endOfDay();
+        while ($d->lte($limite)) {
+            if ($d->dayOfWeek === $diaSemana) {
+                $count++;
+            }
+            $d->addDay();
+        }
+        return $count;
     }
 
     private function getExerciciosData(): array

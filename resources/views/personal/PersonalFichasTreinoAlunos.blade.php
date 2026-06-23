@@ -2,9 +2,21 @@
 
 @section('content')
 <div style="max-width: 1200px; margin: 40px auto; padding: 0 20px;">
-    <h1 style="font-size: 2rem; font-weight: 900; color: #d4ff00; margin-bottom: 30px;">
-        <i class="fas fa-dumbbell"></i> FICHAS DE TREINO
-    </h1>
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; margin-bottom: 30px;">
+        <h1 style="font-size: 2rem; font-weight: 900; color: #d4ff00; margin: 0;">
+            <i class="fas fa-dumbbell"></i> FICHAS DE TREINO
+        </h1>
+        <div style="display:flex; gap:10px; flex-wrap:wrap;">
+            <a href="{{ route('periodizacao.index') }}"
+               style="display:inline-flex; align-items:center; gap:8px; background:transparent; color:#F4BE16; border:1px solid #F4BE16; padding:12px 18px; border-radius:10px; font-weight:900; font-size:0.85rem; text-transform:uppercase; letter-spacing:0.5px;">
+                <i class="fas fa-layer-group"></i> Periodização
+            </a>
+            <a href="{{ route('aderencia.dashboard') }}"
+               style="display:inline-flex; align-items:center; gap:8px; background:#F4BE16; color:#000; padding:12px 18px; border-radius:10px; font-weight:900; font-size:0.85rem; text-transform:uppercase; letter-spacing:0.5px; box-shadow:0 0 16px rgba(244,190,22,0.25);">
+                <i class="fas fa-bolt"></i> Frequência &amp; Aderência
+            </a>
+        </div>
+    </div>
 
     @if(session('success'))
     <div style="background: rgba(0, 255, 136, 0.1); color: #00ff88; padding: 15px; border-radius: 12px; border: 1px solid #00ff88; margin-bottom: 20px;">

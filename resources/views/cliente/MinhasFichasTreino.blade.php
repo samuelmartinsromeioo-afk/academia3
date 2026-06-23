@@ -440,6 +440,74 @@
             background: #33ff99;
         }
 
+        /* BOTÃO EVOLUÇÃO DE CARGA */
+        .btn-evolucao {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: #F4BE16;
+            color: #000;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 10px;
+            font-weight: 900;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            cursor: pointer;
+            margin-bottom: 30px;
+            transition: 0.2s;
+            box-shadow: 0 0 18px rgba(244, 190, 22, 0.25);
+        }
+        .btn-evolucao:hover { filter: brightness(1.1); transform: translateY(-1px); }
+
+        /* REGISTRO DE CARGA (modal concluir) */
+        .registros-wrap { margin-bottom: 15px; }
+        .registros-wrap > label {
+            color: var(--text-muted);
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            font-weight: 900;
+            display: block;
+            margin-bottom: 8px;
+        }
+        .registro-row {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 10px;
+            padding: 10px 12px;
+            margin-bottom: 8px;
+        }
+        .registro-row .reg-nome {
+            font-weight: 700;
+            font-size: 0.85rem;
+            color: #F4BE16;
+            margin-bottom: 8px;
+        }
+        .registro-inputs { display: flex; gap: 8px; }
+        .registro-inputs .reg-field { flex: 1; display: flex; flex-direction: column; }
+        .registro-inputs .reg-field span {
+            font-size: 0.6rem;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            font-weight: 900;
+            margin-bottom: 3px;
+        }
+        .registro-inputs input {
+            width: 100%;
+            padding: 8px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: var(--text-main);
+            border-radius: 6px;
+            font-size: 0.9rem;
+            text-align: center;
+        }
+        .registro-inputs input:focus {
+            outline: none;
+            border-color: #F4BE16;
+        }
+
         @media (max-width: 768px) {
             .top-bar {
                 padding: 15px 20px;
@@ -462,6 +530,28 @@
 
 <body>
 
+    @php
+        // Mapa fichaId => exercícios, para o JS pré-preencher os campos de carga.
+        $fichasExerciciosJs = [];
+        $coletaExercicios = function ($grupos) use (&$fichasExerciciosJs) {
+            foreach ($grupos as $grupo) {
+                foreach ($grupo as $ficha) {
+                    $fichasExerciciosJs[$ficha->id] = $ficha->exercicios->map(fn ($e) => [
+                        'id' => $e->id,
+                        'nome' => $e->nome_exercicio,
+                        'series' => $e->series,
+                        'repeticoes' => $e->repeticoes,
+                        'peso' => $e->peso !== null ? (float) $e->peso : null,
+                    ])->values();
+                }
+            }
+        };
+        $coletaExercicios($fichasPorPersonal);
+        if (isset($fichasAcademia)) {
+            $coletaExercicios($fichasAcademia);
+        }
+    @endphp
+
     <!-- TOP BAR -->
     <div class="top-bar">
         <button class="back-btn" onclick="window.location.href='{{ route('cliente.index') }}'" title="Voltar">
@@ -476,6 +566,10 @@
     <!-- CONTAINER -->
     <div class="container">
         <h1><i class="fas fa-dumbbell"></i> MINHAS FICHAS DE TREINO</h1>
+
+        <a href="{{ route('evolucao-carga.minha') }}" class="btn-evolucao">
+            <i class="fas fa-bolt"></i> Evolução de Carga
+        </a>
 
         @if(session('success'))
         <div class="alert alert-success">
@@ -661,6 +755,11 @@
                     <input type="date" id="inputDataTreino" name="data_treino" value="{{ now()->format('Y-m-d') }}" required>
                 </div>
 
+                <div class="registros-wrap" id="registrosWrap">
+                    <label><i class="fas fa-bolt"></i> Carga de hoje (ajuste se mudou)</label>
+                    <div id="registrosContainer"></div>
+                </div>
+
                 <div class="form-group">
                     <label>Observações (Opcional)</label>
                     <textarea name="observacoes" placeholder="Como foi o treino? Alguma dificuldade?"></textarea>
@@ -675,15 +774,62 @@
     </div>
 
     <script>
+        // Exercícios de cada ficha, para pré-preencher os campos de carga.
+        const fichasExercicios = {!! json_encode($fichasExerciciosJs) !!};
+
+        function escapeHtml(str) {
+            return String(str ?? '').replace(/[&<>"']/g, s => ({
+                '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+            }[s]));
+        }
+
         function marcarConcluido(fichaId) {
             const form = document.getElementById('formMarcarConcluido');
             form.action = `/cliente/fichas-treino/${fichaId}/concluido`;
+
+            // Monta os campos de carga por exercício, já preenchidos com a prescrição.
+            const container = document.getElementById('registrosContainer');
+            const wrap = document.getElementById('registrosWrap');
+            const exercicios = fichasExercicios[fichaId] || [];
+            container.innerHTML = '';
+
+            if (exercicios.length === 0) {
+                wrap.style.display = 'none';
+            } else {
+                wrap.style.display = 'block';
+                exercicios.forEach(ex => {
+                    const peso = ex.peso !== null && ex.peso !== undefined ? ex.peso : '';
+                    const reps = ex.repeticoes ?? '';
+                    const series = ex.series ?? '';
+                    container.insertAdjacentHTML('beforeend', `
+                        <div class="registro-row">
+                            <div class="reg-nome">${escapeHtml(ex.nome)}</div>
+                            <div class="registro-inputs">
+                                <div class="reg-field">
+                                    <span>Peso (kg)</span>
+                                    <input type="number" step="0.5" min="0" name="registros[${ex.id}][peso]" value="${peso}">
+                                </div>
+                                <div class="reg-field">
+                                    <span>Reps</span>
+                                    <input type="number" min="0" name="registros[${ex.id}][repeticoes]" value="${reps}">
+                                </div>
+                                <div class="reg-field">
+                                    <span>Séries</span>
+                                    <input type="number" min="0" name="registros[${ex.id}][series]" value="${series}">
+                                </div>
+                            </div>
+                        </div>
+                    `);
+                });
+            }
+
             document.getElementById('modalMarcarConcluido').classList.add('active');
         }
 
         function fecharModalMarcarConcluido() {
             document.getElementById('modalMarcarConcluido').classList.remove('active');
             document.getElementById('formMarcarConcluido').reset();
+            document.getElementById('registrosContainer').innerHTML = '';
         }
 
         window.addEventListener('click', (e) => {

@@ -15,6 +15,8 @@ use App\Http\Controllers\App\MapaController;
 use App\Http\Controllers\Cadastro\PacoteController;
 use App\Http\Controllers\App\FotoController;
 use App\Http\Controllers\Cadastro\FichaTreinoController;
+use App\Http\Controllers\Cadastro\MesocicloController;
+use App\Http\Controllers\Cadastro\AnamneseController;
 use App\Http\Controllers\AvaliacaoController;
 use App\Http\Controllers\AvaliacaoFisicaController;
 use App\Http\Controllers\AulaController;
@@ -322,6 +324,26 @@ Route::middleware('check.login')->group(function () {
     Route::put('/personal/fichas-treino/{fichaId}/editar', [FichaTreinoController::class, 'editarFicha'])->name('fichas-treino.editar');
     Route::delete('/personal/fichas-treino/{fichaId}', [FichaTreinoController::class, 'deletarFicha'])->name('fichas-treino.deletar');
     Route::delete('/personal/fichas-treino/exercicio/{exercicioId}', [FichaTreinoController::class, 'deletarExercicio'])->name('fichas-treino.exercicio.deletar');
+
+    // Feature 1 — Evolução de carga (personal vê um aluno)
+    Route::get('/personal/evolucao-carga/{clienteId}', [FichaTreinoController::class, 'evolucaoCargaAluno'])->name('evolucao-carga.aluno');
+
+    // Feature 2 — Dashboard de aderência (personal vê todos os alunos)
+    Route::get('/personal/aderencia', [FichaTreinoController::class, 'dashboardAderencia'])->name('aderencia.dashboard');
+
+    // Feature 4 — Periodização (personal)
+    Route::get('/personal/periodizacao', [MesocicloController::class, 'index'])->name('periodizacao.index');
+    Route::get('/personal/periodizacao/aluno/{clienteId}', [MesocicloController::class, 'doAluno'])->name('periodizacao.aluno');
+    Route::post('/personal/periodizacao/aluno/{clienteId}', [MesocicloController::class, 'criar'])->name('periodizacao.criar');
+    Route::put('/personal/periodizacao/treino/{treinoId}', [MesocicloController::class, 'atualizarTreino'])->name('periodizacao.treino.atualizar');
+    Route::post('/personal/periodizacao/treino/{treinoId}/exercicio', [MesocicloController::class, 'adicionarExercicio'])->name('periodizacao.exercicio.add');
+    Route::delete('/personal/periodizacao/exercicio/{exercicioId}', [MesocicloController::class, 'deletarExercicio'])->name('periodizacao.exercicio.del');
+    Route::post('/personal/periodizacao/{mesocicloId}/ativar', [MesocicloController::class, 'ativar'])->name('periodizacao.ativar');
+    Route::post('/personal/periodizacao/{mesocicloId}/renovar', [MesocicloController::class, 'renovar'])->name('periodizacao.renovar');
+    Route::delete('/personal/periodizacao/{mesocicloId}', [MesocicloController::class, 'deletar'])->name('periodizacao.deletar');
+
+    // Feature 5 — Anamnese (personal visualiza)
+    Route::get('/personal/anamnese/{clienteId}', [AnamneseController::class, 'verPersonal'])->name('anamnese.personal');
 });
 
 // CLIENTE
@@ -330,6 +352,21 @@ Route::middleware('check.login')->group(function () {
     Route::post('/cliente/fichas-treino/{fichaId}/concluido', [FichaTreinoController::class, 'marcarConcluido'])->name('fichas-treino.concluido');
     Route::post('/cliente/fichas-treino/{fichaId}/nao-concluido', [FichaTreinoController::class, 'desmarcarConcluido'])->name('fichas-treino.nao-concluido');
     Route::get('/api/fichas-treino/{fichaId}/{data}', [FichaTreinoController::class, 'buscarFichaDia'])->name('fichas-treino.api.dia');
+
+    // Feature 1 — Evolução de carga (aluno vê os próprios dados)
+    Route::get('/cliente/evolucao-carga', [FichaTreinoController::class, 'evolucaoCarga'])->name('evolucao-carga.minha');
+    Route::get('/api/evolucao-carga', [FichaTreinoController::class, 'evolucaoCargaDados'])->name('evolucao-carga.dados');
+
+    // Feature 2 — Meu desempenho (aluno vê os próprios dados)
+    Route::get('/cliente/meu-desempenho', [FichaTreinoController::class, 'meuDesempenho'])->name('desempenho.meu');
+
+    // Feature 4 — Treino do dia / periodização (aluno)
+    Route::get('/cliente/treino-do-dia', [MesocicloController::class, 'treinoDoDia'])->name('periodizacao.treino-do-dia');
+    Route::post('/cliente/treino-do-dia/{mesocicloId}/concluir', [MesocicloController::class, 'concluirDia'])->name('periodizacao.concluir');
+
+    // Feature 5 — Anamnese (aluno preenche)
+    Route::get('/cliente/anamnese', [AnamneseController::class, 'form'])->name('anamnese.form');
+    Route::post('/cliente/anamnese', [AnamneseController::class, 'salvar'])->name('anamnese.salvar');
 });
 
 // ==========================================
