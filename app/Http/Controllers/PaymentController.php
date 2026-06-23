@@ -36,6 +36,55 @@ class PaymentController extends Controller
         ];
     }
 
+    /** Fração do valor bruto repassada ao recebedor do split (personal/academia/studio/loja). */
+    private const SPLIT_RATE = 0.90;
+
+    /**
+     * Valor bruto mínimo de uma cobrança. Abaixo disso o split por fixedValue
+     * (90% do bruto) pode superar o líquido (bruto − taxa Asaas) e a Asaas
+     * recusaria a cobrança. Ver garantirValorMinimo() e montarSplit().
+     */
+    private const MIN_SPLIT_VALUE = 10.0;
+
+    /**
+     * Monta o split do marketplace usando fixedValue: o recebedor fica com 90%
+     * do valor BRUTO da cobrança e a plataforma (conta principal, dona da
+     * cobrança) absorve a taxa Asaas e mantém o restante.
+     *
+     * Fallback de segurança: para valores muito baixos — onde 90% do bruto
+     * poderia superar o líquido e a Asaas recusaria a cobrança — cai para
+     * percentualValue. Na prática garantirValorMinimo() já barra cobranças
+     * abaixo de MIN_SPLIT_VALUE antes de chegar aqui.
+     */
+    private function montarSplit(?string $walletId, float $gross, array $ctx = []): ?array
+    {
+        if (! $walletId) {
+            Log::warning('Asaas: split não aplicado — recebedor sem walletId', $ctx);
+
+            return null;
+        }
+
+        if ($gross < self::MIN_SPLIT_VALUE) {
+            return [['walletId' => $walletId, 'percentualValue' => self::SPLIT_RATE * 100]];
+        }
+
+        return [['walletId' => $walletId, 'fixedValue' => round($gross * self::SPLIT_RATE, 2)]];
+    }
+
+    /**
+     * Barra cobranças abaixo do valor mínimo. Necessário porque o split por
+     * fixedValue (90% do bruto) só cabe no líquido quando o bruto é alto o
+     * suficiente para a plataforma absorver a taxa Asaas com os 10% restantes.
+     */
+    private function garantirValorMinimo(float $value): void
+    {
+        if ($value < self::MIN_SPLIT_VALUE) {
+            abort(response()->json([
+                'error' => 'O valor mínimo para pagamento é R$ '.number_format(self::MIN_SPLIT_VALUE, 2, ',', '.').'.',
+            ], 422));
+        }
+    }
+
     // ─────────────────────────────────────────────
     // CRIAR PAGAMENTO PIX (Asaas)
     // ─────────────────────────────────────────────
@@ -109,6 +158,8 @@ class PaymentController extends Controller
             $description = "Aula Avulsa — {$personal->nome}";
         }
 
+        $this->garantirValorMinimo($amount);
+
         $bookingData = [
             'cliente_id' => $clienteId,
             'personal_id' => $validated['personal_id'],
@@ -131,9 +182,7 @@ class PaymentController extends Controller
 
         // Pacote = assinatura mensal recorrente (nova cobrança PIX a cada mês).
         if ($validated['tipo'] === 'pacote') {
-            $split = $personal->asaas_wallet_id
-                ? [['walletId' => $personal->asaas_wallet_id, 'percentualValue' => 90]]
-                : null;
+            $split = $this->montarSplit($personal->asaas_wallet_id, $amount, ['personal_id' => $personal->id]);
 
             return $this->criarAssinaturaPix($cliente, $amount, $description, 'cli', 'sub_cli', $split, [
                 'tipo' => 'pacote',
@@ -154,10 +203,8 @@ class PaymentController extends Controller
                 'externalReference' => 'cli_'.$clienteId.'_'.time(),
             ];
 
-            if ($personal->asaas_wallet_id) {
-                $pixPayload['split'] = [['walletId' => $personal->asaas_wallet_id, 'percentualValue' => 90]];
-            } else {
-                Log::warning('Asaas: split não aplicado — personal sem walletId', ['personal_id' => $personal->id]);
+            if ($split = $this->montarSplit($personal->asaas_wallet_id, $amount, ['personal_id' => $personal->id])) {
+                $pixPayload['split'] = $split;
             }
 
             $paymentRes = Http::withHeaders($this->asaasHeaders())
@@ -1162,6 +1209,8 @@ class PaymentController extends Controller
         // Sem plano_id => contratação da mensalidade base da academia.
         [$amount, $description, $planoId] = $this->resolverItemAcademia($academia, $validated['plano_id'] ?? null);
 
+        $this->garantirValorMinimo($amount);
+
         // Plano/mensalidade de academia = assinatura mensal recorrente.
         $split = $this->splitAcademia($academia, $amount);
 
@@ -1283,6 +1332,8 @@ class PaymentController extends Controller
             $description = "Aula Avulsa — {$personal->nome}";
         }
 
+        $this->garantirValorMinimo($amount);
+
         $bookingData = [
             'cliente_id' => $clienteId,
             'personal_id' => $validated['personal_id'],
@@ -1305,9 +1356,7 @@ class PaymentController extends Controller
 
         // Pacote = assinatura mensal recorrente (débito automático no cartão).
         if ($validated['tipo'] === 'pacote') {
-            $split = $personal->asaas_wallet_id
-                ? [['walletId' => $personal->asaas_wallet_id, 'percentualValue' => 90]]
-                : null;
+            $split = $this->montarSplit($personal->asaas_wallet_id, $amount, ['personal_id' => $personal->id]);
 
             return $this->criarAssinaturaCartao($cliente, $amount, $description, 'cli_cc', 'sub_cli_cc', $split, [
                 'tipo' => 'pacote',
@@ -1348,10 +1397,8 @@ class PaymentController extends Controller
                 ],
             ];
 
-            if ($personal->asaas_wallet_id) {
-                $ccPayload['split'] = [['walletId' => $personal->asaas_wallet_id, 'percentualValue' => 90]];
-            } else {
-                Log::warning('Asaas: split não aplicado — personal sem walletId', ['personal_id' => $personal->id]);
+            if ($split = $this->montarSplit($personal->asaas_wallet_id, $amount, ['personal_id' => $personal->id])) {
+                $ccPayload['split'] = $split;
             }
 
             $paymentRes = Http::withHeaders($this->asaasHeaders())
@@ -1446,6 +1493,8 @@ class PaymentController extends Controller
         // Sem plano_id => contratação da mensalidade base da academia.
         [$amount, $description, $planoId] = $this->resolverItemAcademia($academia, $validated['plano_id'] ?? null);
 
+        $this->garantirValorMinimo($amount);
+
         // Plano/mensalidade de academia = assinatura mensal recorrente (débito automático no cartão).
         $split = $this->splitAcademia($academia, $amount);
 
@@ -1492,24 +1541,12 @@ class PaymentController extends Controller
 
     private function splitStudio(Studio $studio, float $amount): ?array
     {
-        if ($studio->asaas_wallet_id) {
-            return [['walletId' => $studio->asaas_wallet_id, 'percentualValue' => 90]];
-        }
-
-        Log::warning('Asaas: split não aplicado — studio sem walletId', ['studio_id' => $studio->id]);
-
-        return null;
+        return $this->montarSplit($studio->asaas_wallet_id, $amount, ['studio_id' => $studio->id]);
     }
 
     private function splitAcademia(\App\Models\Cadastro\Academia $academia, float $amount): ?array
     {
-        if ($academia->asaas_wallet_id) {
-            return [['walletId' => $academia->asaas_wallet_id, 'percentualValue' => 90]];
-        }
-
-        Log::warning('Asaas: split não aplicado — academia sem walletId', ['academia_id' => $academia->id]);
-
-        return null;
+        return $this->montarSplit($academia->asaas_wallet_id, $amount, ['academia_id' => $academia->id]);
     }
 
     // ─────────────────────────────────────────────
@@ -1532,6 +1569,8 @@ class PaymentController extends Controller
 
         $amount = (float) $plano->valor;
         $description = "Plano {$plano->nome} — {$studio->nome}";
+
+        $this->garantirValorMinimo($amount);
 
         // Plano de studio = assinatura mensal recorrente (nova cobrança PIX a cada mês).
         $split = $this->splitStudio($studio, $amount);
@@ -1580,6 +1619,8 @@ class PaymentController extends Controller
         if ($amount <= 0) {
             return response()->json(['error' => 'Este studio não definiu o valor da aula avulsa.'], 422);
         }
+
+        $this->garantirValorMinimo($amount);
 
         $description = "Aula avulsa {$validated['hora_inicio']} — {$studio->nome}";
 
@@ -1689,6 +1730,8 @@ class PaymentController extends Controller
         $amount = (float) $plano->valor;
         $description = "Plano {$plano->nome} — {$studio->nome}";
 
+        $this->garantirValorMinimo($amount);
+
         // Plano de studio = assinatura mensal recorrente (débito automático no cartão).
         $split = $this->splitStudio($studio, $amount);
 
@@ -1745,6 +1788,8 @@ class PaymentController extends Controller
         if ($amount <= 0) {
             return response()->json(['error' => 'Este studio não definiu o valor da aula avulsa.'], 422);
         }
+
+        $this->garantirValorMinimo($amount);
 
         $description = "Aula avulsa {$validated['hora_inicio']} — {$studio->nome}";
 
@@ -2120,13 +2165,7 @@ class PaymentController extends Controller
 
     private function splitLoja(Loja $loja, float $amount): ?array
     {
-        if ($loja->asaas_wallet_id) {
-            return [['walletId' => $loja->asaas_wallet_id, 'percentualValue' => 90]];
-        }
-
-        Log::warning('Asaas: split não aplicado — loja sem walletId', ['loja_id' => $loja->id]);
-
-        return null;
+        return $this->montarSplit($loja->asaas_wallet_id, $amount, ['loja_id' => $loja->id]);
     }
 
     /**
@@ -2266,6 +2305,8 @@ class PaymentController extends Controller
             return response()->json(['error' => 'Valor do pedido inválido.'], 422);
         }
 
+        $this->garantirValorMinimo($total);
+
         $entrega = $this->montarEntregaLoja($validated);
         $description = $this->lojaDescricaoPedido($loja, $itens);
 
@@ -2382,6 +2423,8 @@ class PaymentController extends Controller
         if ($total <= 0) {
             return response()->json(['error' => 'Valor do pedido inválido.'], 422);
         }
+
+        $this->garantirValorMinimo($total);
 
         $entrega = $this->montarEntregaLoja($validated);
         $description = $this->lojaDescricaoPedido($loja, $itens);
