@@ -4,14 +4,14 @@ namespace App\Http\Controllers;
 
 use App\Mail\PaymentSuccessfulMail;
 use App\Models\Agenda;
-use App\Models\Cadastro\Pacote;
-use App\Models\Cadastro\Personal;
-use App\Models\Cadastro\Studio;
-use App\Models\Cadastro\StudioPlano;
 use App\Models\Cadastro\Loja;
-use App\Models\Cadastro\Produto;
+use App\Models\Cadastro\Pacote;
 use App\Models\Cadastro\Pedido;
 use App\Models\Cadastro\PedidoItem;
+use App\Models\Cadastro\Personal;
+use App\Models\Cadastro\Produto;
+use App\Models\Cadastro\Studio;
+use App\Models\Cadastro\StudioPlano;
 use App\Models\MembershipConfirmation;
 use App\Models\Payment;
 use App\Models\Subscription;
@@ -47,16 +47,32 @@ class PaymentController extends Controller
     private const MIN_SPLIT_VALUE = 10.0;
 
     /**
+     * Taxa estimada (conservadora) do cartão de crédito no Asaas, usada apenas
+     * para decidir se o split por fixedValue (90% do bruto) ainda cabe no
+     * líquido. A taxa real é cobrada pelo Asaas; aqui só evitamos montar um
+     * split que a Asaas recusaria. O cartão tem taxa percentual ALTA + fixa,
+     * bem maior que a do PIX — por isso o fallback abaixo.
+     */
+    private const CARD_FEE_RATE = 0.0499;  // ≈4,99%
+
+    private const CARD_FEE_FIXED = 0.49;   // R$ 0,49 por transação
+
+    /**
      * Monta o split do marketplace usando fixedValue: o recebedor fica com 90%
      * do valor BRUTO da cobrança e a plataforma (conta principal, dona da
      * cobrança) absorve a taxa Asaas e mantém o restante.
      *
-     * Fallback de segurança: para valores muito baixos — onde 90% do bruto
-     * poderia superar o líquido e a Asaas recusaria a cobrança — cai para
-     * percentualValue. Na prática garantirValorMinimo() já barra cobranças
-     * abaixo de MIN_SPLIT_VALUE antes de chegar aqui.
+     * Fallback de segurança para percentualValue (90% sobre o líquido, calculado
+     * pela própria Asaas):
+     *  - sempre que o bruto for menor que MIN_SPLIT_VALUE; e
+     *  - no CARTÃO, sempre que 90% do bruto (fixedValue) não couber no líquido
+     *    estimado após a taxa do cartão. Sem isso a Asaas recusaria o split do
+     *    cartão (taxa bem maior que a do PIX), enquanto a cobrança poderia já
+     *    ter sido criada — origem de erros 500 no fluxo de cartão.
+     *
+     * O comportamento do PIX permanece inalterado (só o teste de mínimo).
      */
-    private function montarSplit(?string $walletId, float $gross, array $ctx = []): ?array
+    private function montarSplit(?string $walletId, float $gross, array $ctx = [], string $billingType = 'PIX'): ?array
     {
         if (! $walletId) {
             Log::warning('Asaas: split não aplicado — recebedor sem walletId', $ctx);
@@ -64,11 +80,21 @@ class PaymentController extends Controller
             return null;
         }
 
-        if ($gross < self::MIN_SPLIT_VALUE) {
+        $fixedValue = round($gross * self::SPLIT_RATE, 2);
+        $usePercentual = $gross < self::MIN_SPLIT_VALUE;
+
+        if ($billingType === 'CREDIT_CARD') {
+            $estimatedNet = $gross - ($gross * self::CARD_FEE_RATE + self::CARD_FEE_FIXED);
+            if ($fixedValue > $estimatedNet) {
+                $usePercentual = true;
+            }
+        }
+
+        if ($usePercentual) {
             return [['walletId' => $walletId, 'percentualValue' => self::SPLIT_RATE * 100]];
         }
 
-        return [['walletId' => $walletId, 'fixedValue' => round($gross * self::SPLIT_RATE, 2)]];
+        return [['walletId' => $walletId, 'fixedValue' => $fixedValue]];
     }
 
     /**
@@ -673,6 +699,33 @@ class PaymentController extends Controller
     // ─────────────────────────────────────────────
     // HELPERS
     // ─────────────────────────────────────────────
+    /**
+     * Resposta padrão para o caso em que a cobrança/assinatura JÁ foi criada com
+     * sucesso no Asaas, mas a persistência local (Payment::create,
+     * registrarAssinatura ou processamento) falhou.
+     *
+     * Regra de ouro do fluxo de cartão: se a cobrança já existe no Asaas, NUNCA
+     * retornar 500. A cobrança é real e o dinheiro pode ter sido capturado;
+     * devolvemos 200 e deixamos o webhook (assinaturas) ou a conciliação manual
+     * (avulsas) completarem o registro. O log em nível CRITICAL sinaliza ao
+     * operador que há uma cobrança sem registro local para reconciliar.
+     */
+    private function respostaCobrancaCriadaSemRegistroLocal(string $contexto, ?string $asaasPaymentId, ?string $subscriptionId, string $status, \Throwable $e)
+    {
+        Log::critical("Asaas {$contexto}: cobrança criada no Asaas mas falha ao registrar localmente — CONCILIAÇÃO MANUAL NECESSÁRIA", [
+            'asaas_payment_id' => $asaasPaymentId,
+            'asaas_subscription_id' => $subscriptionId,
+            'error' => $e->getMessage(),
+        ]);
+
+        return response()->json([
+            'status' => $status,
+            'confirmed' => in_array($status, ['CONFIRMED', 'RECEIVED', 'RECEIVED_IN_CASH']),
+            'recorrente' => $subscriptionId !== null,
+            'aviso' => 'Pagamento processado. O registro será confirmado em instantes.',
+        ]);
+    }
+
     public function calculateSplit(float $amountTotal): array
     {
         $companyFee = round($amountTotal * 0.10, 2);
@@ -780,6 +833,21 @@ class PaymentController extends Controller
 
     // ─────────────────────────────────────────────
     // ASSINATURAS RECORRENTES (mensais) — Asaas /subscriptions
+    // ─────────────────────────────────────────────
+    //
+    // Fluxos COBRADOS COMO ASSINATURA MENSAL (cycle: MONTHLY), PIX e cartão,
+    // com split 90/10 replicado pelo Asaas em cada ciclo:
+    //   • Pacote do personal      → criarPagamento / criarPagamentoCartao (ramo 'pacote')
+    //   • Plano/mensalidade da academia → criarPagamentoAcademia / criarPagamentoCartaoAcademia
+    //   • Plano de studio         → criarPagamentoStudioPlano / criarPagamentoCartaoStudioPlano
+    // Todos passam por criarAssinaturaPix()/criarAssinaturaCartao(), gravam o
+    // subscription_id na tabela `subscriptions` (registrarAssinatura) e têm os
+    // ciclos seguintes processados pelo webhook (processarRenovacaoAssinatura).
+    //
+    // Fluxos que permanecem COBRANÇA ÚNICA (POST /payments), por serem pontuais:
+    //   • Aula avulsa, ficha e avaliação do personal
+    //   • Aula avulsa de studio
+    //   • Pedido de loja (compra de produtos)
     // ─────────────────────────────────────────────
 
     /**
@@ -933,47 +1001,58 @@ class PaymentController extends Controller
 
             $subscriptionId = $subData['id'];
 
-            $valores = $this->calculateSplit($amount);
-            $this->registrarAssinatura($cliente->id, $subscriptionId, 'credit_card', $valores, $subFields, $bookingData, $subData['nextDueDate'] ?? null);
+            // Assinatura criada no Asaas. A partir daqui qualquer falha é de
+            // persistência local: não pode virar 500 (a assinatura já existe e
+            // o webhook reconcilia os ciclos).
+            $asaasPaymentId = null;
+            $status = 'PENDING';
 
-            $firstPayment = $this->primeiraCobrancaAssinatura($subscriptionId);
-            $asaasPaymentId = $firstPayment['id'] ?? null;
-            $status = $firstPayment['status'] ?? 'PENDING';
+            try {
+                $valores = $this->calculateSplit($amount);
+                $this->registrarAssinatura($cliente->id, $subscriptionId, 'credit_card', $valores, $subFields, $bookingData, $subData['nextDueDate'] ?? null);
 
-            $payment = Payment::create(array_merge([
-                'user_id' => $cliente->id,
-                'amount_total' => $valores['amount_total'],
-                'company_fee' => $valores['company_fee'],
-                'trainer_amount' => $valores['trainer_amount'],
-                'stripe_payment_intent_id' => $asaasPaymentId,
-                'asaas_subscription_id' => $subscriptionId,
-                'status' => 'pending',
-                'payment_method' => 'credit_card',
-                'idempotency_key' => $idemPrefix.'_'.($asaasPaymentId ?? $subscriptionId),
-                'booking_data' => json_encode($bookingData),
-            ], $this->subFieldsToPayment($subFields)));
+                $firstPayment = $this->primeiraCobrancaAssinatura($subscriptionId);
+                $asaasPaymentId = $firstPayment['id'] ?? null;
+                $status = $firstPayment['status'] ?? 'PENDING';
 
-            $confirmed = in_array($status, ['CONFIRMED', 'RECEIVED', 'RECEIVED_IN_CASH']);
-            if ($confirmed) {
-                $this->processarPagamentoConfirmado($payment);
+                $payment = Payment::create(array_merge([
+                    'user_id' => $cliente->id,
+                    'amount_total' => $valores['amount_total'],
+                    'company_fee' => $valores['company_fee'],
+                    'trainer_amount' => $valores['trainer_amount'],
+                    'stripe_payment_intent_id' => $asaasPaymentId,
+                    'asaas_subscription_id' => $subscriptionId,
+                    'status' => 'pending',
+                    'payment_method' => 'credit_card',
+                    'idempotency_key' => $idemPrefix.'_'.($asaasPaymentId ?? $subscriptionId),
+                    'booking_data' => json_encode($bookingData),
+                ], $this->subFieldsToPayment($subFields)));
+
+                $confirmed = in_array($status, ['CONFIRMED', 'RECEIVED', 'RECEIVED_IN_CASH']);
+                if ($confirmed) {
+                    $this->processarPagamentoConfirmado($payment);
+                }
+
+                Log::info('Asaas assinatura cartão criada', [
+                    'payment_id' => $payment->id,
+                    'subscription_id' => $subscriptionId,
+                    'status' => $status,
+                    'confirmed' => $confirmed,
+                ]);
+
+                return response()->json([
+                    'paymentId' => $payment->id,
+                    'subscriptionId' => $subscriptionId,
+                    'status' => $status,
+                    'confirmed' => $confirmed,
+                    'recorrente' => true,
+                ]);
+            } catch (\Throwable $e) {
+                return $this->respostaCobrancaCriadaSemRegistroLocal('assinatura cartão', $asaasPaymentId, $subscriptionId, $status, $e);
             }
 
-            Log::info('Asaas assinatura cartão criada', [
-                'payment_id' => $payment->id,
-                'subscription_id' => $subscriptionId,
-                'status' => $status,
-                'confirmed' => $confirmed,
-            ]);
-
-            return response()->json([
-                'paymentId' => $payment->id,
-                'subscriptionId' => $subscriptionId,
-                'status' => $status,
-                'confirmed' => $confirmed,
-                'recorrente' => true,
-            ]);
-
         } catch (\Exception $e) {
+            // Falha ANTES de a assinatura existir (rede/timeout/etc.): 500 legítimo.
             Log::error('Asaas assinatura cartão: exception', ['error' => $e->getMessage()]);
 
             return response()->json(['error' => 'Erro interno. Tente novamente.'], 500);
@@ -1356,7 +1435,7 @@ class PaymentController extends Controller
 
         // Pacote = assinatura mensal recorrente (débito automático no cartão).
         if ($validated['tipo'] === 'pacote') {
-            $split = $this->montarSplit($personal->asaas_wallet_id, $amount, ['personal_id' => $personal->id]);
+            $split = $this->montarSplit($personal->asaas_wallet_id, $amount, ['personal_id' => $personal->id], 'CREDIT_CARD');
 
             return $this->criarAssinaturaCartao($cliente, $amount, $description, 'cli_cc', 'sub_cli_cc', $split, [
                 'tipo' => 'pacote',
@@ -1397,7 +1476,7 @@ class PaymentController extends Controller
                 ],
             ];
 
-            if ($split = $this->montarSplit($personal->asaas_wallet_id, $amount, ['personal_id' => $personal->id])) {
+            if ($split = $this->montarSplit($personal->asaas_wallet_id, $amount, ['personal_id' => $personal->id], 'CREDIT_CARD')) {
                 $ccPayload['split'] = $split;
             }
 
@@ -1419,44 +1498,51 @@ class PaymentController extends Controller
                 return response()->json(['error' => 'Falha ao processar cartão. Tente novamente.'], 500);
             }
 
-            $asaasPaymentId = $asaasData['id'];
+            // Cobrança criada no Asaas. A partir daqui qualquer falha é de
+            // persistência local: não pode virar 500 (a cobrança já existe).
+            $asaasPaymentId = $asaasData['id'] ?? null;
             $status = $asaasData['status'] ?? 'PENDING';
 
-            $split = $this->calculateSplit($amount);
-            $payment = Payment::create([
-                'user_id' => $clienteId,
-                'trainer_id' => $validated['personal_id'],
-                'membership_id' => $validated['pacote_id'] ?? null,
-                'amount_total' => $split['amount_total'],
-                'company_fee' => $split['company_fee'],
-                'trainer_amount' => $split['trainer_amount'],
-                'stripe_payment_intent_id' => $asaasPaymentId,
-                'status' => 'pending',
-                'payment_method' => 'credit_card',
-                'idempotency_key' => 'cc_'.$asaasPaymentId,
-                'booking_data' => json_encode($bookingData),
-            ]);
+            try {
+                $split = $this->calculateSplit($amount);
+                $payment = Payment::create([
+                    'user_id' => $clienteId,
+                    'trainer_id' => $validated['personal_id'],
+                    'membership_id' => $validated['pacote_id'] ?? null,
+                    'amount_total' => $split['amount_total'],
+                    'company_fee' => $split['company_fee'],
+                    'trainer_amount' => $split['trainer_amount'],
+                    'stripe_payment_intent_id' => $asaasPaymentId,
+                    'status' => 'pending',
+                    'payment_method' => 'credit_card',
+                    'idempotency_key' => 'cc_'.($asaasPaymentId ?? 'noid_'.uniqid()),
+                    'booking_data' => json_encode($bookingData),
+                ]);
 
-            $confirmed = in_array($status, ['CONFIRMED', 'RECEIVED', 'RECEIVED_IN_CASH']);
+                $confirmed = in_array($status, ['CONFIRMED', 'RECEIVED', 'RECEIVED_IN_CASH']);
 
-            if ($confirmed) {
-                $this->processarPagamentoConfirmado($payment);
+                if ($confirmed) {
+                    $this->processarPagamentoConfirmado($payment);
+                }
+
+                Log::info('Asaas cartão: pagamento criado', [
+                    'payment_id' => $payment->id,
+                    'asaas_payment_id' => $asaasPaymentId,
+                    'status' => $status,
+                    'confirmed' => $confirmed,
+                ]);
+
+                return response()->json([
+                    'paymentId' => $payment->id,
+                    'status' => $status,
+                    'confirmed' => $confirmed,
+                ]);
+            } catch (\Throwable $e) {
+                return $this->respostaCobrancaCriadaSemRegistroLocal('cartão', $asaasPaymentId, null, $status, $e);
             }
 
-            Log::info('Asaas cartão: pagamento criado', [
-                'payment_id' => $payment->id,
-                'asaas_payment_id' => $asaasPaymentId,
-                'status' => $status,
-                'confirmed' => $confirmed,
-            ]);
-
-            return response()->json([
-                'paymentId' => $payment->id,
-                'status' => $status,
-                'confirmed' => $confirmed,
-            ]);
-
         } catch (\Exception $e) {
+            // Falha ANTES de a cobrança existir (rede/timeout/etc.): 500 legítimo.
             Log::error('Asaas cartão: exception', ['error' => $e->getMessage()]);
 
             return response()->json(['error' => 'Erro interno. Tente novamente.'], 500);
@@ -1496,7 +1582,7 @@ class PaymentController extends Controller
         $this->garantirValorMinimo($amount);
 
         // Plano/mensalidade de academia = assinatura mensal recorrente (débito automático no cartão).
-        $split = $this->splitAcademia($academia, $amount);
+        $split = $this->splitAcademia($academia, $amount, 'CREDIT_CARD');
 
         return $this->criarAssinaturaCartao($cliente, $amount, $description, 'aca_cc', 'sub_aca_cc', $split, [
             'tipo' => 'academia',
@@ -1539,14 +1625,14 @@ class PaymentController extends Controller
         return [$studio, $plano];
     }
 
-    private function splitStudio(Studio $studio, float $amount): ?array
+    private function splitStudio(Studio $studio, float $amount, string $billingType = 'PIX'): ?array
     {
-        return $this->montarSplit($studio->asaas_wallet_id, $amount, ['studio_id' => $studio->id]);
+        return $this->montarSplit($studio->asaas_wallet_id, $amount, ['studio_id' => $studio->id], $billingType);
     }
 
-    private function splitAcademia(\App\Models\Cadastro\Academia $academia, float $amount): ?array
+    private function splitAcademia(\App\Models\Cadastro\Academia $academia, float $amount, string $billingType = 'PIX'): ?array
     {
-        return $this->montarSplit($academia->asaas_wallet_id, $amount, ['academia_id' => $academia->id]);
+        return $this->montarSplit($academia->asaas_wallet_id, $amount, ['academia_id' => $academia->id], $billingType);
     }
 
     // ─────────────────────────────────────────────
@@ -1733,7 +1819,7 @@ class PaymentController extends Controller
         $this->garantirValorMinimo($amount);
 
         // Plano de studio = assinatura mensal recorrente (débito automático no cartão).
-        $split = $this->splitStudio($studio, $amount);
+        $split = $this->splitStudio($studio, $amount, 'CREDIT_CARD');
 
         return $this->criarAssinaturaCartao($cliente, $amount, $description, 'stu_cc', 'sub_stu_cc', $split, [
             'tipo' => 'studio_plano',
@@ -1844,7 +1930,7 @@ class PaymentController extends Controller
             ],
         ];
 
-        if ($split = $this->splitStudio($studio, $amount)) {
+        if ($split = $this->splitStudio($studio, $amount, 'CREDIT_CARD')) {
             $ccPayload['split'] = $split;
         }
 
@@ -1866,43 +1952,49 @@ class PaymentController extends Controller
             return response()->json(['error' => 'Falha ao processar cartão. Tente novamente.'], 500);
         }
 
-        $asaasPaymentId = $asaasData['id'];
+        // Cobrança criada no Asaas. A partir daqui qualquer falha é de
+        // persistência local: não pode virar 500 (a cobrança já existe).
+        $asaasPaymentId = $asaasData['id'] ?? null;
         $status = $asaasData['status'] ?? 'PENDING';
 
-        $valores = $this->calculateSplit($amount);
-        $payment = Payment::create(array_merge([
-            'user_id' => $cliente->id,
-            'trainer_id' => null,
-            'membership_id' => null,
-            'studio_id' => $studio->id,
-            'amount_total' => $valores['amount_total'],
-            'company_fee' => $valores['company_fee'],
-            'trainer_amount' => $valores['trainer_amount'],
-            'stripe_payment_intent_id' => $asaasPaymentId,
-            'status' => 'pending',
-            'payment_method' => 'credit_card',
-            'idempotency_key' => 'stu_cc_'.$asaasPaymentId,
-            'booking_data' => json_encode($bookingData),
-        ], $extraPaymentFields));
+        try {
+            $valores = $this->calculateSplit($amount);
+            $payment = Payment::create(array_merge([
+                'user_id' => $cliente->id,
+                'trainer_id' => null,
+                'membership_id' => null,
+                'studio_id' => $studio->id,
+                'amount_total' => $valores['amount_total'],
+                'company_fee' => $valores['company_fee'],
+                'trainer_amount' => $valores['trainer_amount'],
+                'stripe_payment_intent_id' => $asaasPaymentId,
+                'status' => 'pending',
+                'payment_method' => 'credit_card',
+                'idempotency_key' => 'stu_cc_'.($asaasPaymentId ?? 'noid_'.uniqid()),
+                'booking_data' => json_encode($bookingData),
+            ], $extraPaymentFields));
 
-        $confirmed = in_array($status, ['CONFIRMED', 'RECEIVED', 'RECEIVED_IN_CASH']);
+            $confirmed = in_array($status, ['CONFIRMED', 'RECEIVED', 'RECEIVED_IN_CASH']);
 
-        if ($confirmed) {
-            $this->processarPagamentoConfirmado($payment);
+            if ($confirmed) {
+                $this->processarPagamentoConfirmado($payment);
+            }
+
+            Log::info('Asaas cartão studio: pagamento criado', [
+                'payment_id' => $payment->id,
+                'asaas_payment_id' => $asaasPaymentId,
+                'status' => $status,
+                'tipo' => $bookingData['tipo'],
+            ]);
+
+            return response()->json([
+                'paymentId' => $payment->id,
+                'status' => $status,
+                'confirmed' => $confirmed,
+            ]);
+        } catch (\Throwable $e) {
+            return $this->respostaCobrancaCriadaSemRegistroLocal('cartão studio', $asaasPaymentId, null, $status, $e);
         }
-
-        Log::info('Asaas cartão studio: pagamento criado', [
-            'payment_id' => $payment->id,
-            'asaas_payment_id' => $asaasPaymentId,
-            'status' => $status,
-            'tipo' => $bookingData['tipo'],
-        ]);
-
-        return response()->json([
-            'paymentId' => $payment->id,
-            'status' => $status,
-            'confirmed' => $confirmed,
-        ]);
     }
 
     // ─────────────────────────────────────────────
@@ -2163,9 +2255,9 @@ class PaymentController extends Controller
     // LOJA DE SUPLEMENTOS — COMPRA DE PRODUTOS
     // ═════════════════════════════════════════════
 
-    private function splitLoja(Loja $loja, float $amount): ?array
+    private function splitLoja(Loja $loja, float $amount, string $billingType = 'PIX'): ?array
     {
-        return $this->montarSplit($loja->asaas_wallet_id, $amount, ['loja_id' => $loja->id]);
+        return $this->montarSplit($loja->asaas_wallet_id, $amount, ['loja_id' => $loja->id], $billingType);
     }
 
     /**
@@ -2210,10 +2302,10 @@ class PaymentController extends Controller
 
             $itens[] = [
                 'produto_id' => $produto->id,
-                'nome'       => $produto->nome,
-                'preco'      => (float) $produto->preco,
+                'nome' => $produto->nome,
+                'preco' => (float) $produto->preco,
                 'quantidade' => $qtd,
-                'subtotal'   => $sub,
+                'subtotal' => $sub,
             ];
         }
 
@@ -2239,15 +2331,15 @@ class PaymentController extends Controller
         return [
             'entrega_tipo' => 'entrega',
             'entrega' => [
-                'nome'        => $validated['entrega_nome'],
-                'telefone'    => $validated['entrega_telefone'],
-                'cep'         => $validated['entrega_cep'],
-                'rua'         => $validated['entrega_rua'],
-                'numero'      => $validated['entrega_numero'],
+                'nome' => $validated['entrega_nome'],
+                'telefone' => $validated['entrega_telefone'],
+                'cep' => $validated['entrega_cep'],
+                'rua' => $validated['entrega_rua'],
+                'numero' => $validated['entrega_numero'],
                 'complemento' => $validated['entrega_complemento'] ?? null,
-                'bairro'      => $validated['entrega_bairro'],
-                'cidade'      => $validated['entrega_cidade'],
-                'estado'      => $validated['entrega_estado'],
+                'bairro' => $validated['entrega_bairro'],
+                'cidade' => $validated['entrega_cidade'],
+                'estado' => $validated['entrega_estado'],
             ],
         ];
     }
@@ -2255,20 +2347,20 @@ class PaymentController extends Controller
     private function regrasEntregaLoja(): array
     {
         return [
-            'items'                 => 'required|array|min:1',
-            'items.*.produto_id'    => 'required|integer',
-            'items.*.quantidade'    => 'required|integer|min:1|max:999',
-            'entrega_tipo'          => 'required|in:retirada,entrega',
-            'entrega_nome'          => 'nullable|string|max:120',
-            'entrega_telefone'      => 'nullable|string|max:20',
-            'entrega_cep'           => 'nullable|string|max:9',
-            'entrega_rua'           => 'nullable|string|max:255',
-            'entrega_numero'        => 'nullable|string|max:20',
-            'entrega_complemento'   => 'nullable|string|max:120',
-            'entrega_bairro'        => 'nullable|string|max:120',
-            'entrega_cidade'        => 'nullable|string|max:120',
-            'entrega_estado'        => 'nullable|string|max:2',
-            'observacao'            => 'nullable|string|max:500',
+            'items' => 'required|array|min:1',
+            'items.*.produto_id' => 'required|integer',
+            'items.*.quantidade' => 'required|integer|min:1|max:999',
+            'entrega_tipo' => 'required|in:retirada,entrega',
+            'entrega_nome' => 'nullable|string|max:120',
+            'entrega_telefone' => 'nullable|string|max:20',
+            'entrega_cep' => 'nullable|string|max:9',
+            'entrega_rua' => 'nullable|string|max:255',
+            'entrega_numero' => 'nullable|string|max:20',
+            'entrega_complemento' => 'nullable|string|max:120',
+            'entrega_bairro' => 'nullable|string|max:120',
+            'entrega_cidade' => 'nullable|string|max:120',
+            'entrega_estado' => 'nullable|string|max:2',
+            'observacao' => 'nullable|string|max:500',
         ];
     }
 
@@ -2311,24 +2403,24 @@ class PaymentController extends Controller
         $description = $this->lojaDescricaoPedido($loja, $itens);
 
         $bookingData = [
-            'tipo'         => 'loja_pedido',
-            'loja_id'      => $loja->id,
-            'cliente_id'   => $clienteId,
-            'itens'        => $itens,
+            'tipo' => 'loja_pedido',
+            'loja_id' => $loja->id,
+            'cliente_id' => $clienteId,
+            'itens' => $itens,
             'entrega_tipo' => $entrega['entrega_tipo'],
-            'entrega'      => $entrega['entrega'],
-            'observacao'   => $validated['observacao'] ?? null,
+            'entrega' => $entrega['entrega'],
+            'observacao' => $validated['observacao'] ?? null,
         ];
 
         try {
             $asaasCustomerId = $this->obterOuCriarClienteAsaas($cliente);
 
             $pixPayload = [
-                'customer'          => $asaasCustomerId,
-                'billingType'       => 'PIX',
-                'value'             => $total,
-                'dueDate'           => now()->addDay()->format('Y-m-d'),
-                'description'       => $description,
+                'customer' => $asaasCustomerId,
+                'billingType' => 'PIX',
+                'value' => $total,
+                'dueDate' => now()->addDay()->format('Y-m-d'),
+                'description' => $description,
                 'externalReference' => 'loja_'.$clienteId.'_'.$loja->id.'_'.time(),
             ];
 
@@ -2353,31 +2445,31 @@ class PaymentController extends Controller
 
             $valores = $this->calculateSplit($total);
             $payment = Payment::create([
-                'user_id'                  => $clienteId,
-                'loja_id'                  => $loja->id,
-                'amount_total'             => $valores['amount_total'],
-                'company_fee'              => $valores['company_fee'],
-                'trainer_amount'           => $valores['trainer_amount'],
+                'user_id' => $clienteId,
+                'loja_id' => $loja->id,
+                'amount_total' => $valores['amount_total'],
+                'company_fee' => $valores['company_fee'],
+                'trainer_amount' => $valores['trainer_amount'],
                 'stripe_payment_intent_id' => $asaasPaymentId,
-                'status'                   => 'pending',
-                'payment_method'           => 'pix',
-                'idempotency_key'          => 'loja_'.$asaasPaymentId,
-                'booking_data'             => json_encode($bookingData),
+                'status' => 'pending',
+                'payment_method' => 'pix',
+                'idempotency_key' => 'loja_'.$asaasPaymentId,
+                'booking_data' => json_encode($bookingData),
             ]);
 
             Log::info('Asaas loja: pagamento Pix criado', [
-                'payment_id'       => $payment->id,
+                'payment_id' => $payment->id,
                 'asaas_payment_id' => $asaasPaymentId,
-                'loja_id'          => $loja->id,
-                'total'            => $total,
+                'loja_id' => $loja->id,
+                'total' => $total,
             ]);
 
             return response()->json([
-                'paymentId'      => $payment->id,
+                'paymentId' => $payment->id,
                 'asaasPaymentId' => $asaasPaymentId,
-                'pixPayload'     => $qrData['payload'] ?? '',
-                'pixQrCode'      => $qrData['encodedImage'] ?? '',
-                'amount'         => $total,
+                'pixPayload' => $qrData['payload'] ?? '',
+                'pixQrCode' => $qrData['encodedImage'] ?? '',
+                'amount' => $total,
             ]);
 
         } catch (\Exception $e) {
@@ -2401,15 +2493,15 @@ class PaymentController extends Controller
             ['loja_id' => 'required|integer|exists:lojas,id'],
             $this->regrasEntregaLoja(),
             [
-                'card_holder'       => 'required|string|max:100',
-                'card_number'       => 'required|string|min:13|max:19',
+                'card_holder' => 'required|string|max:100',
+                'card_number' => 'required|string|min:13|max:19',
                 'card_expiry_month' => 'required|string|size:2',
-                'card_expiry_year'  => 'required|string|size:4',
-                'card_ccv'          => 'required|string|min:3|max:4',
-                'cpf'               => 'required|string|min:11|max:18',
-                'cep'               => 'required|string|min:8|max:9',
-                'numero'            => 'required|string|max:20',
-                'telefone'          => 'required|string|min:10|max:15',
+                'card_expiry_year' => 'required|string|size:4',
+                'card_ccv' => 'required|string|min:3|max:4',
+                'cpf' => 'required|string|min:11|max:18',
+                'cep' => 'required|string|min:8|max:9',
+                'numero' => 'required|string|max:20',
+                'telefone' => 'required|string|min:10|max:15',
             ]
         ));
 
@@ -2430,13 +2522,13 @@ class PaymentController extends Controller
         $description = $this->lojaDescricaoPedido($loja, $itens);
 
         $bookingData = [
-            'tipo'         => 'loja_pedido',
-            'loja_id'      => $loja->id,
-            'cliente_id'   => $clienteId,
-            'itens'        => $itens,
+            'tipo' => 'loja_pedido',
+            'loja_id' => $loja->id,
+            'cliente_id' => $clienteId,
+            'itens' => $itens,
             'entrega_tipo' => $entrega['entrega_tipo'],
-            'entrega'      => $entrega['entrega'],
-            'observacao'   => $validated['observacao'] ?? null,
+            'entrega' => $entrega['entrega'],
+            'observacao' => $validated['observacao'] ?? null,
         ];
 
         try {
@@ -2448,30 +2540,30 @@ class PaymentController extends Controller
             $telefone = preg_replace('/\D/', '', $validated['telefone']);
 
             $ccPayload = [
-                'customer'          => $asaasCustomerId,
-                'billingType'       => 'CREDIT_CARD',
-                'value'             => $total,
-                'dueDate'           => now()->format('Y-m-d'),
-                'description'       => $description,
+                'customer' => $asaasCustomerId,
+                'billingType' => 'CREDIT_CARD',
+                'value' => $total,
+                'dueDate' => now()->format('Y-m-d'),
+                'description' => $description,
                 'externalReference' => 'loja_cc_'.$clienteId.'_'.$loja->id.'_'.time(),
-                'creditCard'        => [
-                    'holderName'  => $validated['card_holder'],
-                    'number'      => $cardNumber,
+                'creditCard' => [
+                    'holderName' => $validated['card_holder'],
+                    'number' => $cardNumber,
                     'expiryMonth' => $validated['card_expiry_month'],
-                    'expiryYear'  => $validated['card_expiry_year'],
-                    'ccv'         => $validated['card_ccv'],
+                    'expiryYear' => $validated['card_expiry_year'],
+                    'ccv' => $validated['card_ccv'],
                 ],
                 'creditCardHolderInfo' => [
-                    'name'          => $validated['card_holder'],
-                    'email'         => $cliente->email,
-                    'cpfCnpj'       => $cpf,
-                    'postalCode'    => $cep,
+                    'name' => $validated['card_holder'],
+                    'email' => $cliente->email,
+                    'cpfCnpj' => $cpf,
+                    'postalCode' => $cep,
                     'addressNumber' => $validated['numero'],
-                    'phone'         => $telefone,
+                    'phone' => $telefone,
                 ],
             ];
 
-            if ($split = $this->splitLoja($loja, $total)) {
+            if ($split = $this->splitLoja($loja, $total, 'CREDIT_CARD')) {
                 $ccPayload['split'] = $split;
             }
 
@@ -2492,42 +2584,49 @@ class PaymentController extends Controller
                 return response()->json(['error' => 'Falha ao processar cartão. Tente novamente.'], 500);
             }
 
-            $asaasPaymentId = $asaasData['id'];
+            // Cobrança criada no Asaas. A partir daqui qualquer falha é de
+            // persistência local: não pode virar 500 (a cobrança já existe).
+            $asaasPaymentId = $asaasData['id'] ?? null;
             $status = $asaasData['status'] ?? 'PENDING';
 
-            $valores = $this->calculateSplit($total);
-            $payment = Payment::create([
-                'user_id'                  => $clienteId,
-                'loja_id'                  => $loja->id,
-                'amount_total'             => $valores['amount_total'],
-                'company_fee'              => $valores['company_fee'],
-                'trainer_amount'           => $valores['trainer_amount'],
-                'stripe_payment_intent_id' => $asaasPaymentId,
-                'status'                   => 'pending',
-                'payment_method'           => 'credit_card',
-                'idempotency_key'          => 'loja_cc_'.$asaasPaymentId,
-                'booking_data'             => json_encode($bookingData),
-            ]);
+            try {
+                $valores = $this->calculateSplit($total);
+                $payment = Payment::create([
+                    'user_id' => $clienteId,
+                    'loja_id' => $loja->id,
+                    'amount_total' => $valores['amount_total'],
+                    'company_fee' => $valores['company_fee'],
+                    'trainer_amount' => $valores['trainer_amount'],
+                    'stripe_payment_intent_id' => $asaasPaymentId,
+                    'status' => 'pending',
+                    'payment_method' => 'credit_card',
+                    'idempotency_key' => 'loja_cc_'.($asaasPaymentId ?? 'noid_'.uniqid()),
+                    'booking_data' => json_encode($bookingData),
+                ]);
 
-            $confirmed = in_array($status, ['CONFIRMED', 'RECEIVED', 'RECEIVED_IN_CASH']);
-            if ($confirmed) {
-                $this->processarPagamentoConfirmado($payment);
+                $confirmed = in_array($status, ['CONFIRMED', 'RECEIVED', 'RECEIVED_IN_CASH']);
+                if ($confirmed) {
+                    $this->processarPagamentoConfirmado($payment);
+                }
+
+                Log::info('Asaas cartão loja: pagamento criado', [
+                    'payment_id' => $payment->id,
+                    'asaas_payment_id' => $asaasPaymentId,
+                    'status' => $status,
+                    'confirmed' => $confirmed,
+                ]);
+
+                return response()->json([
+                    'paymentId' => $payment->id,
+                    'status' => $status,
+                    'confirmed' => $confirmed,
+                ]);
+            } catch (\Throwable $e) {
+                return $this->respostaCobrancaCriadaSemRegistroLocal('cartão loja', $asaasPaymentId, null, $status, $e);
             }
 
-            Log::info('Asaas cartão loja: pagamento criado', [
-                'payment_id'       => $payment->id,
-                'asaas_payment_id' => $asaasPaymentId,
-                'status'           => $status,
-                'confirmed'        => $confirmed,
-            ]);
-
-            return response()->json([
-                'paymentId' => $payment->id,
-                'status'    => $status,
-                'confirmed' => $confirmed,
-            ]);
-
         } catch (\Exception $e) {
+            // Falha ANTES de a cobrança existir (rede/timeout/etc.): 500 legítimo.
             Log::error('Asaas cartão loja: exception', ['error' => $e->getMessage()]);
 
             return response()->json(['error' => 'Erro interno. Tente novamente.'], 500);
@@ -2547,32 +2646,32 @@ class PaymentController extends Controller
         $entrega = $booking['entrega'] ?? null;
 
         $pedido = Pedido::create([
-            'loja_id'             => $booking['loja_id'],
-            'cliente_id'          => $booking['cliente_id'],
-            'payment_id'          => $payment->id,
-            'valor_total'         => $payment->amount_total,
-            'entrega_tipo'        => $booking['entrega_tipo'] ?? 'retirada',
-            'entrega_nome'        => $entrega['nome'] ?? null,
-            'entrega_telefone'    => $entrega['telefone'] ?? null,
-            'entrega_cep'         => $entrega['cep'] ?? null,
-            'entrega_rua'         => $entrega['rua'] ?? null,
-            'entrega_numero'      => $entrega['numero'] ?? null,
+            'loja_id' => $booking['loja_id'],
+            'cliente_id' => $booking['cliente_id'],
+            'payment_id' => $payment->id,
+            'valor_total' => $payment->amount_total,
+            'entrega_tipo' => $booking['entrega_tipo'] ?? 'retirada',
+            'entrega_nome' => $entrega['nome'] ?? null,
+            'entrega_telefone' => $entrega['telefone'] ?? null,
+            'entrega_cep' => $entrega['cep'] ?? null,
+            'entrega_rua' => $entrega['rua'] ?? null,
+            'entrega_numero' => $entrega['numero'] ?? null,
             'entrega_complemento' => $entrega['complemento'] ?? null,
-            'entrega_bairro'      => $entrega['bairro'] ?? null,
-            'entrega_cidade'      => $entrega['cidade'] ?? null,
-            'entrega_estado'      => $entrega['estado'] ?? null,
-            'observacao'          => $booking['observacao'] ?? null,
-            'status'              => 'pago',
+            'entrega_bairro' => $entrega['bairro'] ?? null,
+            'entrega_cidade' => $entrega['cidade'] ?? null,
+            'entrega_estado' => $entrega['estado'] ?? null,
+            'observacao' => $booking['observacao'] ?? null,
+            'status' => 'pago',
         ]);
 
         foreach (($booking['itens'] ?? []) as $item) {
             PedidoItem::create([
-                'pedido_id'  => $pedido->id,
+                'pedido_id' => $pedido->id,
                 'produto_id' => $item['produto_id'] ?? null,
-                'nome'       => $item['nome'] ?? 'Produto',
-                'preco'      => $item['preco'] ?? 0,
+                'nome' => $item['nome'] ?? 'Produto',
+                'preco' => $item['preco'] ?? 0,
                 'quantidade' => $item['quantidade'] ?? 1,
-                'subtotal'   => $item['subtotal'] ?? 0,
+                'subtotal' => $item['subtotal'] ?? 0,
             ]);
 
             // Baixa de estoque (nunca abaixo de zero).
@@ -2654,17 +2753,17 @@ class PaymentController extends Controller
         try {
             // Loja = pessoa jurídica (possui CNPJ).
             $payload = [
-                'name'          => $loja->nome,
-                'email'         => $loja->email,
-                'cpfCnpj'       => preg_replace('/\D/', '', $loja->cnpj),
-                'personType'    => 'JURIDICA',
-                'companyType'   => 'LIMITED',
-                'incomeValue'   => 10000,
-                'address'       => $loja->rua,
+                'name' => $loja->nome,
+                'email' => $loja->email,
+                'cpfCnpj' => preg_replace('/\D/', '', $loja->cnpj),
+                'personType' => 'JURIDICA',
+                'companyType' => 'LIMITED',
+                'incomeValue' => 10000,
+                'address' => $loja->rua,
                 'addressNumber' => 'S/N',
-                'province'      => $loja->bairro,
-                'postalCode'    => preg_replace('/\D/', '', $loja->cep),
-                'complement'    => $loja->complemento,
+                'province' => $loja->bairro,
+                'postalCode' => preg_replace('/\D/', '', $loja->cep),
+                'complement' => $loja->complemento,
             ];
 
             $res = Http::withHeaders([
@@ -2677,12 +2776,12 @@ class PaymentController extends Controller
             if ($res->successful() && ! empty($data['walletId'])) {
                 $loja->update([
                     'asaas_account_id' => $data['id'] ?? null,
-                    'asaas_wallet_id'  => $data['walletId'] ?? null,
-                    'asaas_api_key'    => $data['apiKey'] ?? null,
+                    'asaas_wallet_id' => $data['walletId'] ?? null,
+                    'asaas_api_key' => $data['apiKey'] ?? null,
                 ]);
 
                 Log::info('Asaas: subconta criada para loja (self-service)', [
-                    'loja_id'   => $loja->id,
+                    'loja_id' => $loja->id,
                     'wallet_id' => $data['walletId'],
                 ]);
 
@@ -2726,9 +2825,9 @@ class PaymentController extends Controller
         }
 
         return response()->json([
-            'saldo'     => $res->json()['balance'] ?? 0,
+            'saldo' => $res->json()['balance'] ?? 0,
             'sem_conta' => false,
-            'tem_pix'   => ! empty($loja->chave_pix),
+            'tem_pix' => ! empty($loja->chave_pix),
         ]);
     }
 
@@ -2757,11 +2856,11 @@ class PaymentController extends Controller
             'access_token' => $loja->asaas_api_key,
             'Content-Type' => 'application/json',
         ])->post($this->asaas().'/transfers', [
-            'operationType'     => 'PIX',
-            'value'             => (float) $validated['valor'],
-            'pixAddressKey'     => $loja->chave_pix,
+            'operationType' => 'PIX',
+            'value' => (float) $validated['valor'],
+            'pixAddressKey' => $loja->chave_pix,
             'pixAddressKeyType' => $this->detectarTipoChavePix($loja->chave_pix),
-            'description'       => 'Saque SnrFit',
+            'description' => 'Saque SnrFit',
         ]);
 
         $data = $res->json();
@@ -2780,15 +2879,15 @@ class PaymentController extends Controller
         }
 
         Log::info('Asaas saque loja realizado', [
-            'loja_id'     => $lojaId,
-            'valor'       => $validated['valor'],
+            'loja_id' => $lojaId,
+            'valor' => $validated['valor'],
             'transfer_id' => $data['id'] ?? null,
         ]);
 
         return response()->json([
-            'success'     => true,
+            'success' => true,
             'transfer_id' => $data['id'] ?? null,
-            'valor'       => $validated['valor'],
+            'valor' => $validated['valor'],
         ]);
     }
 
