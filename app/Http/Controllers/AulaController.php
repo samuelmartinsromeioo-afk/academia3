@@ -33,11 +33,11 @@ class AulaController extends Controller
             // ✅ Atualizar status da aula
             $aula->update(['concluida' => true]);
 
-            // ✅ Enviar notificação WhatsApp para o personal
+            // ✅ Notificar o personal (WhatsApp + e-mail)
             $this->notificarPersonalWhatsApp(
                 $cliente->nome,
                 $aula->tipo_aula ?? 'aula',
-                $personal->whatsapp ?? null,  // Se tiver campo whatsapp
+                $personal,
                 $aula
             );
 
@@ -71,10 +71,10 @@ class AulaController extends Controller
      * @param string $whatsappPersonal (número do personal)
      * @param Agenda $aula
      */
-    private function notificarPersonalWhatsApp($nomeCliente, $tipoAula, $whatsappPersonal, $aula)
+    private function notificarPersonalWhatsApp($nomeCliente, $tipoAula, $personal, $aula)
     {
-        if (!$whatsappPersonal) {
-            Log::warning("Personal sem WhatsApp configurado - ID: {$aula->personal_id}");
+        if (!$personal) {
+            Log::warning("Personal não encontrado para notificar - ID: {$aula->personal_id}");
             return;
         }
 
@@ -84,8 +84,9 @@ class AulaController extends Controller
             ? $aula->data->format('d/m/Y')
             : \Carbon\Carbon::parse($aula->data)->format('d/m/Y');
 
-        \App\Services\WhatsAppService::notificar(
-            $whatsappPersonal,
+        \App\Services\NotificacaoService::personal(
+            $personal,
+            'Aula concluída — SnrFit',
             $mensagem,
             'aula_concluida_personal',
             [$nomeCliente, $data, "{$aula->hora_inicio} - {$aula->hora_fim}"]

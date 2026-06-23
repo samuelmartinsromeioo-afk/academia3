@@ -691,7 +691,7 @@ class ClienteController extends Controller
             $cliente  = Cliente::find($clienteId);
             $personal = Personal::find($personalId);
 
-            if (!$cliente || !$personal || !$personal->whatsapp) {
+            if (!$cliente || !$personal) {
                 Log::warning("Não foi possível notificar. Cliente: {$clienteId}, Personal: {$personalId}");
                 return;
             }
@@ -707,6 +707,7 @@ class ClienteController extends Controller
                 $mensagem .= "⏰ *Horário:* {$agenda->hora_inicio} - {$agenda->hora_fim}\n\n";
                 $mensagem .= "Acesse seu painel para confirmar se o cliente compareceu.";
 
+                $assunto  = 'Nova aula avulsa agendada — SnrFit';
                 $template = 'aula_avulsa_agendada';
                 $params   = [$cliente->nome, $data, "{$agenda->hora_inicio} - {$agenda->hora_fim}"];
             } else {
@@ -716,11 +717,12 @@ class ClienteController extends Controller
                 $mensagem .= "🗓️ *Aulas Agendadas:* {$diasTotal} treino(s)\n\n";
                 $mensagem .= "Acesse seu painel para confirmar presença do cliente.";
 
+                $assunto  = 'Novo pacote contratado — SnrFit';
                 $template = 'pacote_contratado_personal';
                 $params   = [$cliente->nome, (string) $frequencia, (string) $diasTotal];
             }
 
-            \App\Services\WhatsAppService::notificar($personal->whatsapp, $mensagem, $template, $params);
+            \App\Services\NotificacaoService::personal($personal, $assunto, $mensagem, $template, $params);
 
         } catch (\Exception $e) {
             Log::error("❌ Erro ao notificar personal: " . $e->getMessage());

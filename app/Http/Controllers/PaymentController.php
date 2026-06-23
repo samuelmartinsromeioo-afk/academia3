@@ -469,9 +469,10 @@ class PaymentController extends Controller
                     $personal = \App\Models\Cadastro\Personal::find($booking['personal_id']);
                     $cliente = \App\Models\Cadastro\Cliente::find($booking['cliente_id']);
 
-                    if ($personal && $personal->whatsapp) {
-                        $this->notificarWhatsApp(
-                            $personal->whatsapp,
+                    if ($personal) {
+                        \App\Services\NotificacaoService::personal(
+                            $personal,
+                            'Nova solicitação de ficha — SnrFit',
                             "📋 *Nova Solicitação de Ficha!*\n\n".
                             "Aluno: *{$cliente->nome}*\n".
                             "Objetivos: {$solicitacao->objetivos}\n".
@@ -484,9 +485,10 @@ class PaymentController extends Controller
                         );
                     }
 
-                    if ($cliente && $cliente->whatsapp) {
-                        $this->notificarWhatsApp(
-                            $cliente->whatsapp,
+                    if ($cliente) {
+                        \App\Services\NotificacaoService::cliente(
+                            $cliente,
+                            'Solicitação de ficha confirmada — SnrFit',
                             "✅ *Solicitação de Ficha Confirmada!*\n\n".
                             "Seu pagamento foi confirmado e a solicitação foi enviada para *{$personal->nome}*.\n".
                             'Assim que a ficha estiver pronta, você será avisado por aqui. 🏋️',
@@ -518,9 +520,10 @@ class PaymentController extends Controller
                     $personal = \App\Models\Cadastro\Personal::find($booking['personal_id']);
                     $cliente = \App\Models\Cadastro\Cliente::find($booking['cliente_id']);
 
-                    if ($personal && $personal->whatsapp) {
-                        $this->notificarWhatsApp(
-                            $personal->whatsapp,
+                    if ($personal) {
+                        \App\Services\NotificacaoService::personal(
+                            $personal,
+                            'Nova avaliação física contratada — SnrFit',
                             "📏 *Nova Avaliação Física Contratada!*\n\n".
                             "Aluno: *{$cliente->nome}*\n".
                             ($solicitacao->observacoes ? "Observações: {$solicitacao->observacoes}\n" : '').
@@ -530,9 +533,10 @@ class PaymentController extends Controller
                         );
                     }
 
-                    if ($cliente && $cliente->whatsapp) {
-                        $this->notificarWhatsApp(
-                            $cliente->whatsapp,
+                    if ($cliente) {
+                        \App\Services\NotificacaoService::cliente(
+                            $cliente,
+                            'Avaliação física confirmada — SnrFit',
                             "✅ *Avaliação Física Confirmada!*\n\n".
                             "Seu pagamento foi confirmado e *{$personal->nome}* já foi avisado.\n".
                             'Combine com o personal a data da sua avaliação. 🏋️',
@@ -2715,9 +2719,10 @@ class PaymentController extends Controller
                 );
             }
 
-            if ($cliente && $cliente->whatsapp) {
-                $this->notificarWhatsApp(
-                    $cliente->whatsapp,
+            if ($cliente) {
+                \App\Services\NotificacaoService::cliente(
+                    $cliente,
+                    'Pedido confirmado — SnrFit',
                     "✅ *Pedido confirmado!*\n\n".
                     "Seu pagamento para *{$loja?->nome}* foi aprovado.\n".
                     ($pedido->entrega_tipo === 'entrega'

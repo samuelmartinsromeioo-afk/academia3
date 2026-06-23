@@ -186,7 +186,20 @@ class AdminController extends Controller
         $personal->refresh();
         Log::info("Status depois de refresh: " . $personal->status);
         Log::info("✅ Atualizado com sucesso!");
-        
+
+        // Notifica o personal da aprovação (e-mail + WhatsApp)
+        $primeiroNome = explode(' ', trim($personal->nome))[0];
+        \App\Services\NotificacaoService::personal(
+            $personal,
+            'Cadastro aprovado — bem-vindo(a) ao SnrFit! 🎉',
+            "🎉 *Parabéns, {$primeiroNome}!*\n\n".
+            "Seu cadastro como personal foi *aprovado* na SnrFit.\n".
+            "Você já pode acessar a plataforma com seu e-mail e senha para gerenciar agenda, alunos, pacotes e muito mais.\n\n".
+            "Bons treinos! 💪",
+            'cadastro_aprovado_personal',
+            [$primeiroNome]
+        );
+
         return redirect()->back()->with('success', "Personal '{$personal->nome}' aprovado com sucesso! ✅");
     } catch (\Exception $e) {
         Log::error("❌ Erro ao aprovar: " . $e->getMessage());
@@ -214,6 +227,19 @@ class AdminController extends Controller
             'status' => 'rejeitado',
             'motivo_rejeicao' => $request->motivo
         ]);
+
+        // Notifica o personal da rejeição (e-mail + WhatsApp)
+        $primeiroNome = explode(' ', trim($personal->nome))[0];
+        \App\Services\NotificacaoService::personal(
+            $personal,
+            'Sobre o seu cadastro no SnrFit',
+            "Olá, {$primeiroNome}.\n\n".
+            "Analisamos o seu cadastro como personal e, por ora, ele *não pôde ser aprovado*.\n\n".
+            "*Motivo:* {$request->motivo}\n\n".
+            "Você pode ajustar as informações e enviar novamente. Qualquer dúvida, estamos à disposição.",
+            'cadastro_rejeitado_personal',
+            [$primeiroNome, $request->motivo]
+        );
 
         return redirect()->back()->with('success', "Personal '{$personal->nome}' rejeitado. Email de notificação enviado.");
     }

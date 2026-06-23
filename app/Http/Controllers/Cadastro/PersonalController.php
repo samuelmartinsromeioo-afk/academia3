@@ -708,15 +708,12 @@ class PersonalController extends Controller
 
             $aula->update(['concluida' => true]);
 
-            if ($cliente->whatsapp) {
-                $this->notificarClienteWhatsApp(
-                    $cliente->nome,
-                    $aula->tipo_aula ?? 'aula',
-                    $cliente->whatsapp,
-                    $aula,
-                    $personal->nome
-                );
-            }
+            $this->notificarClienteWhatsApp(
+                $cliente,
+                $aula->tipo_aula ?? 'aula',
+                $aula,
+                $personal->nome
+            );
 
             return redirect()->back()->with('success', '✅ Aula finalizada! Cliente foi notificado.');
         } catch (\Exception $e) {
@@ -799,14 +796,18 @@ class PersonalController extends Controller
         }
     }
 
-    private function notificarClienteWhatsApp($nomeCliente, $tipoAula, $whatsappCliente, $aula, $nomePersonal)
+    private function notificarClienteWhatsApp($cliente, $tipoAula, $aula, $nomePersonal)
     {
         try {
+            if (!$cliente) {
+                return;
+            }
+
             $data = $aula->data instanceof \Carbon\Carbon ?
                 $aula->data->format('d/m/Y') :
                 \Carbon\Carbon::parse($aula->data)->format('d/m/Y');
 
-            $mensagem = "👋 Olá {$nomeCliente}!\n\n";
+            $mensagem = "👋 Olá {$cliente->nome}!\n\n";
             $mensagem .= "✅ Sua aula foi concluída com sucesso!\n\n";
             $mensagem .= "👨‍🏫 Personal: {$nomePersonal}\n";
             $mensagem .= "📅 Data: {$data}\n";
@@ -820,11 +821,12 @@ class PersonalController extends Controller
 
             $mensagem .= "\nObrigado por treinar conosco! 💪";
 
-            \App\Services\WhatsAppService::notificar(
-                $whatsappCliente,
+            \App\Services\NotificacaoService::cliente(
+                $cliente,
+                'Aula concluída — SnrFit',
                 $mensagem,
                 'aula_finalizada_aluno',
-                [$nomeCliente, $nomePersonal, $data, "{$aula->hora_inicio} - {$aula->hora_fim}"]
+                [$cliente->nome, $nomePersonal, $data, "{$aula->hora_inicio} - {$aula->hora_fim}"]
             );
         } catch (\Exception $e) {
             Log::error('Erro ao notificar cliente: ' . $e->getMessage());
@@ -861,14 +863,15 @@ class PersonalController extends Controller
         $personal = Personal::find($personalId);
         $cliente  = $solicitacao->cliente;
 
-        if ($cliente && $cliente->whatsapp) {
+        if ($cliente) {
             $mensagem = "🏋️ *Sua Ficha Está Pronta!*\n\n" .
                 "Olá, *{$cliente->nome}*!\n" .
                 "Seu personal *{$personal->nome}* acabou de montar sua ficha de treino personalizada.\n" .
                 "Acesse o aplicativo para visualizá-la. 💪";
 
-            \App\Services\WhatsAppService::notificar(
-                $cliente->whatsapp,
+            \App\Services\NotificacaoService::cliente(
+                $cliente,
+                'Sua ficha de treino está pronta — SnrFit',
                 $mensagem,
                 'ficha_pronta',
                 [$cliente->nome, $personal->nome]

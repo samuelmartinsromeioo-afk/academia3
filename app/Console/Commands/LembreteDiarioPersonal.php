@@ -72,8 +72,9 @@ class LembreteDiarioPersonal extends Command
             $primeiroNome    = explode(' ', trim($personal->nome))[0];
             $primeiroHorario = substr($agendas->first()->hora_inicio, 0, 5);
 
-            $enviado = \App\Services\WhatsAppService::notificar(
-                $personal->whatsapp,
+            $enviado = \App\Services\NotificacaoService::personal(
+                $personal,
+                'Seus treinos de hoje — SnrFit',
                 $mensagem,
                 'lembrete_diario',
                 [$primeiroNome, $agendas->count(), $primeiroHorario]
