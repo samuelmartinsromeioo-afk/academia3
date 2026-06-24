@@ -35,8 +35,8 @@
 <body>
     <div class="top-bar">
         <a href="{{ route('chat.index') }}" class="back-btn"><i class="fas fa-arrow-left"></i></a>
-        <img src="https://ui-avatars.com/api/?name={{ urlencode($outro->nome ?? 'Contato') }}&background=F4BE16&color=000" alt="">
-        <div class="nome">{{ $outro->nome ?? 'Contato' }}</div>
+        <img src="https://ui-avatars.com/api/?name={{ urlencode($outro?->nome ?? 'Contato') }}&background=F4BE16&color=000" alt="">
+        <div class="nome">{{ $outro?->nome ?? 'Contato' }}</div>
     </div>
 
     <div class="thread" id="thread"></div>

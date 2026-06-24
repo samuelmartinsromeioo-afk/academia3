@@ -90,9 +90,9 @@
             @else
                 @foreach($atividades as $a)
                     <div class="act">
-                        <img src="https://ui-avatars.com/api/?name={{ urlencode($a->cliente->nome ?? 'Aluno') }}&background=F4BE16&color=000" alt="">
+                        <img src="https://ui-avatars.com/api/?name={{ urlencode($a->cliente?->nome ?? 'Aluno') }}&background=F4BE16&color=000" alt="">
                         <div class="txt">
-                            <b>{{ $a->cliente->nome ?? 'Aluno' }}</b> concluiu {{ $a->ficha->nome_treino ?? 'um treino' }}
+                            <b>{{ $a->cliente?->nome ?? 'Aluno' }}</b> concluiu {{ $a->ficha?->nome_treino ?? 'um treino' }}
                             <small>
                                 {{ $a->sensacao && isset(\App\Models\Cadastro\TreinoConcluido::SENSACOES[$a->sensacao]) ? \App\Models\Cadastro\TreinoConcluido::SENSACOES[$a->sensacao][0].' '.\App\Models\Cadastro\TreinoConcluido::SENSACOES[$a->sensacao][1] : '' }}
                                 {{ $a->rpe ? '· RPE '.$a->rpe : '' }}
