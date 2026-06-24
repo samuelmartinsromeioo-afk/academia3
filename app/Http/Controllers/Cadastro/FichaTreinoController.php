@@ -517,6 +517,22 @@ class FichaTreinoController extends Controller
         return view('cliente.MinhasFichasTreino', compact('cliente', 'fichasPorPersonal', 'fichasAcademia'));
     }
 
+    // ✅ CLIENTE: Modo executar treino (guiado, com timer de descanso)
+    public function executar($fichaId)
+    {
+        $clienteId = session('cliente_id');
+        if (! $clienteId) {
+            return redirect()->route('login.index');
+        }
+
+        $ficha = FichaTreino::with('exercicios')->findOrFail($fichaId);
+        if ($ficha->cliente_id != $clienteId) {
+            return redirect()->route('fichas-treino.minhas')->with('error', 'Acesso negado!');
+        }
+
+        return view('cliente.ExecutarTreino', compact('ficha'));
+    }
+
     // ✅ CLIENTE: Marcar treino como concluído
     public function marcarConcluido(Request $request, $fichaId)
     {
@@ -534,6 +550,8 @@ class FichaTreinoController extends Controller
         $request->validate([
             'data_treino' => 'required|date',
             'observacoes' => 'nullable|string',
+            'rpe' => 'nullable|integer|min:1|max:10',
+            'sensacao' => 'nullable|in:otimo,bem,cansado,exausto,dor',
             'registros' => 'nullable|array',
             'registros.*.peso' => 'nullable|numeric|min:0|max:9999',
             'registros.*.repeticoes' => 'nullable|integer|min:0|max:9999',
@@ -552,6 +570,8 @@ class FichaTreinoController extends Controller
             [
                 'concluido' => true,
                 'observacoes' => $request->observacoes,
+                'rpe' => $request->rpe,
+                'sensacao' => $request->sensacao,
             ]
         );
 
@@ -560,11 +580,14 @@ class FichaTreinoController extends Controller
             $treino->update([
                 'concluido' => true,
                 'observacoes' => $request->observacoes,
+                'rpe' => $request->rpe,
+                'sensacao' => $request->sensacao,
             ]);
         }
 
-        // ✅ FEATURE 1: histórico de carga executada por exercício
+        // ✅ FEATURE 1: histórico de carga executada por exercício (+ detecção de recordes)
         $registros = $request->input('registros', []);
+        $recordes = [];
         foreach ($ficha->exercicios as $exercicio) {
             $dados = $registros[$exercicio->id] ?? [];
 
@@ -572,6 +595,21 @@ class FichaTreinoController extends Controller
             $peso       = array_key_exists('peso', $dados) ? $dados['peso'] : $exercicio->peso;
             $repeticoes = array_key_exists('repeticoes', $dados) ? $dados['repeticoes'] : $exercicio->repeticoes;
             $series     = array_key_exists('series', $dados) ? $dados['series'] : $exercicio->series;
+
+            $pesoFinal = ($peso === '' || $peso === null) ? null : (float) $peso;
+
+            // Recorde: superou a maior carga já registrada deste exercício?
+            if ($pesoFinal !== null) {
+                $maxAnterior = RegistroExercicio::where('cliente_id', $clienteId)
+                    ->where('nome_exercicio', $exercicio->nome_exercicio)
+                    ->where('treino_concluido_id', '!=', $treino->id)
+                    ->max('peso');
+
+                if ($maxAnterior !== null && $pesoFinal > (float) $maxAnterior) {
+                    $recordes[] = $exercicio->nome_exercicio . ' — '
+                        . rtrim(rtrim(number_format($pesoFinal, 2, ',', '.'), '0'), ',') . ' kg';
+                }
+            }
 
             RegistroExercicio::updateOrCreate(
                 [
@@ -582,7 +620,7 @@ class FichaTreinoController extends Controller
                     'cliente_id'         => $clienteId,
                     'exercicio_ficha_id' => $exercicio->id,
                     'data_treino'        => $data,
-                    'peso'               => ($peso === '' || $peso === null) ? null : $peso,
+                    'peso'               => $pesoFinal,
                     'repeticoes'         => ($repeticoes === '' || $repeticoes === null) ? null : $repeticoes,
                     'series'             => ($series === '' || $series === null) ? null : $series,
                 ]
@@ -590,7 +628,8 @@ class FichaTreinoController extends Controller
         }
 
         return redirect()->route('fichas-treino.minhas')
-            ->with('success', 'Treino marcado como concluído!');
+            ->with('success', 'Treino marcado como concluído!')
+            ->with('recordes', $recordes);
     }
 
     // ✅ CLIENTE: Desmarcar treino como concluído
@@ -823,6 +862,37 @@ class FichaTreinoController extends Controller
         return view('personal.Aderencia', compact('personal', 'alunos', 'resumoGeral'));
     }
 
+    // ✅ PERSONAL: enviar incentivo a um aluno (e-mail/WhatsApp)
+    public function cutucarAluno($clienteId)
+    {
+        $personalId = session('personal_id');
+        if (! $personalId) {
+            return redirect()->route('login.index');
+        }
+        if (! $this->personalPodeVerCliente($personalId, $clienteId)) {
+            return redirect()->route('aderencia.dashboard')->with('error', 'Acesso negado!');
+        }
+
+        $cliente = Cliente::find($clienteId);
+        if ($cliente) {
+            $nome = explode(' ', trim($cliente->nome))[0];
+            $nomePersonal = Personal::find($personalId)?->nome ?? 'Seu personal';
+
+            \App\Services\NotificacaoService::cliente(
+                $cliente,
+                'Senti sua falta nos treinos! 💪',
+                "Olá, {$nome}! 👋\n\n" .
+                "Notei que você está um tempinho sem treinar. Bora retomar o ritmo? Cada treino conta — e seu shape agradece! 🔥\n\n" .
+                "Conte comigo. — {$nomePersonal}",
+                'incentivo_aluno',
+                [$nome]
+            );
+        }
+
+        return redirect()->route('aderencia.dashboard')
+            ->with('success', 'Incentivo enviado para ' . ($cliente->nome ?? 'o aluno') . '! 💪');
+    }
+
     // ✅ ALUNO: meu desempenho do mês + sequência (streak)
     public function meuDesempenho()
     {
@@ -865,7 +935,23 @@ class FichaTreinoController extends Controller
             $heatmap[] = $semana;
         }
 
-        return view('cliente.MeuDesempenho', compact('cliente', 'resumo', 'streak', 'game', 'heatmap'));
+        // Recordes pessoais: maior carga registrada por exercício.
+        $recordes = RegistroExercicio::where('cliente_id', $clienteId)
+            ->whereNotNull('peso')
+            ->where('peso', '>', 0)
+            ->selectRaw('nome_exercicio, MAX(peso) as recorde')
+            ->groupBy('nome_exercicio')
+            ->orderByDesc('recorde')
+            ->get();
+
+        // Esforço médio (RPE) no mês.
+        $rpeMedio = TreinoConcluido::where('cliente_id', $clienteId)
+            ->where('concluido', true)
+            ->whereNotNull('rpe')
+            ->whereBetween('data_treino', [now()->startOfMonth()->toDateString(), now()->toDateString()])
+            ->avg('rpe');
+
+        return view('cliente.MeuDesempenho', compact('cliente', 'resumo', 'streak', 'game', 'heatmap', 'recordes', 'rpeMedio'));
     }
 
     // Resumo de aderência do mês para um cliente, dado seu conjunto de fichas.
@@ -889,10 +975,14 @@ class FichaTreinoController extends Controller
 
         $aderencia = $planejados > 0 ? min(100, (int) round($realizados / $planejados * 100)) : null;
 
-        $ultimo = $fichaIds->isEmpty() ? null : TreinoConcluido::whereIn('ficha_id', $fichaIds)
+        $ultimoTreino = $fichaIds->isEmpty() ? null : TreinoConcluido::whereIn('ficha_id', $fichaIds)
             ->where('cliente_id', $clienteId)
             ->where('concluido', true)
-            ->max('data_treino');
+            ->orderByDesc('data_treino')
+            ->orderByDesc('id')
+            ->first();
+
+        $ultimo = $ultimoTreino?->data_treino;
 
         $diasSemTreino = $ultimo
             ? (int) \Carbon\Carbon::parse($ultimo)->startOfDay()->diffInDays(now()->startOfDay())
@@ -901,13 +991,15 @@ class FichaTreinoController extends Controller
         $sumido = $diasSemTreino === null || $diasSemTreino >= self::DIAS_SUMIDO;
 
         return [
-            'planejados'    => $planejados,
-            'realizados'    => $realizados,
-            'aderencia'     => $aderencia,
-            'ultimo'        => $ultimo ? \Carbon\Carbon::parse($ultimo) : null,
-            'diasSemTreino' => $diasSemTreino,
-            'sumido'        => $sumido,
-            'fichasAtivas'  => $fichas->count(),
+            'planejados'      => $planejados,
+            'realizados'      => $realizados,
+            'aderencia'       => $aderencia,
+            'ultimo'          => $ultimo ? \Carbon\Carbon::parse($ultimo) : null,
+            'diasSemTreino'   => $diasSemTreino,
+            'sumido'          => $sumido,
+            'fichasAtivas'    => $fichas->count(),
+            'ultimoRpe'       => $ultimoTreino?->rpe,
+            'ultimaSensacao'  => $ultimoTreino?->sensacao,
         ];
     }
 

@@ -7,6 +7,23 @@
             <i class="fas fa-dumbbell"></i> FICHAS DE TREINO
         </h1>
         <div style="display:flex; gap:10px; flex-wrap:wrap;">
+            <a href="{{ route('notificacoes.index') }}"
+               style="position:relative; display:inline-flex; align-items:center; gap:8px; background:transparent; color:#F4BE16; border:1px solid #F4BE16; padding:12px 18px; border-radius:10px; font-weight:900; font-size:0.85rem; text-transform:uppercase; letter-spacing:0.5px;">
+                <i class="fas fa-bell"></i> Avisos
+                <span data-notif-badge style="display:none; position:absolute; top:-6px; right:-6px; background:#ff3b30; color:#fff; font-size:0.6rem; font-weight:900; min-width:18px; height:18px; border-radius:9px; align-items:center; justify-content:center; padding:0 4px;">0</span>
+            </a>
+            <a href="{{ route('chat.index') }}"
+               style="display:inline-flex; align-items:center; gap:8px; background:transparent; color:#F4BE16; border:1px solid #F4BE16; padding:12px 18px; border-radius:10px; font-weight:900; font-size:0.85rem; text-transform:uppercase; letter-spacing:0.5px;">
+                <i class="fas fa-comments"></i> Chat
+            </a>
+            <a href="{{ route('painel.feed') }}"
+               style="display:inline-flex; align-items:center; gap:8px; background:transparent; color:#F4BE16; border:1px solid #F4BE16; padding:12px 18px; border-radius:10px; font-weight:900; font-size:0.85rem; text-transform:uppercase; letter-spacing:0.5px;">
+                <i class="fas fa-rss"></i> Feed
+            </a>
+            <a href="{{ route('templates.index') }}"
+               style="display:inline-flex; align-items:center; gap:8px; background:transparent; color:#F4BE16; border:1px solid #F4BE16; padding:12px 18px; border-radius:10px; font-weight:900; font-size:0.85rem; text-transform:uppercase; letter-spacing:0.5px;">
+                <i class="fas fa-clone"></i> Templates
+            </a>
             <a href="{{ route('periodizacao.index') }}"
                style="display:inline-flex; align-items:center; gap:8px; background:transparent; color:#F4BE16; border:1px solid #F4BE16; padding:12px 18px; border-radius:10px; font-weight:900; font-size:0.85rem; text-transform:uppercase; letter-spacing:0.5px;">
                 <i class="fas fa-layer-group"></i> Periodização
@@ -61,4 +78,5 @@
         </div>
     @endif
 </div>
+@include('partials.push-notif')
 @endsection

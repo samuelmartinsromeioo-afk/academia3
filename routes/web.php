@@ -17,6 +17,12 @@ use App\Http\Controllers\App\FotoController;
 use App\Http\Controllers\Cadastro\FichaTreinoController;
 use App\Http\Controllers\Cadastro\MesocicloController;
 use App\Http\Controllers\Cadastro\AnamneseController;
+use App\Http\Controllers\Cadastro\ProgressoController;
+use App\Http\Controllers\Cadastro\MetaController;
+use App\Http\Controllers\Cadastro\TemplateController;
+use App\Http\Controllers\Cadastro\PainelController;
+use App\Http\Controllers\Cadastro\NotificacaoController;
+use App\Http\Controllers\Cadastro\ChatController;
 use App\Http\Controllers\AvaliacaoController;
 use App\Http\Controllers\AvaliacaoFisicaController;
 use App\Http\Controllers\AulaController;
@@ -330,6 +336,7 @@ Route::middleware('check.login')->group(function () {
 
     // Feature 2 — Dashboard de aderência (personal vê todos os alunos)
     Route::get('/personal/aderencia', [FichaTreinoController::class, 'dashboardAderencia'])->name('aderencia.dashboard');
+    Route::post('/personal/aderencia/cutucar/{clienteId}', [FichaTreinoController::class, 'cutucarAluno'])->name('aderencia.cutucar');
 
     // Feature 4 — Periodização (personal)
     Route::get('/personal/periodizacao', [MesocicloController::class, 'index'])->name('periodizacao.index');
@@ -344,11 +351,45 @@ Route::middleware('check.login')->group(function () {
 
     // Feature 5 — Anamnese (personal visualiza)
     Route::get('/personal/anamnese/{clienteId}', [AnamneseController::class, 'verPersonal'])->name('anamnese.personal');
+
+    // Lote 2 — Progresso e metas do aluno (personal)
+    Route::get('/personal/progresso/{clienteId}', [ProgressoController::class, 'verPersonal'])->name('progresso.personal');
+    Route::post('/personal/metas/{clienteId}', [MetaController::class, 'criarParaAluno'])->name('metas.criar-aluno');
+
+    // Lote 4 — Templates de ficha
+    Route::get('/personal/templates', [TemplateController::class, 'index'])->name('templates.index');
+    Route::post('/personal/templates', [TemplateController::class, 'criar'])->name('templates.criar');
+    Route::post('/personal/templates/{id}/exercicio', [TemplateController::class, 'adicionarExercicio'])->name('templates.exercicio.add');
+    Route::delete('/personal/templates/{id}/exercicio/{index}', [TemplateController::class, 'deletarExercicio'])->name('templates.exercicio.del');
+    Route::delete('/personal/templates/{id}', [TemplateController::class, 'deletar'])->name('templates.deletar');
+    Route::post('/personal/templates/de-ficha/{fichaId}', [TemplateController::class, 'salvarDeFicha'])->name('templates.de-ficha');
+    Route::post('/personal/templates/{id}/aplicar', [TemplateController::class, 'aplicar'])->name('templates.aplicar');
+
+    // Lote 4 — Feed de atividade e relatório
+    Route::get('/personal/feed', [PainelController::class, 'feed'])->name('painel.feed');
+    Route::get('/personal/relatorio/{clienteId}', [PainelController::class, 'relatorio'])->name('relatorio.aluno');
+    Route::post('/personal/relatorio/{clienteId}/enviar', [PainelController::class, 'enviarRelatorio'])->name('relatorio.enviar');
+});
+
+// ==========================================
+// LOTE 5 — Notificações in-app e chat (personal + cliente)
+// ==========================================
+Route::middleware('check.login')->group(function () {
+    Route::get('/notificacoes', [NotificacaoController::class, 'index'])->name('notificacoes.index');
+    Route::get('/notificacoes/nao-lidas', [NotificacaoController::class, 'naoLidas'])->name('notificacoes.nao-lidas');
+    Route::post('/notificacoes/marcar-todas', [NotificacaoController::class, 'marcarTodas'])->name('notificacoes.marcar-todas');
+    Route::post('/notificacoes/{id}/lida', [NotificacaoController::class, 'marcarLida'])->name('notificacoes.lida')->whereNumber('id');
+
+    Route::get('/chat', [ChatController::class, 'index'])->name('chat.index');
+    Route::get('/chat/{outroId}', [ChatController::class, 'conversa'])->name('chat.conversa')->whereNumber('outroId');
+    Route::post('/chat/{outroId}', [ChatController::class, 'enviar'])->name('chat.enviar')->whereNumber('outroId');
+    Route::get('/chat/{outroId}/msgs', [ChatController::class, 'mensagens'])->name('chat.mensagens')->whereNumber('outroId');
 });
 
 // CLIENTE
 Route::middleware('check.login')->group(function () {
     Route::get('/cliente/fichas-treino', [FichaTreinoController::class, 'minhasFichas'])->name('fichas-treino.minhas');
+    Route::get('/cliente/fichas-treino/{fichaId}/executar', [FichaTreinoController::class, 'executar'])->name('fichas-treino.executar');
     Route::post('/cliente/fichas-treino/{fichaId}/concluido', [FichaTreinoController::class, 'marcarConcluido'])->name('fichas-treino.concluido');
     Route::post('/cliente/fichas-treino/{fichaId}/nao-concluido', [FichaTreinoController::class, 'desmarcarConcluido'])->name('fichas-treino.nao-concluido');
     Route::get('/api/fichas-treino/{fichaId}/{data}', [FichaTreinoController::class, 'buscarFichaDia'])->name('fichas-treino.api.dia');
@@ -367,6 +408,19 @@ Route::middleware('check.login')->group(function () {
     // Feature 5 — Anamnese (aluno preenche)
     Route::get('/cliente/anamnese', [AnamneseController::class, 'form'])->name('anamnese.form');
     Route::post('/cliente/anamnese', [AnamneseController::class, 'salvar'])->name('anamnese.salvar');
+
+    // Lote 2 — Progresso (medidas + fotos) do aluno
+    Route::get('/cliente/progresso', [ProgressoController::class, 'index'])->name('progresso.index');
+    Route::post('/cliente/progresso/medida', [ProgressoController::class, 'salvarMedida'])->name('progresso.medida.salvar');
+    Route::delete('/cliente/progresso/medida/{id}', [ProgressoController::class, 'excluirMedida'])->name('progresso.medida.excluir');
+    Route::post('/cliente/progresso/foto', [ProgressoController::class, 'uploadFoto'])->name('progresso.foto.upload');
+    Route::delete('/cliente/progresso/foto/{id}', [ProgressoController::class, 'excluirFoto'])->name('progresso.foto.excluir');
+
+    // Lote 2 — Metas do aluno
+    Route::get('/cliente/metas', [MetaController::class, 'index'])->name('metas.index');
+    Route::post('/cliente/metas', [MetaController::class, 'salvar'])->name('metas.salvar');
+    Route::post('/cliente/metas/{id}/alternar', [MetaController::class, 'alternar'])->name('metas.alternar');
+    Route::delete('/cliente/metas/{id}', [MetaController::class, 'excluir'])->name('metas.excluir');
 });
 
 // ==========================================

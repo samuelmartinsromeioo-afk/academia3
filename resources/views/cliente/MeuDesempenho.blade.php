@@ -156,6 +156,15 @@
         .hm-legenda { display: flex; align-items: center; gap: 8px; margin-top: 12px; font-size: 0.68rem; color: var(--text-muted); }
         .hm-legenda .hm-cell { width: 12px; height: 12px; }
 
+        /* RECORDES */
+        .esforco-tag { margin-left: auto; font-size: 0.68rem; color: var(--primary); background: rgba(244,190,22,0.12); border: 1px solid rgba(244,190,22,0.4); padding: 3px 10px; border-radius: 20px; }
+        .recordes-list { display: flex; flex-direction: column; }
+        .recorde-item { display: flex; justify-content: space-between; align-items: center; padding: 11px 0; border-bottom: 1px solid rgba(255,255,255,0.06); }
+        .recorde-item:last-child { border-bottom: none; }
+        .recorde-item .rx-nome { font-size: 0.9rem; }
+        .recorde-item .rx-peso { font-weight: 900; color: var(--primary); }
+        .recorde-item .rx-peso i { font-size: 0.7rem; margin-right: 5px; color: var(--primary); }
+
         @media (max-width: 600px) {
             .top-bar { padding: 15px 20px; }
             .streak-hero .num { font-size: 3.2rem; }
@@ -248,6 +257,27 @@
                 <span class="hm-cell"></span> sem treino
                 <span class="hm-cell on" style="margin-left:10px;"></span> treinou
             </div>
+        </div>
+
+        <div class="secao">
+            <div class="secao-titulo">
+                <i class="fas fa-trophy"></i> Recordes pessoais
+                @if($rpeMedio)
+                    <span class="esforco-tag">Esforço médio: {{ number_format($rpeMedio, 1, ',', '.') }}/10</span>
+                @endif
+            </div>
+            @if($recordes->isEmpty())
+                <p style="color: var(--text-muted); font-size: 0.85rem;">Registre a carga ao concluir os treinos para ver seus recordes aqui.</p>
+            @else
+                <div class="recordes-list">
+                    @foreach($recordes as $r)
+                        <div class="recorde-item">
+                            <span class="rx-nome">{{ $r->nome_exercicio }}</span>
+                            <span class="rx-peso"><i class="fas fa-trophy"></i>{{ rtrim(rtrim(number_format($r->recorde, 2, ',', '.'), '0'), ',') }} kg</span>
+                        </div>
+                    @endforeach
+                </div>
+            @endif
         </div>
 
         <div class="aderencia-box">

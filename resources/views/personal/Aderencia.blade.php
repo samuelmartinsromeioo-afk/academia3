@@ -100,6 +100,10 @@
         .empty i { font-size: 3rem; color: var(--primary); margin-bottom: 16px; display: block; opacity: 0.8; }
         .empty p { font-size: 1.05rem; color: var(--text-main); }
 
+        .alert-ok { background: rgba(0,230,118,0.1); color: var(--green); border: 1px solid var(--green); padding: 14px; border-radius: 12px; margin-bottom: 18px; font-size: 0.9rem; display: flex; align-items: center; gap: 10px; }
+        .btn-cutucar { width: 100%; margin-top: 10px; padding: 11px; border-radius: 9px; border: 1px solid var(--primary); background: rgba(244,190,22,0.12); color: var(--primary); font-weight: 800; font-size: 0.8rem; cursor: pointer; transition: 0.2s; display: flex; align-items: center; justify-content: center; gap: 8px; }
+        .btn-cutucar:hover { background: var(--primary); color: #000; }
+
         @media (max-width: 768px) {
             .top-bar { padding: 15px 20px; }
             h1 { font-size: 1.4rem; }
@@ -117,6 +121,10 @@
     <div class="container">
         <h1><i class="fas fa-bolt"></i> FREQUÊNCIA &amp; ADERÊNCIA</h1>
         <p class="subtitle">Treinos realizados x planejados no mês atual.</p>
+
+        @if(session('success'))
+            <div class="alert-ok"><i class="fas fa-check-circle"></i> {{ session('success') }}</div>
+        @endif
 
         <div class="resumo">
             <div class="resumo-card">
@@ -165,6 +173,9 @@
                         </div>
                         <div class="bar"><span style="width: {{ $perc !== null ? $perc : 0 }}%; background: {{ $cor }};"></span></div>
 
+                        @php
+                            $sens = $a['ultimaSensacao'] ? (\App\Models\Cadastro\TreinoConcluido::SENSACOES[$a['ultimaSensacao']] ?? null) : null;
+                        @endphp
                         <div class="aluno-meta">
                             <span>Último treino:
                                 <b>
@@ -175,12 +186,25 @@
                                     @endif
                                 </b>
                             </span>
+                            @if($sens || $a['ultimoRpe'])
+                                <span title="Feedback do último treino">
+                                    @if($sens) {{ $sens[0] }} {{ $sens[1] }} @endif
+                                    @if($a['ultimoRpe']) <b style="color:var(--primary);">· RPE {{ $a['ultimoRpe'] }}</b> @endif
+                                </span>
+                            @endif
                         </div>
 
                         <div class="aluno-actions">
                             <a href="{{ route('fichas-treino.aluno', $cliente->id) }}" class="fichas"><i class="fas fa-dumbbell"></i> Fichas</a>
                             <a href="{{ route('evolucao-carga.aluno', $cliente->id) }}" class="evolucao"><i class="fas fa-bolt"></i> Evolução</a>
                         </div>
+
+                        @if($a['sumido'])
+                            <form method="POST" action="{{ route('aderencia.cutucar', $cliente->id) }}">
+                                @csrf
+                                <button type="submit" class="btn-cutucar"><i class="fas fa-paper-plane"></i> Enviar incentivo</button>
+                            </form>
+                        @endif
                     </div>
                 @endforeach
             </div>

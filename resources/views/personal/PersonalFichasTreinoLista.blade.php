@@ -660,6 +660,14 @@
                    style="display:inline-flex; align-items:center; gap:8px; background:transparent; color:#F4BE16; border:1px solid #F4BE16; padding:12px 18px; border-radius:10px; font-weight:900; font-size:0.85rem; text-transform:uppercase; letter-spacing:0.5px;">
                     <i class="fas fa-file-medical"></i> Anamnese
                 </a>
+                <a href="{{ route('progresso.personal', $cliente->id) }}"
+                   style="display:inline-flex; align-items:center; gap:8px; background:transparent; color:#F4BE16; border:1px solid #F4BE16; padding:12px 18px; border-radius:10px; font-weight:900; font-size:0.85rem; text-transform:uppercase; letter-spacing:0.5px;">
+                    <i class="fas fa-chart-line"></i> Progresso
+                </a>
+                <a href="{{ route('relatorio.aluno', $cliente->id) }}"
+                   style="display:inline-flex; align-items:center; gap:8px; background:transparent; color:#F4BE16; border:1px solid #F4BE16; padding:12px 18px; border-radius:10px; font-weight:900; font-size:0.85rem; text-transform:uppercase; letter-spacing:0.5px;">
+                    <i class="fas fa-file-lines"></i> Relatório
+                </a>
                 <button id="btnNovaFicha" class="btn-nova-ficha">
                     <i class="fas fa-plus"></i> NOVA FICHA
                 </button>
@@ -689,6 +697,12 @@
                         <div class="ficha-header">
                             <h3><i class="fas fa-calendar-day"></i> {{ $dias[$ficha->dia_semana] }}</h3>
                             <div class="ficha-buttons">
+                                <form method="POST" action="{{ route('templates.de-ficha', $ficha->id) }}" style="display:inline;" title="Salvar como template">
+                                    @csrf
+                                    <button type="submit" class="btn-icon" style="background:rgba(244,190,22,0.15); color:#F4BE16;">
+                                        <i class="fas fa-clone"></i>
+                                    </button>
+                                </form>
                                 <button class="btn-icon btn-edit" onclick="editarFicha({{ $ficha->id }})">
                                     <i class="fas fa-edit"></i>
                                 </button>

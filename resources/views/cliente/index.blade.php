@@ -367,17 +367,12 @@
         <div class="dropdown-menu" id="dropdownMenu">
             <button type="button" onclick="window.location.href='{{ route('cliente.index') }}'"><i class="fas fa-chart-line"></i> Menu Principal</button>
             <button type="button" onclick="toggleEditForm()"><i class="fas fa-user-edit"></i> Editar Perfil</button>
-            <button type="button" onclick="window.location.href='{{ route('fichas-treino.minhas') }}'"><i class="fas fa-dumbbell"></i> Minha Ficha</button>
-            <button type="button" onclick="window.location.href='{{ route('periodizacao.treino-do-dia') }}'"><i class="fas fa-layer-group"></i> Treino do Dia</button>
-            <button type="button" onclick="window.location.href='{{ route('desempenho.meu') }}'"><i class="fas fa-bolt"></i> Meu Desempenho</button>
+            <button type="button" onclick="window.location.href='{{ route('progresso.index') }}'"><i class="fas fa-chart-line"></i> Meu Progresso</button>
+            <button type="button" onclick="window.location.href='{{ route('metas.index') }}'"><i class="fas fa-bullseye"></i> Minhas Metas</button>
             <button type="button" onclick="window.location.href='{{ route('anamnese.form') }}'"><i class="fas fa-file-medical"></i> Anamnese</button>
             <button type="button" onclick="window.location.href='{{ route('cliente.avaliacao-fisica') }}'"><i class="fas fa-heart-pulse"></i> Avaliação Física</button>
             <button type="button" onclick="abrirHistoricoModal()"><i class="fas fa-history"></i> Ver Histórico</button>
             <button type="button" onclick="window.location.href='{{ route('mapa.index') }}'"><i class="fas fa-map-marked-alt"></i> Ver Mapa</button>
-            <button type="button" onclick="window.location.href='{{ route('studios.explorar') }}'"><i class="fas fa-spa"></i> Explorar Studios</button>
-            <button type="button" onclick="window.location.href='{{ route('academias.explorar') }}'"><i class="fas fa-building"></i> Explorar Academias</button>
-            <button type="button" onclick="window.location.href='{{ route('personais.explorar') }}'"><i class="fas fa-user-tie"></i> Explorar Personais</button>
-            <button type="button" onclick="window.location.href='{{ route('lojas.explorar') }}'"><i class="fas fa-store"></i> Explorar Lojas</button>
             <form action="{{ route('login.logout') }}" method="POST">
                 @csrf
                 <button type="submit" style="color: #ff4444;"><i class="fas fa-power-off"></i> Sair</button>
@@ -395,6 +390,35 @@
 </div>
 
 <div class="container">
+
+    {{-- ATALHOS RÁPIDOS (estilo iFood) --}}
+    <style>
+        .qa-scroll { display:flex; gap:14px; overflow-x:auto; padding:4px 2px 14px; margin-bottom:6px; scrollbar-width:none; }
+        .qa-scroll::-webkit-scrollbar { display:none; }
+        .qa-item { flex:0 0 auto; width:76px; display:flex; flex-direction:column; align-items:center; gap:8px; text-decoration:none; }
+        .qa-ico { width:58px; height:58px; border-radius:50%; background:var(--card-bg); border:1px solid var(--border); display:flex; align-items:center; justify-content:center; color:var(--primary); font-size:1.3rem; transition:0.2s; }
+        .qa-item:hover .qa-ico { background:var(--primary); color:#000; transform:translateY(-2px); }
+        .qa-lbl { font-size:0.66rem; color:#fff; text-align:center; line-height:1.2; font-weight:600; }
+    </style>
+    <div class="section-title" style="margin-bottom:10px;">Acesso rápido</div>
+    <div class="qa-scroll">
+        <a href="{{ route('notificacoes.index') }}" class="qa-item">
+            <span class="qa-ico" style="position:relative;">
+                <i class="fas fa-bell"></i>
+                <span data-notif-badge style="display:none; position:absolute; top:-4px; right:-4px; background:#ff3b30; color:#fff; font-size:0.6rem; font-weight:900; min-width:16px; height:16px; border-radius:8px; align-items:center; justify-content:center; padding:0 4px;">0</span>
+            </span>
+            <span class="qa-lbl">Avisos</span>
+        </a>
+        <a href="{{ route('chat.index') }}" class="qa-item"><span class="qa-ico"><i class="fas fa-comments"></i></span><span class="qa-lbl">Chat</span></a>
+        <a href="{{ route('periodizacao.treino-do-dia') }}" class="qa-item"><span class="qa-ico"><i class="fas fa-calendar-day"></i></span><span class="qa-lbl">Treino do Dia</span></a>
+        <a href="{{ route('desempenho.meu') }}" class="qa-item"><span class="qa-ico"><i class="fas fa-bolt"></i></span><span class="qa-lbl">Meu Desempenho</span></a>
+        <a href="{{ route('fichas-treino.minhas') }}" class="qa-item"><span class="qa-ico"><i class="fas fa-dumbbell"></i></span><span class="qa-lbl">Minha Ficha</span></a>
+        <a href="{{ route('lojas.explorar') }}" class="qa-item"><span class="qa-ico"><i class="fas fa-store"></i></span><span class="qa-lbl">Lojas</span></a>
+        <a href="{{ route('personais.explorar') }}" class="qa-item"><span class="qa-ico"><i class="fas fa-user-tie"></i></span><span class="qa-lbl">Personais</span></a>
+        <a href="{{ route('academias.explorar') }}" class="qa-item"><span class="qa-ico"><i class="fas fa-building"></i></span><span class="qa-lbl">Academias</span></a>
+        <a href="{{ route('studios.explorar') }}" class="qa-item"><span class="qa-ico"><i class="fas fa-spa"></i></span><span class="qa-lbl">Studios</span></a>
+    </div>
+
     @if(!$cliente->anamnese)
         <a href="{{ route('anamnese.form') }}" style="display:flex; align-items:center; gap:14px; background:rgba(244,190,22,0.1); border:1px solid #F4BE16; border-radius:14px; padding:16px 18px; margin-bottom:20px; color:#fff;">
             <i class="fas fa-file-medical" style="color:#F4BE16; font-size:1.5rem;"></i>
@@ -608,7 +632,7 @@
         </p>
 
         <div class="dashboard-grid" style="grid-template-columns: repeat(2, 1fr);">
-            @foreach($personals as $p)
+            @foreach($personals->take(4) as $p)
             <div class="stat-card personal-card" style="position: relative; padding-top: 25px;">
                 
                 <div onclick="abrirAvaliacao({{ $p->id }}, '{{ addslashes($p->nome) }}')" 
@@ -665,12 +689,19 @@
             </div>
             @endforeach
         </div>
+        @if($personals->count() > 4)
+        <div style="text-align: center; margin-top: 12px;">
+            <a href="{{ route('personais.explorar') }}" style="display:inline-flex; align-items:center; gap:8px; color: var(--primary); font-size: 0.8rem; font-weight: 700;">
+                Ver todos os {{ $personals->count() }} personais <i class="fas fa-arrow-right"></i>
+            </a>
+        </div>
+        @endif
 
         {{-- ACADEMIAS --}}
         <div class="section-title">Academias Parceiras (Contratar)</div>
-        <div id="listaAcademias">
-            @forelse($academias as $academia)
-            <div class="list-item" style="flex-direction: column; align-items: flex-start; gap: 12px;">
+        <div id="listaAcademias" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px;">
+            @forelse($academias->take(4) as $academia)
+            <div class="list-item" style="flex-direction: column; align-items: flex-start; gap: 12px; margin-bottom: 0;">
                 <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; gap: 15px;">
                     @if($academia->fotos && $academia->fotos->count() > 0)
                         <img src="{{ asset('storage/' . $academia->fotos->first()->path) }}" alt="Foto de {{ $academia->nome }}" style="width: 60px; height: 60px; border-radius: 12px; border: 1px solid var(--primary); object-fit: cover; flex-shrink: 0;">
@@ -701,8 +732,8 @@
                 </div>
 
                 @if($academia->fotos && $academia->fotos->count() > 0)
-                <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; width: 100%; margin-top: 8px;">
-                    @foreach($academia->fotos as $foto)
+                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; width: 100%; margin-top: 8px;">
+                    @foreach($academia->fotos->take(6) as $foto)
                     <img src="{{ asset('storage/' . $foto->path) }}"
                          onclick="abrirGaleria('academia', {{ $academia->id }})"
                          style="width:100%; aspect-ratio:1; object-fit:cover; border-radius:8px; border:1px solid var(--border); cursor:pointer; transition:0.2s;"
@@ -717,6 +748,13 @@
                 <p style="color: var(--text-muted); text-align: center;">Nenhuma academia disponível no momento.</p>
             @endforelse
         </div>
+        @if($academias->count() > 4)
+        <div style="text-align: center; margin-top: 12px;">
+            <a href="{{ route('academias.explorar') }}" style="display:inline-flex; align-items:center; gap:8px; color: var(--primary); font-size: 0.8rem; font-weight: 700;">
+                Ver todas as {{ $academias->count() }} academias <i class="fas fa-arrow-right"></i>
+            </a>
+        </div>
+        @endif
     </div>
 </div>
 
@@ -2855,5 +2893,6 @@
     }
 </script>
 
+@include('partials.push-notif')
 </body>
 </html>

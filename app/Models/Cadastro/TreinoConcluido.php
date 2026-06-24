@@ -13,13 +13,35 @@ class TreinoConcluido extends Model
         'cliente_id',
         'data_treino',
         'concluido',
-        'observacoes'
+        'observacoes',
+        'rpe',
+        'sensacao',
     ];
 
     protected $casts = [
         'data_treino' => 'date',
         'concluido' => 'boolean',
+        'rpe' => 'integer',
     ];
+
+    /** Sensações possíveis no feedback pós-treino: chave => [emoji, rótulo]. */
+    public const SENSACOES = [
+        'otimo'   => ['😀', 'Ótimo'],
+        'bem'     => ['🙂', 'Bem'],
+        'cansado' => ['😓', 'Cansado'],
+        'exausto' => ['🥵', 'Exausto'],
+        'dor'     => ['🤕', 'Com dor'],
+    ];
+
+    public function sensacaoEmoji(): ?string
+    {
+        return self::SENSACOES[$this->sensacao][0] ?? null;
+    }
+
+    public function sensacaoLabel(): ?string
+    {
+        return self::SENSACOES[$this->sensacao][1] ?? null;
+    }
 
     public function ficha()
     {

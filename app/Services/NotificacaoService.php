@@ -30,6 +30,8 @@ class NotificacaoService
      */
     public static function personal(Personal $personal, string $assunto, string $texto, string $template = '', array $params = []): bool
     {
+        \App\Models\Notificacao::para('personal', $personal->id, $assunto, $texto);
+
         return self::enviar(
             $personal->whatsapp ?? null,
             $personal->email ?? null,
@@ -53,6 +55,8 @@ class NotificacaoService
      */
     public static function cliente(Cliente $cliente, string $assunto, string $texto, string $template = '', array $params = []): bool
     {
+        \App\Models\Notificacao::para('cliente', $cliente->id, $assunto, $texto);
+
         return self::enviar(
             $cliente->whatsapp ?? null,
             $cliente->email ?? null,

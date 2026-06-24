@@ -508,6 +508,24 @@
             border-color: #F4BE16;
         }
 
+        /* FEEDBACK PÓS-TREINO */
+        .fb-emojis { display: flex; gap: 8px; }
+        .fb-emojis label { flex: 1; cursor: pointer; text-align: center; padding: 8px 4px; border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; background: rgba(255,255,255,0.04); transition: 0.15s; }
+        .fb-emojis label:has(input:checked) { border-color: #F4BE16; background: rgba(244,190,22,0.14); }
+        .fb-emojis input { display: none; }
+        .fb-emojis .emo { font-size: 1.35rem; display: block; }
+        .fb-emojis .cap { font-size: 0.58rem; color: var(--text-muted); margin-top: 2px; text-transform: uppercase; font-weight: 800; }
+        .rpe-chips { display: flex; gap: 5px; flex-wrap: wrap; }
+        .rpe-chips label { cursor: pointer; width: 34px; height: 34px; display: flex; align-items: center; justify-content: center; border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; background: rgba(255,255,255,0.04); font-size: 0.8rem; font-weight: 800; transition: 0.15s; }
+        .rpe-chips label:has(input:checked) { border-color: #F4BE16; background: #F4BE16; color: #000; }
+        .rpe-chips input { display: none; }
+        .rpe-hint { font-size: 0.62rem; color: var(--text-muted); margin-top: 5px; }
+
+        /* BANNER DE RECORDE */
+        .recorde-banner { background: linear-gradient(135deg, rgba(244,190,22,0.18), rgba(244,190,22,0.03)); border: 1px solid #F4BE16; color: #fff; padding: 16px 18px; border-radius: 14px; margin-bottom: 20px; }
+        .recorde-banner .tt { color: #F4BE16; font-weight: 900; display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+        .recorde-banner ul { margin: 0; padding-left: 22px; font-size: 0.9rem; line-height: 1.6; }
+
         @media (max-width: 768px) {
             .top-bar {
                 padding: 15px 20px;
@@ -578,6 +596,17 @@
         </div>
         @endif
 
+        @if(session('recordes') && count(session('recordes')) > 0)
+        <div class="recorde-banner">
+            <div class="tt"><i class="fas fa-trophy"></i> Novo recorde pessoal! 🎉</div>
+            <ul>
+                @foreach(session('recordes') as $r)
+                    <li>{{ $r }}</li>
+                @endforeach
+            </ul>
+        </div>
+        @endif
+
         @if($fichasPorPersonal->isEmpty() && (!isset($fichasAcademia) || $fichasAcademia->isEmpty()))
             <div class="empty-state">
                 <i class="fas fa-calendar"></i>
@@ -608,11 +637,16 @@
                             <div class="ficha-card">
                                 <div class="ficha-header">
                                     <h3><i class="fas fa-calendar-day"></i> {{ $dias[$ficha->dia_semana] }}</h3>
-                                    <button class="btn-marcar {{ $estaConcluido ? 'concluido' : '' }}"
-                                        onclick="marcarConcluido({{ $ficha->id }})">
-                                        <i class="fas {{ $estaConcluido ? 'fa-check' : 'fa-square' }}"></i>
-                                        {{ $estaConcluido ? 'CONCLUÍDO' : 'MARCAR' }}
-                                    </button>
+                                    <div style="display:flex; gap:6px;">
+                                        <a href="{{ route('fichas-treino.executar', $ficha->id) }}" class="btn-marcar" style="text-decoration:none; background:#F4BE16; color:#000; border-color:#F4BE16;">
+                                            <i class="fas fa-play"></i> INICIAR
+                                        </a>
+                                        <button class="btn-marcar {{ $estaConcluido ? 'concluido' : '' }}"
+                                            onclick="marcarConcluido({{ $ficha->id }})">
+                                            <i class="fas {{ $estaConcluido ? 'fa-check' : 'fa-square' }}"></i>
+                                            {{ $estaConcluido ? 'CONCLUÍDO' : 'MARCAR' }}
+                                        </button>
+                                    </div>
                                 </div>
 
                                 <p class="ficha-nome">{{ $ficha->nome_treino }}</p>
@@ -758,6 +792,27 @@
                 <div class="registros-wrap" id="registrosWrap">
                     <label><i class="fas fa-bolt"></i> Carga de hoje (ajuste se mudou)</label>
                     <div id="registrosContainer"></div>
+                </div>
+
+                <div class="form-group">
+                    <label><i class="fas fa-face-smile"></i> Como você se sentiu? (opcional)</label>
+                    <div class="fb-emojis">
+                        <label><input type="radio" name="sensacao" value="otimo"><span class="emo">😀</span><span class="cap">Ótimo</span></label>
+                        <label><input type="radio" name="sensacao" value="bem"><span class="emo">🙂</span><span class="cap">Bem</span></label>
+                        <label><input type="radio" name="sensacao" value="cansado"><span class="emo">😓</span><span class="cap">Cansado</span></label>
+                        <label><input type="radio" name="sensacao" value="exausto"><span class="emo">🥵</span><span class="cap">Exausto</span></label>
+                        <label><input type="radio" name="sensacao" value="dor"><span class="emo">🤕</span><span class="cap">Dor</span></label>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label><i class="fas fa-gauge-high"></i> Nível de esforço (opcional)</label>
+                    <div class="rpe-chips">
+                        @for($n = 1; $n <= 10; $n++)
+                            <label><input type="radio" name="rpe" value="{{ $n }}">{{ $n }}</label>
+                        @endfor
+                    </div>
+                    <div class="rpe-hint">1 = muito leve · 10 = máximo esforço</div>
                 </div>
 
                 <div class="form-group">
