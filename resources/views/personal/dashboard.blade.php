@@ -613,16 +613,6 @@
                 </div>
                 <button type="button" id="btnOpenUpdate"><i class="fas fa-user-edit"></i> Meu Perfil</button>
                 <button type="button" id="btnOpenPlanos"><i class="fas fa-tags" style="color: var(--primary);"></i> Meus Pacotes</button>
-                <a href="{{ route('personal.solicitacoes-ficha') }}" style="display:flex; align-items:center; gap:12px; padding:15px 20px; color:#fff; text-decoration:none; font-size:14px; transition:0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.05)';this.style.color='#d4ff00'" onmouseout="this.style.background='';this.style.color='#fff'">
-                    <i class="fas fa-clipboard-list" style="color: var(--primary);"></i> Solicitações de Ficha
-                </a>
-                <button type="button" id="btnOpenAlunos"><i class="fas fa-users"></i> Meus Alunos</button>
-                <a href="{{ route('personal.frequencia') }}" style="display:flex; align-items:center; gap:12px; padding:15px 20px; color:#fff; text-decoration:none; font-size:14px; transition:0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.05)';this.style.color='#d4ff00'" onmouseout="this.style.background='';this.style.color='#fff'">
-                    <i class="fas fa-user-check" style="color: var(--primary);"></i> Frequência dos Alunos
-                </a>
-                <a href="{{ route('personal.avaliacao-fisica') }}" style="display:flex; align-items:center; gap:12px; padding:15px 20px; color:#fff; text-decoration:none; font-size:14px; transition:0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.05)';this.style.color='#d4ff00'" onmouseout="this.style.background='';this.style.color='#fff'">
-                    <i class="fas fa-heart-pulse" style="color: var(--primary);"></i> Avaliação Física
-                </a>
                 <a href="{{ route('personal.avaliacao-fisica.valores') }}" style="display:flex; align-items:center; gap:12px; padding:15px 20px; color:#fff; text-decoration:none; font-size:14px; transition:0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.05)';this.style.color='#d4ff00'" onmouseout="this.style.background='';this.style.color='#fff'">
                     <i class="fas fa-tags" style="color: var(--primary);"></i> Valores Avaliações
                 </a>
@@ -651,6 +641,30 @@
             <i class="fas fa-exclamation-circle"></i> {{ session('error') }}
         </div>
         @endif
+
+        {{-- ATALHOS RÁPIDOS (estilo iFood) --}}
+        <style>
+            .qa-scroll { display:flex; gap:14px; overflow-x:auto; padding:4px 2px 16px; margin-bottom:14px; scrollbar-width:none; }
+            .qa-scroll::-webkit-scrollbar { display:none; }
+            .qa-item { flex:0 0 auto; width:80px; display:flex; flex-direction:column; align-items:center; gap:8px; text-decoration:none; background:none; border:none; cursor:pointer; font-family:inherit; padding:0; }
+            .qa-ico { width:58px; height:58px; border-radius:50%; background:#16181d; border:1px solid rgba(255,255,255,0.08); display:flex; align-items:center; justify-content:center; color:var(--primary); font-size:1.3rem; transition:0.2s; }
+            .qa-item:hover .qa-ico { background:var(--primary); color:#000; transform:translateY(-2px); }
+            .qa-lbl { font-size:0.66rem; color:#fff; text-align:center; line-height:1.2; font-weight:600; }
+        </style>
+        <div class="qa-scroll">
+            <a href="{{ route('notificacoes.index') }}" class="qa-item">
+                <span class="qa-ico" style="position:relative;">
+                    <i class="fas fa-bell"></i>
+                    <span data-notif-badge style="display:none; position:absolute; top:-4px; right:-4px; background:#ff3b30; color:#fff; font-size:0.6rem; font-weight:900; min-width:16px; height:16px; border-radius:8px; align-items:center; justify-content:center; padding:0 4px;">0</span>
+                </span>
+                <span class="qa-lbl">Avisos</span>
+            </a>
+            <a href="{{ route('chat.index') }}" class="qa-item"><span class="qa-ico"><i class="fas fa-comments"></i></span><span class="qa-lbl">Chat</span></a>
+            <button type="button" class="qa-item" onclick="document.getElementById('modalAlunos').style.display='block'"><span class="qa-ico"><i class="fas fa-users"></i></span><span class="qa-lbl">Meus Alunos</span></button>
+            <a href="{{ route('personal.frequencia') }}" class="qa-item"><span class="qa-ico"><i class="fas fa-user-check"></i></span><span class="qa-lbl">Frequência</span></a>
+            <a href="{{ route('personal.avaliacao-fisica') }}" class="qa-item"><span class="qa-ico"><i class="fas fa-heart-pulse"></i></span><span class="qa-lbl">Avaliação Física</span></a>
+            <a href="{{ route('personal.solicitacoes-ficha') }}" class="qa-item"><span class="qa-ico"><i class="fas fa-clipboard-list"></i></span><span class="qa-lbl">Solicitações</span></a>
+        </div>
 
         <header style="margin-bottom: 30px; display: flex; justify-content: space-between; align-items: center;">
             <h1 style="margin:0; font-size: 2rem; font-weight: 900;">Minha Agenda</h1>
@@ -1217,10 +1231,6 @@
             abrirCarteira();
             toggleMenu();
         };
-        document.getElementById('btnOpenAlunos').onclick = () => {
-            modalAlunos.style.display = 'block';
-            toggleMenu();
-        };
         document.getElementById('btnOpenGaleria').onclick = () => {
             modalGaleria.style.display = 'block';
             toggleMenu();
@@ -1725,6 +1735,7 @@
             });
         }
     </script>
+@include('partials.push-notif')
 </body>
 
 </html>
