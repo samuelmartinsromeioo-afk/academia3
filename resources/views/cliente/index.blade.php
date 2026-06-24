@@ -1614,8 +1614,8 @@
     // ============ HISTÓRICO ============
     window.historicoData = {!! json_encode($historico->map(function($t) {
         return [
-            'personal' => $t->personal->nome ?? 'N/A',
-            'academia' => $t->academia ? $t->academia->nome : null,
+            'personal' => $t->personal?->nome ?? 'N/A',
+            'academia' => $t->academia?->nome,
             'data' => \Carbon\Carbon::parse($t->data)->format('d/m/Y'),
             'hora_inicio' => \Carbon\Carbon::parse($t->hora_inicio)->format('H:i'),
             'hora_fim' => \Carbon\Carbon::parse($t->hora_fim)->format('H:i')
