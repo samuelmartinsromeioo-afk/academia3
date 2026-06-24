@@ -1432,7 +1432,7 @@
         document.getElementById('cartaoDescricao').textContent = 'Ficha Personalizada — ' + (personal?.nome || 'Personal');
         document.getElementById('cartaoValor').textContent = 'R$ ' + valor.toFixed(2).replace('.', ',');
         resetarFormCartao();
-        document.getElementById('cartaoTelefone').value = '{!! $cliente->whatsapp ?? '' !!}';
+        document.getElementById('cartaoTelefone').value = {!! json_encode($cliente->whatsapp ?? '') !!};
         document.getElementById('cartaoCEP').value = '{{ $cliente->cep ?? '' }}';
         document.getElementById('modalCartao').style.display = 'flex';
         fecharFichaModal();
@@ -1605,7 +1605,7 @@
         document.getElementById('cartaoDescricao').textContent = (avFisicaSelecao.label || 'Avaliação Física') + ' — ' + (personal?.nome || 'Personal');
         document.getElementById('cartaoValor').textContent = moneyBR(valor);
         resetarFormCartao();
-        document.getElementById('cartaoTelefone').value = '{!! $cliente->whatsapp ?? '' !!}';
+        document.getElementById('cartaoTelefone').value = {!! json_encode($cliente->whatsapp ?? '') !!};
         document.getElementById('cartaoCEP').value = '{{ $cliente->cep ?? '' }}';
         document.getElementById('modalCartao').style.display = 'flex';
         fecharAvFisicaModal();
@@ -2681,7 +2681,7 @@
         document.getElementById('cartaoDescricao').textContent = 'Pacote com personal';
         document.getElementById('cartaoValor').textContent = 'R$ ' + valorNum.toFixed(2).replace('.', ',');
         resetarFormCartao();
-        document.getElementById('cartaoTelefone').value = '{!! $cliente->whatsapp ?? '' !!}';
+        document.getElementById('cartaoTelefone').value = {!! json_encode($cliente->whatsapp ?? '') !!};
         document.getElementById('cartaoCEP').value = '{{ $cliente->cep ?? '' }}';
         document.getElementById('modalCartao').style.display = 'flex';
     }
@@ -2695,7 +2695,7 @@
         document.getElementById('cartaoDescricao').textContent = `Plano ${planoNome} — ${academiaNome}`;
         document.getElementById('cartaoValor').textContent = 'R$ ' + parseFloat(valor).toFixed(2).replace('.', ',');
         resetarFormCartao();
-        document.getElementById('cartaoTelefone').value = '{!! $cliente->whatsapp ?? '' !!}';
+        document.getElementById('cartaoTelefone').value = {!! json_encode($cliente->whatsapp ?? '') !!};
         document.getElementById('cartaoCEP').value = '{{ $cliente->cep ?? '' }}';
         fecharPlanosAcademia();
         document.getElementById('modalCartao').style.display = 'flex';
@@ -2887,7 +2887,7 @@
         document.getElementById('cartaoDescricao').textContent = 'Aula Avulsa — ' + personalNome;
         document.getElementById('cartaoValor').textContent = 'R$ ' + parseFloat(valorSecao).toFixed(2).replace('.', ',');
         resetarFormCartao();
-        document.getElementById('cartaoTelefone').value = '{!! $cliente->whatsapp ?? '' !!}';
+        document.getElementById('cartaoTelefone').value = {!! json_encode($cliente->whatsapp ?? '') !!};
         document.getElementById('cartaoCEP').value = '{{ $cliente->cep ?? '' }}';
         document.getElementById('modalCartao').style.display = 'flex';
     }

@@ -77,7 +77,7 @@ Route::middleware('check.admin')->group(function () {
 // ==========================================
 Route::get('/', [LoginController::class, 'index'])->name('login.index');
 Route::get('/login', [LoginController::class,'create'])->name('login.create');
-Route::post('/login', [LoginController::class, 'store'])->name('login.store');
+Route::post('/login', [LoginController::class, 'store'])->name('login.store')->middleware('throttle:10,1');
 Route::post('/logout', [LoginController::class, 'logout'])->name('login.logout');
 
 // ==========================================
@@ -95,9 +95,9 @@ Route::get('/privacidade', function () {
 // RECUPERAÇÃO DE SENHA
 // ==========================================
 Route::get('/recuperar-senha', [RecuperarSenhaController::class, 'showSolicitarForm'])->name('senha.solicitar.form');
-Route::post('/recuperar-senha', [RecuperarSenhaController::class, 'enviarLink'])->name('senha.solicitar');
+Route::post('/recuperar-senha', [RecuperarSenhaController::class, 'enviarLink'])->name('senha.solicitar')->middleware('throttle:5,1');
 Route::get('/nova-senha', [RecuperarSenhaController::class, 'showResetarForm'])->name('senha.resetar.form');
-Route::post('/nova-senha', [RecuperarSenhaController::class, 'resetar'])->name('senha.resetar');
+Route::post('/nova-senha', [RecuperarSenhaController::class, 'resetar'])->name('senha.resetar')->middleware('throttle:6,1');
 
 
 // ==========================================
