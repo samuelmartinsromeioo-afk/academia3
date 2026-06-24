@@ -1,0 +1,28 @@
+# Dependabot — vigia dependências e abre PRs de atualização/segurança.
+# Os alertas de segurança também precisam estar ativos em:
+#   GitHub > Settings do repo > Code security and analysis > Dependabot alerts.
+version: 2
+updates:
+  # Pacotes PHP (Composer)
+  - package-ecosystem: "composer"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+    commit-message:
+      prefix: "deps"
+
+  # Pacotes JavaScript (npm / Vite)
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+    commit-message:
+      prefix: "deps(js)"
