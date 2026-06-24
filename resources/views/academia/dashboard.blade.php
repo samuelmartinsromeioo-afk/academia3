@@ -323,6 +323,9 @@
             <button type="button" onclick="document.getElementById('modalGaleriaAcademia').style.display='block'; toggleMenu();">
                 <i class="fas fa-images"></i> Galeria de Fotos
             </button>
+            <button type="button" onclick="window.location.href='{{ route('lgpd.meus-dados') }}'">
+                <i class="fas fa-user-shield"></i> Privacidade e meus dados
+            </button>
             <form action="{{ route('login.logout') }}" method="POST">
                 @csrf
                 <button type="submit" style="color: var(--error);">

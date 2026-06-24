@@ -397,6 +397,7 @@
             <button type="button" id="btnOpenGaleria"><i class="fas fa-images"></i> Minha Galeria</button>
             <button type="button" id="btnOpenCarteira"><i class="fas fa-piggy-bank" style="color: var(--primary);"></i> Minha Carteira</button>
             <a href="{{ route('studio.horarios') }}"><i class="fas fa-clock"></i> Meus Horários</a>
+            <a href="{{ route('lgpd.meus-dados') }}"><i class="fas fa-user-shield"></i> Privacidade e meus dados</a>
             <form action="{{ route('login.logout') }}" method="POST" style="margin:0;">
                 @csrf
                 <button type="submit" style="color: var(--error);"><i class="fas fa-power-off"></i> Sair</button>

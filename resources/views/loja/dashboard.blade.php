@@ -226,6 +226,7 @@
             <button type="button" id="btnOpenCarteira"><i class="fas fa-piggy-bank" style="color: var(--primary);"></i> Minha Carteira</button>
             <button type="button" id="btnOpenPerfil"><i class="fas fa-store"></i> Editar Loja</button>
             <a href="{{ route('lojas.detalhes', $loja->id) }}" target="_blank"><i class="fas fa-eye"></i> Ver minha vitrine</a>
+            <a href="{{ route('lgpd.meus-dados') }}"><i class="fas fa-user-shield"></i> Privacidade e meus dados</a>
             <form action="{{ route('login.logout') }}" method="POST" style="margin:0;">
                 @csrf
                 <button type="submit" style="color: var(--error);"><i class="fas fa-power-off"></i> Sair</button>
