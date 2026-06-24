@@ -58,10 +58,10 @@
             @foreach($alunos as $agendamento)
                 <div style="background: #16181d; border: 1px solid rgba(255,255,255,0.08); border-radius: 20px; padding: 25px; transition: 0.3s;">
                     <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 20px;">
-                        <img src="https://ui-avatars.com/api/?name={{ urlencode($agendamento->cliente->nome) }}&background=d4ff00&color=000" 
+                        <img src="https://ui-avatars.com/api/?name={{ urlencode($agendamento->cliente?->nome) }}&background=d4ff00&color=000" 
                             style="width: 60px; height: 60px; border-radius: 50%;">
                         <div style="flex: 1;">
-                            <h3 style="margin: 0; font-size: 1.1rem; color: #fff;">{{ $agendamento->cliente->nome }}</h3>
+                            <h3 style="margin: 0; font-size: 1.1rem; color: #fff;">{{ $agendamento->cliente?->nome }}</h3>
                             <p style="margin: 5px 0 0 0; font-size: 0.8rem; color: #a0a0a0;">
                                 <i class="fas fa-dumbbell" style="color: #d4ff00;"></i>
                                 Pacote {{ $agendamento->frequencia_pacote }}x/semana
@@ -69,7 +69,7 @@
                         </div>
                     </div>
 
-                    <a href="{{ route('fichas-treino.aluno', $agendamento->cliente->id) }}" 
+                    <a href="{{ route('fichas-treino.aluno', $agendamento->cliente?->id) }}" 
                         style="display: block; background: #d4ff00; color: #000; padding: 12px; border-radius: 10px; text-align: center; text-decoration: none; font-weight: 900; transition: 0.3s; border: none; cursor: pointer;">
                         <i class="fas fa-eye"></i> VER FICHAS
                     </a>

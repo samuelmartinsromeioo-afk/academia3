@@ -467,7 +467,7 @@
                             <td style="color: var(--primary); font-weight: 700;">
                                 {{ substr($aula->hora_inicio, 0, 5) }} - {{ substr($aula->hora_fim, 0, 5) }}
                             </td>
-                            <td>{{ $aula->cliente->nome ?? 'N/A' }}</td>
+                            <td>{{ $aula->cliente?->nome ?? 'N/A' }}</td>
                             <td style="text-transform: capitalize;">{{ $aula->tipo_aula }}</td>
                         </tr>
                     @endforeach
@@ -485,7 +485,7 @@
         @forelse($avaliacoesRecentes as $av)
             <div style="padding: 14px 0; border-bottom: 1px solid var(--border);">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-                    <span style="font-weight: 700; font-size: 0.88rem;"><i class="fas fa-user-circle" style="color: var(--primary);"></i> {{ $av->cliente->nome ?? 'Aluno' }}</span>
+                    <span style="font-weight: 700; font-size: 0.88rem;"><i class="fas fa-user-circle" style="color: var(--primary);"></i> {{ $av->cliente?->nome ?? 'Aluno' }}</span>
                     <span style="color: #ffc107; font-size: 0.75rem;">
                         @for ($i = 1; $i <= 5; $i++)
                             <i class="fa-star {{ $i <= $av->nota ? 'fas' : 'far' }}"></i>
@@ -563,7 +563,7 @@
                         <tr>
                             <td style="font-weight: 600;">{{ $aluno->nome }}</td>
                             <td style="color: var(--text-muted);">{{ $aluno->email }}</td>
-                            <td>{{ $aluno->studioPlano->nome ?? 'Sem plano' }}</td>
+                            <td>{{ $aluno->studioPlano?->nome ?? 'Sem plano' }}</td>
                             <td>
                                 @if($aluno->studio_plano_ativo)
                                     <span style="color: var(--success); font-weight: 700; font-size: 0.8rem;"><i class="fas fa-circle" style="font-size:0.5rem;"></i> Ativo</span>

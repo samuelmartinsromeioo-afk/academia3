@@ -233,7 +233,7 @@
                         @endif
                         <div class="card-meta"><i class="fas fa-map-marker-alt"></i> {{ $studio->cidade }}{{ $studio->estado ? ' - ' . $studio->estado : '' }}</div>
                         @if ($studio->planos->isNotEmpty())
-                            <div class="card-meta"><i class="fas fa-id-card"></i> Planos a partir de R$ {{ number_format($studio->planos->first()->valor, 2, ',', '.') }}/mês</div>
+                            <div class="card-meta"><i class="fas fa-id-card"></i> Planos a partir de R$ {{ number_format($studio->planos->first()?->valor, 2, ',', '.') }}/mês</div>
                         @endif
 
                         <div class="rating">

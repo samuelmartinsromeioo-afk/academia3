@@ -88,8 +88,8 @@
                     @php $venc = $m->estaVencido(); $dias = $m->diasRestantes(); @endphp
                     <div class="card {{ $venc ? 'venc' : '' }}">
                         <div class="top">
-                            <img src="https://ui-avatars.com/api/?name={{ urlencode($m->cliente->nome ?? 'Aluno') }}&background=F4BE16&color=000" alt="">
-                            <div class="nome">{{ $m->cliente->nome ?? 'Aluno' }}<small>{{ $m->nome }}</small></div>
+                            <img src="https://ui-avatars.com/api/?name={{ urlencode($m->cliente?->nome ?? 'Aluno') }}&background=F4BE16&color=000" alt="">
+                            <div class="nome">{{ $m->cliente?->nome ?? 'Aluno' }}<small>{{ $m->nome }}</small></div>
                         </div>
                         <div class="tags">
                             <span class="tag {{ $m->ativo ? 'ativo' : '' }}">{{ $m->ativo ? 'Ativo' : 'Inativo' }}</span>

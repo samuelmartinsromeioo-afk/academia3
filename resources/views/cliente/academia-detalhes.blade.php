@@ -248,7 +248,7 @@
                                 @if(!is_null($aula->dia_semana))<span><i class="fas fa-calendar-day"></i> {{ $diasSemana[$aula->dia_semana] ?? '' }}</span>@endif
                                 @if($aula->hora_inicio)<span>· {{ \Illuminate\Support\Str::substr($aula->hora_inicio, 0, 5) }}@if($aula->duracao_min) ({{ $aula->duracao_min }}min)@endif</span>@endif
                                 @if($aula->professor)
-                                    <span>· @if($aula->professor->resumo)<a class="prof-link" onclick="verProfissional({!! json_encode($aula->professor->nome) !!}, {!! json_encode($aula->professor->resumo) !!})">{{ $aula->professor->nome }}</a>@else{{ $aula->professor->nome }}@endif</span>
+                                    <span>· @if($aula->professor?->resumo)<a class="prof-link" onclick="verProfissional({!! json_encode($aula->professor?->nome) !!}, {!! json_encode($aula->professor?->resumo) !!})">{{ $aula->professor?->nome }}</a>@else{{ $aula->professor?->nome }}@endif</span>
                                 @endif
                             </div>
                         @endif

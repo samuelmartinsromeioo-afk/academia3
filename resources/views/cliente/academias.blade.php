@@ -231,7 +231,7 @@
                         @endif
                         <div class="card-meta"><i class="fas fa-map-marker-alt"></i> {{ $academia->cidade }}{{ $academia->estado ? ' - ' . $academia->estado : '' }}</div>
                         @if ($academia->planos->isNotEmpty())
-                            <div class="card-meta"><i class="fas fa-id-card"></i> Planos a partir de R$ {{ number_format($academia->planos->first()->valor, 2, ',', '.') }}/mês</div>
+                            <div class="card-meta"><i class="fas fa-id-card"></i> Planos a partir de R$ {{ number_format($academia->planos->first()?->valor, 2, ',', '.') }}/mês</div>
                         @endif
 
                         <div class="card-footer">

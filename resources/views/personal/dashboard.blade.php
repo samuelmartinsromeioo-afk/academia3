@@ -733,23 +733,23 @@
                 @endphp
                 @forelse($meusAlunos as $agendamento)
                 <div style="background: rgba(255,255,255,0.03); border: 1px solid var(--border); padding: 15px; border-radius: 16px; display: flex; align-items: center; gap: 15px;">
-                    <img src="https://ui-avatars.com/api/?name={{ urlencode($agendamento->cliente->nome ?? 'Aluno') }}&background=d4ff00&color=000" style="width: 50px; height: 50px; border-radius: 50%;">
+                    <img src="https://ui-avatars.com/api/?name={{ urlencode($agendamento->cliente?->nome ?? 'Aluno') }}&background=d4ff00&color=000" style="width: 50px; height: 50px; border-radius: 50%;">
                     <div style="flex: 1;">
-                        <h3 style="margin: 0 0 5px 0; font-size: 1.1rem; color: #fff;">{{ $agendamento->cliente->nome ?? 'Aluno Sem Nome' }}</h3>
+                        <h3 style="margin: 0 0 5px 0; font-size: 1.1rem; color: #fff;">{{ $agendamento->cliente?->nome ?? 'Aluno Sem Nome' }}</h3>
                         <p style="margin: 0; font-size: 0.8rem; color: var(--text-muted);">
                             <i class="fas fa-bullseye" style="color: var(--primary);"></i>
-                            {{ $agendamento->cliente->resumo_objetivo ?? 'Objetivo não informado' }}
+                            {{ $agendamento->cliente?->resumo_objetivo ?? 'Objetivo não informado' }}
                         </p>
                     </div>
-                    <button type="button" onclick="abrirDetalhesAluno({{ $agendamento->cliente->id }})" style="background: rgba(212,255,0,0.15); color: var(--primary); border: 1px solid rgba(212,255,0,0.4); width: 40px; height: 40px; border-radius: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: 0.3s; font-weight: 900;" title="Ver informações do aluno">
+                    <button type="button" onclick="abrirDetalhesAluno({{ $agendamento->cliente?->id }})" style="background: rgba(212,255,0,0.15); color: var(--primary); border: 1px solid rgba(212,255,0,0.4); width: 40px; height: 40px; border-radius: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: 0.3s; font-weight: 900;" title="Ver informações do aluno">
                         <i class="fas fa-user-circle"></i>
                     </button>
-                    <a href="{{ route('fichas-treino.aluno', $agendamento->cliente->id) }}" style="background: rgba(212,255,0,0.15); color: var(--primary); border: 1px solid rgba(212,255,0,0.4); width: 40px; height: 40px; border-radius: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: 0.3s; font-weight: 900; text-decoration: none;" title="Visualizar fichas">
+                    <a href="{{ route('fichas-treino.aluno', $agendamento->cliente?->id) }}" style="background: rgba(212,255,0,0.15); color: var(--primary); border: 1px solid rgba(212,255,0,0.4); width: 40px; height: 40px; border-radius: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: 0.3s; font-weight: 900; text-decoration: none;" title="Visualizar fichas">
                         <i class="fas fa-eye"></i>
                     </a>
                     <button type="button"
-                        data-cliente-id="{{ $agendamento->cliente->id }}"
-                        data-cliente-nome="{{ $agendamento->cliente->nome }}"
+                        data-cliente-id="{{ $agendamento->cliente?->id }}"
+                        data-cliente-nome="{{ $agendamento->cliente?->nome }}"
                         onclick="abrirModalCriarFichaAluno(this.dataset.clienteId, this.dataset.clienteNome)"
                         style="background: rgba(212,255,0,0.2); color: var(--primary); border: 1px solid var(--primary); width: 40px; height: 40px; border-radius: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: 0.3s; font-weight: 900;" title="Criar ficha de treino">
                         <i class="fas fa-dumbbell"></i>
@@ -1147,10 +1147,10 @@
                 <div style="background: rgba(255,255,255,0.03); border: 1px solid var(--border); padding: 15px; border-radius: 16px;">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
                         <div style="display: flex; align-items: center; gap: 10px;">
-                            <img src="https://ui-avatars.com/api/?name={{ urlencode($avaliacao->cliente->nome ?? 'Cliente') }}&background=d4ff00&color=000"
+                            <img src="https://ui-avatars.com/api/?name={{ urlencode($avaliacao->cliente?->nome ?? 'Cliente') }}&background=d4ff00&color=000"
                                 style="width: 38px; height: 38px; border-radius: 50%; flex-shrink:0;">
                             <span style="font-weight: 700; font-size: 0.9rem;">
-                                {{ $avaliacao->cliente->nome ?? 'Cliente' }}
+                                {{ $avaliacao->cliente?->nome ?? 'Cliente' }}
                             </span>
                         </div>
                         <div style="color: var(--primary); font-size: 0.8rem; flex-shrink:0;">

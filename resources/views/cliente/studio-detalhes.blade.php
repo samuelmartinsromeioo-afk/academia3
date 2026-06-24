@@ -551,7 +551,7 @@
             @foreach ($studio->avaliacoes as $av)
                 <div class="avaliacao-item">
                     <div class="topo">
-                        <span class="nome"><i class="fas fa-user-circle" style="color: var(--studio-color);"></i> {{ $av->cliente->nome ?? 'Aluno' }}</span>
+                        <span class="nome"><i class="fas fa-user-circle" style="color: var(--studio-color);"></i> {{ $av->cliente?->nome ?? 'Aluno' }}</span>
                         <span class="stars">
                             @for ($i = 1; $i <= 5; $i++)
                                 <i class="fa-star {{ $i <= $av->nota ? 'fas' : 'far' }}"></i>

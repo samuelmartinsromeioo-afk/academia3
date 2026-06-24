@@ -512,8 +512,8 @@
                             <span class="badge" style="background:rgba(212,255,0,0.12); color:var(--primary);">Pago</span>
                         @endif
                         <div style="color:var(--text-muted); font-size:0.78rem; margin-top:4px;">
-                            <i class="fas fa-user"></i> {{ $pedido->cliente->nome ?? 'Cliente' }}
-                            @if($pedido->cliente && $pedido->cliente->whatsapp) · <i class="fab fa-whatsapp"></i> {{ $pedido->cliente->whatsapp }} @endif
+                            <i class="fas fa-user"></i> {{ $pedido->cliente?->nome ?? 'Cliente' }}
+                            @if($pedido->cliente && $pedido->cliente?->whatsapp) · <i class="fab fa-whatsapp"></i> {{ $pedido->cliente?->whatsapp }} @endif
                             · {{ $pedido->created_at->format('d/m/Y H:i') }}
                         </div>
                     </div>

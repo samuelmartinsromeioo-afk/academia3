@@ -88,7 +88,7 @@
         <div class="card" style="border-left: 4px solid #ffaa00;">
             <div class="card-header">
                 <div>
-                    <p class="cliente-nome">{{ $s->cliente->nome ?? 'Aluno' }}</p>
+                    <p class="cliente-nome">{{ $s->cliente?->nome ?? 'Aluno' }}</p>
                     <span class="valor-tag"><i class="fas fa-dollar-sign"></i> R$ {{ number_format($s->valor, 2, ',', '.') }} — pago</span>
                 </div>
                 <div style="display:flex; flex-direction:column; align-items:flex-end; gap:8px;">
@@ -122,7 +122,7 @@
 
             <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
                 <a href="{{ route('fichas-treino.aluno', $s->cliente_id) }}" class="btn-concluir" style="background:rgba(212,255,0,0.1); color:var(--primary); border:1px solid var(--primary);">
-                    <i class="fas fa-plus"></i> Criar Ficha para {{ $s->cliente->nome ?? 'Aluno' }}
+                    <i class="fas fa-plus"></i> Criar Ficha para {{ $s->cliente?->nome ?? 'Aluno' }}
                 </a>
                 <form action="{{ route('personal.solicitacoes-ficha.concluir', $s->id) }}" method="POST" onsubmit="return confirm('Marcar como concluída?')">
                     @csrf
@@ -140,7 +140,7 @@
         <div class="card" style="opacity:0.7;">
             <div class="card-header">
                 <div>
-                    <p class="cliente-nome">{{ $s->cliente->nome ?? 'Aluno' }}</p>
+                    <p class="cliente-nome">{{ $s->cliente?->nome ?? 'Aluno' }}</p>
                     <span class="valor-tag">R$ {{ number_format($s->valor, 2, ',', '.') }}</span>
                 </div>
                 <div style="display:flex; flex-direction:column; align-items:flex-end; gap:8px;">

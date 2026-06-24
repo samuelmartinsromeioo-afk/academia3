@@ -197,7 +197,7 @@
                     <span class="data-registro"><i class="far fa-calendar-alt"></i> {{ $r->data_avaliacao->format('d/m/Y') }}</span>
                 </div>
                 @if($r->personal)
-                    <span class="personal-tag"><i class="fas fa-user-tie"></i> {{ $r->personal->nome }}</span>
+                    <span class="personal-tag"><i class="fas fa-user-tie"></i> {{ $r->personal?->nome }}</span>
                 @endif
             </div>
 
