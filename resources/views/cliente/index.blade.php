@@ -373,6 +373,7 @@
             <button type="button" onclick="window.location.href='{{ route('cliente.avaliacao-fisica') }}'"><i class="fas fa-heart-pulse"></i> Avaliação Física</button>
             <button type="button" onclick="abrirHistoricoModal()"><i class="fas fa-history"></i> Ver Histórico</button>
             <button type="button" onclick="window.location.href='{{ route('mapa.index') }}'"><i class="fas fa-map-marked-alt"></i> Ver Mapa</button>
+            <button type="button" onclick="window.location.href='{{ route('lgpd.meus-dados') }}'"><i class="fas fa-user-shield"></i> Privacidade e meus dados</button>
             <form action="{{ route('login.logout') }}" method="POST">
                 @csrf
                 <button type="submit" style="color: #ff4444;"><i class="fas fa-power-off"></i> Sair</button>

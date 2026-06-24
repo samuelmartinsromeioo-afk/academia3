@@ -504,6 +504,9 @@
             Não tem conta?
             <a href="{{ route('cadastro.SelecaoCadastro') }}">Cadastre-se</a>
         </div>
+        <div style="text-align:center; margin-top:18px; font-size:0.72rem; opacity:0.6;">
+            <a href="{{ route('lgpd.politica') }}" style="color:inherit;">Política de Privacidade</a>
+        </div>
     </div>
 </div>
 

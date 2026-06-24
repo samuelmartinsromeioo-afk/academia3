@@ -23,6 +23,7 @@ use App\Http\Controllers\Cadastro\TemplateController;
 use App\Http\Controllers\Cadastro\PainelController;
 use App\Http\Controllers\Cadastro\NotificacaoController;
 use App\Http\Controllers\Cadastro\ChatController;
+use App\Http\Controllers\Cadastro\LgpdController;
 use App\Http\Controllers\AvaliacaoController;
 use App\Http\Controllers\AvaliacaoFisicaController;
 use App\Http\Controllers\AulaController;
@@ -78,6 +79,9 @@ Route::middleware('check.admin')->group(function () {
 Route::get('/', [LoginController::class, 'index'])->name('login.index');
 Route::get('/login', [LoginController::class,'create'])->name('login.create');
 Route::post('/login', [LoginController::class, 'store'])->name('login.store')->middleware('throttle:10,1');
+
+// LGPD — política de privacidade (pública)
+Route::get('/politica-de-privacidade', [LgpdController::class, 'politica'])->name('lgpd.politica');
 Route::post('/logout', [LoginController::class, 'logout'])->name('login.logout');
 
 // ==========================================
@@ -384,6 +388,11 @@ Route::middleware('check.login')->group(function () {
     Route::get('/chat/{outroId}', [ChatController::class, 'conversa'])->name('chat.conversa')->whereNumber('outroId');
     Route::post('/chat/{outroId}', [ChatController::class, 'enviar'])->name('chat.enviar')->whereNumber('outroId');
     Route::get('/chat/{outroId}/msgs', [ChatController::class, 'mensagens'])->name('chat.mensagens')->whereNumber('outroId');
+
+    // LGPD — meus dados (acesso, portabilidade e exclusão)
+    Route::get('/meus-dados', [LgpdController::class, 'meusDados'])->name('lgpd.meus-dados');
+    Route::get('/meus-dados/exportar', [LgpdController::class, 'exportar'])->name('lgpd.exportar');
+    Route::post('/meus-dados/excluir', [LgpdController::class, 'excluirConta'])->name('lgpd.excluir');
 });
 
 // CLIENTE

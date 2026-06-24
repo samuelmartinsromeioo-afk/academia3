@@ -69,6 +69,12 @@
             <div class="alert alert-error"><i class="fas fa-exclamation-circle"></i> {{ $errors->first() }}</div>
         @endif
 
+        <div style="background:rgba(244,190,22,0.08); border:1px solid rgba(244,190,22,0.35); border-radius:12px; padding:14px 16px; margin-bottom:18px; font-size:0.82rem; color:#cfcfcf; line-height:1.5;">
+            <i class="fas fa-shield-halved" style="color:#F4BE16;"></i>
+            São <strong>dados sensíveis de saúde</strong>. Ao salvar, você <strong>consente</strong> com o uso dessas informações pelo seu personal para montar um treino seguro, conforme a
+            <a href="{{ route('lgpd.politica') }}" target="_blank" style="color:#F4BE16;">Política de Privacidade</a>. Você pode editá-las ou removê-las quando quiser.
+        </div>
+
         <form method="POST" action="{{ route('anamnese.salvar') }}">
             @csrf
 
