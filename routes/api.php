@@ -25,6 +25,7 @@ Route::middleware(['web'])->group(function () {
     Route::get('/trainer/payouts', [PaymentController::class, 'listPayouts']);
     Route::get('/personal/saldo', [PaymentController::class, 'saldoPersonal']);
     Route::post('/personal/sacar', [PaymentController::class, 'sacarPersonal']);
+    Route::post('/personal/sacar-subconta', [PaymentController::class, 'sacarSubconta']);
     Route::post('/criar-pagamento-studio-plano', [PaymentController::class, 'criarPagamentoStudioPlano']);
     Route::post('/criar-pagamento-cartao-studio-plano', [PaymentController::class, 'criarPagamentoCartaoStudioPlano']);
     Route::post('/criar-pagamento-aula-studio', [PaymentController::class, 'criarPagamentoAulaStudio']);

@@ -10,6 +10,7 @@ use App\Models\Cadastro\Loja;
 use App\Models\Admin;
 use App\Models\Agenda;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -370,18 +371,38 @@ class AdminController extends Controller
             $data = $res->json();
 
             if ($res->successful() && !empty($data['walletId'])) {
-                $personal->update([
-                    'asaas_account_id' => $data['id']       ?? null,
-                    'asaas_wallet_id'  => $data['walletId'] ?? null,
-                    'asaas_api_key'    => $data['apiKey']   ?? null,
-                ]);
+                // A apiKey da subconta só é retornada UMA vez, aqui na criação,
+                // e é irrecuperável depois. Persistimos imediatamente, com a key
+                // criptografada (Crypt::encryptString) — nunca em texto puro.
+                $personal->asaas_account_id = $data['id']       ?? null;
+                $personal->asaas_wallet_id  = $data['walletId'] ?? null;
+
+                $semKey = empty($data['apiKey']);
+                if (! $semKey) {
+                    $personal->asaas_api_key = Crypt::encryptString($data['apiKey']);
+                } else {
+                    // Não expõe o conteúdo; apenas sinaliza que a key precisará
+                    // ser gerada manualmente (fluxo de subconta legada).
+                    Log::warning("Admin: subconta criada SEM apiKey no retorno — gerar manualmente depois", [
+                        'personal_id'      => $personal->id,
+                        'asaas_account_id' => $data['id'] ?? null,
+                    ]);
+                }
+
+                $personal->save();
 
                 Log::info("Admin: subconta Asaas criada para personal", [
                     'personal_id' => $personal->id,
                     'wallet_id'   => $data['walletId'],
+                    'tem_api_key' => ! $semKey,
                 ]);
 
-                return redirect()->back()->with('success', "Conta Asaas criada com sucesso para '{$personal->nome}'! Split de pagamentos ativado.");
+                $msg = "Conta Asaas criada com sucesso para '{$personal->nome}'! Split de pagamentos ativado.";
+                if ($semKey) {
+                    $msg .= " Atenção: a chave de API não veio no retorno — gere-a pelo fluxo de subconta legada antes de liberar saques.";
+                }
+
+                return redirect()->back()->with('success', $msg);
             }
 
             $errMsg = $data['errors'][0]['description'] ?? 'Resposta inesperada da Asaas.';
@@ -391,6 +412,80 @@ class AdminController extends Controller
         } catch (\Exception $e) {
             Log::error("Admin: exceção ao criar subconta Asaas", ['personal_id' => $personal->id, 'error' => $e->getMessage()]);
             return redirect()->back()->with('error', "Erro ao criar conta Asaas: {$e->getMessage()}");
+        }
+    }
+
+    /**
+     * Gera (recupera) a apiKey de uma subconta JÁ EXISTENTE, cujo asaas_account_id
+     * já está salvo no banco. A apiKey original do Asaas só é retornada uma única
+     * vez, na criação, e é irrecuperável depois — então, para subcontas legadas
+     * sem a key salva (ou com key perdida), criamos uma nova chave de API para a
+     * subconta a partir da CONTA RAIZ. A nova key é salva criptografada na hora.
+     *
+     * ── PRÉ-REQUISITOS MANUAIS NO PAINEL ASAAS (sem eles a chamada FALHA) ──
+     *   1) Integrações → "Gerenciamento de Chaves de API de Subcontas" →
+     *      "Habilitar acesso". Essa liberação dura APENAS 2 HORAS e depois é
+     *      revogada automaticamente.
+     *   2) Whitelist de IP: o IP do servidor (Hetzner) precisa estar cadastrado
+     *      na whitelist do Asaas; caso contrário a chamada retorna HTTP 403.
+     *
+     * Autenticação: API key da CONTA RAIZ (config('services.asaas.key')) — nunca
+     * a key da subconta.
+     *
+     * Observação: o campo exato da nova key no retorno deve ser confirmado contra
+     * uma chamada real (lemos os candidatos conhecidos de forma defensiva).
+     */
+    public function gerarKeySubcontaExistente($personalId)
+    {
+        if (!session('admin_id')) {
+            return redirect()->route('admin.login');
+        }
+
+        $personal = Personal::findOrFail($personalId);
+
+        if (! $personal->asaas_account_id) {
+            return redirect()->back()->with('error', "Personal '{$personal->nome}' não possui subconta Asaas (asaas_account_id vazio). Crie a subconta primeiro.");
+        }
+
+        try {
+            $res = Http::withHeaders([
+                'access_token' => config('services.asaas.key'),
+                'Content-Type' => 'application/json',
+            ])->post(config('services.asaas.url') . "/accounts/{$personal->asaas_account_id}/accessTokens", [
+                'name' => 'SNRFIT saque ' . now()->format('Y-m-d H:i'),
+            ]);
+
+            // 403 = acesso aos endpoints de subconta desabilitado (dura 2h) ou IP fora da whitelist.
+            if ($res->status() === 403) {
+                Log::warning("Admin: 403 ao gerar key de subconta", ['personal_id' => $personal->id]);
+                return redirect()->back()->with('error', 'Acesso negado (403). Verifique se o "Gerenciamento de Chaves de API de Subcontas" está habilitado no painel Asaas (dura 2h) e se o IP do servidor está na whitelist.');
+            }
+
+            $data = $res->json();
+
+            // O nome do campo da nova key pode variar conforme a versão da API.
+            $novaKey = $data['apiKey'] ?? $data['accessToken'] ?? $data['access_token'] ?? null;
+
+            if ($res->successful() && ! empty($novaKey)) {
+                $personal->asaas_api_key = Crypt::encryptString($novaKey);
+                $personal->save();
+                unset($novaKey, $data); // descarta a key em texto puro o quanto antes
+
+                Log::info("Admin: nova apiKey de subconta gerada e salva (criptografada)", [
+                    'personal_id'      => $personal->id,
+                    'asaas_account_id' => $personal->asaas_account_id,
+                ]);
+
+                return redirect()->back()->with('success', "Nova chave de API gerada e salva com segurança para '{$personal->nome}'. Saques liberados.");
+            }
+
+            $errMsg = $data['errors'][0]['description'] ?? 'Resposta inesperada do Asaas ao gerar a chave (confira o campo da key no retorno).';
+            Log::warning("Admin: falha ao gerar key de subconta", ['personal_id' => $personal->id, 'status' => $res->status(), 'response' => $data]);
+            return redirect()->back()->with('error', "Falha ao gerar chave de API: {$errMsg}");
+
+        } catch (\Exception $e) {
+            Log::error("Admin: exceção ao gerar key de subconta", ['personal_id' => $personal->id, 'error' => $e->getMessage()]);
+            return redirect()->back()->with('error', "Erro ao gerar chave de API: {$e->getMessage()}");
         }
     }
 
