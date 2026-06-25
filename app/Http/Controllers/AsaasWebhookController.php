@@ -10,18 +10,36 @@ class AsaasWebhookController extends Controller
 {
     public function handle(Request $request)
 {
-    // Para autorização de saque, retorna autorizado direto
     $event = $request->input('event');
 
-    // Se for evento de autorização de saque
+    // Autenticidade do webhook: comparação timing-safe do token configurado
+    // com o header enviado pelo Asaas. Calculado ANTES de qualquer ação.
+    $expectedToken = config('services.asaas.webhook_token');
+    $tokenValido   = $expectedToken
+        && hash_equals($expectedToken, (string) $request->header('asaas-access-token'));
+
+    // Autorização de saque (transfer) = operação de SAÍDA de dinheiro da conta.
+    // Só pode ser concedida DEPOIS de validar o token: nunca autorizamos um
+    // saque a partir de uma requisição não autenticada. Sem token configurado/
+    // válido, a autorização é negada (fail-closed).
     if ($request->has('transfer') || in_array($event, ['TRANSFER_REQUEST', 'TRANSFER_CREATED', 'TRANSFER'])) {
-        Log::info('Asaas: autorização de saque recebida', $request->all());
+        if (! $tokenValido) {
+            Log::warning('Asaas: autorização de saque NEGADA — token ausente ou inválido', [
+                'event'        => $event,
+                'has_transfer' => $request->has('transfer'),
+                'token_config' => (bool) $expectedToken,
+            ]);
+
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
+
+        Log::info('Asaas: autorização de saque concedida (token válido)', $request->all());
+
         return response()->json(['authorized' => true]);
     }
 
-    // Valida token para outros eventos (pagamentos)
-    $expectedToken = config('services.asaas.webhook_token');
-    if ($expectedToken && $request->header('asaas-access-token') !== $expectedToken) {
+    // Eventos de pagamento: valida o token quando ele estiver configurado.
+    if ($expectedToken && ! $tokenValido) {
         return response()->json(['error' => 'Unauthorized'], 401);
     }
 
