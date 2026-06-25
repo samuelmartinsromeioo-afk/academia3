@@ -35,7 +35,10 @@ class AsaasWebhookController extends Controller
 
         Log::info('Asaas: autorização de saque concedida (token válido)', $request->all());
 
-        return response()->json(['authorized' => true]);
+        // O Asaas aprova o saque quando o status retornado é APPROVED
+        // (REFUSED bloquearia). Mantemos também 'authorized' por segurança,
+        // já que campos extras no JSON não atrapalham a leitura do Asaas.
+        return response()->json(['status' => 'APPROVED', 'authorized' => true]);
     }
 
     // Eventos de pagamento: valida o token quando ele estiver configurado.
