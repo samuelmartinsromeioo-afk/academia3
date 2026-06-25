@@ -6,6 +6,8 @@ use App\Models\Agenda;
 use App\Models\Avaliacao;
 use App\Models\Foto;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Contracts\Encryption\DecryptException;
+use Illuminate\Support\Facades\Crypt;
 
 class Personal extends Model
 {
@@ -55,6 +57,38 @@ class Personal extends Model
     protected $casts = [
         'precos_avaliacao' => 'array',
     ];
+
+    /**
+     * Nunca exponha a key da subconta Asaas em JSON, dd() ou logs.
+     * (Mantida como texto comum na coluna — sem cast 'encrypted' — porque a
+     * criptografia/descriptografia é feita manualmente via Crypt, ver abaixo.)
+     */
+    protected $hidden = [
+        'asaas_api_key',
+        'senha',
+    ];
+
+    /**
+     * Descriptografa a apiKey da subconta Asaas apenas no instante do uso.
+     * Retorna null se não houver key. Tolera valores legados gravados em texto
+     * puro (antes da criptografia): nesse caso devolve o valor como está, sem
+     * logar o conteúdo. O chamador deve usar o retorno numa variável local de
+     * escopo curto e descartá-la em seguida.
+     */
+    public function getAsaasApiKeyDecrypted(): ?string
+    {
+        if (empty($this->asaas_api_key)) {
+            return null;
+        }
+
+        try {
+            return Crypt::decryptString($this->asaas_api_key);
+        } catch (DecryptException $e) {
+            // Key legada em texto puro (criada antes da criptografia). Recomenda-se
+            // regenerá-la pelo fluxo de subconta legada para passar a guardar cripto.
+            return $this->asaas_api_key;
+        }
+    }
 
     public function agendas()
     {

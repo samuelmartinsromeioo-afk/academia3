@@ -50,6 +50,7 @@ Route::middleware('check.admin')->group(function () {
     Route::post('/admin/personals/{id}/rejeitar', [AdminController::class, 'rejeitar'])->name('admin.personals.rejeitar');
     Route::delete('/admin/personals/{id}', [AdminController::class, 'deletar'])->name('admin.personals.deletar');
     Route::post('/admin/personals/{id}/criar-asaas', [AdminController::class, 'criarSubcontaAsaas'])->name('admin.personals.criar-asaas');
+    Route::post('/admin/personals/{id}/gerar-key-asaas', [AdminController::class, 'gerarKeySubcontaExistente'])->name('admin.personals.gerar-key-asaas');
 
     // Gerenciar Studios
     Route::get('/admin/studios', [AdminController::class, 'listarStudios'])->name('admin.studios.lista');

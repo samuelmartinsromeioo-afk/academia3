@@ -14,9 +14,11 @@ use App\Models\Cadastro\Studio;
 use App\Models\Cadastro\StudioPlano;
 use App\Models\MembershipConfirmation;
 use App\Models\Payment;
+use App\Models\PersonalSaque;
 use App\Models\Subscription;
 use App\Models\TrainerPayout;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
@@ -618,10 +620,14 @@ class PaymentController extends Controller
             return response()->json(['saldo' => 0, 'sem_conta' => true]);
         }
 
+        $apiKey = $personal->getAsaasApiKeyDecrypted();
+
         $res = Http::withHeaders([
-            'access_token' => $personal->asaas_api_key,
+            'access_token' => $apiKey,
             'Content-Type' => 'application/json',
         ])->get($this->asaas().'/finance/balance');
+
+        unset($apiKey);
 
         if ($res->failed()) {
             Log::error('Asaas saldo: falha', ['personal_id' => $personalId, 'body' => $res->json()]);
@@ -657,8 +663,10 @@ class PaymentController extends Controller
             'valor' => 'required|numeric|min:0.01',
         ]);
 
+        $apiKey = $personal->getAsaasApiKeyDecrypted();
+
         $res = Http::withHeaders([
-            'access_token' => $personal->asaas_api_key,
+            'access_token' => $apiKey,
             'Content-Type' => 'application/json',
         ])->post($this->asaas().'/transfers', [
             'operationType' => 'PIX',
@@ -667,6 +675,8 @@ class PaymentController extends Controller
             'pixAddressKeyType' => $this->detectarTipoChavePix($personal->chave_pix),
             'description' => 'Saque SnrFit',
         ]);
+
+        unset($apiKey);
 
         $data = $res->json();
 
@@ -697,6 +707,117 @@ class PaymentController extends Controller
             'success' => true,
             'transfer_id' => $data['id'] ?? null,
             'valor' => $validated['valor'],
+        ]);
+    }
+
+    /**
+     * Saque via Pix do saldo da subconta do personal para FORA do Asaas.
+     *
+     * A chave Pix de destino é digitada pelo personal NA HORA do saque e vem na
+     * request — NÃO é armazenada (usar e descartar). A chamada usa o endpoint
+     * POST /transfers autenticado com a apiKey da SUBCONTA do personal (a conta
+     * raiz não consegue sacar o saldo de uma subconta).
+     *
+     * Ambiente definido por config('services.asaas.url'): em produção é
+     * api.asaas.com e move dinheiro REAL — teste primeiro com valor pequeno.
+     */
+    public function sacarSubconta(Request $request)
+    {
+        $personalId = session('personal_id');
+        if (! $personalId) {
+            return response()->json(['error' => 'Não autenticado.'], 401);
+        }
+
+        $validated = $request->validate([
+            'value'             => 'required|numeric|min:0.01',
+            'pixAddressKey'     => 'required|string|max:255',
+            'pixAddressKeyType' => 'required|in:CPF,CNPJ,EMAIL,PHONE,EVP',
+        ]);
+
+        $personal = Personal::find($personalId);
+
+        if (! $personal?->asaas_api_key) {
+            return response()->json([
+                'error' => 'Sua conta de recebimento ainda não tem chave de API configurada. Peça ao administrador para gerar a chave da subconta antes de sacar.',
+            ], 422);
+        }
+
+        // Descriptografa só agora, em variável local de escopo curto.
+        $apiKey = $personal->getAsaasApiKeyDecrypted();
+        if (! $apiKey) {
+            Log::error('Saque subconta: falha ao obter apiKey descriptografada', ['personal_id' => $personalId]);
+
+            return response()->json(['error' => 'Não foi possível acessar sua conta de recebimento. Contate o suporte.'], 500);
+        }
+
+        try {
+            $res = Http::withHeaders([
+                'access_token' => $apiKey,
+                'Content-Type' => 'application/json',
+            ])->post($this->asaas().'/transfers', [
+                'value'             => (float) $validated['value'],
+                'pixAddressKey'     => $validated['pixAddressKey'],
+                'pixAddressKeyType' => $validated['pixAddressKeyType'],
+                'operationType'     => 'PIX',
+            ]);
+        } catch (\Throwable $e) {
+            unset($apiKey);
+            Log::error('Saque subconta: exceção na transferência', ['personal_id' => $personalId, 'error' => $e->getMessage()]);
+
+            return response()->json(['error' => 'Erro ao processar o saque. Tente novamente.'], 500);
+        }
+
+        unset($apiKey); // descarta a key imediatamente após o uso
+
+        // 409 = transferência duplicada (mesmo valor/chave nos últimos 15 min).
+        if ($res->status() === 409) {
+            return response()->json([
+                'error' => 'Já existe um saque idêntico solicitado nos últimos 15 minutos. Aguarde antes de tentar de novo.',
+            ], 409);
+        }
+
+        $data = $res->json();
+
+        // Erros de negócio do Asaas (saldo insuficiente, chave Pix inválida, etc.)
+        // chegam em data.errors[].description — repassamos a descrição ao front.
+        if (! empty($data['errors'])) {
+            $errMsg = $data['errors'][0]['description'] ?? 'Falha ao processar o saque.';
+            Log::warning('Saque subconta: erro Asaas', [
+                'personal_id' => $personalId,
+                'status'      => $res->status(),
+                'errors'      => $data['errors'],
+            ]);
+
+            return response()->json(['error' => $errMsg], 422);
+        }
+
+        if ($res->failed() || empty($data['id'])) {
+            Log::error('Saque subconta: http error', ['personal_id' => $personalId, 'status' => $res->status()]);
+
+            return response()->json(['error' => 'Falha ao processar o saque. Tente novamente.'], 500);
+        }
+
+        $saque = PersonalSaque::create([
+            'personal_id'             => $personalId,
+            'asaas_transfer_id'       => $data['id'] ?? null,
+            'value'                   => (float) $validated['value'],
+            'status'                  => $data['status'] ?? 'PENDING',
+            'transaction_receipt_url' => $data['transactionReceiptUrl'] ?? null,
+        ]);
+
+        Log::info('Saque subconta realizado', [
+            'personal_id' => $personalId,
+            'saque_id'    => $saque->id,
+            'transfer_id' => $data['id'] ?? null,
+            'status'      => $data['status'] ?? null,
+        ]);
+
+        return response()->json([
+            'success'    => true,
+            'id'         => $data['id'] ?? null,
+            'status'     => $data['status'] ?? 'PENDING',
+            'receiptUrl' => $data['transactionReceiptUrl'] ?? null,
+            'saque_id'   => $saque->id,
         ]);
     }
 
