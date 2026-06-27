@@ -7,15 +7,18 @@
     <title>Evolução de Carga</title>
     <link rel="icon" type="image/png" href="{{ asset('SnrFit.png') }}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/regular/style.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/fill/style.css">
+    <link rel="stylesheet" href="{{ asset('css/snrfit-brand.css') }}">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
     <style>
         :root {
-            --primary: #F4BE16;     /* SNR FIT amarelo */
-            --bg-dark: #000000;
-            --card-bg: #111317;
-            --text-main: #ffffff;
-            --text-muted: #9a9a9a;
-            --border: rgba(255, 255, 255, 0.08);
+            --primary: var(--snr-lime);
+            --bg-dark: var(--snr-bg);
+            --card-bg: var(--snr-surface);
+            --text-main: var(--snr-text);
+            --text-muted: var(--snr-dim);
+            --border: var(--snr-border);
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -24,7 +27,7 @@
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
             color: var(--text-main);
             min-height: 100vh;
-            background-image: radial-gradient(circle at 15% -10%, rgba(244, 190, 22, 0.10), transparent 45%);
+            background-image: radial-gradient(circle at 15% -10%, rgba(212, 255, 0, 0.10), transparent 45%);
         }
         a { color: inherit; text-decoration: none; }
         button, select, input { font-family: inherit; }
@@ -136,15 +139,15 @@
     </style>
 </head>
 
-<body>
+<body class="ed-page">
 
     <div class="top-bar">
-        <a href="{{ $voltarUrl }}" class="back-btn" title="Voltar"><i class="fas fa-arrow-left"></i></a>
-        <span class="title"><i class="fas fa-bolt"></i> Evolução de Carga</span>
+        <a href="{{ $voltarUrl }}" class="back-btn" title="Voltar"><i class="ph ph-arrow-left"></i></a>
+        <span class="title"><i class="ph ph-lightning"></i> Evolução de Carga</span>
     </div>
 
     <div class="container">
-        <h1><i class="fas fa-bolt"></i> EVOLUÇÃO DE CARGA</h1>
+        <div class="ed-eyebrow"><i class="ph ph-lightning"></i> Acompanhamento</div><h1 class="ed-h">Evolução de <span class="ed-mark">Carga</span></h1>
         <p class="subtitle">
             @if($modo === 'personal')
                 Progressão de carga de <strong style="color:var(--primary)">{{ $cliente->nome }}</strong> por exercício.
@@ -156,7 +159,7 @@
         @if(empty($exercicios))
             <div class="chart-card">
                 <div class="empty">
-                    <i class="fas fa-bolt"></i>
+                    <i class="ph ph-lightning"></i>
                     <p>Ainda não há cargas registradas.</p>
                     <small>Os dados aparecem aqui conforme os treinos forem concluídos informando a carga de cada exercício.</small>
                 </div>
@@ -164,7 +167,7 @@
         @else
             <div class="filters">
                 <div class="filter-group">
-                    <label><i class="fas fa-dumbbell"></i> Exercício</label>
+                    <label><i class="ph ph-barbell"></i> Exercício</label>
                     <select id="selExercicio" class="input" onchange="carregar()">
                         @foreach($exercicios as $ex)
                             <option value="{{ $ex }}">{{ $ex }}</option>
@@ -172,7 +175,7 @@
                     </select>
                 </div>
                 <div class="filter-group" style="flex: 0;">
-                    <label><i class="fas fa-calendar"></i> Período</label>
+                    <label><i class="ph ph-calendar"></i> Período</label>
                     <div class="period-btns" id="periodBtns">
                         <button type="button" data-dias="30" onclick="setPeriodo(30)">30 dias</button>
                         <button type="button" data-dias="90" class="active" onclick="setPeriodo(90)">90 dias</button>
@@ -203,7 +206,7 @@
             <div class="chart-card">
                 <canvas id="chartCarga" style="max-height: 360px;"></canvas>
                 <div class="empty" id="emptyPeriodo" style="display:none;">
-                    <i class="fas fa-chart-line"></i>
+                    <i class="ph ph-chart-line"></i>
                     <p>Sem registros neste período.</p>
                     <small>Tente um período maior ou outro exercício.</small>
                 </div>
@@ -269,18 +272,18 @@
 
             const ctx = canvas.getContext('2d');
             const grad = ctx.createLinearGradient(0, 0, 0, 360);
-            grad.addColorStop(0, 'rgba(244, 190, 22, 0.35)');
-            grad.addColorStop(1, 'rgba(244, 190, 22, 0)');
+            grad.addColorStop(0, 'rgba(212, 255, 0, 0.35)');
+            grad.addColorStop(1, 'rgba(212, 255, 0, 0)');
 
             const data = {
                 labels: json.labels,
                 datasets: [{
                     label: 'Carga (kg)',
                     data: json.pesos,
-                    borderColor: '#F4BE16',
+                    borderColor: '#d4ff00',
                     backgroundColor: grad,
                     borderWidth: 3,
-                    pointBackgroundColor: '#F4BE16',
+                    pointBackgroundColor: '#d4ff00',
                     pointBorderColor: '#000',
                     pointRadius: 5,
                     pointHoverRadius: 7,
@@ -296,9 +299,9 @@
                     legend: { display: false },
                     tooltip: {
                         backgroundColor: '#111317',
-                        borderColor: '#F4BE16',
+                        borderColor: '#d4ff00',
                         borderWidth: 1,
-                        titleColor: '#F4BE16',
+                        titleColor: '#d4ff00',
                         bodyColor: '#fff',
                         padding: 12,
                         callbacks: {

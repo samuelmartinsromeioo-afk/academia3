@@ -8,6 +8,8 @@
     <link rel="icon" type="image/png" href="{{ asset('SnrFit.png') }}">
     @include('partials.pwa')
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/regular/style.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/fill/style.css">
     <style>
         :root {
             --primary: #d4ff00;
@@ -635,55 +637,54 @@
     </style>
 </head>
 
-<body>
+<body class="ed-page">
 
     <div class="container">
         <div class="page-header">
             <div class="header-left">
                 <a href="{{ route('personal.dashboard') }}" class="back-link">
-                    <i class="fas fa-arrow-left"></i> VOLTAR
+                    <i class="ph ph-arrow-left"></i> VOLTAR
                 </a>
-                <h1>
-                    <i class="fas fa-dumbbell"></i> FICHAS DE {{ strtoupper($cliente->nome) }}
-                </h1>
+                <div class="ed-eyebrow"><i class="ph ph-barbell"></i> Fichas do aluno</div>
+                <h1 class="ed-h">{{ strtoupper($cliente->nome) }}</h1>
             </div>
             <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
                 <a href="{{ route('evolucao-carga.aluno', $cliente->id) }}"
-                   style="display:inline-flex; align-items:center; gap:8px; background:#F4BE16; color:#000; padding:12px 18px; border-radius:10px; font-weight:900; font-size:0.85rem; text-transform:uppercase; letter-spacing:0.5px; box-shadow:0 0 16px rgba(244,190,22,0.25);">
-                    <i class="fas fa-bolt"></i> Evolução
+                   style="display:inline-flex; align-items:center; gap:8px; background:var(--primary); color:#000; padding:12px 18px; border-radius:10px; font-weight:900; font-size:0.85rem; text-transform:uppercase; letter-spacing:0.5px; box-shadow:0 0 16px rgba(212,255,0,0.25);">
+                    <i class="ph ph-lightning"></i> Evolução
                 </a>
                 <a href="{{ route('periodizacao.aluno', $cliente->id) }}"
-                   style="display:inline-flex; align-items:center; gap:8px; background:transparent; color:#F4BE16; border:1px solid #F4BE16; padding:12px 18px; border-radius:10px; font-weight:900; font-size:0.85rem; text-transform:uppercase; letter-spacing:0.5px;">
-                    <i class="fas fa-layer-group"></i> Periodização
+                   style="display:inline-flex; align-items:center; gap:8px; background:transparent; color:var(--primary); border:1px solid var(--primary); padding:12px 18px; border-radius:10px; font-weight:900; font-size:0.85rem; text-transform:uppercase; letter-spacing:0.5px;">
+                    <i class="ph ph-stack"></i> Periodização
                 </a>
                 <a href="{{ route('anamnese.personal', $cliente->id) }}"
-                   style="display:inline-flex; align-items:center; gap:8px; background:transparent; color:#F4BE16; border:1px solid #F4BE16; padding:12px 18px; border-radius:10px; font-weight:900; font-size:0.85rem; text-transform:uppercase; letter-spacing:0.5px;">
-                    <i class="fas fa-file-medical"></i> Anamnese
+                   style="display:inline-flex; align-items:center; gap:8px; background:transparent; color:var(--primary); border:1px solid var(--primary); padding:12px 18px; border-radius:10px; font-weight:900; font-size:0.85rem; text-transform:uppercase; letter-spacing:0.5px;">
+                    <i class="ph ph-first-aid"></i> Anamnese
                 </a>
                 <a href="{{ route('progresso.personal', $cliente->id) }}"
-                   style="display:inline-flex; align-items:center; gap:8px; background:transparent; color:#F4BE16; border:1px solid #F4BE16; padding:12px 18px; border-radius:10px; font-weight:900; font-size:0.85rem; text-transform:uppercase; letter-spacing:0.5px;">
-                    <i class="fas fa-chart-line"></i> Progresso
+                   style="display:inline-flex; align-items:center; gap:8px; background:transparent; color:var(--primary); border:1px solid var(--primary); padding:12px 18px; border-radius:10px; font-weight:900; font-size:0.85rem; text-transform:uppercase; letter-spacing:0.5px;">
+                    <i class="ph ph-chart-line"></i> Progresso
                 </a>
                 <a href="{{ route('relatorio.aluno', $cliente->id) }}"
-                   style="display:inline-flex; align-items:center; gap:8px; background:transparent; color:#F4BE16; border:1px solid #F4BE16; padding:12px 18px; border-radius:10px; font-weight:900; font-size:0.85rem; text-transform:uppercase; letter-spacing:0.5px;">
-                    <i class="fas fa-file-lines"></i> Relatório
+                   style="display:inline-flex; align-items:center; gap:8px; background:transparent; color:var(--primary); border:1px solid var(--primary); padding:12px 18px; border-radius:10px; font-weight:900; font-size:0.85rem; text-transform:uppercase; letter-spacing:0.5px;">
+                    <i class="ph ph-file-text"></i> Relatório
                 </a>
                 <button id="btnNovaFicha" class="btn-nova-ficha">
-                    <i class="fas fa-plus"></i> NOVA FICHA
+                    <i class="ph ph-plus"></i> NOVA FICHA
                 </button>
             </div>
         </div>
 
         @if(session('success'))
         <div class="alert">
-            <i class="fas fa-check-circle"></i>
+            <i class="ph ph-check-circle"></i>
             {{ session('success') }}
         </div>
         @endif
 
         @if($fichas->isEmpty())
             <div class="empty-state">
-                <i class="fas fa-calendar"></i>
+                <i class="ph ph-calendar"></i>
                 <p>Nenhuma ficha criada ainda.</p>
                 <small style="color: var(--text-muted);">Clique em "NOVA FICHA" para começar!</small>
             </div>
@@ -695,19 +696,19 @@
                     @endphp
                     <div class="ficha-card">
                         <div class="ficha-header">
-                            <h3><i class="fas fa-calendar-day"></i> {{ $dias[$ficha->dia_semana] }}</h3>
+                            <h3><i class="ph ph-calendar-dot"></i> {{ $dias[$ficha->dia_semana] }}</h3>
                             <div class="ficha-buttons">
                                 <form method="POST" action="{{ route('templates.de-ficha', $ficha->id) }}" style="display:inline;" title="Salvar como template">
                                     @csrf
-                                    <button type="submit" class="btn-icon" style="background:rgba(244,190,22,0.15); color:#F4BE16;">
-                                        <i class="fas fa-clone"></i>
+                                    <button type="submit" class="btn-icon" style="background:rgba(212,255,0,0.15); color:var(--primary);">
+                                        <i class="ph ph-copy"></i>
                                     </button>
                                 </form>
                                 <button class="btn-icon btn-edit" onclick="editarFicha({{ $ficha->id }})">
-                                    <i class="fas fa-edit"></i>
+                                    <i class="ph ph-note-pencil"></i>
                                 </button>
                                 <button class="btn-icon btn-delete" onclick="deletarFicha({{ $ficha->id }})">
-                                    <i class="fas fa-trash"></i>
+                                    <i class="ph ph-trash"></i>
                                 </button>
                             </div>
                         </div>
@@ -739,7 +740,7 @@
                         @endif
 
                         <div class="exercicios-box">
-                            <p class="exercicios-title"><i class="fas fa-list-ul"></i> Exercícios</p>
+                            <p class="exercicios-title"><i class="ph ph-list-bullets"></i> Exercícios</p>
                             
                             @if($ficha->exercicios->isEmpty())
                                 <p class="empty-ex">Nenhum exercício adicionado</p>
@@ -761,7 +762,7 @@
                                                 {{ $exercicio->nome_exercicio }}
                                                 @if($exercicio->observacoes)<div style="color:var(--text-muted); font-size:0.72rem; margin-top:2px;">{{ $exercicio->observacoes }}</div>@endif
                                                 @if($exercicio->video)
-                                                    <button type="button" onclick="abrirVideo('{{ asset('storage/' . $exercicio->video) }}')" style="margin-top:4px; background:none; border:none; color:var(--primary); font-size:0.72rem; font-weight:700; cursor:pointer; padding:0; display:inline-flex; align-items:center; gap:5px;"><i class="fas fa-play-circle"></i> Ver vídeo</button>
+                                                    <button type="button" onclick="abrirVideo('{{ asset('storage/' . $exercicio->video) }}')" style="margin-top:4px; background:none; border:none; color:var(--primary); font-size:0.72rem; font-weight:700; cursor:pointer; padding:0; display:inline-flex; align-items:center; gap:5px;"><i class="ph ph-play-circle"></i> Ver vídeo</button>
                                                 @endif
                                             </td>
                                             <td data-label="Séries" style="text-align: center;">{{ $exercicio->series }}</td>
@@ -770,10 +771,10 @@
                                             <td style="text-align: center; white-space:nowrap;">
                                                 <button class="btn-delete-ex" style="color:var(--primary);" title="Editar"
                                                     onclick="editarExercicioModal({{ $exercicio->id }}, {!! htmlspecialchars(json_encode($exercicio->nome_exercicio), ENT_QUOTES) !!}, {{ $exercicio->series }}, {{ $exercicio->repeticoes }}, {!! htmlspecialchars(json_encode($exercicio->peso), ENT_QUOTES) !!}, {!! htmlspecialchars(json_encode($exercicio->observacoes), ENT_QUOTES) !!}, {!! htmlspecialchars(json_encode($exercicio->video ? asset('storage/' . $exercicio->video) : ''), ENT_QUOTES) !!})">
-                                                    <i class="fas fa-pen"></i>
+                                                    <i class="ph ph-pen"></i>
                                                 </button>
                                                 <button class="btn-delete-ex" onclick="deletarExercicio({{ $exercicio->id }})" title="Remover">
-                                                    <i class="fas fa-times"></i>
+                                                    <i class="ph ph-x"></i>
                                                 </button>
                                             </td>
                                         </tr>
@@ -784,7 +785,7 @@
                         </div>
 
                         <button class="btn-add-ex" onclick="adicionarExercicio({{ $ficha->id }}, '{{ $ficha->nivel ?? 'iniciante' }}', '{{ $ficha->divisao ?? '' }}')">
-                            <i class="fas fa-plus"></i> ADICIONAR EXERCÍCIO
+                            <i class="ph ph-plus"></i> ADICIONAR EXERCÍCIO
                         </button>
                     </div>
                 @endforeach
@@ -795,7 +796,7 @@
     <!-- MODAL NOVA FICHA -->
     <div id="modalNovaFicha" class="modal-overlay">
         <div class="modal-content">
-            <h2><i class="fas fa-plus-circle"></i> NOVA FICHA</h2>
+            <h2><i class="ph ph-plus-circle"></i> NOVA FICHA</h2>
 
             <form action="{{ route('fichas-treino.criar') }}" method="POST">
                 @csrf
@@ -806,10 +807,10 @@
                     <label>Nível da Ficha</label>
                     <div class="nivel-toggle">
                         <button type="button" class="nivel-btn ativo" data-nivel="iniciante" onclick="selecionarNivel('iniciante')">
-                            <i class="fas fa-seedling"></i> INICIANTE
+                            <i class="ph ph-plant"></i> INICIANTE
                         </button>
                         <button type="button" class="nivel-btn" data-nivel="avancado" onclick="selecionarNivel('avancado')">
-                            <i class="fas fa-fire"></i> AVANÇADO
+                            <i class="ph ph-fire"></i> AVANÇADO
                         </button>
                     </div>
                 </div>
@@ -862,7 +863,7 @@
     <!-- MODAL EDITAR FICHA -->
     <div id="modalEditarFicha" class="modal-overlay">
         <div class="modal-content">
-            <h2><i class="fas fa-edit"></i> EDITAR FICHA</h2>
+            <h2><i class="ph ph-note-pencil"></i> EDITAR FICHA</h2>
             
             <form id="formEditarFicha" method="POST">
                 @csrf
@@ -889,7 +890,7 @@
     <!-- MODAL ADICIONAR EXERCÍCIO -->
     <div id="modalAdicionarExercicio" class="modal-overlay">
         <div class="modal-content">
-            <h2><i class="fas fa-dumbbell"></i> ADICIONAR EXERCÍCIO</h2>
+            <h2><i class="ph ph-barbell"></i> ADICIONAR EXERCÍCIO</h2>
 
             <form id="formAdicionarExercicio" method="POST" enctype="multipart/form-data">
                 @csrf
@@ -901,7 +902,7 @@
                     <!-- Estado: nenhum exercício escolhido -->
                     <div id="exercicioPicker">
                         <div class="exercicio-search-wrapper">
-                            <i class="fas fa-search search-icon"></i>
+                            <i class="ph ph-magnifying-glass search-icon"></i>
                             <input type="text"
                                    id="filtroExercicio"
                                    placeholder="Buscar exercício..."
@@ -918,7 +919,7 @@
                             <div class="exercicio-escolhido-grupo" id="grupoExercicioEscolhido"></div>
                         </div>
                         <button type="button" class="btn-trocar-exercicio" onclick="trocarExercicio()">
-                            <i class="fas fa-exchange-alt"></i> Trocar
+                            <i class="ph ph-arrows-left-right"></i> Trocar
                         </button>
                     </div>
                 </div>
@@ -945,7 +946,7 @@
                 </div>
 
                 <div class="form-group">
-                    <label><i class="fas fa-video"></i> Vídeo demonstrativo (máx. 15s)</label>
+                    <label><i class="ph ph-video-camera"></i> Vídeo demonstrativo (máx. 15s)</label>
                     <input type="file" name="video" accept="video/*" onchange="validarVideo15s(this)">
                 </div>
 
@@ -960,7 +961,7 @@
     <!-- MODAL EDITAR EXERCÍCIO -->
     <div id="modalEditarExercicio" class="modal-overlay">
         <div class="modal-content">
-            <h2><i class="fas fa-pen"></i> EDITAR EXERCÍCIO</h2>
+            <h2><i class="ph ph-pen"></i> EDITAR EXERCÍCIO</h2>
 
             <form id="formEditarExercicio" method="POST" enctype="multipart/form-data">
                 @csrf
@@ -993,9 +994,9 @@
                 </div>
 
                 <div class="form-group">
-                    <label><i class="fas fa-video"></i> Vídeo demonstrativo (máx. 15s)</label>
+                    <label><i class="ph ph-video-camera"></i> Vídeo demonstrativo (máx. 15s)</label>
                     <div id="editVideoAtual" style="display:none; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom:8px;">
-                        <button type="button" class="btn-cancel" style="padding:8px 12px;" onclick="abrirVideo(editVideoUrlAtual)"><i class="fas fa-play"></i> Ver vídeo atual</button>
+                        <button type="button" class="btn-cancel" style="padding:8px 12px;" onclick="abrirVideo(editVideoUrlAtual)"><i class="ph ph-play"></i> Ver vídeo atual</button>
                         <label style="display:flex; align-items:center; gap:6px;">
                             <input type="checkbox" name="remover_video" value="1"> Remover vídeo
                         </label>
@@ -1213,7 +1214,7 @@
                 let html = `<div class="exercicio-vazio">Nenhum exercício encontrado</div>`;
                 if (termo.trim()) {
                     html += `<div class="exercicio-personalizado" onclick="selecionarPersonalizado('${escapeHtml(termo.trim())}')">
-                        <i class="fas fa-plus-circle"></i> Usar "<strong>${escapeHtml(termo.trim())}</strong>" como exercício personalizado
+                        <i class="ph ph-plus-circle"></i> Usar "<strong>${escapeHtml(termo.trim())}</strong>" como exercício personalizado
                     </div>`;
                 }
                 lista.innerHTML = html;

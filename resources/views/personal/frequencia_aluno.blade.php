@@ -7,6 +7,8 @@
     <link rel="icon" type="image/png" href="{{ asset('SnrFit.png') }}">
     @include('partials.pwa')
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/regular/style.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/fill/style.css">
     <style>
         :root {
             --primary: #d4ff00; --bg-dark: #0a0b0d; --card-bg: #16181d;
@@ -64,10 +66,10 @@
         @media (max-width: 600px) { .top-bar { padding: 15px 20px; } }
     </style>
 </head>
-<body>
+<body class="ed-page">
 
 <div class="top-bar">
-    <a href="{{ route('personal.frequencia') }}" class="btn-back"><i class="fas fa-arrow-left"></i> Voltar</a>
+    <a href="{{ route('personal.frequencia') }}" class="btn-back"><i class="ph ph-arrow-left"></i> Voltar</a>
     <div style="display:flex; align-items:center; gap:12px;">
         <img src="{{ $personal->foto ? asset('storage/'.$personal->foto) : 'https://cdn-icons-png.flaticon.com/512/3135/3135715.png' }}" style="width:38px; height:38px; border-radius:50%; border:2px solid var(--primary); object-fit:cover;">
         <span style="font-weight:700; font-size:0.9rem;">{{ $personal->nome }}</span>
@@ -75,18 +77,18 @@
 </div>
 
 <div class="container">
-    <h1 class="page-title"><i class="fas fa-user-check" style="margin-right:10px;"></i>{{ $cliente->nome }}</h1>
+    <div class="ed-eyebrow"><i class="ph ph-user-check"></i> FrequÃªncia do aluno</div><h1 class="ed-h">{{ $cliente->nome }}</h1>
     <p class="page-sub">Frequência, marcação de presença/falta e resumo do aluno.</p>
 
     @if(session('success'))
-        <div class="alert-success"><i class="fas fa-check-circle"></i> {{ session('success') }}</div>
+        <div class="alert-success"><i class="ph ph-check-circle"></i> {{ session('success') }}</div>
     @endif
 
     {{-- CLASSIFICAÇÃO + RESUMO --}}
     <div class="card">
         <div class="class-hero">
             <span class="class-badge" style="background: {{ $classificacao['cor'] }}1a; color: {{ $classificacao['cor'] }}; border: 1px solid {{ $classificacao['cor'] }}55;">
-                <i class="fas fa-circle" style="font-size:0.6rem;"></i> {{ $classificacao['label'] }}
+                <i class="ph ph-circle" style="font-size:0.6rem;"></i> {{ $classificacao['label'] }}
             </span>
             @if($classificacao['taxa'] !== null)
                 <div>
@@ -118,14 +120,14 @@
 
     <div class="filtro-bar">
         <form method="GET" action="{{ route('personal.frequencia.aluno', $cliente->id) }}" style="display:flex; gap:8px; align-items:center;">
-            <label style="color:var(--text-muted); font-size:0.7rem; font-weight:800; text-transform:uppercase;"><i class="fas fa-filter"></i> Mês das aulas:</label>
+            <label style="color:var(--text-muted); font-size:0.7rem; font-weight:800; text-transform:uppercase;"><i class="ph ph-funnel"></i> Mês das aulas:</label>
             <input type="month" name="mes" value="{{ $mes }}" onchange="this.form.submit()">
         </form>
     </div>
 
     <div class="card" style="padding: 8px 14px;">
         @if($diasAgenda->isEmpty())
-            <p class="empty"><i class="fas fa-info-circle"></i> Nenhuma aula agendada nesse mês. Use a marcação manual abaixo para registrar a frequência.</p>
+            <p class="empty"><i class="ph ph-info"></i> Nenhuma aula agendada nesse mês. Use a marcação manual abaixo para registrar a frequência.</p>
         @else
             @foreach($diasAgenda as $dia)
                 @php
@@ -145,8 +147,8 @@
                             @csrf
                             <input type="hidden" name="cliente_id" value="{{ $cliente->id }}">
                             <input type="hidden" name="data" value="{{ $dia }}">
-                            <button class="btn-mark pres {{ $reg && $reg->presente ? 'on' : '' }}" name="presente" value="1"><i class="fas fa-check"></i> Foi</button>
-                            <button class="btn-mark falt {{ $reg && !$reg->presente ? 'on' : '' }}" name="presente" value="0"><i class="fas fa-xmark"></i> Faltou</button>
+                            <button class="btn-mark pres {{ $reg && $reg->presente ? 'on' : '' }}" name="presente" value="1"><i class="ph ph-check"></i> Foi</button>
+                            <button class="btn-mark falt {{ $reg && !$reg->presente ? 'on' : '' }}" name="presente" value="0"><i class="ph ph-x"></i> Faltou</button>
                         </form>
                     </div>
                 </div>
@@ -163,8 +165,8 @@
                 <label>Marcar outra data</label>
                 <input type="date" name="data" value="{{ now()->format('Y-m-d') }}" required>
             </div>
-            <button class="btn-mark pres" name="presente" value="1"><i class="fas fa-check"></i> Presente</button>
-            <button class="btn-mark falt" name="presente" value="0"><i class="fas fa-xmark"></i> Faltou</button>
+            <button class="btn-mark pres" name="presente" value="1"><i class="ph ph-check"></i> Presente</button>
+            <button class="btn-mark falt" name="presente" value="0"><i class="ph ph-x"></i> Faltou</button>
         </form>
     </div>
 
@@ -202,7 +204,7 @@
                         <span class="status-badge {{ $reg->presente ? 'st-pres' : 'st-falt' }}">{{ $reg->presente ? 'Presente' : 'Faltou' }}</span>
                         <form method="POST" action="{{ route('personal.frequencia.remover', $reg->id) }}" onsubmit="return confirm('Remover este registro?')">
                             @csrf @method('DELETE')
-                            <button type="submit" class="btn-del"><i class="fas fa-trash-alt"></i></button>
+                            <button type="submit" class="btn-del"><i class="ph ph-trash"></i></button>
                         </form>
                     </div>
                 </div>

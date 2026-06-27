@@ -8,6 +8,8 @@
     <link rel="icon" type="image/png" href="{{ asset('SnrFit.png') }}">
     @include('partials.pwa')
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/regular/style.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/fill/style.css">
     <style>
         :root {
             --primary: #d4ff00;
@@ -546,7 +548,7 @@
     </style>
 </head>
 
-<body>
+<body class="ed-page">
 
     @php
         // Mapa fichaId => exercícios, para o JS pré-preencher os campos de carga.
@@ -573,7 +575,7 @@
     <!-- TOP BAR -->
     <div class="top-bar">
         <button class="back-btn" onclick="window.location.href='{{ route('cliente.index') }}'" title="Voltar">
-            <i class="fas fa-arrow-left"></i>
+            <i class="ph ph-arrow-left"></i>
         </button>
         <div class="profile-header">
             <span style="font-weight: 700; font-size: 0.9rem;">Minhas Fichas de Treino</span>
@@ -583,22 +585,22 @@
 
     <!-- CONTAINER -->
     <div class="container">
-        <h1><i class="fas fa-dumbbell"></i> MINHAS FICHAS DE TREINO</h1>
+        <div class="ed-eyebrow"><i class="ph ph-barbell"></i> Treino</div><h1 class="ed-h">Minhas Fichas de <span class="ed-mark">Treino</span></h1>
 
         <a href="{{ route('evolucao-carga.minha') }}" class="btn-evolucao">
-            <i class="fas fa-bolt"></i> Evolução de Carga
+            <i class="ph ph-lightning"></i> Evolução de Carga
         </a>
 
         @if(session('success'))
         <div class="alert alert-success">
-            <i class="fas fa-check-circle"></i>
+            <i class="ph ph-check-circle"></i>
             {{ session('success') }}
         </div>
         @endif
 
         @if(session('recordes') && count(session('recordes')) > 0)
         <div class="recorde-banner">
-            <div class="tt"><i class="fas fa-trophy"></i> Novo recorde pessoal! 🎉</div>
+            <div class="tt"><i class="ph ph-trophy"></i> Novo recorde pessoal! 🎉</div>
             <ul>
                 @foreach(session('recordes') as $r)
                     <li>{{ $r }}</li>
@@ -609,7 +611,7 @@
 
         @if($fichasPorPersonal->isEmpty() && (!isset($fichasAcademia) || $fichasAcademia->isEmpty()))
             <div class="empty-state">
-                <i class="fas fa-calendar"></i>
+                <i class="ph ph-calendar"></i>
                 <p>Você não possui fichas de treino.</p>
                 <small>Seu personal ou sua academia criará suas fichas em breve!</small>
             </div>
@@ -636,14 +638,14 @@
 
                             <div class="ficha-card">
                                 <div class="ficha-header">
-                                    <h3><i class="fas fa-calendar-day"></i> {{ $dias[$ficha->dia_semana] }}</h3>
+                                    <h3><i class="ph ph-calendar-dot"></i> {{ $dias[$ficha->dia_semana] }}</h3>
                                     <div style="display:flex; gap:6px;">
                                         <a href="{{ route('fichas-treino.executar', $ficha->id) }}" class="btn-marcar" style="text-decoration:none; background:#F4BE16; color:#000; border-color:#F4BE16;">
-                                            <i class="fas fa-play"></i> INICIAR
+                                            <i class="ph ph-play"></i> INICIAR
                                         </a>
                                         <button class="btn-marcar {{ $estaConcluido ? 'concluido' : '' }}"
                                             onclick="marcarConcluido({{ $ficha->id }})">
-                                            <i class="fas {{ $estaConcluido ? 'fa-check' : 'fa-square' }}"></i>
+                                            <i class="ph {{ $estaConcluido ? 'ph-check' : 'ph-square' }}"></i>
                                             {{ $estaConcluido ? 'CONCLUÍDO' : 'MARCAR' }}
                                         </button>
                                     </div>
@@ -656,7 +658,7 @@
                                 @endif
 
                                 <div class="exercicios-box">
-                                    <p class="exercicios-title"><i class="fas fa-list-ul"></i> Exercícios</p>
+                                    <p class="exercicios-title"><i class="ph ph-list-bullets"></i> Exercícios</p>
 
                                     @if($ficha->exercicios->isEmpty())
                                         <p class="empty-ex">Nenhum exercício</p>
@@ -676,7 +678,7 @@
                                                     <td data-label="Exercício">
                                                         <div class="ex-nome ex-click" onclick="abrirExercicio({!! htmlspecialchars(json_encode($exercicio->nome_exercicio), ENT_QUOTES) !!}, {!! htmlspecialchars(json_encode($exercicio->observacoes), ENT_QUOTES) !!}, {!! htmlspecialchars(json_encode($exercicio->video ? asset('storage/' . $exercicio->video) : ''), ENT_QUOTES) !!})">
                                                             {{ $exercicio->nome_exercicio }}
-                                                            <i class="fas fa-circle-info ex-info"></i>
+                                                            <i class="ph ph-info ex-info"></i>
                                                         </div>
                                                     </td>
                                                     <td data-label="Séries" style="text-align: center;">{{ $exercicio->series }}</td>
@@ -720,10 +722,10 @@
 
                                 <div class="ficha-card">
                                     <div class="ficha-header">
-                                        <h3><i class="fas fa-calendar-day"></i> {{ $dias[$ficha->dia_semana] }}</h3>
+                                        <h3><i class="ph ph-calendar-dot"></i> {{ $dias[$ficha->dia_semana] }}</h3>
                                         <button class="btn-marcar {{ $estaConcluido ? 'concluido' : '' }}"
                                             onclick="marcarConcluido({{ $ficha->id }})">
-                                            <i class="fas {{ $estaConcluido ? 'fa-check' : 'fa-square' }}"></i>
+                                            <i class="ph {{ $estaConcluido ? 'ph-check' : 'ph-square' }}"></i>
                                             {{ $estaConcluido ? 'CONCLUÍDO' : 'MARCAR' }}
                                         </button>
                                     </div>
@@ -735,7 +737,7 @@
                                     @endif
 
                                     <div class="exercicios-box">
-                                        <p class="exercicios-title"><i class="fas fa-list-ul"></i> Exercícios</p>
+                                        <p class="exercicios-title"><i class="ph ph-list-bullets"></i> Exercícios</p>
 
                                         @if($ficha->exercicios->isEmpty())
                                             <p class="empty-ex">Nenhum exercício</p>
@@ -755,7 +757,7 @@
                                                         <td data-label="Exercício">
                                                             <div class="ex-nome ex-click" onclick="abrirExercicio({!! htmlspecialchars(json_encode($exercicio->nome_exercicio), ENT_QUOTES) !!}, {!! htmlspecialchars(json_encode($exercicio->observacoes), ENT_QUOTES) !!}, {!! htmlspecialchars(json_encode($exercicio->video ? asset('storage/' . $exercicio->video) : ''), ENT_QUOTES) !!})">
                                                                 {{ $exercicio->nome_exercicio }}
-                                                                <i class="fas fa-circle-info ex-info"></i>
+                                                                <i class="ph ph-info ex-info"></i>
                                                             </div>
                                                         </td>
                                                         <td data-label="Séries" style="text-align: center;">{{ $exercicio->series }}</td>
@@ -779,7 +781,7 @@
     <!-- MODAL MARCAR COMO CONCLUÍDO -->
     <div id="modalMarcarConcluido" class="modal-overlay">
         <div class="modal-content">
-            <h2><i class="fas fa-check-circle"></i> MARCAR TREINO COMO CONCLUÍDO</h2>
+            <h2><i class="ph ph-check-circle"></i> MARCAR TREINO COMO CONCLUÍDO</h2>
 
             <form id="formMarcarConcluido" method="POST">
                 @csrf
@@ -790,12 +792,12 @@
                 </div>
 
                 <div class="registros-wrap" id="registrosWrap">
-                    <label><i class="fas fa-bolt"></i> Carga de hoje (ajuste se mudou)</label>
+                    <label><i class="ph ph-lightning"></i> Carga de hoje (ajuste se mudou)</label>
                     <div id="registrosContainer"></div>
                 </div>
 
                 <div class="form-group">
-                    <label><i class="fas fa-face-smile"></i> Como você se sentiu? (opcional)</label>
+                    <label><i class="ph ph-smiley"></i> Como você se sentiu? (opcional)</label>
                     <div class="fb-emojis">
                         <label><input type="radio" name="sensacao" value="otimo"><span class="emo">😀</span><span class="cap">Ótimo</span></label>
                         <label><input type="radio" name="sensacao" value="bem"><span class="emo">🙂</span><span class="cap">Bem</span></label>
@@ -806,7 +808,7 @@
                 </div>
 
                 <div class="form-group">
-                    <label><i class="fas fa-gauge-high"></i> Nível de esforço (opcional)</label>
+                    <label><i class="ph ph-gauge"></i> Nível de esforço (opcional)</label>
                     <div class="rpe-chips">
                         @for($n = 1; $n <= 10; $n++)
                             <label><input type="radio" name="rpe" value="{{ $n }}">{{ $n }}</label>
@@ -924,7 +926,7 @@
             <button onclick="fecharExercicio()" style="position:absolute; top:14px; right:16px; background:none; border:none; color:#a0a0a0; font-size:1.3rem; cursor:pointer;">✕</button>
             <h2 id="exModalNome" style="color:#fff; font-size:1.2rem; font-weight:900; margin:0 32px 4px 0;"></h2>
             <video id="exModalVideo" controls playsinline style="display:none; width:100%; border-radius:12px; background:#000; margin:14px 0;"></video>
-            <p style="color:#d4ff00; font-size:0.7rem; text-transform:uppercase; letter-spacing:1px; font-weight:800; margin:16px 0 6px;"><i class="fas fa-circle-info"></i> Resumo / Técnica</p>
+            <p style="color:#d4ff00; font-size:0.7rem; text-transform:uppercase; letter-spacing:1px; font-weight:800; margin:16px 0 6px;"><i class="ph ph-info"></i> Resumo / Técnica</p>
             <p id="exModalResumo" style="color:#cfcfcf; font-size:0.9rem; line-height:1.6; white-space:pre-line; margin:0;"></p>
         </div>
     </div>

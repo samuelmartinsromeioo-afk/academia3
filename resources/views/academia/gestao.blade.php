@@ -7,6 +7,8 @@
     <link rel="icon" type="image/png" href="{{ asset('SnrFit.png') }}">
     @include('partials.pwa')
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/regular/style.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/fill/style.css">
     <style>
         :root {
             --primary: #d4ff00;
@@ -76,16 +78,16 @@
         }
     </style>
 </head>
-<body>
+<body class="ed-page">
 
 <div class="top-bar">
     <div class="logo">SNR<span>FIT</span> <span style="font-family:'Inter'; font-size:0.65rem; color:var(--text-muted); letter-spacing:1px; text-transform:uppercase;">| Gestão</span></div>
-    <a href="{{ route('academia.dashboard') }}" class="btn-top"><i class="fas fa-arrow-left"></i> Voltar ao painel</a>
+    <a href="{{ route('academia.dashboard') }}" class="btn-top"><i class="ph ph-arrow-left"></i> Voltar ao painel</a>
 </div>
 
 <div class="container">
-    @if(session('success'))<div class="alert alert-ok"><i class="fas fa-check-circle"></i> {{ session('success') }}</div>@endif
-    @if(session('error'))<div class="alert alert-err"><i class="fas fa-exclamation-circle"></i> {{ session('error') }}</div>@endif
+    @if(session('success'))<div class="alert alert-ok"><i class="ph ph-check-circle"></i> {{ session('success') }}</div>@endif
+    @if(session('error'))<div class="alert alert-err"><i class="ph ph-warning-circle"></i> {{ session('error') }}</div>@endif
 
     <header class="page-head">
         <h1>Gestão da Academia</h1>
@@ -98,7 +100,7 @@
 
     {{-- ============ PROFISSIONAIS ============ --}}
     <div class="card">
-        <h2><i class="fas fa-user-tie"></i> Profissionais</h2>
+        <h2><i class="ph ph-user-list"></i> Profissionais</h2>
         <p class="sub">Quem trabalha na academia. O aluno clica no nome para ver o resumo.</p>
 
         @forelse($professores as $prof)
@@ -111,12 +113,12 @@
                     <div class="item-actions">
                         <form action="{{ route('academia.professores.destroy', $prof->id) }}" method="POST" onsubmit="return confirm('Remover este profissional?');">
                             @csrf @method('DELETE')
-                            <button type="submit" class="btn btn-ghost btn-sm"><i class="fas fa-trash"></i></button>
+                            <button type="submit" class="btn btn-ghost btn-sm"><i class="ph ph-trash"></i></button>
                         </form>
                     </div>
                 </div>
                 <details class="edit">
-                    <summary><i class="fas fa-pen"></i> Editar</summary>
+                    <summary><i class="ph ph-pen"></i> Editar</summary>
                     <form action="{{ route('academia.professores.update', $prof->id) }}" method="POST" style="margin-top:12px;">
                         @csrf @method('PUT')
                         <div style="margin-bottom:12px;">
@@ -127,7 +129,7 @@
                             <label>Resumo</label>
                             <textarea name="resumo" placeholder="Formação, especialidades, experiência...">{{ $prof->resumo }}</textarea>
                         </div>
-                        <button type="submit" class="btn btn-sm"><i class="fas fa-save"></i> Salvar</button>
+                        <button type="submit" class="btn btn-sm"><i class="ph ph-floppy-disk"></i> Salvar</button>
                     </form>
                 </details>
             </div>
@@ -147,13 +149,13 @@
                 <label>Resumo</label>
                 <textarea name="resumo" placeholder="Formação, especialidades, experiência..."></textarea>
             </div>
-            <button type="submit" class="btn"><i class="fas fa-plus"></i> Adicionar profissional</button>
+            <button type="submit" class="btn"><i class="ph ph-plus"></i> Adicionar profissional</button>
         </form>
     </div>
 
     {{-- ============ AULAS ============ --}}
     <div class="card">
-        <h2><i class="fas fa-people-group"></i> Aulas</h2>
+        <h2><i class="ph ph-users-three"></i> Aulas</h2>
         <p class="sub">As aulas/modalidades oferecidas, com resumo e (opcional) horário e profissional responsável.</p>
 
         @forelse($aulas as $aula)
@@ -162,22 +164,22 @@
                     <div>
                         <h3>{{ $aula->nome }}</h3>
                         <div class="meta">
-                            @if(!is_null($aula->dia_semana))<i class="fas fa-calendar-day"></i> {{ $dias[$aula->dia_semana] ?? '' }}@endif
+                            @if(!is_null($aula->dia_semana))<i class="ph ph-calendar-dot"></i> {{ $dias[$aula->dia_semana] ?? '' }}@endif
                             @if($aula->hora_inicio) · {{ \Illuminate\Support\Str::substr($aula->hora_inicio, 0, 5) }}@endif
                             @if($aula->duracao_min) · {{ $aula->duracao_min . 'min' }}@endif
-                            @if($aula->professor) · <i class="fas fa-user-tie"></i> {{ $aula->professor->nome }}@endif
+                            @if($aula->professor) · <i class="ph ph-user-list"></i> {{ $aula->professor->nome }}@endif
                             @if($aula->resumo)<br>{{ $aula->resumo }}@endif
                         </div>
                     </div>
                     <div class="item-actions">
                         <form action="{{ route('academia.aulas.destroy', $aula->id) }}" method="POST" onsubmit="return confirm('Remover esta aula?');">
                             @csrf @method('DELETE')
-                            <button type="submit" class="btn btn-ghost btn-sm"><i class="fas fa-trash"></i></button>
+                            <button type="submit" class="btn btn-ghost btn-sm"><i class="ph ph-trash"></i></button>
                         </form>
                     </div>
                 </div>
                 <details class="edit">
-                    <summary><i class="fas fa-pen"></i> Editar</summary>
+                    <summary><i class="ph ph-pen"></i> Editar</summary>
                     <form action="{{ route('academia.aulas.update', $aula->id) }}" method="POST" style="margin-top:12px;">
                         @csrf @method('PUT')
                         <div style="margin-bottom:12px;">
@@ -216,7 +218,7 @@
                                 <input type="number" name="duracao_min" min="5" max="600" value="{{ $aula->duracao_min }}">
                             </div>
                         </div>
-                        <button type="submit" class="btn btn-sm"><i class="fas fa-save"></i> Salvar</button>
+                        <button type="submit" class="btn btn-sm"><i class="ph ph-floppy-disk"></i> Salvar</button>
                     </form>
                 </details>
             </div>
@@ -266,18 +268,18 @@
                     <input type="number" name="duracao_min" min="5" max="600" placeholder="60">
                 </div>
             </div>
-            <button type="submit" class="btn"><i class="fas fa-plus"></i> Adicionar aula</button>
+            <button type="submit" class="btn"><i class="ph ph-plus"></i> Adicionar aula</button>
         </form>
     </div>
 
     {{-- ============ INFRAESTRUTURA ============ --}}
     <div class="card">
-        <h2><i class="fas fa-building"></i> Infraestrutura</h2>
+        <h2><i class="ph ph-building"></i> Infraestrutura</h2>
         <p class="sub">Descreva os equipamentos, espaços e diferenciais da academia.</p>
         <form action="{{ route('academia.infraestrutura') }}" method="POST">
             @csrf
             <textarea name="infraestrutura" style="min-height:120px;" placeholder="Ex: 2 andares, sala de musculação completa, área de cardio, sala de aulas coletivas, estacionamento, vestiários com armários...">{{ $academia->infraestrutura }}</textarea>
-            <button type="submit" class="btn" style="margin-top:14px;"><i class="fas fa-save"></i> Salvar infraestrutura</button>
+            <button type="submit" class="btn" style="margin-top:14px;"><i class="ph ph-floppy-disk"></i> Salvar infraestrutura</button>
         </form>
     </div>
 </div>

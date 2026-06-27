@@ -7,8 +7,11 @@
     <title>Relatório · {{ $cliente->nome }}</title>
     <link rel="icon" type="image/png" href="{{ asset('SnrFit.png') }}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/regular/style.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/fill/style.css">
+    <link rel="stylesheet" href="{{ asset('css/snrfit-brand.css') }}">
     <style>
-        :root { --primary:#F4BE16; --bg-dark:#000; --card-bg:#111317; --text-main:#fff; --text-muted:#9a9a9a; --green:#00e676; --red:#ff5252; --border:rgba(255,255,255,0.08); }
+        :root { --primary:var(--snr-lime); --bg-dark:var(--snr-bg); --card-bg:var(--snr-surface); --text-main:var(--snr-text); --text-muted:var(--snr-dim); --green:var(--snr-success); --red:var(--snr-error); --border:var(--snr-border); }
         * { margin:0; padding:0; box-sizing:border-box; }
         body { background:var(--bg-dark); font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; color:var(--text-main); min-height:100vh; }
         a { color:inherit; text-decoration:none; }
@@ -39,14 +42,14 @@
     </style>
 </head>
 
-<body>
+<body class="ed-page">
     <div class="top-bar">
-        <a href="{{ route('fichas-treino.aluno', $cliente->id) }}" class="back-btn"><i class="fas fa-arrow-left"></i></a>
-        <span class="title"><i class="fas fa-file-lines"></i> Relatório mensal</span>
+        <a href="{{ route('fichas-treino.aluno', $cliente->id) }}" class="back-btn"><i class="ph ph-arrow-left"></i></a>
+        <span class="title"><i class="ph ph-file-text"></i> Relatório mensal</span>
     </div>
 
     <div class="container">
-        @if(session('success'))<div class="alert-ok"><i class="fas fa-check-circle"></i> {{ session('success') }}</div>@endif
+        @if(session('success'))<div class="alert-ok"><i class="ph ph-check-circle"></i> {{ session('success') }}</div>@endif
 
         <div class="report">
             <div class="rep-head">
@@ -95,9 +98,9 @@
             <div class="acoes">
                 <form method="POST" action="{{ route('relatorio.enviar', $cliente->id) }}" style="flex:1;">
                     @csrf
-                    <button type="submit" class="btn btn-primary" style="width:100%;"><i class="fas fa-paper-plane"></i> Enviar ao aluno</button>
+                    <button type="submit" class="btn btn-primary" style="width:100%;"><i class="ph ph-paper-plane-tilt"></i> Enviar ao aluno</button>
                 </form>
-                <button onclick="window.print()" class="btn btn-ghost"><i class="fas fa-print"></i> Imprimir / PDF</button>
+                <button onclick="window.print()" class="btn btn-ghost"><i class="ph ph-printer"></i> Imprimir / PDF</button>
             </div>
         </div>
     </div>

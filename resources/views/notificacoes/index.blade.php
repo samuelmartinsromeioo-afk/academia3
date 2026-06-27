@@ -7,6 +7,8 @@
     <title>Notificações</title>
     <link rel="icon" type="image/png" href="{{ asset('SnrFit.png') }}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/regular/style.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/fill/style.css">
     <style>
         :root { --primary:#F4BE16; --bg-dark:#000; --card-bg:#111317; --text-main:#fff; --text-muted:#9a9a9a; --green:#00e676; --border:rgba(255,255,255,0.08); }
         * { margin:0; padding:0; box-sizing:border-box; }
@@ -36,28 +38,28 @@
     </style>
 </head>
 
-<body>
+<body class="ed-page">
     <div class="top-bar">
-        <a href="{{ $voltar }}" class="back-btn"><i class="fas fa-arrow-left"></i></a>
-        <span class="title"><i class="fas fa-bell"></i> Notificações</span>
+        <a href="{{ $voltar }}" class="back-btn"><i class="ph ph-arrow-left"></i></a>
+        <span class="title"><i class="ph ph-bell"></i> Notificações</span>
     </div>
 
     <div class="container">
         <div class="head">
-            <h1><i class="fas fa-bell"></i> Avisos</h1>
+            <h1><i class="ph ph-bell"></i> Avisos</h1>
             @if($notificacoes->where('lida', false)->count() > 0)
-                <form method="POST" action="{{ route('notificacoes.marcar-todas') }}">@csrf<button class="btn-todas"><i class="fas fa-check-double"></i> Marcar todas</button></form>
+                <form method="POST" action="{{ route('notificacoes.marcar-todas') }}">@csrf<button class="btn-todas"><i class="ph ph-checks"></i> Marcar todas</button></form>
             @endif
         </div>
 
         @if($notificacoes->isEmpty())
-            <div class="empty"><i class="fas fa-bell-slash"></i><p>Nenhuma notificação por aqui.</p></div>
+            <div class="empty"><i class="ph ph-bell-slash"></i><p>Nenhuma notificação por aqui.</p></div>
         @else
             @foreach($notificacoes as $n)
                 <form method="POST" action="{{ route('notificacoes.lida', $n->id) }}">
                     @csrf
                     <button type="submit" class="n {{ $n->lida ? '' : 'unread' }}">
-                        <span class="ico"><i class="fas {{ $n->icone ?: 'fa-bell' }}"></i></span>
+                        <span class="ico"><i class="ph {{ $n->icone ?: 'ph-bell' }}"></i></span>
                         <span class="body">
                             <span class="t">{{ $n->titulo }}</span>
                             <span class="m">{{ \Illuminate\Support\Str::limit($n->mensagem, 220) }}</span>

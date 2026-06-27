@@ -10,6 +10,8 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Syncopate:wght@700&family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/regular/style.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/fill/style.css">
 
     <style>
         :root {
@@ -188,7 +190,7 @@
         }
     </style>
 </head>
-<body>
+<body class="ed-page">
 
 <main class="auth-container">
     <div class="auth-header">
@@ -214,7 +216,7 @@
             <div class="form-group full-width">
                 <label>Nome Completo</label>
                 <div class="input-wrapper">
-                    <i class="fa-regular fa-user"></i>
+                    <i class="ph ph-user"></i>
                     <input type="text" name="nome" value="{{ old('nome') }}" required placeholder="Ex: João Silva">
                 </div>
             </div>
@@ -222,7 +224,7 @@
             <div class="form-group">
                 <label>Email</label>
                 <div class="input-wrapper">
-                    <i class="fa-regular fa-envelope"></i>
+                    <i class="ph ph-envelope"></i>
                     <input type="email" name="email" value="{{ old('email') }}" required placeholder="email@exemplo.com">
                 </div>
             </div>
@@ -230,7 +232,7 @@
             <div class="form-group">
                 <label>Senha</label>
                 <div class="input-wrapper">
-                    <i class="fa-solid fa-lock"></i>
+                    <i class="ph ph-lock"></i>
                     <input type="password" name="senha" required placeholder="••••••••">
                 </div>
             </div>
@@ -238,7 +240,7 @@
             <div class="form-group">
                 <label>Data de Nascimento</label>
                 <div class="input-wrapper">
-                    <i class="fa-regular fa-calendar"></i>
+                    <i class="ph ph-calendar"></i>
                     <input type="date" name="idade" value="{{ old('idade') }}" required>
                 </div>
             </div>
@@ -246,7 +248,7 @@
             <div class="form-group">
                 <label>Sexo</label>
                 <div class="input-wrapper">
-                    <i class="fa-solid fa-venus-mars"></i>
+                    <i class="ph ph-gender-intersex"></i>
                     <select name="sexo" required>
                         <option value="">Selecione</option>
                         <option value="Masculino">Masculino</option>
@@ -261,11 +263,11 @@
             <div class="form-group">
                 <label>CEP</label>
                 <div class="input-wrapper">
-                    <i class="fa-solid fa-map-pin"></i>
+                    <i class="ph ph-map-pin"></i>
                     <input type="text" name="cep" id="cep" placeholder="00000-000" 
                         oninput="this.value = mascaras.cep(this.value)" maxlength="9" required>
                 </div>
-                <div id="cep-loading" class="loading-text"><i class="fa-solid fa-spinner fa-spin"></i> Buscando endereço...</div>
+                <div id="cep-loading" class="loading-text"><i class="ph ph-spinner ph-spin"></i> Buscando endereço...</div>
             </div>
 
             <div class="form-group">
@@ -293,7 +295,7 @@
             <div class="form-group">
                 <label>Número / Complemento</label>
                 <div class="input-wrapper">
-                    <i class="fa-solid fa-house"></i>
+                    <i class="ph ph-house"></i>
                     <input type="text" name="complemento" placeholder="Ex: 120 ou Ap 12">
                 </div>
             </div>
@@ -303,7 +305,7 @@
             <div class="form-group">
                 <label>Altura (m)</label>
                 <div class="input-wrapper">
-                    <i class="fa-solid fa-ruler-vertical"></i>
+                    <i class="ph ph-ruler"></i>
                     <input type="number" step="0.01" name="altura" value="{{ old('altura') }}" placeholder="1.75">
                 </div>
             </div>
@@ -311,7 +313,7 @@
             <div class="form-group">
                 <label>Peso (kg)</label>
                 <div class="input-wrapper">
-                    <i class="fa-solid fa-weight-scale"></i>
+                    <i class="ph ph-scales"></i>
                     <input type="number" step="0.01" name="peso" value="{{ old('peso') }}" placeholder="70.5">
                 </div>
             </div>
@@ -326,7 +328,7 @@
             <div class="form-group">
                 <label>Frequência Semanal</label>
                 <div class="input-wrapper">
-                    <i class="fa-solid fa-dumbbell"></i>
+                    <i class="ph ph-barbell"></i>
                     <input type="number" name="frequencia_semanal" value="{{ old('frequencia_semanal') }}" required>
                 </div>
             </div>
@@ -350,7 +352,7 @@
             </div>
 
             <button type="submit" class="btn-register">
-                Finalizar Cadastro <i class="fa-solid fa-arrow-right"></i>
+                Finalizar Cadastro <i class="ph ph-arrow-right"></i>
             </button>
         </form>
     </div>

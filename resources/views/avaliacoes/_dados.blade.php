@@ -69,7 +69,7 @@
         <div class="dado-item" style="display:flex; flex-direction:column; gap:8px; align-items:flex-start;">
             <label>Relatório de Bioimpedância</label>
             @if($r->arquivo)
-                <a href="{{ asset('storage/'.$r->arquivo) }}" target="_blank" class="btn-pdf"><i class="fas fa-file-pdf"></i> Abrir PDF</a>
+                <a href="{{ asset('storage/'.$r->arquivo) }}" target="_blank" class="btn-pdf"><i class="ph ph-file-pdf"></i> Abrir PDF</a>
             @else
                 <span style="color:var(--text-muted); font-size:0.8rem; font-weight:500;">Sem arquivo anexado</span>
             @endif
@@ -78,7 +78,7 @@
 @endif
 
 @if(in_array('anamnese', $blocos) && ($r->objetivo_principal || $r->historico_atividade || $r->lesoes || $r->cirurgias || $r->medicamentos || $r->restricoes_medicas || $r->habitos_sono || $r->nivel_estresse !== null || $r->alimentacao))
-    @if($multi)<p style="font-size:0.65rem; font-weight:900; text-transform:uppercase; color:var(--primary); margin:14px 0 8px;"><i class="fas fa-file-medical"></i> Anamnese</p>@endif
+    @if($multi)<p style="font-size:0.65rem; font-weight:900; text-transform:uppercase; color:var(--primary); margin:14px 0 8px;"><i class="ph ph-first-aid"></i> Anamnese</p>@endif
     <div class="snrfit-detail-grid">
         @if($r->objetivo_principal)<div class="dado-item texto"><label>Objetivo</label><span>{{ $r->objetivo_principal }}</span></div>@endif
         @if($r->historico_atividade)<div class="dado-item texto"><label>Histórico de Atividade</label><span>{{ $r->historico_atividade }}</span></div>@endif
@@ -93,7 +93,7 @@
 @endif
 
 @if(in_array('antropometrica', $blocos) && ($r->peso || $r->altura || $r->imc || $r->circ_cintura || $r->circ_abdomen || $r->circ_quadril || $r->circ_torax || $r->circ_braco || $r->circ_coxa || $r->circ_panturrilha))
-    @if($multi)<p style="font-size:0.65rem; font-weight:900; text-transform:uppercase; color:var(--primary); margin:14px 0 8px;"><i class="fas fa-ruler"></i> Antropométrica</p>@endif
+    @if($multi)<p style="font-size:0.65rem; font-weight:900; text-transform:uppercase; color:var(--primary); margin:14px 0 8px;"><i class="ph ph-ruler"></i> Antropométrica</p>@endif
     <div class="snrfit-detail-grid">
         @if($r->peso)<div class="dado-item"><label>Peso</label><span>{{ number_format($r->peso, 1, ',', '.') }} kg</span></div>@endif
         @if($r->altura)<div class="dado-item"><label>Altura</label><span>{{ number_format($r->altura, 0) }} cm</span></div>@endif
@@ -109,7 +109,7 @@
 @endif
 
 @if(in_array('dobras', $blocos) && ($r->protocolo_dobras || $r->dobra_triceps || $r->dobra_peitoral || $r->percentual_gordura))
-    @if($multi)<p style="font-size:0.65rem; font-weight:900; text-transform:uppercase; color:var(--primary); margin:14px 0 8px;"><i class="fas fa-compress-arrows-alt"></i> Dobras Cutâneas</p>@endif
+    @if($multi)<p style="font-size:0.65rem; font-weight:900; text-transform:uppercase; color:var(--primary); margin:14px 0 8px;"><i class="ph ph-arrows-in"></i> Dobras Cutâneas</p>@endif
     @if($r->protocolo_dobras)<p style="font-size:0.75rem; color:var(--text-muted); margin:0 0 8px;">Protocolo: <strong style="color:#fff;">{{ $r->protocolo_dobras }}</strong></p>@endif
     <div class="snrfit-detail-grid">
         @if($r->dobra_triceps)<div class="dado-item"><label>Tríceps</label><span>{{ number_format($r->dobra_triceps, 1, ',', '.') }} mm</span></div>@endif
@@ -127,7 +127,7 @@
 @endif
 
 @if(in_array('postural', $blocos) && ($r->foto_anterior || $r->foto_posterior || $r->foto_lateral_direita || $r->foto_lateral_esquerda || ($r->postural_checklist && count($r->postural_checklist) > 0)))
-    @if($multi)<p style="font-size:0.65rem; font-weight:900; text-transform:uppercase; color:var(--primary); margin:14px 0 8px;"><i class="fas fa-person"></i> Postural</p>@endif
+    @if($multi)<p style="font-size:0.65rem; font-weight:900; text-transform:uppercase; color:var(--primary); margin:14px 0 8px;"><i class="ph ph-person"></i> Postural</p>@endif
     @if($r->foto_anterior || $r->foto_posterior || $r->foto_lateral_direita || $r->foto_lateral_esquerda)
     <div style="display:flex; gap:10px; flex-wrap:wrap;">
         @foreach(['foto_anterior'=>'Anterior','foto_posterior'=>'Posterior','foto_lateral_direita'=>'Lat. Direita','foto_lateral_esquerda'=>'Lat. Esquerda'] as $campo => $label)
@@ -152,7 +152,7 @@
 @endif
 
 @if(in_array('neuromotora', $blocos) && ($r->equil_unipodal || $r->coordenacao_motora || $r->mob_ombro || $r->mob_quadril || $r->mob_tornozelo || $r->agach_profundidade || $r->agach_estabilidade || $r->agach_simetria))
-    @if($multi)<p style="font-size:0.65rem; font-weight:900; text-transform:uppercase; color:var(--primary); margin:14px 0 8px;"><i class="fas fa-brain"></i> Neuromotora</p>@endif
+    @if($multi)<p style="font-size:0.65rem; font-weight:900; text-transform:uppercase; color:var(--primary); margin:14px 0 8px;"><i class="ph ph-brain"></i> Neuromotora</p>@endif
     <div class="snrfit-detail-grid">
         @if($r->equil_unipodal)<div class="dado-item texto"><label>Equilíbrio Unipodal</label><span>{{ $r->equil_unipodal }}</span></div>@endif
         @if($r->coordenacao_motora)<div class="dado-item texto"><label>Coordenação Motora</label><span>{{ $r->coordenacao_motora }}</span></div>@endif
@@ -166,7 +166,7 @@
 @endif
 
 @if(in_array('flexibilidade', $blocos) && ($r->flex_sentar_alcancar !== null || $r->flex_ombros || $r->flex_quadril !== null))
-    @if($multi)<p style="font-size:0.65rem; font-weight:900; text-transform:uppercase; color:var(--primary); margin:14px 0 8px;"><i class="fas fa-person-walking"></i> Flexibilidade</p>@endif
+    @if($multi)<p style="font-size:0.65rem; font-weight:900; text-transform:uppercase; color:var(--primary); margin:14px 0 8px;"><i class="ph ph-person-simple-walk"></i> Flexibilidade</p>@endif
     <div class="snrfit-detail-grid">
         @if($r->flex_sentar_alcancar !== null)<div class="dado-item"><label>Sentar e Alcançar</label><span>{{ number_format($r->flex_sentar_alcancar, 1, ',', '.') }} cm</span></div>@endif
         @if($r->flex_ombros)<div class="dado-item texto"><label>Flex. Ombros</label><span>{{ $r->flex_ombros }}</span></div>@endif
@@ -175,7 +175,7 @@
 @endif
 
 @if(in_array('cardio', $blocos) && ($r->bpm || $r->pressao_sistolica || $r->teste_caminhada_dist || $r->teste_cooper_dist || $r->teste_rockport_tempo || $r->vo2max_estimado))
-    @if($multi)<p style="font-size:0.65rem; font-weight:900; text-transform:uppercase; color:var(--primary); margin:14px 0 8px;"><i class="fas fa-heart-pulse"></i> Cardiorrespiratória</p>@endif
+    @if($multi)<p style="font-size:0.65rem; font-weight:900; text-transform:uppercase; color:var(--primary); margin:14px 0 8px;"><i class="ph ph-heartbeat"></i> Cardiorrespiratória</p>@endif
     <div class="snrfit-detail-grid">
         @if($r->bpm)<div class="dado-item"><label>FC Repouso</label><span>{{ $r->bpm }} bpm</span></div>@endif
         @if($r->pressao_sistolica)<div class="dado-item"><label>Pressão Arterial</label><span>{{ $r->pressao_sistolica }}/{{ $r->pressao_diastolica }} mmHg</span></div>@endif
@@ -187,7 +187,7 @@
 @endif
 
 @if(in_array('forca', $blocos) && ($r->flexao_braco_reps || $r->prancha_tempo || $r->forca || $r->testes_submax))
-    @if($multi)<p style="font-size:0.65rem; font-weight:900; text-transform:uppercase; color:var(--primary); margin:14px 0 8px;"><i class="fas fa-dumbbell"></i> Força</p>@endif
+    @if($multi)<p style="font-size:0.65rem; font-weight:900; text-transform:uppercase; color:var(--primary); margin:14px 0 8px;"><i class="ph ph-barbell"></i> Força</p>@endif
     <div class="snrfit-detail-grid">
         @if($r->flexao_braco_reps)<div class="dado-item"><label>Flexão de Braço</label><span>{{ $r->flexao_braco_reps }} reps</span></div>@endif
         @if($r->prancha_tempo)<div class="dado-item"><label>Prancha</label><span>{{ $r->prancha_tempo }}s</span></div>@endif
@@ -197,7 +197,7 @@
 @endif
 
 @if(in_array('funcional', $blocos) && ($r->func_agachamento || $r->func_avanco || $r->func_stepup || $r->func_prancha || $r->func_mob_toracica))
-    @if($multi)<p style="font-size:0.65rem; font-weight:900; text-transform:uppercase; color:var(--primary); margin:14px 0 8px;"><i class="fas fa-running"></i> Funcional</p>@endif
+    @if($multi)<p style="font-size:0.65rem; font-weight:900; text-transform:uppercase; color:var(--primary); margin:14px 0 8px;"><i class="ph ph-person-simple-run"></i> Funcional</p>@endif
     <div class="snrfit-detail-grid">
         @if($r->func_agachamento)<div class="dado-item texto"><label>Agachamento</label><span>{{ $r->func_agachamento }}</span></div>@endif
         @if($r->func_avanco)<div class="dado-item texto"><label>Avanço</label><span>{{ $r->func_avanco }}</span></div>@endif
@@ -208,7 +208,7 @@
 @endif
 
 @if(in_array('dor', $blocos) && ($r->dor_lombar !== null || $r->dor_ombro !== null || $r->dor_joelho !== null || $r->dor_quadril !== null || $r->dor_cervical !== null))
-    @if($multi)<p style="font-size:0.65rem; font-weight:900; text-transform:uppercase; color:var(--primary); margin:14px 0 8px;"><i class="fas fa-triangle-exclamation"></i> Avaliação de Dor</p>@endif
+    @if($multi)<p style="font-size:0.65rem; font-weight:900; text-transform:uppercase; color:var(--primary); margin:14px 0 8px;"><i class="ph ph-warning"></i> Avaliação de Dor</p>@endif
     <div class="snrfit-detail-grid">
         @foreach(['dor_lombar'=>'Lombar','dor_ombro'=>'Ombro','dor_joelho'=>'Joelho','dor_quadril'=>'Quadril','dor_cervical'=>'Cervical'] as $campo => $label)
             @if($r->$campo !== null)

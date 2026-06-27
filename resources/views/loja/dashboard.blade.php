@@ -8,6 +8,9 @@
     @include('partials.pwa')
     <link href="https://fonts.googleapis.com/css2?family=Syncopate:wght@700&family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/regular/style.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/fill/style.css">
+    <link rel="stylesheet" href="{{ asset('css/snrfit-brand.css') }}">
     <style>
         :root {
             --primary: #d4ff00;
@@ -214,36 +217,36 @@
         }
     </style>
 </head>
-<body>
+<body class="ed-page">
 
 {{-- TOP BAR --}}
 <div class="top-bar">
     <div class="menu-container">
-        <button class="dots-btn" id="btnMenu" onclick="toggleMenu()"><i class="fas fa-bars"></i></button>
+        <button class="dots-btn" id="btnMenu" onclick="toggleMenu()"><i class="ph ph-list"></i></button>
         <div class="dropdown-menu" id="dropdownMenu">
-            <button type="button" id="btnOpenNovo"><i class="fas fa-plus" style="color: var(--primary);"></i> Novo Produto</button>
-            <button type="button" id="btnOpenPedidos"><i class="fas fa-receipt"></i> Pedidos</button>
-            <button type="button" id="btnOpenCarteira"><i class="fas fa-piggy-bank" style="color: var(--primary);"></i> Minha Carteira</button>
-            <button type="button" id="btnOpenPerfil"><i class="fas fa-store"></i> Editar Loja</button>
-            <a href="{{ route('lojas.detalhes', $loja->id) }}" target="_blank"><i class="fas fa-eye"></i> Ver minha vitrine</a>
-            <a href="{{ route('lgpd.meus-dados') }}"><i class="fas fa-user-shield"></i> Privacidade e meus dados</a>
+            <button type="button" id="btnOpenNovo"><i class="ph ph-plus" style="color: var(--primary);"></i> Novo Produto</button>
+            <button type="button" id="btnOpenPedidos"><i class="ph ph-receipt"></i> Pedidos</button>
+            <button type="button" id="btnOpenCarteira"><i class="ph ph-piggy-bank" style="color: var(--primary);"></i> Minha Carteira</button>
+            <button type="button" id="btnOpenPerfil"><i class="ph ph-storefront"></i> Editar Loja</button>
+            <a href="{{ route('lojas.detalhes', $loja->id) }}" target="_blank"><i class="ph ph-eye"></i> Ver minha vitrine</a>
+            <a href="{{ route('lgpd.meus-dados') }}"><i class="ph ph-shield-check"></i> Privacidade e meus dados</a>
             <form action="{{ route('login.logout') }}" method="POST" style="margin:0;">
                 @csrf
-                <button type="submit" style="color: var(--error);"><i class="fas fa-power-off"></i> Sair</button>
+                <button type="submit" style="color: var(--error);"><i class="ph ph-power"></i> Sair</button>
             </form>
         </div>
         <div class="logo">SNR<span>FIT</span> <span style="font-family:'Inter'; font-size:0.65rem; color:var(--text-muted); letter-spacing:1px; text-transform:uppercase;">| Loja</span></div>
     </div>
-    <span style="font-weight: 700; font-size: 0.9rem;"><i class="fas fa-store" style="color: var(--primary); margin-right: 8px;"></i>{{ $loja->nome }}</span>
+    <span style="font-weight: 700; font-size: 0.9rem;"><i class="ph ph-storefront" style="color: var(--primary); margin-right: 8px;"></i>{{ $loja->nome }}</span>
 </div>
 
 <div class="container">
 
     @if(session('success'))
-        <div class="alert alert-success"><i class="fas fa-check-circle"></i> {{ session('success') }}</div>
+        <div class="alert alert-success"><i class="ph ph-check-circle"></i> {{ session('success') }}</div>
     @endif
     @if(session('error'))
-        <div class="alert alert-error"><i class="fas fa-exclamation-circle"></i> {{ session('error') }}</div>
+        <div class="alert alert-error"><i class="ph ph-warning-circle"></i> {{ session('error') }}</div>
     @endif
     @if ($errors->any())
         <div class="alert alert-error">
@@ -257,50 +260,51 @@
 
     <div class="welcome">
         <div>
-            <h1>Olá, <em>{{ $loja->nome }}</em> 👋</h1>
-            <p>Gerencie seu catálogo, preços e estoque. Seus produtos aparecem na vitrine para os clientes.</p>
+            <div class="ed-eyebrow"><span class="ed-num">01</span> Olá, {{ $loja->nome }}</div>
+            <h1 class="ed-h">Minha <span class="ed-mark">Loja</span></h1>
+            <p style="margin-top:10px;">Gerencie seu catálogo, preços e estoque. Seus produtos aparecem na vitrine para os clientes.</p>
         </div>
         <button class="btn-save" onclick="document.getElementById('modalNovo').style.display='block'">
-            <i class="fas fa-plus"></i> Novo Produto
+            <i class="ph ph-plus"></i> Novo Produto
         </button>
     </div>
 
     {{-- STATS --}}
     <div class="stats-grid">
         <div class="stat-card">
-            <div class="stat-icon"><i class="fas fa-box"></i></div>
+            <div class="stat-icon"><i class="ph ph-package"></i></div>
             <div class="stat-value">{{ $totalProdutos }}</div>
             <div class="stat-label">Produtos cadastrados</div>
         </div>
         <div class="stat-card">
-            <div class="stat-icon"><i class="fas fa-eye"></i></div>
+            <div class="stat-icon"><i class="ph ph-eye"></i></div>
             <div class="stat-value">{{ $produtosAtivos }}</div>
             <div class="stat-label">Ativos na vitrine</div>
         </div>
         <div class="stat-card">
-            <div class="stat-icon"><i class="fas fa-triangle-exclamation"></i></div>
+            <div class="stat-icon"><i class="ph ph-warning"></i></div>
             <div class="stat-value">{{ $semEstoque }}</div>
             <div class="stat-label">Sem estoque</div>
         </div>
         <div class="stat-card">
-            <div class="stat-icon"><i class="fas fa-sack-dollar"></i></div>
+            <div class="stat-icon"><i class="ph ph-money"></i></div>
             <div class="stat-value" style="font-size:1.3rem;">R$ {{ number_format($valorEstoque, 2, ',', '.') }}</div>
             <div class="stat-label">Valor em estoque</div>
         </div>
         <div class="stat-card">
-            <div class="stat-icon"><i class="fas fa-receipt"></i></div>
+            <div class="stat-icon"><i class="ph ph-receipt"></i></div>
             <div class="stat-value">{{ $totalPedidos }}</div>
             <div class="stat-label">Pedidos recebidos</div>
         </div>
         <div class="stat-card">
-            <div class="stat-icon"><i class="fas fa-cash-register"></i></div>
+            <div class="stat-icon"><i class="ph ph-cash-register"></i></div>
             <div class="stat-value" style="font-size:1.3rem;">R$ {{ number_format($faturamentoMes, 2, ',', '.') }}</div>
             <div class="stat-label">Vendas no mês</div>
         </div>
     </div>
 
     {{-- PRODUTOS --}}
-    <h2 class="section-title"><i class="fas fa-box-open"></i> Meus Produtos</h2>
+    <h2 class="section-title"><i class="ph ph-package"></i> Meus Produtos</h2>
     <div class="panel">
         @if($produtos->count() > 0)
             <table>
@@ -322,7 +326,7 @@
                                 @if($produto->imagem)
                                     <img src="{{ asset('storage/' . $produto->imagem) }}" alt="{{ $produto->nome }}" class="prod-thumb">
                                 @else
-                                    <div class="prod-thumb-placeholder"><i class="fas fa-box"></i></div>
+                                    <div class="prod-thumb-placeholder"><i class="ph ph-package"></i></div>
                                 @endif
                             </td>
                             <td style="font-weight: 600;">{{ $produto->nome }}</td>
@@ -333,7 +337,7 @@
                                     @csrf
                                     @method('PUT')
                                     <input type="number" name="estoque" min="0" value="{{ $produto->estoque }}" aria-label="Estoque">
-                                    <button type="submit" title="Atualizar estoque"><i class="fas fa-check"></i></button>
+                                    <button type="submit" title="Atualizar estoque"><i class="ph ph-check"></i></button>
                                 </form>
                             </td>
                             <td>
@@ -354,12 +358,12 @@
                                     data-preco="{{ $produto->preco }}"
                                     data-estoque="{{ $produto->estoque }}"
                                     data-ativo="{{ $produto->ativo ? '1' : '0' }}">
-                                    <i class="fas fa-pen"></i>
+                                    <i class="ph ph-pen"></i>
                                 </button>
                                 <form method="POST" action="{{ route('loja.produtos.destroy', $produto->id) }}" onsubmit="return confirm('Excluir o produto {{ addslashes($produto->nome) }}?');" style="display:inline; margin:0;">
                                     @csrf
                                     @method('DELETE')
-                                    <button type="submit" class="btn-sm danger"><i class="fas fa-trash"></i></button>
+                                    <button type="submit" class="btn-sm danger"><i class="ph ph-trash"></i></button>
                                 </form>
                             </td>
                         </tr>
@@ -367,7 +371,7 @@
                 </tbody>
             </table>
         @else
-            <p class="empty"><i class="fas fa-box-open" style="font-size:2rem; display:block; margin-bottom:12px; opacity:0.4;"></i> Nenhum produto cadastrado ainda. Clique em <strong>Novo Produto</strong> para começar.</p>
+            <p class="empty"><i class="ph ph-package" style="font-size:2rem; display:block; margin-bottom:12px; opacity:0.4;"></i> Nenhum produto cadastrado ainda. Clique em <strong>Novo Produto</strong> para começar.</p>
         @endif
     </div>
 </div>
@@ -376,7 +380,7 @@
 <div id="modalNovo" class="modal-overlay">
     <div class="modal-content">
         <button type="button" class="modal-close" onclick="document.getElementById('modalNovo').style.display='none'">&times;</button>
-        <h2 style="color: var(--primary);"><i class="fas fa-plus-circle"></i> Novo Produto</h2>
+        <h2 style="color: var(--primary);"><i class="ph ph-plus-circle"></i> Novo Produto</h2>
         <form method="POST" action="{{ route('loja.produtos.store') }}" enctype="multipart/form-data" class="form-grid">
             @csrf
             <div class="form-group full-width">
@@ -404,7 +408,7 @@
                 <textarea name="descricao" rows="3" placeholder="Sabor, marca, detalhes..."></textarea>
             </div>
             <div class="full-width" style="text-align: right;">
-                <button type="submit" class="btn-save"><i class="fas fa-check"></i> Adicionar Produto</button>
+                <button type="submit" class="btn-save"><i class="ph ph-check"></i> Adicionar Produto</button>
             </div>
         </form>
     </div>
@@ -414,7 +418,7 @@
 <div id="modalEditar" class="modal-overlay">
     <div class="modal-content">
         <button type="button" class="modal-close" onclick="document.getElementById('modalEditar').style.display='none'">&times;</button>
-        <h2 style="color: var(--primary);"><i class="fas fa-pen"></i> Editar Produto</h2>
+        <h2 style="color: var(--primary);"><i class="ph ph-pen"></i> Editar Produto</h2>
         <form method="POST" id="formEditar" enctype="multipart/form-data" class="form-grid">
             @csrf
             @method('PUT')
@@ -448,7 +452,7 @@
                 </label>
             </div>
             <div class="full-width" style="text-align: right;">
-                <button type="submit" class="btn-save"><i class="fas fa-save"></i> Salvar Alterações</button>
+                <button type="submit" class="btn-save"><i class="ph ph-floppy-disk"></i> Salvar Alterações</button>
             </div>
         </form>
     </div>
@@ -458,7 +462,7 @@
 <div id="modalPerfil" class="modal-overlay">
     <div class="modal-content">
         <button type="button" class="modal-close" onclick="document.getElementById('modalPerfil').style.display='none'">&times;</button>
-        <h2 style="color: var(--primary);"><i class="fas fa-store"></i> Editar Loja</h2>
+        <h2 style="color: var(--primary);"><i class="ph ph-storefront"></i> Editar Loja</h2>
         <form method="POST" action="{{ route('loja.update', $loja->id) }}" enctype="multipart/form-data" class="form-grid">
             @csrf
             @method('PUT')
@@ -491,7 +495,7 @@
                 <textarea name="descricao" rows="3">{{ old('descricao', $loja->descricao) }}</textarea>
             </div>
             <div class="full-width" style="text-align: right;">
-                <button type="submit" class="btn-save"><i class="fas fa-save"></i> Salvar Loja</button>
+                <button type="submit" class="btn-save"><i class="ph ph-floppy-disk"></i> Salvar Loja</button>
             </div>
         </form>
     </div>
@@ -501,7 +505,7 @@
 <div id="modalPedidos" class="modal-overlay">
     <div class="modal-content" style="max-width: 820px;">
         <button type="button" class="modal-close" onclick="document.getElementById('modalPedidos').style.display='none'">&times;</button>
-        <h2 style="color: var(--primary);"><i class="fas fa-receipt"></i> Pedidos ({{ $pedidos->count() }})</h2>
+        <h2 style="color: var(--primary);"><i class="ph ph-receipt"></i> Pedidos ({{ $pedidos->count() }})</h2>
         @forelse($pedidos as $pedido)
             <div style="border:1px solid var(--border); border-radius:14px; padding:18px; margin-bottom:14px;">
                 <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:12px; flex-wrap:wrap;">
@@ -513,17 +517,17 @@
                             <span class="badge" style="background:rgba(212,255,0,0.12); color:var(--primary);">Pago</span>
                         @endif
                         <div style="color:var(--text-muted); font-size:0.78rem; margin-top:4px;">
-                            <i class="fas fa-user"></i> {{ $pedido->cliente?->nome ?? 'Cliente' }}
-                            @if($pedido->cliente && $pedido->cliente?->whatsapp) · <i class="fab fa-whatsapp"></i> {{ $pedido->cliente?->whatsapp }} @endif
+                            <i class="ph ph-user"></i> {{ $pedido->cliente?->nome ?? 'Cliente' }}
+                            @if($pedido->cliente && $pedido->cliente?->whatsapp) · <i class="ph ph-whatsapp-logo"></i> {{ $pedido->cliente?->whatsapp }} @endif
                             · {{ $pedido->created_at->format('d/m/Y H:i') }}
                         </div>
                     </div>
                     <div style="text-align:right;">
                         <div class="preco" style="font-size:1.1rem;">R$ {{ number_format($pedido->valor_total, 2, ',', '.') }}</div>
                         @if($pedido->entrega_tipo === 'entrega')
-                            <span class="badge" style="background:rgba(255,157,46,0.15); color:#ff9d2e;"><i class="fas fa-truck"></i> Entrega</span>
+                            <span class="badge" style="background:rgba(255,157,46,0.15); color:#ff9d2e;"><i class="ph ph-truck"></i> Entrega</span>
                         @else
-                            <span class="badge badge-off"><i class="fas fa-store"></i> Retirada</span>
+                            <span class="badge badge-off"><i class="ph ph-storefront"></i> Retirada</span>
                         @endif
                     </div>
                 </div>
@@ -539,13 +543,13 @@
 
                 @if($pedido->entrega_tipo === 'entrega')
                     <div style="margin-top:10px; font-size:0.8rem; color:var(--text-muted);">
-                        <i class="fas fa-map-marker-alt" style="color:#ff9d2e;"></i>
+                        <i class="ph ph-map-pin" style="color:#ff9d2e;"></i>
                         {{ $pedido->endereco_entrega }}
                         @if($pedido->entrega_nome) — Receber com: {{ $pedido->entrega_nome }} ({{ $pedido->entrega_telefone }}) @endif
                     </div>
                 @endif
                 @if($pedido->observacao)
-                    <div style="margin-top:6px; font-size:0.8rem; color:var(--text-muted);"><i class="fas fa-comment"></i> {{ $pedido->observacao }}</div>
+                    <div style="margin-top:6px; font-size:0.8rem; color:var(--text-muted);"><i class="ph ph-chat-circle"></i> {{ $pedido->observacao }}</div>
                 @endif
 
                 @if($pedido->status === 'pago')
@@ -553,13 +557,13 @@
                         <form method="POST" action="{{ route('loja.pedidos.concluir', $pedido->id) }}" style="margin:0;">
                             @csrf
                             @method('PUT')
-                            <button type="submit" class="btn-sm outline"><i class="fas fa-check"></i> Marcar como concluído</button>
+                            <button type="submit" class="btn-sm outline"><i class="ph ph-check"></i> Marcar como concluído</button>
                         </form>
                     </div>
                 @endif
             </div>
         @empty
-            <p class="empty"><i class="fas fa-receipt" style="font-size:2rem; display:block; margin-bottom:12px; opacity:0.4;"></i> Nenhum pedido ainda. Quando um cliente comprar, o pedido aparece aqui.</p>
+            <p class="empty"><i class="ph ph-receipt" style="font-size:2rem; display:block; margin-bottom:12px; opacity:0.4;"></i> Nenhum pedido ainda. Quando um cliente comprar, o pedido aparece aqui.</p>
         @endforelse
     </div>
 </div>
@@ -568,10 +572,10 @@
 <div id="modalCarteira" class="modal-overlay">
     <div class="modal-content" style="max-width:480px;">
         <button type="button" class="modal-close" onclick="document.getElementById('modalCarteira').style.display='none'">&times;</button>
-        <h2 style="color:var(--primary); text-align:center;"><i class="fas fa-piggy-bank"></i> Carteira da Loja</h2>
+        <h2 style="color:var(--primary); text-align:center;"><i class="ph ph-piggy-bank"></i> Carteira da Loja</h2>
 
         <div id="carteiraLoading" style="text-align:center; padding:30px 0; color:var(--text-muted);">
-            <i class="fas fa-spinner fa-spin fa-2x"></i><br><br>Consultando saldo...
+            <i class="ph ph-spinner ph-spin fa-2x"></i><br><br>Consultando saldo...
         </div>
 
         {{-- Sem conta de recebimento ainda --}}
@@ -580,7 +584,7 @@
                 Ative os recebimentos para que o dinheiro das vendas caia direto na sua conta e você possa sacar via PIX.
             </p>
             <button id="btnAtivarConta" onclick="ativarConta()" class="btn-save" style="width:100%;">
-                <i class="fas fa-bolt"></i> Ativar recebimentos
+                <i class="ph ph-lightning"></i> Ativar recebimentos
             </button>
             <p id="ativarErro" style="display:none; color:#ff6b6b; font-size:0.82rem; margin-top:12px;"></p>
         </div>
@@ -592,7 +596,7 @@
             </div>
 
             <div id="carteiraSemPix" style="display:none; background:rgba(255,165,0,0.1); border:1px solid rgba(255,165,0,0.3); border-radius:12px; padding:14px; margin-bottom:16px; font-size:0.82rem; color:#ffa500; text-align:center;">
-                <i class="fas fa-exclamation-triangle"></i> Cadastre sua chave PIX em "Editar Loja" para poder sacar.
+                <i class="ph ph-warning"></i> Cadastre sua chave PIX em "Editar Loja" para poder sacar.
             </div>
 
             <div id="carteiraSaqueForm">
@@ -605,7 +609,7 @@
                 <p id="carteiraSaqueErro" style="display:none; color:#ff6b6b; font-size:0.82rem; background:rgba(255,107,107,0.1); border:1px solid rgba(255,107,107,0.3); border-radius:8px; padding:10px 14px; margin-bottom:14px;"></p>
                 <p id="carteiraSaqueSucesso" style="display:none; color:#4caf50; font-weight:700; text-align:center; padding:8px 0; font-size:0.9rem;">✅ Saque solicitado! O valor chega via PIX em instantes.</p>
                 <button id="btnSacar" onclick="confirmarSaque()" class="btn-save" style="width:100%;">
-                    <i class="fas fa-arrow-down"></i> Sacar via PIX
+                    <i class="ph ph-arrow-down"></i> Sacar via PIX
                 </button>
             </div>
         </div>
@@ -674,7 +678,7 @@
     async function ativarConta() {
         const btn = document.getElementById('btnAtivarConta');
         btn.disabled = true;
-        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Ativando...';
+        btn.innerHTML = '<i class="ph ph-spinner ph-spin"></i> Ativando...';
         document.getElementById('ativarErro').style.display = 'none';
         try {
             const res = await fetch('/api/loja/criar-conta-asaas', {
@@ -689,7 +693,7 @@
             e.textContent = err.message;
             e.style.display = 'block';
             btn.disabled = false;
-            btn.innerHTML = '<i class="fas fa-bolt"></i> Ativar recebimentos';
+            btn.innerHTML = '<i class="ph ph-lightning"></i> Ativar recebimentos';
         }
     }
 
@@ -707,7 +711,7 @@
         }
         const btn = document.getElementById('btnSacar');
         btn.disabled = true;
-        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processando...';
+        btn.innerHTML = '<i class="ph ph-spinner ph-spin"></i> Processando...';
         document.getElementById('carteiraSaqueErro').style.display = 'none';
         try {
             const res = await fetch('/api/loja/sacar', {
@@ -726,7 +730,7 @@
             e.textContent = err.message;
             e.style.display = 'block';
             btn.disabled = false;
-            btn.innerHTML = '<i class="fas fa-arrow-down"></i> Sacar via PIX';
+            btn.innerHTML = '<i class="ph ph-arrow-down"></i> Sacar via PIX';
         }
     }
 

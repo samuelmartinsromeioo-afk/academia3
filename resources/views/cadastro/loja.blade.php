@@ -9,6 +9,8 @@
 
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/regular/style.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/fill/style.css">
 
     <style>
         :root { --primary: #d4ff00; --bg-dark: #0a0b0d; --card-bg: #16181d; --text-main: #ffffff; --error: #ff4444; }
@@ -35,15 +37,15 @@
         }
     </style>
 </head>
-<body>
+<body class="ed-page">
 
 <div class="auth-card">
-    <h2 style="text-align: center; margin-bottom: 8px; letter-spacing: 2px;"><i class="fa-solid fa-store" style="color: var(--primary);"></i> CADASTRO DE LOJA</h2>
+    <h2 style="text-align: center; margin-bottom: 8px; letter-spacing: 2px;"><i class="ph ph-storefront" style="color: var(--primary);"></i> CADASTRO DE LOJA</h2>
     <p style="text-align:center; color:#9ca3af; font-size:0.88rem; margin-bottom:28px;">Suplementos e produtos fitness</p>
 
     @if (session('sucesso'))
         <div class="alert alert-success">
-            <i class="fa-solid fa-circle-check"></i> {{ session('sucesso') }}
+            <i class="ph ph-check-circle"></i> {{ session('sucesso') }}
         </div>
     @endif
 
@@ -63,7 +65,7 @@
         <div class="form-group">
             <label>CNPJ</label>
             <div class="input-wrapper">
-                <i class="fa-solid fa-building"></i>
+                <i class="ph ph-building"></i>
                 <input type="text" name="cnpj" value="{{ old('cnpj') }}" placeholder="00.000.000/0000-00"
                         oninput="this.value = mascaras.cnpj(this.value)" maxlength="18" required>
             </div>
@@ -72,7 +74,7 @@
         <div class="form-group">
             <label>Nome da Loja</label>
             <div class="input-wrapper">
-                <i class="fa-solid fa-store"></i>
+                <i class="ph ph-storefront"></i>
                 <input type="text" name="nome" id="nome" value="{{ old('nome') }}" placeholder="Ex: Suplementos Power" required>
             </div>
         </div>
@@ -80,7 +82,7 @@
         <div class="form-group">
             <label>WhatsApp</label>
             <div class="input-wrapper">
-                <i class="fa-brands fa-whatsapp"></i>
+                <i class="ph ph-whatsapp-logo"></i>
                 <input type="text" name="whatsapp" value="{{ old('whatsapp') }}" placeholder="(11) 99999-9999"
                         oninput="this.value = mascaras.telefone(this.value)" maxlength="15">
             </div>
@@ -90,11 +92,11 @@
         <div class="form-group">
             <label>CEP</label>
             <div class="input-wrapper">
-                <i class="fa-solid fa-map-location-dot"></i>
+                <i class="ph ph-map-pin-area"></i>
                 <input type="text" name="cep" id="cep" value="{{ old('cep') }}" placeholder="00000-000"
                         oninput="this.value = mascaras.cep(this.value)" maxlength="9" required>
             </div>
-            <span id="cep-loading" class="loading"><i class="fa-solid fa-spinner fa-spin"></i> Buscando CEP...</span>
+            <span id="cep-loading" class="loading"><i class="ph ph-spinner ph-spin"></i> Buscando CEP...</span>
         </div>
 
         <div class="form-group">
@@ -122,7 +124,7 @@
         <div class="form-group">
             <label>Número/Complemento</label>
             <div class="input-wrapper">
-                <i class="fa-solid fa-house-chimney"></i>
+                <i class="ph ph-house"></i>
                 <input type="text" name="complemento" value="{{ old('complemento') }}" placeholder="Ex: 123 ou Loja 2">
             </div>
         </div>
@@ -130,7 +132,7 @@
         <div class="form-group full-width">
             <label>Endereço Completo</label>
             <div class="input-wrapper">
-                <i class="fa-solid fa-map"></i>
+                <i class="ph ph-map-trifold"></i>
                 <input type="text" name="endereco" id="endereco_completo" value="{{ old('endereco') }}" placeholder="Rua, Bairro - Cidade/UF" required>
             </div>
         </div>
@@ -138,7 +140,7 @@
         <div class="form-group">
             <label>E-mail</label>
             <div class="input-wrapper">
-                <i class="fa-solid fa-envelope"></i>
+                <i class="ph ph-envelope"></i>
                 <input type="email" name="email" value="{{ old('email') }}" required>
             </div>
         </div>
@@ -146,7 +148,7 @@
         <div class="form-group">
             <label>Senha</label>
             <div class="input-wrapper">
-                <i class="fa-solid fa-key"></i>
+                <i class="ph ph-key"></i>
                 <input type="password" name="senha" minlength="8" required>
             </div>
         </div>
@@ -154,7 +156,7 @@
         <div class="form-group full-width">
             <label>Confirmar Senha</label>
             <div class="input-wrapper">
-                <i class="fa-solid fa-shield-halved"></i>
+                <i class="ph ph-shield-check"></i>
                 <input type="password" name="senha_confirmation" minlength="8" required>
             </div>
         </div>
@@ -170,11 +172,11 @@
         <input type="hidden" name="longitude" id="longitude" value="{{ old('longitude') }}">
 
         <button type="submit" class="btn-submit full-width">
-            FINALIZAR CADASTRO <i class="fa-solid fa-paper-plane" style="margin-left: 10px;"></i>
+            FINALIZAR CADASTRO <i class="ph ph-paper-plane-tilt" style="margin-left: 10px;"></i>
         </button>
 
         <p class="full-width" style="text-align:center; color:#9ca3af; font-size:0.85rem; margin-top:5px;">
-            <i class="fa-solid fa-bolt"></i> Acesso imediato: após o cadastro você já entra no painel para adicionar seus produtos.
+            <i class="ph ph-lightning"></i> Acesso imediato: após o cadastro você já entra no painel para adicionar seus produtos.
         </p>
     </form>
 </div>
@@ -205,7 +207,7 @@ document.getElementById('cep').addEventListener('blur', function() {
                             document.getElementById('latitude').value  = results[0].lat;
                             document.getElementById('longitude').value = results[0].lon;
                             document.getElementById('cep-loading').innerHTML =
-                                '<i class="fa-solid fa-check" style="color:#d4ff00"></i> Localização encontrada!';
+                                '<i class="ph ph-check" style="color:#d4ff00"></i> Localização encontrada!';
                         }
                     })
                     .catch(() => {})
@@ -213,7 +215,7 @@ document.getElementById('cep').addEventListener('blur', function() {
                         setTimeout(() => {
                             document.getElementById('cep-loading').style.display = 'none';
                             document.getElementById('cep-loading').innerHTML =
-                                '<i class="fa-solid fa-spinner fa-spin"></i> Buscando CEP...';
+                                '<i class="ph ph-spinner ph-spin"></i> Buscando CEP...';
                         }, 2000);
                     });
             } else {

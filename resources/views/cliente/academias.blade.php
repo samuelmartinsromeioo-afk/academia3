@@ -8,6 +8,8 @@
     @include('partials.pwa')
     <link href="https://fonts.googleapis.com/css2?family=Syncopate:wght@700&family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/regular/style.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/fill/style.css">
     <style>
         :root {
             --primary: #d4ff00;
@@ -189,27 +191,27 @@
         }
     </style>
 </head>
-<body>
+<body class="ed-page">
 
 <div class="top-bar">
     <div class="logo">SNR<span>FIT</span></div>
-    <a href="{{ route('cliente.index') }}" class="btn-top"><i class="fas fa-arrow-left"></i> Voltar ao painel</a>
+    <a href="{{ route('cliente.index') }}" class="btn-top"><i class="ph ph-arrow-left"></i> Voltar ao painel</a>
 </div>
 
 <div class="container">
     <div class="welcome">
-        <h1>Explorar <em>Academias</em></h1>
+        <div class="ed-eyebrow"><i class="ph ph-magnifying-glass"></i> Descobrir</div><h1 class="ed-h">Explorar <span class="ed-mark">Academias</span></h1>
         <p>Encontre academias parceiras perto de você e contrate planos mensais.</p>
     </div>
 
     <div class="search-wrapper">
-        <i class="fas fa-search"></i>
+        <i class="ph ph-magnifying-glass"></i>
         <input type="text" id="buscaAcademia" placeholder="Buscar por nome, modalidade ou cidade...">
     </div>
 
     @if ($academias->isEmpty())
         <div class="empty-state">
-            <i class="fas fa-building"></i>
+            <i class="ph ph-building"></i>
             <p>Nenhuma academia disponível no momento.</p>
         </div>
     @else
@@ -220,30 +222,30 @@
                         @if ($academia->fotos->isNotEmpty())
                             <img src="{{ asset('storage/' . $academia->fotos->first()->path) }}" alt="{{ $academia->nome }}">
                         @else
-                            <i class="fas fa-building"></i>
+                            <i class="ph ph-building"></i>
                         @endif
-                        <span class="card-badge"><i class="fas fa-building"></i> Academia</span>
+                        <span class="card-badge"><i class="ph ph-building"></i> Academia</span>
                     </div>
                     <div class="card-body">
                         <h3>{{ $academia->nome }}</h3>
                         @if ($academia->tipos_aulas)
-                            <div class="card-meta"><i class="fas fa-dumbbell"></i> {{ $academia->tipos_aulas }}</div>
+                            <div class="card-meta"><i class="ph ph-barbell"></i> {{ $academia->tipos_aulas }}</div>
                         @endif
-                        <div class="card-meta"><i class="fas fa-map-marker-alt"></i> {{ $academia->cidade }}{{ $academia->estado ? ' - ' . $academia->estado : '' }}</div>
+                        <div class="card-meta"><i class="ph ph-map-pin"></i> {{ $academia->cidade }}{{ $academia->estado ? ' - ' . $academia->estado : '' }}</div>
                         @if ($academia->planos->isNotEmpty())
-                            <div class="card-meta"><i class="fas fa-id-card"></i> Planos a partir de R$ {{ number_format($academia->planos->first()?->valor, 2, ',', '.') }}/mês</div>
+                            <div class="card-meta"><i class="ph ph-identification-card"></i> Planos a partir de R$ {{ number_format($academia->planos->first()?->valor, 2, ',', '.') }}/mês</div>
                         @endif
 
                         <div class="card-footer">
                             <div class="preco">R$ {{ number_format($academia->valor_mensalidade ?? 0, 2, ',', '.') }} <small>/mês</small></div>
-                            <a href="{{ route('academias.detalhes', $academia->id) }}" class="btn-detalhes">Ver detalhes <i class="fas fa-arrow-right"></i></a>
+                            <a href="{{ route('academias.detalhes', $academia->id) }}" class="btn-detalhes">Ver detalhes <i class="ph ph-arrow-right"></i></a>
                         </div>
                     </div>
                 </div>
             @endforeach
         </div>
         <div class="empty-state" id="semResultados" style="display:none;">
-            <i class="fas fa-search"></i>
+            <i class="ph ph-magnifying-glass"></i>
             <p>Nenhuma academia encontrada para a sua busca.</p>
         </div>
     @endif

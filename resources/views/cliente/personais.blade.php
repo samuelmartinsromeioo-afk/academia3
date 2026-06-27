@@ -8,6 +8,8 @@
     @include('partials.pwa')
     <link href="https://fonts.googleapis.com/css2?family=Syncopate:wght@700&family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/regular/style.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/fill/style.css">
     <style>
         :root {
             --primary: #d4ff00;
@@ -102,6 +104,7 @@
 
         .card {
             background: var(--card-bg);
+            position: relative;
             border: 1px solid var(--border);
             border-radius: 18px;
             overflow: hidden;
@@ -110,6 +113,13 @@
             flex-direction: column;
         }
         .card:hover { transform: translateY(-4px); border-color: rgba(26,95,212,0.4); box-shadow: 0 12px 30px rgba(0,0,0,0.5); }
+
+        /* Destaque para personais pioneiros (100 primeiros do estado) — realce fino */
+        .card.pioneiro { border-color: rgba(255,210,80,0.5); box-shadow: 0 0 14px rgba(255,170,40,0.10), 0 12px 30px rgba(0,0,0,0.5); }
+        .card.pioneiro::before { content: ""; position: absolute; top: 0; left: 0; right: 0; height: 3px; background: linear-gradient(90deg, #FFE259, #FFA751); z-index: 4; }
+        .card.pioneiro:hover { transform: translateY(-6px); border-color: rgba(255,210,80,0.75); box-shadow: 0 0 20px rgba(255,170,40,0.16), 0 18px 40px rgba(0,0,0,0.55); }
+        .card.pioneiro .card-img { background: linear-gradient(135deg, rgba(255,170,40,0.24), rgba(255,210,80,0.06)); }
+        .card.pioneiro .badge-pioneiro { font-size: 0.7rem !important; padding: 6px 12px !important; }
 
         .card-img {
             height: 160px;
@@ -191,56 +201,61 @@
         }
     </style>
 </head>
-<body>
+<body class="ed-page">
 
 <div class="top-bar">
     <div class="logo">SNR<span>FIT</span></div>
-    <a href="{{ route('cliente.index') }}" class="btn-top"><i class="fas fa-arrow-left"></i> Voltar ao painel</a>
+    <a href="{{ route('cliente.index') }}" class="btn-top"><i class="ph ph-arrow-left"></i> Voltar ao painel</a>
 </div>
 
 <div class="container">
     <div class="welcome">
-        <h1>Explorar <em>Personais</em></h1>
+        <div class="ed-eyebrow"><i class="ph ph-user"></i> Descobrir</div><h1 class="ed-h">Explorar <span class="ed-mark">Personais</span></h1>
         <p>Encontre personal trainers, veja avaliações e contrate aulas avulsas ou pacotes.</p>
     </div>
 
     <div class="search-wrapper">
-        <i class="fas fa-search"></i>
+        <i class="ph ph-magnifying-glass"></i>
         <input type="text" id="buscaPersonal" placeholder="Buscar por nome ou cidade...">
     </div>
 
     @if ($personais->isEmpty())
         <div class="empty-state">
-            <i class="fas fa-user-slash"></i>
+            <i class="ph ph-user-minus"></i>
             <p>Nenhum personal disponível no momento.</p>
         </div>
     @else
         <div class="grid" id="gridPersonais">
             @foreach ($personais as $personal)
-                <div class="card" data-busca="{{ strtolower($personal->nome . ' ' . ($personal->cidade ?? '')) }}">
+                <div class="card {{ $personal->eh_pioneiro ? 'pioneiro' : '' }}" data-busca="{{ strtolower($personal->nome . ' ' . ($personal->cidade ?? '')) }}">
                     <div class="card-img">
                         @if ($personal->foto)
                             <img src="{{ asset('storage/' . $personal->foto) }}" alt="{{ $personal->nome }}">
                         @elseif ($personal->fotos->isNotEmpty())
                             <img src="{{ asset('storage/' . $personal->fotos->first()->path) }}" alt="{{ $personal->nome }}">
                         @else
-                            <i class="fas fa-user-tie"></i>
+                            <i class="ph ph-user-list"></i>
                         @endif
-                        <span class="card-badge"><i class="fas fa-user-tie"></i> Personal</span>
+                        <span class="card-badge"><i class="ph ph-user-list"></i> Personal</span>
+                        @if ($personal->eh_pioneiro)
+                            <div style="position:absolute; top:12px; right:12px; z-index:2;">
+                                @include('partials.badge-pioneiro', ['posicao' => $personal->pioneiro_posicao, 'estado' => $personal->estado])
+                            </div>
+                        @endif
                     </div>
                     <div class="card-body">
                         <h3>{{ $personal->nome }}</h3>
                         @if ($personal->cidade)
-                            <div class="card-meta"><i class="fas fa-map-marker-alt"></i> {{ $personal->cidade }}{{ $personal->estado ? ' - ' . $personal->estado : '' }}</div>
+                            <div class="card-meta"><i class="ph ph-map-pin"></i> {{ $personal->cidade }}{{ $personal->estado ? ' - ' . $personal->estado : '' }}</div>
                         @endif
 
                         <div class="rating">
                             @if($personal->eh_novo_profissional)
-                                <span class="num" style="color: var(--primary);"><i class="fas fa-seedling"></i> Novo profissional</span>
+                                <span class="num" style="color: var(--primary);"><i class="ph ph-plant"></i> Novo profissional</span>
                             @else
                                 @php $media = (float) $personal->media_avaliacao; @endphp
                                 @for ($i = 1; $i <= 5; $i++)
-                                    <i class="fa-star {{ $i <= round($media) ? 'fas' : 'far' }}"></i>
+                                    <i class="ph-star {{ $i <= round($media) ? 'ph' : 'ph' }}"></i>
                                 @endfor
                                 <span class="num">{{ $personal->media_avaliacao }} ({{ $personal->avaliacoes->count() }})</span>
                             @endif
@@ -248,14 +263,14 @@
 
                         <div class="card-footer">
                             <div class="preco">R$ {{ number_format($personal->valor_secao ?? 0, 2, ',', '.') }} <small>/aula</small></div>
-                            <a href="{{ route('cliente.index') }}?personal={{ $personal->id }}" class="btn-detalhes">Ver detalhes <i class="fas fa-arrow-right"></i></a>
+                            <a href="{{ route('cliente.index') }}?personal={{ $personal->id }}" class="btn-detalhes">Ver detalhes <i class="ph ph-arrow-right"></i></a>
                         </div>
                     </div>
                 </div>
             @endforeach
         </div>
         <div class="empty-state" id="semResultados" style="display:none;">
-            <i class="fas fa-search"></i>
+            <i class="ph ph-magnifying-glass"></i>
             <p>Nenhum personal encontrado para a sua busca.</p>
         </div>
     @endif

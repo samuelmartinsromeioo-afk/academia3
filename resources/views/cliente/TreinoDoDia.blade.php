@@ -7,6 +7,8 @@
     <title>Treino do Dia</title>
     <link rel="icon" type="image/png" href="{{ asset('SnrFit.png') }}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/regular/style.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/fill/style.css">
     <style>
         :root {
             --primary: #F4BE16; --bg-dark: #000000; --card-bg: #111317;
@@ -88,20 +90,20 @@
     </style>
 </head>
 
-<body>
+<body class="ed-page">
     <div class="top-bar">
-        <a href="{{ route('cliente.index') }}" class="back-btn" title="Voltar"><i class="fas fa-arrow-left"></i></a>
-        <span class="title"><i class="fas fa-bolt"></i> Treino do Dia</span>
+        <a href="{{ route('cliente.index') }}" class="back-btn" title="Voltar"><i class="ph ph-arrow-left"></i></a>
+        <span class="title"><i class="ph ph-lightning"></i> Treino do Dia</span>
     </div>
 
     <div class="container">
         @if(session('success'))
-            <div class="alert alert-success"><i class="fas fa-check-circle"></i> {{ session('success') }}</div>
+            <div class="alert alert-success"><i class="ph ph-check-circle"></i> {{ session('success') }}</div>
         @endif
 
         @if(!$meso || !$treino)
             <div class="empty">
-                <i class="fas fa-bolt"></i>
+                <i class="ph ph-lightning"></i>
                 <p>Nenhuma periodização ativa.</p>
                 <small>Seu personal vai montar seu ciclo de treinos A/B/C/D em breve.</small>
             </div>
@@ -113,7 +115,7 @@
                     <small>Treino {{ $treino->letra }} de {{ $meso->treinos->count() }} · rotação automática</small>
                 </div>
                 @if($venc)
-                    <span class="validade venc"><i class="fas fa-triangle-exclamation"></i> Ciclo vencido</span>
+                    <span class="validade venc"><i class="ph ph-warning"></i> Ciclo vencido</span>
                 @elseif($dias !== null)
                     <span class="validade ok">{{ $dias }} dia(s) restante(s)</span>
                 @endif
@@ -159,11 +161,11 @@
 
                 <div class="conclude">
                     @if($meso->concluidoHoje())
-                        <button class="btn-conclude done" disabled><i class="fas fa-check-circle"></i> Treino de hoje concluído</button>
+                        <button class="btn-conclude done" disabled><i class="ph ph-check-circle"></i> Treino de hoje concluído</button>
                     @else
                         <form method="POST" action="{{ route('periodizacao.concluir', $meso->id) }}">
                             @csrf
-                            <button type="submit" class="btn-conclude"><i class="fas fa-bolt"></i> Concluir treino do dia</button>
+                            <button type="submit" class="btn-conclude"><i class="ph ph-lightning"></i> Concluir treino do dia</button>
                         </form>
                     @endif
                 </div>

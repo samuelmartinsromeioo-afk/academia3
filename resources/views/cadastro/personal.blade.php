@@ -10,6 +10,8 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Syncopate:wght@700&family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/regular/style.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/fill/style.css">
 
     <style>
         :root {
@@ -276,7 +278,7 @@
         }
     </style>
 </head>
-<body>
+<body class="ed-page">
 
 <main class="auth-container">
     <div class="auth-header">
@@ -289,7 +291,7 @@
             <div class="alert-error">
                 <ul style="list-style: none;">
                     @foreach ($errors->all() as $error)
-                        <li><i class="fa-solid fa-triangle-exclamation"></i> {{ $error }}</li>
+                        <li><i class="ph ph-warning"></i> {{ $error }}</li>
                     @endforeach
                 </ul>
             </div>
@@ -301,7 +303,7 @@
             <div class="form-group full-width">
                 <label>Nome Completo</label>
                 <div class="input-wrapper">
-                    <i class="fa-regular fa-user"></i>
+                    <i class="ph ph-user"></i>
                     <input type="text" name="nome" value="{{ old('nome') }}" required>
                 </div>
             </div>
@@ -309,21 +311,21 @@
             <div class="form-group">
                 <label>CPF</label>
                 <div class="input-wrapper">
-                    <i class="fa-solid fa-id-card"></i>
+                    <i class="ph ph-identification-card"></i>
                     <input type="text" id="inputCpf" name="cpf" placeholder="000.000.000-00"
                         oninput="this.value = mascaras.cpf(this.value)"
                         onblur="validarCampoCpf(this)"
                         maxlength="14" required>
                 </div>
                 <span id="erroCpf" style="display:none; color:#ff4444; font-size:0.78rem; margin-top:4px;">
-                    <i class="fas fa-exclamation-circle"></i> CPF inválido. Verifique os dígitos.
+                    <i class="ph ph-warning-circle"></i> CPF inválido. Verifique os dígitos.
                 </span>
             </div>
 
             <div class="form-group">
                 <label>Data de Nascimento</label>
                 <div class="input-wrapper">
-                    <i class="fa-regular fa-calendar"></i>
+                    <i class="ph ph-calendar"></i>
                     <input type="date" name="idade" value="{{ old('idade') }}" required>
                 </div>
             </div>
@@ -331,17 +333,17 @@
             <div class="form-group">
                 <label>CEP (de uma das academias em que atua)</label>
                 <div class="input-wrapper">
-                    <i class="fa-solid fa-map-pin"></i>
+                    <i class="ph ph-map-pin"></i>
                     <input type="text" name="cep" id="cep" placeholder="00000-000" 
                         oninput="this.value = mascaras.cep(this.value)" maxlength="9" required>
                 </div>
-                <div id="cep-loading" class="loading-cep"><i class="fa-solid fa-spinner fa-spin"></i> Buscando...</div>
+                <div id="cep-loading" class="loading-cep"><i class="ph ph-spinner ph-spin"></i> Buscando...</div>
             </div>
 
             <div class="form-group">
                 <label>Cidade / Estado (de uma das academias em que atua)</label>
                 <div class="input-wrapper">
-                    <i class="fa-solid fa-city"></i>
+                    <i class="ph ph-buildings"></i>
                     <input type="text" id="display_cidade_estado" placeholder="Cidade - UF" readonly>
                 </div>
             </div>
@@ -349,7 +351,7 @@
             <div class="form-group full-width">
                 <label>Logradouro / Bairro (de uma das academias em que atua)</label>
                 <div class="input-wrapper">
-                    <i class="fa-solid fa-map-location-dot"></i>
+                    <i class="ph ph-map-pin-area"></i>
                     <input type="text" id="display_rua_bairro" placeholder="Rua, Bairro" readonly>
                 </div>
             </div>
@@ -357,7 +359,7 @@
             <div class="form-group full-width">
                 <label>Número / Complemento (de uma das academias em que atua)</label>
                 <div class="input-wrapper">
-                    <i class="fa-solid fa-house-user"></i>
+                    <i class="ph ph-house"></i>
                     <input type="text" name="complemento" value="{{ old('complemento') }}" placeholder="Ex: Casa 10 ou Apto 12 Bloco B" required>
                 </div>
             </div>
@@ -365,7 +367,7 @@
             <div class="form-group full-width">
                 <label>E-mail Profissional</label>
                 <div class="input-wrapper">
-                    <i class="fa-regular fa-envelope"></i>
+                    <i class="ph ph-envelope"></i>
                     <input type="email" name="email" value="{{ old('email') }}" required>
                 </div>
             </div>
@@ -373,7 +375,7 @@
             <div class="form-group">
                 <label>Senha</label>
                 <div class="input-wrapper">
-                    <i class="fa-solid fa-lock"></i>
+                    <i class="ph ph-lock"></i>
                     <input type="password" name="senha" required>
                 </div>
             </div>
@@ -381,7 +383,7 @@
             <div class="form-group">
                 <label>Confirmar Senha</label>
                 <div class="input-wrapper">
-                    <i class="fa-solid fa-shield-halved"></i>
+                    <i class="ph ph-shield-check"></i>
                     <input type="password" name="senha_confirmation" required>
                 </div>
             </div>
@@ -389,7 +391,7 @@
             <div class="form-group">
                 <label>Valor por Sessão (R$)</label>
                 <div class="input-wrapper">
-                    <i class="fa-solid fa-dollar-sign"></i>
+                    <i class="ph ph-currency-dollar"></i>
                     <input type="number" step="0.01" name="valor_secao" value="{{ old('valor_secao') }}" required>
                 </div>
             </div>
@@ -397,7 +399,7 @@
             <div class="form-group">
                 <label>CREF</label>
                 <div class="input-wrapper">
-                    <i class="fa-solid fa-id-badge"></i>
+                    <i class="ph ph-identification-badge"></i>
                     <input type="text" name="cref" value="{{ old('cref') }}" placeholder="Ex: 123456-G/SP" required>
                 </div>
             </div>
@@ -405,7 +407,7 @@
             <div class="form-group full-width">
                 <label>Foto do Profissional (IMG)</label>
                 <div class="input-wrapper">
-                    <i class="fa-solid fa-image"></i>
+                    <i class="ph ph-image"></i>
                     <input type="file" name="foto" required>
                 </div>
             </div>
@@ -413,13 +415,13 @@
             <!-- ✅ SEÇÃO DE ACADEMIAS -->
             <div class="academias-section">
                 <div class="academias-title">
-                    <i class="fa-solid fa-building"></i> Academias onde você atua
+                    <i class="ph ph-building"></i> Academias onde você atua
                 </div>
                 <div class="academias-hint">
-                    <i class="fa-solid fa-info-circle"></i> Digite o nome de cada academia em uma linha separada. Máximo 10 academias. Não é necessário ser uma academia cadastrada na plataforma.
+                    <i class="ph ph-info"></i> Digite o nome de cada academia em uma linha separada. Máximo 10 academias. Não é necessário ser uma academia cadastrada na plataforma.
                 </div>
                 <div class="textarea-wrapper">
-                    <i class="fa-solid fa-pen-to-square"></i>
+                    <i class="ph ph-note-pencil"></i>
                     <textarea name="academias" placeholder="Academia XYZ&#10;Fit Club Downtown&#10;Smart Fitness&#10;Strong Gym&#10;..." maxlength="1000">{{ old('academias') }}</textarea>
                 </div>
             </div>
@@ -456,7 +458,7 @@
 
         const loadingIcon = document.getElementById('cep-loading');
         loadingIcon.style.display = 'block';
-        loadingIcon.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Buscando endereço...';
+        loadingIcon.innerHTML = '<i class="ph ph-spinner ph-spin"></i> Buscando endereço...';
 
         fetch(`https://viacep.com.br/ws/${cep}/json/`)
             .then(res => res.json())
@@ -470,7 +472,7 @@
                     document.getElementById('display_rua_bairro').value = `${data.logradouro}, ${data.bairro}`;
                     document.getElementById('display_cidade_estado').value = `${data.localidade} - ${data.uf}`;
 
-                    loadingIcon.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Buscando localização no mapa...';
+                    loadingIcon.innerHTML = '<i class="ph ph-spinner ph-spin"></i> Buscando localização no mapa...';
 
                     const enderecoQuery = `${data.logradouro}, ${data.localidade}, ${data.uf}, Brasil`;
 
@@ -480,13 +482,13 @@
                             if (results.length > 0) {
                                 document.getElementById('latitude').value  = results[0].lat;
                                 document.getElementById('longitude').value = results[0].lon;
-                                loadingIcon.innerHTML = '<i class="fa-solid fa-check" style="color:#d4ff00"></i> Localização confirmada!';
+                                loadingIcon.innerHTML = '<i class="ph ph-check" style="color:#d4ff00"></i> Localização confirmada!';
                             } else {
-                                loadingIcon.innerHTML = '<i class="fa-solid fa-triangle-exclamation" style="color:orange"></i> Endereço achado, mas sem GPS preciso.';
+                                loadingIcon.innerHTML = '<i class="ph ph-warning" style="color:orange"></i> Endereço achado, mas sem GPS preciso.';
                             }
                         })
                         .catch(() => {
-                            loadingIcon.innerHTML = '<i class="fa-solid fa-xmark" style="color:red"></i> Erro ao buscar GPS.';
+                            loadingIcon.innerHTML = '<i class="ph ph-x" style="color:red"></i> Erro ao buscar GPS.';
                         })
                         .finally(() => {
                             setTimeout(() => loadingIcon.style.display = 'none', 3000);

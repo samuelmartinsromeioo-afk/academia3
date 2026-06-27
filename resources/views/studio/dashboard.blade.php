@@ -8,6 +8,9 @@
     @include('partials.pwa')
     <link href="https://fonts.googleapis.com/css2?family=Syncopate:wght@700&family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/regular/style.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/fill/style.css">
+    <link rel="stylesheet" href="{{ asset('css/snrfit-brand.css') }}">
     <style>
         :root {
             --primary: #d4ff00;
@@ -368,12 +371,12 @@
         }
     </style>
 </head>
-<body>
+<body class="ed-page">
 
 {{-- TOP BAR --}}
 <div class="top-bar">
     <div class="menu-container">
-        <button class="dots-btn" id="btnMenu" onclick="toggleMenu()"><i class="fas fa-bars"></i></button>
+        <button class="dots-btn" id="btnMenu" onclick="toggleMenu()"><i class="ph ph-list"></i></button>
         <div class="dropdown-menu" id="dropdownMenu">
             <div class="menu-rating-header">
                 @php
@@ -383,38 +386,38 @@
                 <span class="rating-number">{{ number_format($media, 1) }}</span>
                 <div class="stars-row">
                     @for ($i = 1; $i <= 5; $i++)
-                        @if ($i <= $media) <i class="fas fa-star"></i>
-                        @elseif ($i - 0.5 <= $media) <i class="fas fa-star-half-alt"></i>
-                        @else <i class="far fa-star"></i>
+                        @if ($i <= $media) <i class="ph-fill ph-star"></i>
+                        @elseif ($i - 0.5 <= $media) <i class="ph-fill ph-star-half"></i>
+                        @else <i class="ph ph-star"></i>
                         @endif
                     @endfor
                 </div>
                 <span class="rating-label">{{ $totalAvals }} Avaliações</span>
             </div>
-            <button type="button" id="btnOpenPlanos"><i class="fas fa-id-card" style="color: var(--primary);"></i> Meus Planos</button>
-            <button type="button" id="btnOpenAlunos"><i class="fas fa-users"></i> Meus Alunos</button>
-            <button type="button" id="btnOpenPerfil"><i class="fas fa-user-edit"></i> Editar Perfil</button>
-            <button type="button" id="btnOpenGaleria"><i class="fas fa-images"></i> Minha Galeria</button>
-            <button type="button" id="btnOpenCarteira"><i class="fas fa-piggy-bank" style="color: var(--primary);"></i> Minha Carteira</button>
-            <a href="{{ route('studio.horarios') }}"><i class="fas fa-clock"></i> Meus Horários</a>
-            <a href="{{ route('lgpd.meus-dados') }}"><i class="fas fa-user-shield"></i> Privacidade e meus dados</a>
+            <button type="button" id="btnOpenPlanos"><i class="ph ph-identification-card" style="color: var(--primary);"></i> Meus Planos</button>
+            <button type="button" id="btnOpenAlunos"><i class="ph ph-users"></i> Meus Alunos</button>
+            <button type="button" id="btnOpenPerfil"><i class="ph ph-user-gear"></i> Editar Perfil</button>
+            <button type="button" id="btnOpenGaleria"><i class="ph ph-images"></i> Minha Galeria</button>
+            <button type="button" id="btnOpenCarteira"><i class="ph ph-piggy-bank" style="color: var(--primary);"></i> Minha Carteira</button>
+            <a href="{{ route('studio.horarios') }}"><i class="ph ph-clock"></i> Meus Horários</a>
+            <a href="{{ route('lgpd.meus-dados') }}"><i class="ph ph-shield-check"></i> Privacidade e meus dados</a>
             <form action="{{ route('login.logout') }}" method="POST" style="margin:0;">
                 @csrf
-                <button type="submit" style="color: var(--error);"><i class="fas fa-power-off"></i> Sair</button>
+                <button type="submit" style="color: var(--error);"><i class="ph ph-power"></i> Sair</button>
             </form>
         </div>
         <div class="logo">SNR<span>FIT</span> <span style="font-family:'Inter'; font-size:0.65rem; color:var(--text-muted); letter-spacing:1px; text-transform:uppercase;">| Studio</span></div>
     </div>
-    <span style="font-weight: 700; font-size: 0.9rem;"><i class="fas fa-spa" style="color: var(--primary); margin-right: 8px;"></i>{{ $studio->nome }}</span>
+    <span style="font-weight: 700; font-size: 0.9rem;"><i class="ph ph-flower-lotus" style="color: var(--primary); margin-right: 8px;"></i>{{ $studio->nome }}</span>
 </div>
 
 <div class="container">
 
     @if(session('success'))
-        <div class="alert alert-success"><i class="fas fa-check-circle"></i> {{ session('success') }}</div>
+        <div class="alert alert-success"><i class="ph ph-check-circle"></i> {{ session('success') }}</div>
     @endif
     @if(session('error'))
-        <div class="alert alert-error"><i class="fas fa-exclamation-circle"></i> {{ session('error') }}</div>
+        <div class="alert alert-error"><i class="ph ph-warning-circle"></i> {{ session('error') }}</div>
     @endif
     @if ($errors->any())
         <div class="alert alert-error">
@@ -426,32 +429,33 @@
         </div>
     @endif
 
-    <div class="welcome">
-        <h1>Olá, <em>{{ $studio->nome }}</em> 👋</h1>
-        <p>Acompanhe seus alunos, a agenda do dia e suas avaliações. Use o menu para gerenciar o resto.</p>
+    <div class="welcome ed-head">
+        <div class="ed-eyebrow"><span class="ed-num">01</span> Olá, {{ $studio->nome }}</div>
+        <h1 class="ed-h">Painel do <span class="ed-mark">Studio</span></h1>
+        <p style="margin-top:10px;">Acompanhe seus alunos, a agenda do dia e suas avaliações. Use o menu para gerenciar o resto.</p>
     </div>
 
     {{-- STATS --}}
     <div class="stats-grid">
         <div class="stat-card">
-            <div class="stat-icon"><i class="fas fa-users"></i></div>
+            <div class="stat-icon"><i class="ph ph-users"></i></div>
             <div class="stat-value">{{ $totalAlunos }}</div>
             <div class="stat-label">Alunos vinculados</div>
         </div>
         <div class="stat-card">
-            <div class="stat-icon"><i class="fas fa-calendar-day"></i></div>
+            <div class="stat-icon"><i class="ph ph-calendar-dot"></i></div>
             <div class="stat-value">{{ $agendaHoje->count() }}</div>
             <div class="stat-label">Aulas hoje</div>
         </div>
         <div class="stat-card">
-            <div class="stat-icon"><i class="fas fa-star"></i></div>
+            <div class="stat-icon"><i class="ph-fill ph-star"></i></div>
             <div class="stat-value">{{ $studio->media_avaliacao }} <span style="font-size:0.9rem; color:var(--text-muted);">/ 5</span></div>
             <div class="stat-label">Avaliação média</div>
         </div>
     </div>
 
     {{-- AGENDA DE HOJE --}}
-    <h2 class="section-title"><i class="fas fa-calendar-day"></i> Agenda de hoje ({{ today()->format('d/m/Y') }})</h2>
+    <h2 class="section-title"><i class="ph ph-calendar-dot"></i> Agenda de hoje ({{ today()->format('d/m/Y') }})</h2>
     <div class="panel">
         @if($agendaHoje->count() > 0)
             <table>
@@ -475,21 +479,21 @@
                 </tbody>
             </table>
         @else
-            <p class="empty"><i class="fas fa-mug-hot"></i> Nenhuma aula agendada para hoje.</p>
+            <p class="empty"><i class="ph ph-coffee"></i> Nenhuma aula agendada para hoje.</p>
         @endif
     </div>
 
     {{-- AVALIAÇÕES RECENTES --}}
-    <h2 class="section-title"><i class="fas fa-star"></i> Avaliações recentes</h2>
+    <h2 class="section-title"><i class="ph-fill ph-star"></i> Avaliações recentes</h2>
     <div class="panel">
         @php $avaliacoesRecentes = $studio->avaliacoes->sortByDesc('created_at')->take(5); @endphp
         @forelse($avaliacoesRecentes as $av)
             <div style="padding: 14px 0; border-bottom: 1px solid var(--border);">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-                    <span style="font-weight: 700; font-size: 0.88rem;"><i class="fas fa-user-circle" style="color: var(--primary);"></i> {{ $av->cliente?->nome ?? 'Aluno' }}</span>
+                    <span style="font-weight: 700; font-size: 0.88rem;"><i class="ph ph-user-circle" style="color: var(--primary);"></i> {{ $av->cliente?->nome ?? 'Aluno' }}</span>
                     <span style="color: #ffc107; font-size: 0.75rem;">
                         @for ($i = 1; $i <= 5; $i++)
-                            <i class="fa-star {{ $i <= $av->nota ? 'fas' : 'far' }}"></i>
+                            <i class="ph-star {{ $i <= $av->nota ? 'ph' : 'ph' }}"></i>
                         @endfor
                     </span>
                 </div>
@@ -508,7 +512,7 @@
 <div id="modalPlanos" class="modal-overlay">
     <div class="modal-content" style="max-width: 720px;">
         <button type="button" class="modal-close" onclick="document.getElementById('modalPlanos').style.display='none'">&times;</button>
-        <h2 style="color: var(--primary);"><i class="fas fa-id-card"></i> Meus Planos ({{ $planos->count() }}/5)</h2>
+        <h2 style="color: var(--primary);"><i class="ph ph-identification-card"></i> Meus Planos ({{ $planos->count() }}/5)</h2>
         @forelse($planos as $plano)
             <div class="plano-card">
                 <div class="plano-info">
@@ -518,12 +522,12 @@
                 <div class="plano-valor">R$ {{ number_format($plano->valor, 2, ',', '.') }}/mês</div>
                 <div class="plano-actions">
                     <button type="button" class="btn-sm outline" onclick="abrirEditarPlano({{ $plano->id }}, {!! json_encode($plano->nome) !!}, {{ $plano->valor }}, {{ $plano->duracao_meses }}, {!! json_encode($plano->descricao ?? '') !!}, {{ $plano->ativo ? 'true' : 'false' }})">
-                        <i class="fas fa-pen"></i> Editar
+                        <i class="ph ph-pen"></i> Editar
                     </button>
                     <form method="POST" action="{{ route('studio.planos.destroy', $plano->id) }}" onsubmit="return confirm('Excluir este plano?');" style="margin:0;">
                         @csrf
                         @method('DELETE')
-                        <button type="submit" class="btn-sm danger"><i class="fas fa-trash"></i></button>
+                        <button type="submit" class="btn-sm danger"><i class="ph ph-trash"></i></button>
                     </form>
                 </div>
             </div>
@@ -534,7 +538,7 @@
         @if($planos->count() < 5)
             <div style="margin-top: 18px; text-align: right;">
                 <button type="button" class="btn-save" onclick="document.getElementById('modalNovoPlano').style.display='block'">
-                    <i class="fas fa-plus"></i> Novo Plano
+                    <i class="ph ph-plus"></i> Novo Plano
                 </button>
             </div>
         @endif
@@ -545,7 +549,7 @@
 <div id="modalAlunos" class="modal-overlay">
     <div class="modal-content" style="max-width: 760px;">
         <button type="button" class="modal-close" onclick="document.getElementById('modalAlunos').style.display='none'">&times;</button>
-        <h2 style="color: var(--primary);"><i class="fas fa-users"></i> Meus Alunos</h2>
+        <h2 style="color: var(--primary);"><i class="ph ph-users"></i> Meus Alunos</h2>
         @if($alunos->count() > 0)
             <table>
                 <thead>
@@ -567,9 +571,9 @@
                             <td>{{ $aluno->studioPlano?->nome ?? 'Sem plano' }}</td>
                             <td>
                                 @if($aluno->studio_plano_ativo)
-                                    <span style="color: var(--success); font-weight: 700; font-size: 0.8rem;"><i class="fas fa-circle" style="font-size:0.5rem;"></i> Ativo</span>
+                                    <span style="color: var(--success); font-weight: 700; font-size: 0.8rem;"><i class="ph ph-circle" style="font-size:0.5rem;"></i> Ativo</span>
                                 @else
-                                    <span style="color: var(--text-muted); font-weight: 700; font-size: 0.8rem;"><i class="fas fa-circle" style="font-size:0.5rem;"></i> Inativo</span>
+                                    <span style="color: var(--text-muted); font-weight: 700; font-size: 0.8rem;"><i class="ph ph-circle" style="font-size:0.5rem;"></i> Inativo</span>
                                 @endif
                             </td>
                             <td style="text-align:center;">
@@ -584,7 +588,7 @@
                                 <form method="POST" action="{{ route('studio.alunos.desvincular', $aluno->id) }}" onsubmit="return confirm('Desvincular {{ $aluno->nome }} do studio?');" style="margin:0;">
                                     @csrf
                                     @method('DELETE')
-                                    <button type="submit" class="btn-sm danger"><i class="fas fa-user-minus"></i> Desvincular</button>
+                                    <button type="submit" class="btn-sm danger"><i class="ph ph-user-minus"></i> Desvincular</button>
                                 </form>
                             </td>
                         </tr>
@@ -601,7 +605,7 @@
 <div id="modalGaleria" class="modal-overlay">
     <div class="modal-content" style="max-width: 720px;">
         <button type="button" class="modal-close" onclick="document.getElementById('modalGaleria').style.display='none'">&times;</button>
-        <h2 style="color: var(--primary);"><i class="fas fa-images"></i> Minha Galeria ({{ $studio->fotos->count() }}/5)</h2>
+        <h2 style="color: var(--primary);"><i class="ph ph-images"></i> Minha Galeria ({{ $studio->fotos->count() }}/5)</h2>
         @if($studio->fotos->count() < 5)
             <form method="POST" action="{{ route('studio.fotos.store') }}" enctype="multipart/form-data" style="display:flex; gap:12px; flex-wrap:wrap; align-items:flex-end;">
                 @csrf
@@ -613,7 +617,7 @@
                     <label>Legenda (opcional)</label>
                     <input type="text" name="legenda" maxlength="255" placeholder="Ex: Sala de pilates">
                 </div>
-                <button type="submit" class="btn-save"><i class="fas fa-upload"></i> Enviar</button>
+                <button type="submit" class="btn-save"><i class="ph ph-upload-simple"></i> Enviar</button>
             </form>
         @endif
 
@@ -622,7 +626,7 @@
                 @foreach($studio->fotos as $foto)
                     <div class="galeria-item" id="foto-{{ $foto->id }}">
                         <img src="{{ asset('storage/' . $foto->path) }}" alt="{{ $foto->legenda ?? 'Foto do studio' }}">
-                        <button type="button" onclick="excluirFoto({{ $foto->id }})" title="Excluir"><i class="fas fa-trash"></i></button>
+                        <button type="button" onclick="excluirFoto({{ $foto->id }})" title="Excluir"><i class="ph ph-trash"></i></button>
                     </div>
                 @endforeach
             </div>
@@ -636,7 +640,7 @@
 <div id="modalPerfil" class="modal-overlay">
     <div class="modal-content" style="max-width: 720px;">
         <button type="button" class="modal-close" onclick="document.getElementById('modalPerfil').style.display='none'">&times;</button>
-        <h2 style="color: var(--primary);"><i class="fas fa-user-edit"></i> Editar Perfil</h2>
+        <h2 style="color: var(--primary);"><i class="ph ph-user-gear"></i> Editar Perfil</h2>
         <form method="POST" action="{{ route('studio.update', $studio->id) }}" class="form-grid">
             @csrf
             @method('PUT')
@@ -689,7 +693,7 @@
             </div>
 
             <div class="full-width" style="text-align: right;">
-                <button type="submit" class="btn-save"><i class="fas fa-save"></i> Salvar Perfil</button>
+                <button type="submit" class="btn-save"><i class="ph ph-floppy-disk"></i> Salvar Perfil</button>
             </div>
         </form>
     </div>
@@ -699,7 +703,7 @@
 <div id="modalNovoPlano" class="modal-overlay">
     <div class="modal-content">
         <button type="button" class="modal-close" onclick="document.getElementById('modalNovoPlano').style.display='none'">&times;</button>
-        <h2 style="color: var(--primary);"><i class="fas fa-plus-circle"></i> Novo Plano</h2>
+        <h2 style="color: var(--primary);"><i class="ph ph-plus-circle"></i> Novo Plano</h2>
         <form method="POST" action="{{ route('studio.planos.store') }}" class="form-grid">
             @csrf
             <div class="form-group">
@@ -719,7 +723,7 @@
                 <textarea name="descricao" rows="2" placeholder="Ex: 3x por semana, todas as modalidades"></textarea>
             </div>
             <div class="full-width" style="text-align: right;">
-                <button type="submit" class="btn-save"><i class="fas fa-check"></i> Criar Plano</button>
+                <button type="submit" class="btn-save"><i class="ph ph-check"></i> Criar Plano</button>
             </div>
         </form>
     </div>
@@ -729,7 +733,7 @@
 <div id="modalEditarPlano" class="modal-overlay">
     <div class="modal-content">
         <button type="button" class="modal-close" onclick="document.getElementById('modalEditarPlano').style.display='none'">&times;</button>
-        <h2 style="color: var(--primary);"><i class="fas fa-pen"></i> Editar Plano</h2>
+        <h2 style="color: var(--primary);"><i class="ph ph-pen"></i> Editar Plano</h2>
         <form method="POST" id="formEditarPlano" class="form-grid">
             @csrf
             @method('PUT')
@@ -755,7 +759,7 @@
                 <textarea name="descricao" id="editDescricao" rows="2"></textarea>
             </div>
             <div class="full-width" style="text-align: right;">
-                <button type="submit" class="btn-save"><i class="fas fa-save"></i> Salvar Alterações</button>
+                <button type="submit" class="btn-save"><i class="ph ph-floppy-disk"></i> Salvar Alterações</button>
             </div>
         </form>
     </div>
@@ -766,11 +770,11 @@
     <div class="modal-content" style="max-width:480px;">
         <button type="button" class="modal-close" onclick="fecharCarteira()">&times;</button>
         <h2 style="color:var(--primary); font-size:1.4rem; font-weight:900; text-align:center;">
-            <i class="fas fa-piggy-bank"></i> CARTEIRA DO STUDIO
+            <i class="ph ph-piggy-bank"></i> CARTEIRA DO STUDIO
         </h2>
 
         <div id="carteiraLoading" style="text-align:center; padding:30px 0; color:#a0a0a0;">
-            <i class="fas fa-spinner fa-spin fa-2x"></i><br><br>Consultando saldo...
+            <i class="ph ph-spinner ph-spin fa-2x"></i><br><br>Consultando saldo...
         </div>
 
         <div id="carteiraConteudo" style="display:none;">
@@ -780,7 +784,7 @@
             </div>
 
             <div id="carteiraSemPix" style="display:none; background:rgba(255,165,0,0.1); border:1px solid rgba(255,165,0,0.3); border-radius:12px; padding:14px; margin-bottom:16px; font-size:0.82rem; color:#ffa500; text-align:center;">
-                <i class="fas fa-exclamation-triangle"></i> Cadastre sua chave PIX no perfil para poder sacar.
+                <i class="ph ph-warning"></i> Cadastre sua chave PIX no perfil para poder sacar.
             </div>
 
             <div id="carteiraSaqueForm">
@@ -798,7 +802,7 @@
 
                 <button id="btnSacar" onclick="confirmarSaque()"
                     style="width:100%; background:var(--primary); color:#000; border:none; border-radius:12px; padding:14px; font-weight:900; font-size:0.95rem; cursor:pointer;">
-                    <i class="fas fa-arrow-down"></i> Sacar via PIX
+                    <i class="ph ph-arrow-down"></i> Sacar via PIX
                 </button>
             </div>
 
@@ -808,7 +812,7 @@
         </div>
 
         <div id="carteiraSemConta" style="display:none; text-align:center; padding:20px 0; color:#a0a0a0; font-size:0.85rem;">
-            <i class="fas fa-info-circle fa-2x" style="margin-bottom:12px; display:block;"></i>
+            <i class="ph ph-info fa-2x" style="margin-bottom:12px; display:block;"></i>
             Sua conta de repasse ainda está sendo configurada pelo administrador.<br>
             Os saques estarão disponíveis em breve.
         </div>
@@ -936,7 +940,7 @@
 
         const btn = document.getElementById('btnSacar');
         btn.disabled = true;
-        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processando...';
+        btn.innerHTML = '<i class="ph ph-spinner ph-spin"></i> Processando...';
         document.getElementById('carteiraSaqueErro').style.display = 'none';
 
         try {
@@ -957,7 +961,7 @@
             document.getElementById('carteiraSaqueErro').textContent = err.message;
             document.getElementById('carteiraSaqueErro').style.display = 'block';
             btn.disabled = false;
-            btn.innerHTML = '<i class="fas fa-arrow-down"></i> Sacar via PIX';
+            btn.innerHTML = '<i class="ph ph-arrow-down"></i> Sacar via PIX';
         }
     }
 

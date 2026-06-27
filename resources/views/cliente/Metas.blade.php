@@ -7,6 +7,8 @@
     <title>Minhas Metas</title>
     <link rel="icon" type="image/png" href="{{ asset('SnrFit.png') }}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/regular/style.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/fill/style.css">
     <style>
         :root { --primary:#F4BE16; --bg-dark:#000; --card-bg:#111317; --field:#1a1d23; --text-main:#fff; --text-muted:#9a9a9a; --green:#00e676; --red:#ff5252; --border:rgba(255,255,255,0.08); }
         * { margin:0; padding:0; box-sizing:border-box; }
@@ -47,21 +49,21 @@
     </style>
 </head>
 
-<body>
+<body class="ed-page">
     <div class="top-bar">
-        <a href="{{ route('cliente.index') }}" class="back-btn"><i class="fas fa-arrow-left"></i></a>
-        <span class="title"><i class="fas fa-bullseye"></i> Minhas Metas</span>
+        <a href="{{ route('cliente.index') }}" class="back-btn"><i class="ph ph-arrow-left"></i></a>
+        <span class="title"><i class="ph ph-target"></i> Minhas Metas</span>
     </div>
 
     <div class="container">
-        <h1><i class="fas fa-bullseye"></i> MINHAS METAS</h1>
+        <div class="ed-eyebrow"><i class="ph ph-target"></i> Objetivos</div><h1 class="ed-h">Minhas <span class="ed-mark">Metas</span></h1>
 
         @if(session('success'))
-            <div class="alert-ok"><i class="fas fa-check-circle"></i> {{ session('success') }}</div>
+            <div class="alert-ok"><i class="ph ph-check-circle"></i> {{ session('success') }}</div>
         @endif
 
         <div class="panel">
-            <div class="panel-title"><i class="fas fa-plus"></i> Nova meta</div>
+            <div class="panel-title"><i class="ph ph-plus"></i> Nova meta</div>
             <form method="POST" action="{{ route('metas.salvar') }}">
                 @csrf
                 <div class="row">
@@ -99,12 +101,12 @@
                         </select>
                     </div>
                 </div>
-                <button class="btn btn-primary"><i class="fas fa-bullseye"></i> Criar meta</button>
+                <button class="btn btn-primary"><i class="ph ph-target"></i> Criar meta</button>
             </form>
         </div>
 
         @if($metas->isEmpty())
-            <div class="empty"><i class="fas fa-bullseye" style="font-size:2.2rem; color:var(--primary); display:block; margin-bottom:10px; opacity:0.7;"></i>Você ainda não tem metas. Defina uma acima! 🎯</div>
+            <div class="empty"><i class="ph ph-target" style="font-size:2.2rem; color:var(--primary); display:block; margin-bottom:10px; opacity:0.7;"></i>Você ainda não tem metas. Defina uma acima! 🎯</div>
         @else
             @foreach($metas as $m)
                 @php $p = $m->progresso; @endphp
@@ -114,7 +116,7 @@
                             <div class="tit">{{ $m->titulo }}</div>
                             <div class="tipo">{{ $m->tipoLabel() }}{{ $m->exercicio ? ' · '.$m->exercicio : '' }}{{ $m->criada_por_personal_id ? ' · definida pelo personal' : '' }}</div>
                         </div>
-                        @if($p['atingida'])<span class="badge-ok"><i class="fas fa-check"></i> Atingida</span>@endif
+                        @if($p['atingida'])<span class="badge-ok"><i class="ph ph-check"></i> Atingida</span>@endif
                     </div>
 
                     @if($m->tipo !== 'livre')
@@ -123,7 +125,7 @@
                             <span>{{ rtrim(rtrim(number_format($p['atual'],2,',','.'),'0'),',') }} / {{ rtrim(rtrim(number_format($p['alvo'],2,',','.'),'0'),',') }} ({{ $p['percent'] }}%)</span>
                             <span class="meta-acoes">
                                 @if($m->prazo)<span>até {{ $m->prazo->format('d/m/Y') }}</span>@endif
-                                <form method="POST" action="{{ route('metas.excluir', $m->id) }}" onsubmit="return confirm('Remover meta?')">@csrf @method('DELETE')<button class="btn btn-danger btn-sm"><i class="fas fa-trash"></i></button></form>
+                                <form method="POST" action="{{ route('metas.excluir', $m->id) }}" onsubmit="return confirm('Remover meta?')">@csrf @method('DELETE')<button class="btn btn-danger btn-sm"><i class="ph ph-trash"></i></button></form>
                             </span>
                         </div>
                     @else
@@ -131,7 +133,7 @@
                             <span>{{ $m->concluida ? 'Concluída ✅' : 'Em andamento' }}{{ $m->prazo ? ' · até '.$m->prazo->format('d/m/Y') : '' }}</span>
                             <span class="meta-acoes">
                                 <form method="POST" action="{{ route('metas.alternar', $m->id) }}">@csrf<button class="btn btn-ghost btn-sm">{{ $m->concluida ? 'Reabrir' : 'Concluir' }}</button></form>
-                                <form method="POST" action="{{ route('metas.excluir', $m->id) }}" onsubmit="return confirm('Remover meta?')">@csrf @method('DELETE')<button class="btn btn-danger btn-sm"><i class="fas fa-trash"></i></button></form>
+                                <form method="POST" action="{{ route('metas.excluir', $m->id) }}" onsubmit="return confirm('Remover meta?')">@csrf @method('DELETE')<button class="btn btn-danger btn-sm"><i class="ph ph-trash"></i></button></form>
                             </span>
                         </div>
                     @endif

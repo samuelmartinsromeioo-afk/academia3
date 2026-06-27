@@ -7,14 +7,17 @@
     <title>Periodização</title>
     <link rel="icon" type="image/png" href="{{ asset('SnrFit.png') }}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/regular/style.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/fill/style.css">
+    <link rel="stylesheet" href="{{ asset('css/snrfit-brand.css') }}">
     <style>
         :root {
-            --primary: #F4BE16; --bg-dark: #000000; --card-bg: #111317;
-            --text-main: #ffffff; --text-muted: #9a9a9a; --green: #00e676; --red: #ff5252;
-            --border: rgba(255, 255, 255, 0.08);
+            --primary: var(--snr-lime); --bg-dark: var(--snr-bg); --card-bg: var(--snr-surface);
+            --text-main: var(--snr-text); --text-muted: var(--snr-dim); --green: var(--snr-success); --red: var(--snr-error);
+            --border: var(--snr-border);
         }
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { background-color: var(--bg-dark); font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; color: var(--text-main); min-height: 100vh; background-image: radial-gradient(circle at 12% -10%, rgba(244, 190, 22, 0.10), transparent 45%); }
+        body { background-color: var(--bg-dark); font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; color: var(--text-main); min-height: 100vh; background-image: radial-gradient(circle at 12% -10%, rgba(212, 255, 0, 0.10), transparent 45%); }
         a { color: inherit; text-decoration: none; }
         .top-bar { display: flex; align-items: center; gap: 15px; padding: 15px 40px; background: rgba(0,0,0,0.6); border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 100; backdrop-filter: blur(10px); }
         .back-btn { background: var(--card-bg); border: 1px solid var(--border); color: var(--primary); width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1.1rem; transition: 0.3s; }
@@ -40,7 +43,7 @@
         .tag { font-size: 0.7rem; font-weight: 800; padding: 4px 10px; border-radius: 20px; background: rgba(255,255,255,0.05); border: 1px solid var(--border); color: var(--text-muted); }
         .tag.ativo { background: rgba(0,230,118,0.12); color: var(--green); border-color: rgba(0,230,118,0.4); }
         .tag.venc { background: rgba(255,82,82,0.15); color: var(--red); border-color: var(--red); }
-        .tag.ok { background: rgba(244,190,22,0.12); color: var(--primary); border-color: rgba(244,190,22,0.4); }
+        .tag.ok { background: rgba(212,255,0,0.12); color: var(--primary); border-color: rgba(212,255,0,0.4); }
         .card .acao { display: block; text-align: center; padding: 11px; border-radius: 10px; background: var(--primary); color: #000; font-weight: 900; font-size: 0.82rem; }
         .card .acao:hover { filter: brightness(1.1); }
 
@@ -52,33 +55,33 @@
     </style>
 </head>
 
-<body>
+<body class="ed-page">
     <div class="top-bar">
-        <a href="{{ route('personal.dashboard') }}" class="back-btn" title="Voltar"><i class="fas fa-arrow-left"></i></a>
-        <span class="title"><i class="fas fa-bolt"></i> Periodização</span>
+        <a href="{{ route('personal.dashboard') }}" class="back-btn" title="Voltar"><i class="ph ph-arrow-left"></i></a>
+        <span class="title"><i class="ph ph-lightning"></i> Periodização</span>
     </div>
 
     <div class="container">
-        <h1><i class="fas fa-bolt"></i> PERIODIZAÇÃO</h1>
+        <div class="ed-eyebrow"><i class="ph ph-lightning"></i> Planejamento</div><h1 class="ed-h"><span class="ed-mark">Periodização</span></h1>
         <p class="subtitle">Mesociclos A/B/C/D com troca automática do treino do dia.</p>
 
         @if(session('success'))
-            <div class="alert alert-success"><i class="fas fa-check-circle"></i> {{ session('success') }}</div>
+            <div class="alert alert-success"><i class="ph ph-check-circle"></i> {{ session('success') }}</div>
         @endif
         @if(session('error'))
-            <div class="alert alert-venc"><i class="fas fa-exclamation-circle"></i> {{ session('error') }}</div>
+            <div class="alert alert-venc"><i class="ph ph-warning-circle"></i> {{ session('error') }}</div>
         @endif
 
         @if($vencidos > 0)
             <div class="alert alert-venc">
-                <i class="fas fa-triangle-exclamation"></i>
+                <i class="ph ph-warning"></i>
                 {{ $vencidos }} mesociclo(s) vencido(s) — hora de montar o próximo ciclo.
             </div>
         @endif
 
         @if($mesociclos->isEmpty())
             <div class="empty">
-                <i class="fas fa-bolt"></i>
+                <i class="ph ph-lightning"></i>
                 <p>Você ainda não criou nenhuma periodização.</p>
                 <small>Abra um aluno pela tela de Fichas e clique em "Periodização" para começar.</small>
             </div>
@@ -88,21 +91,21 @@
                     @php $venc = $m->estaVencido(); $dias = $m->diasRestantes(); @endphp
                     <div class="card {{ $venc ? 'venc' : '' }}">
                         <div class="top">
-                            <img src="https://ui-avatars.com/api/?name={{ urlencode($m->cliente?->nome ?? 'Aluno') }}&background=F4BE16&color=000" alt="">
+                            <img src="https://ui-avatars.com/api/?name={{ urlencode($m->cliente?->nome ?? 'Aluno') }}&background=d4ff00&color=0a0b0d" alt="">
                             <div class="nome">{{ $m->cliente?->nome ?? 'Aluno' }}<small>{{ $m->nome }}</small></div>
                         </div>
                         <div class="tags">
                             <span class="tag {{ $m->ativo ? 'ativo' : '' }}">{{ $m->ativo ? 'Ativo' : 'Inativo' }}</span>
                             <span class="tag">{{ $m->treinos->count() }} treinos</span>
                             @if($venc)
-                                <span class="tag venc"><i class="fas fa-triangle-exclamation"></i> Vencido</span>
+                                <span class="tag venc"><i class="ph ph-warning"></i> Vencido</span>
                             @elseif($dias !== null)
                                 <span class="tag ok">{{ $dias }} dia(s)</span>
                             @else
                                 <span class="tag">Sem prazo</span>
                             @endif
                         </div>
-                        <a href="{{ route('periodizacao.aluno', $m->cliente_id) }}" class="acao"><i class="fas fa-sliders"></i> Gerenciar</a>
+                        <a href="{{ route('periodizacao.aluno', $m->cliente_id) }}" class="acao"><i class="ph ph-sliders"></i> Gerenciar</a>
                     </div>
                 @endforeach
             </div>

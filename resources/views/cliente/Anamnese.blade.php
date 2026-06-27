@@ -7,14 +7,17 @@
     <title>Anamnese</title>
     <link rel="icon" type="image/png" href="{{ asset('SnrFit.png') }}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/regular/style.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/fill/style.css">
+    <link rel="stylesheet" href="{{ asset('css/snrfit-brand.css') }}">
     <style>
         :root {
-            --primary: #F4BE16; --bg-dark: #000000; --card-bg: #111317; --field: #1a1d23;
-            --text-main: #ffffff; --text-muted: #9a9a9a; --green: #00e676; --red: #ff5252;
+            --primary: var(--snr-lime); --bg-dark: var(--snr-bg); --card-bg: var(--snr-surface); --field: var(--snr-surface-2);
+            --text-main: var(--snr-text); --text-muted: var(--snr-dim); --green: var(--snr-success); --red: var(--snr-error);
             --border: rgba(255, 255, 255, 0.08);
         }
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { background-color: var(--bg-dark); font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; color: var(--text-main); min-height: 100vh; background-image: radial-gradient(circle at 50% -10%, rgba(244, 190, 22, 0.12), transparent 50%); }
+        body { background-color: var(--bg-dark); font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; color: var(--text-main); min-height: 100vh; background-image: radial-gradient(circle at 50% -10%, rgba(212, 255, 0, 0.12), transparent 50%); }
         a { color: inherit; text-decoration: none; }
         .top-bar { display: flex; align-items: center; gap: 15px; padding: 15px 40px; background: rgba(0,0,0,0.6); border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 100; backdrop-filter: blur(10px); }
         .back-btn { background: var(--card-bg); border: 1px solid var(--border); color: var(--primary); width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1.1rem; transition: 0.3s; }
@@ -55,31 +58,31 @@
     </style>
 </head>
 
-<body>
+<body class="ed-page">
     <div class="top-bar">
-        <a href="{{ route('cliente.index') }}" class="back-btn" title="Voltar"><i class="fas fa-arrow-left"></i></a>
-        <span class="title"><i class="fas fa-file-medical"></i> Anamnese</span>
+        <a href="{{ route('cliente.index') }}" class="back-btn" title="Voltar"><i class="ph ph-arrow-left"></i></a>
+        <span class="title"><i class="ph ph-first-aid"></i> Anamnese</span>
     </div>
 
     <div class="container">
-        <h1><i class="fas fa-file-medical"></i> ANAMNESE</h1>
+        <div class="ed-eyebrow"><i class="ph ph-first-aid"></i> AvaliaÃ§Ã£o</div><h1 class="ed-h"><span class="ed-mark">Anamnese</span></h1>
         <p class="subtitle">Essas informações ajudam seu personal a montar um treino seguro e eficiente para você.</p>
 
         @if($errors->any())
-            <div class="alert alert-error"><i class="fas fa-exclamation-circle"></i> {{ $errors->first() }}</div>
+            <div class="alert alert-error"><i class="ph ph-warning-circle"></i> {{ $errors->first() }}</div>
         @endif
 
-        <div style="background:rgba(244,190,22,0.08); border:1px solid rgba(244,190,22,0.35); border-radius:12px; padding:14px 16px; margin-bottom:18px; font-size:0.82rem; color:#cfcfcf; line-height:1.5;">
-            <i class="fas fa-shield-halved" style="color:#F4BE16;"></i>
+        <div style="background:rgba(212,255,0,0.08); border:1px solid rgba(212,255,0,0.35); border-radius:12px; padding:14px 16px; margin-bottom:18px; font-size:0.82rem; color:#cfcfcf; line-height:1.5;">
+            <i class="ph ph-shield-check" style="color:var(--primary);"></i>
             São <strong>dados sensíveis de saúde</strong>. Ao salvar, você <strong>consente</strong> com o uso dessas informações pelo seu personal para montar um treino seguro, conforme a
-            <a href="{{ route('lgpd.politica') }}" target="_blank" style="color:#F4BE16;">Política de Privacidade</a>. Você pode editá-las ou removê-las quando quiser.
+            <a href="{{ route('lgpd.politica') }}" target="_blank" style="color:var(--primary);">Política de Privacidade</a>. Você pode editá-las ou removê-las quando quiser.
         </div>
 
         <form method="POST" action="{{ route('anamnese.salvar') }}">
             @csrf
 
             <div class="panel">
-                <div class="panel-title"><i class="fas fa-bullseye"></i> Objetivos</div>
+                <div class="panel-title"><i class="ph ph-target"></i> Objetivos</div>
                 <label class="lbl">Objetivo principal</label>
                 <input type="text" name="objetivo_principal" value="{{ old('objetivo_principal', $anamnese->objetivo_principal) }}" placeholder="Ex: emagrecimento, hipertrofia, saúde...">
 
@@ -95,7 +98,7 @@
             </div>
 
             <div class="panel">
-                <div class="panel-title"><i class="fas fa-notes-medical"></i> Saúde &amp; histórico</div>
+                <div class="panel-title"><i class="ph ph-notepad"></i> Saúde &amp; histórico</div>
                 <label class="lbl">Histórico de lesões</label>
                 <textarea name="historico_lesoes" placeholder="Lesões atuais ou passadas...">{{ old('historico_lesoes', $anamnese->historico_lesoes) }}</textarea>
 
@@ -113,7 +116,7 @@
             </div>
 
             <div class="panel">
-                <div class="panel-title"><i class="fas fa-heart-pulse"></i> PAR-Q · Prontidão para atividade física</div>
+                <div class="panel-title"><i class="ph ph-heartbeat"></i> PAR-Q · Prontidão para atividade física</div>
                 @foreach(\App\Models\Anamnese::PERGUNTAS_PARQ as $campo => $pergunta)
                     <div class="parq-item">
                         <div class="q">{{ $pergunta }}</div>
@@ -125,15 +128,15 @@
                 @endforeach
                 <label class="lbl" style="margin-top:16px;">Se respondeu "Sim" a alguma, explique</label>
                 <textarea name="parq_observacoes" placeholder="Detalhe as respostas marcadas como Sim...">{{ old('parq_observacoes', $anamnese->parq_observacoes) }}</textarea>
-                <p class="parq-aviso"><i class="fas fa-circle-info"></i> Respostas "Sim" no PAR-Q indicam que é recomendável avaliação médica antes de iniciar ou intensificar a atividade física.</p>
+                <p class="parq-aviso"><i class="ph ph-info"></i> Respostas "Sim" no PAR-Q indicam que é recomendável avaliação médica antes de iniciar ou intensificar a atividade física.</p>
             </div>
 
             <div class="panel">
-                <div class="panel-title"><i class="fas fa-comment"></i> Observações</div>
+                <div class="panel-title"><i class="ph ph-chat-circle"></i> Observações</div>
                 <textarea name="observacoes" placeholder="Algo mais que seu personal deva saber?">{{ old('observacoes', $anamnese->observacoes) }}</textarea>
             </div>
 
-            <button type="submit" class="btn-salvar"><i class="fas fa-floppy-disk"></i> Salvar anamnese</button>
+            <button type="submit" class="btn-salvar"><i class="ph ph-floppy-disk"></i> Salvar anamnese</button>
         </form>
     </div>
 </body>

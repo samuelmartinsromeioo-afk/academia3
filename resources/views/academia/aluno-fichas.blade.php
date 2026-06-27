@@ -7,6 +7,8 @@
     <link rel="icon" type="image/png" href="{{ asset('SnrFit.png') }}">
     @include('partials.pwa')
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/regular/style.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/fill/style.css">
     <style>
         :root {
             --primary: #d4ff00;
@@ -84,16 +86,16 @@
         }
     </style>
 </head>
-<body>
+<body class="ed-page">
 
 <div class="top-bar">
     <div class="logo">SNR<span>FIT</span> <span style="font-family:'Inter'; font-size:0.65rem; color:var(--text-muted); letter-spacing:1px; text-transform:uppercase;">| Ficha de treino</span></div>
-    <a href="{{ route('academia.alunos') }}" class="btn-top"><i class="fas fa-arrow-left"></i> Voltar aos alunos</a>
+    <a href="{{ route('academia.alunos') }}" class="btn-top"><i class="ph ph-arrow-left"></i> Voltar aos alunos</a>
 </div>
 
 <div class="container">
-    @if(session('success'))<div class="alert alert-ok"><i class="fas fa-check-circle"></i> {{ session('success') }}</div>@endif
-    @if(session('error'))<div class="alert alert-err"><i class="fas fa-exclamation-circle"></i> {{ session('error') }}</div>@endif
+    @if(session('success'))<div class="alert alert-ok"><i class="ph ph-check-circle"></i> {{ session('success') }}</div>@endif
+    @if(session('error'))<div class="alert alert-err"><i class="ph ph-warning-circle"></i> {{ session('error') }}</div>@endif
 
     <header class="page-head">
         @if($cliente->foto)
@@ -116,7 +118,7 @@
 
     {{-- CRIAR FICHA --}}
     <div class="card">
-        <h2><i class="fas fa-plus-circle"></i> Nova ficha (treino do dia)</h2>
+        <h2><i class="ph ph-plus-circle"></i> Nova ficha (treino do dia)</h2>
         <form action="{{ route('academia.fichas.criar') }}" method="POST">
             @csrf
             <input type="hidden" name="cliente_id" value="{{ $cliente->id }}">
@@ -151,13 +153,13 @@
                     <textarea name="observacoes" placeholder="Opcional"></textarea>
                 </div>
             </div>
-            <button type="submit" class="btn"><i class="fas fa-save"></i> Criar ficha</button>
+            <button type="submit" class="btn"><i class="ph ph-floppy-disk"></i> Criar ficha</button>
         </form>
     </div>
 
     {{-- FICHAS EXISTENTES --}}
     <div class="card">
-        <h2><i class="fas fa-dumbbell"></i> Fichas cadastradas</h2>
+        <h2><i class="ph ph-barbell"></i> Fichas cadastradas</h2>
 
         @forelse($fichas as $ficha)
             <div class="ficha">
@@ -171,7 +173,7 @@
                     </div>
                     <form action="{{ route('academia.fichas.deletar', $ficha->id) }}" method="POST" onsubmit="return confirm('Excluir esta ficha e todos os exercícios?');">
                         @csrf @method('DELETE')
-                        <button type="submit" class="btn btn-ghost btn-sm"><i class="fas fa-trash"></i> Excluir ficha</button>
+                        <button type="submit" class="btn btn-ghost btn-sm"><i class="ph ph-trash"></i> Excluir ficha</button>
                     </form>
                 </div>
 
@@ -189,7 +191,7 @@
                                         {{ $ex->nome_exercicio }}
                                         @if($ex->observacoes)<div style="color:var(--text-muted); font-size:0.72rem;">{{ $ex->observacoes }}</div>@endif
                                         @if($ex->video)
-                                            <button type="button" onclick="abrirVideo('{{ asset('storage/' . $ex->video) }}')" style="margin-top:4px; background:none; border:none; color:var(--primary); font-size:0.72rem; font-weight:700; cursor:pointer; padding:0; display:inline-flex; align-items:center; gap:5px;"><i class="fas fa-play-circle"></i> Ver vídeo</button>
+                                            <button type="button" onclick="abrirVideo('{{ asset('storage/' . $ex->video) }}')" style="margin-top:4px; background:none; border:none; color:var(--primary); font-size:0.72rem; font-weight:700; cursor:pointer; padding:0; display:inline-flex; align-items:center; gap:5px;"><i class="ph ph-play-circle"></i> Ver vídeo</button>
                                         @endif
                                     </td>
                                     <td data-label="Séries">{{ $ex->series }}</td>
@@ -197,10 +199,10 @@
                                     <td data-label="Carga">{{ $ex->peso ? $ex->peso . ' kg' : '—' }}</td>
                                     <td>
                                         <div style="display:flex; gap:6px; justify-content:flex-end;">
-                                            <button type="button" class="btn btn-ghost btn-sm" style="border-color:var(--border); color:var(--primary);" onclick="toggleEditEx({{ $ex->id }})"><i class="fas fa-pen"></i></button>
+                                            <button type="button" class="btn btn-ghost btn-sm" style="border-color:var(--border); color:var(--primary);" onclick="toggleEditEx({{ $ex->id }})"><i class="ph ph-pen"></i></button>
                                             <form action="{{ route('academia.fichas.exercicio.deletar', $ex->id) }}" method="POST" onsubmit="return confirm('Remover este exercício?');">
                                                 @csrf @method('DELETE')
-                                                <button type="submit" class="btn btn-ghost btn-sm"><i class="fas fa-times"></i></button>
+                                                <button type="submit" class="btn btn-ghost btn-sm"><i class="ph ph-x"></i></button>
                                             </form>
                                         </div>
                                     </td>
@@ -232,10 +234,10 @@
                                                 <textarea name="observacoes" placeholder="Opcional">{{ $ex->observacoes }}</textarea>
                                             </div>
                                             <div style="margin-bottom:12px;">
-                                                <label><i class="fas fa-video"></i> Vídeo demonstrativo (máx. 15s)</label>
+                                                <label><i class="ph ph-video-camera"></i> Vídeo demonstrativo (máx. 15s)</label>
                                                 @if($ex->video)
                                                     <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom:8px;">
-                                                        <button type="button" class="btn btn-ghost btn-sm" style="border-color:var(--border); color:var(--primary);" onclick="abrirVideo('{{ asset('storage/' . $ex->video) }}')"><i class="fas fa-play"></i> Ver vídeo atual</button>
+                                                        <button type="button" class="btn btn-ghost btn-sm" style="border-color:var(--border); color:var(--primary);" onclick="abrirVideo('{{ asset('storage/' . $ex->video) }}')"><i class="ph ph-play"></i> Ver vídeo atual</button>
                                                         <label style="display:flex; align-items:center; gap:6px; text-transform:none; font-weight:600; color:var(--text-muted); margin:0;">
                                                             <input type="checkbox" name="remover_video" value="1" style="width:auto;"> Remover vídeo
                                                         </label>
@@ -245,7 +247,7 @@
                                                 <small style="color:var(--text-muted);">Envie um arquivo para substituir o atual.</small>
                                             </div>
                                             <div style="display:flex; gap:8px;">
-                                                <button type="submit" class="btn btn-sm"><i class="fas fa-save"></i> Salvar</button>
+                                                <button type="submit" class="btn btn-sm"><i class="ph ph-floppy-disk"></i> Salvar</button>
                                                 <button type="button" class="btn btn-ghost btn-sm" style="border-color:var(--border); color:var(--text-muted);" onclick="toggleEditEx({{ $ex->id }})">Cancelar</button>
                                             </div>
                                         </form>
@@ -258,7 +260,7 @@
 
                 <div class="add-ex">
                     <details>
-                        <summary><i class="fas fa-plus"></i> Adicionar exercício</summary>
+                        <summary><i class="ph ph-plus"></i> Adicionar exercício</summary>
                         <form action="{{ route('academia.fichas.exercicio.adicionar', $ficha->id) }}" method="POST" style="margin-top:12px;" enctype="multipart/form-data" onsubmit="return videoOk(this);">
                             @csrf
                             <div class="grid g4" style="margin-bottom:12px;">
@@ -284,10 +286,10 @@
                                 <textarea name="observacoes" placeholder="Opcional"></textarea>
                             </div>
                             <div style="margin-bottom:12px;">
-                                <label><i class="fas fa-video"></i> Vídeo demonstrativo (máx. 15s)</label>
+                                <label><i class="ph ph-video-camera"></i> Vídeo demonstrativo (máx. 15s)</label>
                                 <input type="file" name="video" accept="video/*" onchange="validarVideo15s(this)">
                             </div>
-                            <button type="submit" class="btn btn-sm"><i class="fas fa-plus"></i> Adicionar</button>
+                            <button type="submit" class="btn btn-sm"><i class="ph ph-plus"></i> Adicionar</button>
                         </form>
                     </details>
                 </div>

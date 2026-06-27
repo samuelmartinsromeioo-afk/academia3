@@ -8,6 +8,8 @@
     @include('partials.pwa')
     <link href="https://fonts.googleapis.com/css2?family=Syncopate:wght@700&family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/regular/style.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/fill/style.css">
     <style>
         :root {
             --primary: #d4ff00;
@@ -191,27 +193,27 @@
         }
     </style>
 </head>
-<body>
+<body class="ed-page">
 
 <div class="top-bar">
     <div class="logo">SNR<span>FIT</span></div>
-    <a href="{{ route('cliente.index') }}" class="btn-top"><i class="fas fa-arrow-left"></i> Voltar ao painel</a>
+    <a href="{{ route('cliente.index') }}" class="btn-top"><i class="ph ph-arrow-left"></i> Voltar ao painel</a>
 </div>
 
 <div class="container">
     <div class="welcome">
-        <h1>Explorar <em>Studios</em></h1>
+        <div class="ed-eyebrow"><i class="ph ph-flower-lotus"></i> Descobrir</div><h1 class="ed-h">Explorar <span class="ed-mark">Studios</span></h1>
         <p>Encontre studios de pilates, yoga, crossfit e muito mais. Contrate planos ou agende aulas avulsas.</p>
     </div>
 
     <div class="search-wrapper">
-        <i class="fas fa-search"></i>
+        <i class="ph ph-magnifying-glass"></i>
         <input type="text" id="buscaStudio" placeholder="Buscar por nome, modalidade ou cidade...">
     </div>
 
     @if ($studios->isEmpty())
         <div class="empty-state">
-            <i class="fas fa-spa"></i>
+            <i class="ph ph-flower-lotus"></i>
             <p>Nenhum studio disponível no momento.</p>
         </div>
     @else
@@ -222,38 +224,38 @@
                         @if ($studio->fotos->isNotEmpty())
                             <img src="{{ asset('storage/' . $studio->fotos->first()->path) }}" alt="{{ $studio->nome }}">
                         @else
-                            <i class="fas fa-spa"></i>
+                            <i class="ph ph-flower-lotus"></i>
                         @endif
-                        <span class="card-badge"><i class="fas fa-spa"></i> Studio</span>
+                        <span class="card-badge"><i class="ph ph-flower-lotus"></i> Studio</span>
                     </div>
                     <div class="card-body">
                         <h3>{{ $studio->nome }}</h3>
                         @if ($studio->modalidades)
-                            <div class="card-meta"><i class="fas fa-dumbbell"></i> {{ $studio->modalidades }}</div>
+                            <div class="card-meta"><i class="ph ph-barbell"></i> {{ $studio->modalidades }}</div>
                         @endif
-                        <div class="card-meta"><i class="fas fa-map-marker-alt"></i> {{ $studio->cidade }}{{ $studio->estado ? ' - ' . $studio->estado : '' }}</div>
+                        <div class="card-meta"><i class="ph ph-map-pin"></i> {{ $studio->cidade }}{{ $studio->estado ? ' - ' . $studio->estado : '' }}</div>
                         @if ($studio->planos->isNotEmpty())
-                            <div class="card-meta"><i class="fas fa-id-card"></i> Planos a partir de R$ {{ number_format($studio->planos->first()?->valor, 2, ',', '.') }}/mês</div>
+                            <div class="card-meta"><i class="ph ph-identification-card"></i> Planos a partir de R$ {{ number_format($studio->planos->first()?->valor, 2, ',', '.') }}/mês</div>
                         @endif
 
                         <div class="rating">
                             @php $media = (float) $studio->media_avaliacao; @endphp
                             @for ($i = 1; $i <= 5; $i++)
-                                <i class="fa-star {{ $i <= round($media) ? 'fas' : 'far' }}"></i>
+                                <i class="ph-star {{ $i <= round($media) ? 'ph' : 'ph' }}"></i>
                             @endfor
                             <span class="num">{{ $studio->media_avaliacao }} ({{ $studio->avaliacoes->count() }})</span>
                         </div>
 
                         <div class="card-footer">
                             <div class="preco">R$ {{ number_format($studio->valor_aula ?? 0, 2, ',', '.') }} <small>/aula</small></div>
-                            <a href="{{ route('studios.detalhes', $studio->id) }}" class="btn-detalhes">Ver detalhes <i class="fas fa-arrow-right"></i></a>
+                            <a href="{{ route('studios.detalhes', $studio->id) }}" class="btn-detalhes">Ver detalhes <i class="ph ph-arrow-right"></i></a>
                         </div>
                     </div>
                 </div>
             @endforeach
         </div>
         <div class="empty-state" id="semResultados" style="display:none;">
-            <i class="fas fa-search"></i>
+            <i class="ph ph-magnifying-glass"></i>
             <p>Nenhum studio encontrado para a sua busca.</p>
         </div>
     @endif

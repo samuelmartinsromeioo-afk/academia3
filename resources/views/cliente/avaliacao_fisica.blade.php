@@ -7,6 +7,8 @@
     <link rel="icon" type="image/png" href="{{ asset('SnrFit.png') }}">
     @include('partials.pwa')
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/regular/style.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/fill/style.css">
     <style>
         :root {
             --primary: #d4ff00;
@@ -84,11 +86,11 @@
         }
     </style>
 </head>
-<body>
+<body class="ed-page">
 
 <div class="top-bar">
     <div style="display:flex; align-items:center; gap:12px;">
-        <a href="{{ route('cliente.index') }}" class="btn-back"><i class="fas fa-arrow-left"></i> Voltar</a>
+        <a href="{{ route('cliente.index') }}" class="btn-back"><i class="ph ph-arrow-left"></i> Voltar</a>
     </div>
     <div style="display:flex; align-items:center; gap:12px;">
         @if($cliente->foto)
@@ -101,7 +103,7 @@
 </div>
 
 <div class="container">
-    <h1 class="page-title"><i class="fas fa-heart-pulse" style="margin-right:10px;"></i>Minha Avaliação Física</h1>
+    <div class="ed-eyebrow"><i class="ph ph-heartbeat"></i> Saúde</div><h1 class="ed-h">Minha Avaliação <span class="ed-mark">Física</span></h1>
     <p class="page-sub">Acompanhe os registros que seu personal fez sobre sua evolução.</p>
 
     @php
@@ -118,20 +120,20 @@
 
     <div class="tipo-tabs">
         <a href="{{ route('cliente.avaliacao-fisica') }}{{ $mesFiltro ? '?mes='.$mesFiltro : '' }}" class="tipo-tab {{ !$tipoFiltro ? 'active' : '' }}">
-            <i class="fas fa-list"></i> Todos
+            <i class="ph ph-list"></i> Todos
         </a>
         @foreach($tiposCriaveis as $key)
         <a href="{{ route('cliente.avaliacao-fisica') }}?tipo={{ $key }}{{ $mesFiltro ? '&mes='.$mesFiltro : '' }}" class="tipo-tab {{ $tipoFiltro === $key ? 'active' : '' }}">
-            <i class="fas {{ $tipos[$key]['icon'] }}"></i> {{ $tipos[$key]['label'] }}
+            <i class="ph {{ $tipos[$key]['icon'] }}"></i> {{ $tipos[$key]['label'] }}
         </a>
         @endforeach
         <a href="{{ route('cliente.avaliacao-fisica') }}?tipo=resumo{{ $mesFiltro ? '&mes='.$mesFiltro : '' }}" class="tipo-tab {{ $tipoFiltro === 'resumo' ? 'active' : '' }}">
-            <i class="fas fa-chart-simple"></i> Resumo
+            <i class="ph ph-chart-bar"></i> Resumo
         </a>
     </div>
 
     <div class="filtro-bar">
-        <label style="color:var(--text-muted); font-size:0.7rem; font-weight:800; text-transform:uppercase;"><i class="fas fa-filter"></i> Filtrar por mês:</label>
+        <label style="color:var(--text-muted); font-size:0.7rem; font-weight:800; text-transform:uppercase;"><i class="ph ph-funnel"></i> Filtrar por mês:</label>
         <select onchange="filtrarMes(this.value)">
             <option value="">Todos os meses</option>
             @foreach($mesesDisponiveis as $m)
@@ -143,18 +145,18 @@
     @if($tipoFiltro === 'resumo')
         @if(empty($resumo))
             <div class="empty-state">
-                <i class="fas fa-chart-simple"></i>
+                <i class="ph ph-chart-bar"></i>
                 <p>Nenhum dado para montar o resumo{{ $mesFiltro ? ' nesse mês' : '' }}.<br>Seu personal ainda não registrou avaliações nessas categorias.</p>
             </div>
         @else
-            <p style="color:var(--text-muted); font-size:0.8rem; margin:0 0 16px;"><i class="fas fa-info-circle"></i> Resumo com base no registro mais recente de cada categoria{{ $mesFiltro ? ' no mês selecionado' : '' }}.</p>
+            <p style="color:var(--text-muted); font-size:0.8rem; margin:0 0 16px;"><i class="ph ph-info"></i> Resumo com base no registro mais recente de cada categoria{{ $mesFiltro ? ' no mês selecionado' : '' }}.</p>
             <div class="resumo-grid">
                 @foreach($resumo as $key => $item)
                 <div class="resumo-card">
-                    <div class="resumo-icon"><i class="fas {{ $tipos[$key]['icon'] ?? 'fa-clipboard' }}"></i></div>
+                    <div class="resumo-icon"><i class="ph {{ $tipos[$key]['icon'] ?? 'ph-clipboard' }}"></i></div>
                     <h3>{{ $tipos[$key]['label'] ?? $key }}</h3>
                     <div class="resumo-valor">{{ $item['valor'] }}</div>
-                    <div class="resumo-data"><i class="far fa-calendar-alt"></i> {{ $item['registro']->data_avaliacao->format('d/m/Y') }}</div>
+                    <div class="resumo-data"><i class="ph ph-calendar"></i> {{ $item['registro']->data_avaliacao->format('d/m/Y') }}</div>
 
                     @if($item['detalhe'])
                         <div class="resumo-detalhe">{{ $item['detalhe'] }}</div>
@@ -168,7 +170,7 @@
 
                     @if($key === 'bioimpedancia' && $item['registro']->arquivo)
                         <div style="margin-top:12px;">
-                            <a href="{{ asset('storage/'.$item['registro']->arquivo) }}" target="_blank" class="btn-pdf"><i class="fas fa-file-pdf"></i> Abrir PDF</a>
+                            <a href="{{ asset('storage/'.$item['registro']->arquivo) }}" target="_blank" class="btn-pdf"><i class="ph ph-file-pdf"></i> Abrir PDF</a>
                         </div>
                     @endif
 
@@ -185,7 +187,7 @@
 
     @elseif($registros->isEmpty())
         <div class="empty-state">
-            <i class="fas fa-clipboard"></i>
+            <i class="ph ph-clipboard"></i>
             <p>Nenhum registro encontrado{{ $tipoFiltro || $mesFiltro ? ' para esse filtro' : '' }}.<br>Seu personal ainda não adicionou avaliações aqui.</p>
         </div>
     @else
@@ -193,11 +195,11 @@
         <div class="card">
             <div class="registro-head">
                 <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
-                    <span class="tipo-badge"><i class="fas {{ $tipos[$r->tipo]['icon'] ?? 'fa-clipboard' }}"></i> {{ $tipos[$r->tipo]['label'] ?? $r->tipo }}</span>
-                    <span class="data-registro"><i class="far fa-calendar-alt"></i> {{ $r->data_avaliacao->format('d/m/Y') }}</span>
+                    <span class="tipo-badge"><i class="ph {{ $tipos[$r->tipo]['icon'] ?? 'ph-clipboard' }}"></i> {{ $tipos[$r->tipo]['label'] ?? $r->tipo }}</span>
+                    <span class="data-registro"><i class="ph ph-calendar"></i> {{ $r->data_avaliacao->format('d/m/Y') }}</span>
                 </div>
                 @if($r->personal)
-                    <span class="personal-tag"><i class="fas fa-user-tie"></i> {{ $r->personal?->nome }}</span>
+                    <span class="personal-tag"><i class="ph ph-user-list"></i> {{ $r->personal?->nome }}</span>
                 @endif
             </div>
 

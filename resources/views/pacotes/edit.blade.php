@@ -7,6 +7,8 @@
     <link rel="icon" type="image/png" href="{{ asset('SnrFit.png') }}">
     @include('partials.pwa')
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/regular/style.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/fill/style.css">
     <style>
         :root { --primary: #d4ff00; --bg: #0a0a0a; --card: #141414; --border: #222; }
         body { background: var(--bg); color: white; font-family: 'Inter', sans-serif; padding: 20px; }
@@ -26,9 +28,9 @@
         }
     </style>
 </head>
-<body>
+<body class="ed-page">
 <div class="container">
-    <a href="javascript:history.back()" style="color: #888; text-decoration: none;"><i class="fas fa-arrow-left"></i> Voltar</a>
+    <a href="javascript:history.back()" style="color: #888; text-decoration: none;"><i class="ph ph-arrow-left"></i> Voltar</a>
     
     <div class="card" style="margin-top: 20px;">
         <h2>Configurar Planos</h2>
@@ -40,7 +42,7 @@
             <div class="input-group">
                 <label>{{ $vezes }}x na semana (Valor Mensal)</label>
                 <div class="input-wrapper">
-                    <i class="fas fa-tag" style="color: var(--primary);"></i>
+                    <i class="ph ph-tag" style="color: var(--primary);"></i>
                     <input type="number" step="0.01" name="precos[{{ $vezes }}]" 
                            value="{{ $precosSalvos[$vezes] ?? '' }}" placeholder="R$ 0,00">
                 </div>

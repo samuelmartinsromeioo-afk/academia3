@@ -8,6 +8,8 @@
     @include('partials.pwa')
     <link href="https://fonts.googleapis.com/css2?family=Syncopate:wght@700&family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/regular/style.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/fill/style.css">
     <style>
         :root {
             --primary: #d4ff00;
@@ -103,27 +105,27 @@
         @media (max-width: 600px) { .top-bar { padding: 14px 20px; } }
     </style>
 </head>
-<body>
+<body class="ed-page">
 
 <div class="top-bar">
     <div class="logo">SNR<span>FIT</span></div>
-    <a href="{{ route('cliente.index') }}" class="btn-top"><i class="fas fa-arrow-left"></i> Voltar ao painel</a>
+    <a href="{{ route('cliente.index') }}" class="btn-top"><i class="ph ph-arrow-left"></i> Voltar ao painel</a>
 </div>
 
 <div class="container">
     <div class="welcome">
-        <h1>Explorar <em>Lojas</em></h1>
+        <div class="ed-eyebrow"><i class="ph ph-storefront"></i> Descobrir</div><h1 class="ed-h">Explorar <span class="ed-mark">Lojas</span></h1>
         <p>Encontre suplementos e produtos fitness. Veja preços, disponibilidade e faça seu pedido direto com a loja.</p>
     </div>
 
     <div class="search-wrapper">
-        <i class="fas fa-search"></i>
+        <i class="ph ph-magnifying-glass"></i>
         <input type="text" id="buscaLoja" placeholder="Buscar por nome ou cidade...">
     </div>
 
     @if ($lojas->isEmpty())
         <div class="empty-state">
-            <i class="fas fa-store"></i>
+            <i class="ph ph-storefront"></i>
             <p>Nenhuma loja disponível no momento.</p>
         </div>
     @else
@@ -134,27 +136,27 @@
                         @if ($loja->logo)
                             <img src="{{ asset('storage/' . $loja->logo) }}" alt="{{ $loja->nome }}">
                         @else
-                            <i class="fas fa-store"></i>
+                            <i class="ph ph-storefront"></i>
                         @endif
-                        <span class="card-badge"><i class="fas fa-store"></i> Loja</span>
+                        <span class="card-badge"><i class="ph ph-storefront"></i> Loja</span>
                     </div>
                     <div class="card-body">
                         <h3>{{ $loja->nome }}</h3>
                         @if ($loja->descricao)
-                            <div class="card-meta"><i class="fas fa-circle-info"></i> {{ \Illuminate\Support\Str::limit($loja->descricao, 60) }}</div>
+                            <div class="card-meta"><i class="ph ph-info"></i> {{ \Illuminate\Support\Str::limit($loja->descricao, 60) }}</div>
                         @endif
-                        <div class="card-meta"><i class="fas fa-map-marker-alt"></i> {{ $loja->cidade }}{{ $loja->estado ? ' - ' . $loja->estado : '' }}</div>
+                        <div class="card-meta"><i class="ph ph-map-pin"></i> {{ $loja->cidade }}{{ $loja->estado ? ' - ' . $loja->estado : '' }}</div>
 
                         <div class="card-footer">
                             <div class="prod-count"><strong>{{ $loja->produtos_count }}</strong> produto{{ $loja->produtos_count == 1 ? '' : 's' }}</div>
-                            <a href="{{ route('lojas.detalhes', $loja->id) }}" class="btn-detalhes">Ver produtos <i class="fas fa-arrow-right"></i></a>
+                            <a href="{{ route('lojas.detalhes', $loja->id) }}" class="btn-detalhes">Ver produtos <i class="ph ph-arrow-right"></i></a>
                         </div>
                     </div>
                 </div>
             @endforeach
         </div>
         <div class="empty-state" id="semResultados" style="display:none;">
-            <i class="fas fa-search"></i>
+            <i class="ph ph-magnifying-glass"></i>
             <p>Nenhuma loja encontrada para a sua busca.</p>
         </div>
     @endif

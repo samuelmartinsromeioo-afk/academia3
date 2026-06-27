@@ -12,7 +12,7 @@
 
     <div class="row">
         <div class="col-md-6">
-            <h4 class="mb-3"><i class="fas fa-dumbbell"></i> Academias</h4>
+            <h4 class="mb-3"><i class="ph ph-barbell"></i> Academias</h4>
             
             @if($academias->isEmpty())
                 <div class="alert alert-warning">Nenhuma academia encontrada nesta região.</div>
@@ -22,7 +22,7 @@
                         <div class="card-body">
                             <h5 class="card-title">{{ $academia->nome }}</h5>
                             <p class="card-text text-muted mb-1">
-                                <i class="fas fa-map-marker-alt"></i> Distância: 
+                                <i class="ph ph-map-pin"></i> Distância: 
                                 <strong>{{ number_format($academia->distancia, 2, ',', '.') }} km</strong>
                             </p>
                             {{-- Se você tiver o endereço salvo, pode colocar aqui --}}
@@ -35,7 +35,7 @@
         </div>
 
         <div class="col-md-6">
-            <h4 class="mb-3"><i class="fas fa-user-tie"></i> Personais Trainers</h4>
+            <h4 class="mb-3"><i class="ph ph-user-list"></i> Personais Trainers</h4>
             
             @if($personals->isEmpty())
                 <div class="alert alert-warning">Nenhum personal disponível nesta região.</div>
@@ -45,7 +45,7 @@
                         <div class="card-body">
                             <h5 class="card-title">{{ $personal->nome }}</h5>
                             <p class="card-text text-muted mb-1">
-                                <i class="fas fa-walking"></i> Distância: 
+                                <i class="ph ph-person-simple-walk"></i> Distância: 
                                 <strong>{{ number_format($personal->distancia, 2, ',', '.') }} km</strong>
                             </p>
                             <p class="card-text small">{{ Str::limit($personal->bio ?? 'Personal qualificado para te atender.', 80) }}</p>

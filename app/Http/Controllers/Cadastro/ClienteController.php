@@ -27,6 +27,10 @@ class ClienteController extends Controller
         $cliente = Cliente::find($id);
         $personals = Personal::where('status', 'aprovado')
             ->with(['fotos', 'avaliacoes', 'pacotesAvaliacao' => fn($q) => $q->where('ativo', true)->orderBy('nome')])
+            // Pioneiros (100 primeiros do estado) aparecem em destaque, no topo.
+            ->orderByRaw('pioneiro_posicao IS NULL')
+            ->orderBy('pioneiro_posicao')
+            ->orderBy('id')
             ->get();
         $academias = Academia::with(['fotos', 'planos' => fn($q) => $q->where('ativo', true)->orderBy('valor')])->get();
 
@@ -621,6 +625,9 @@ class ClienteController extends Controller
         $cliente   = Cliente::find(session('cliente_id'));
         $personais = Personal::where('status', 'aprovado')
             ->with(['fotos', 'avaliacoes'])
+            // Pioneiros (100 primeiros do estado) aparecem em destaque, no topo.
+            ->orderByRaw('pioneiro_posicao IS NULL')
+            ->orderBy('pioneiro_posicao')
             ->orderBy('nome')
             ->get();
         return view('cliente.personais', compact('personais', 'cliente'));

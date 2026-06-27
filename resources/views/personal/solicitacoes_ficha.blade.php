@@ -7,6 +7,8 @@
     <link rel="icon" type="image/png" href="{{ asset('SnrFit.png') }}">
     @include('partials.pwa')
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/regular/style.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/fill/style.css">
     <style>
         :root {
             --primary: #d4ff00;
@@ -53,11 +55,11 @@
         }
     </style>
 </head>
-<body>
+<body class="ed-page">
 
 <div class="top-bar">
     <div style="display:flex; align-items:center; gap:12px;">
-        <a href="{{ route('personal.dashboard') }}" class="btn-back"><i class="fas fa-arrow-left"></i> Voltar</a>
+        <a href="{{ route('personal.dashboard') }}" class="btn-back"><i class="ph ph-arrow-left"></i> Voltar</a>
     </div>
     <div style="display:flex; align-items:center; gap:12px;">
         <img src="{{ $personal->foto ? asset('storage/'.$personal->foto) : 'https://cdn-icons-png.flaticon.com/512/3135/3135715.png' }}" style="width:38px; height:38px; border-radius:50%; border:2px solid var(--primary); object-fit:cover;">
@@ -66,18 +68,18 @@
 </div>
 
 <div class="container">
-    <h1 class="page-title"><i class="fas fa-clipboard-list" style="margin-right:10px;"></i>Solicitações de Ficha</h1>
+    <div class="ed-eyebrow"><i class="ph ph-clipboard-text"></i> Pedidos</div><h1 class="ed-h">Solicitações de <span class="ed-mark">Ficha</span></h1>
     <p class="page-sub">Fichas solicitadas pelos seus alunos. Monte a ficha no sistema e depois marque como concluída.</p>
 
     @if(session('success'))
-        <div class="alert-success"><i class="fas fa-check-circle"></i> {{ session('success') }}</div>
+        <div class="alert-success"><i class="ph ph-check-circle"></i> {{ session('success') }}</div>
     @endif
 
     @php $pendentes = $solicitacoes->where('status', 'pendente'); $concluidas = $solicitacoes->where('status', 'concluida'); @endphp
 
     @if($solicitacoes->isEmpty())
         <div class="empty-state">
-            <i class="fas fa-inbox"></i>
+            <i class="ph ph-tray"></i>
             <p>Nenhuma solicitação de ficha ainda.</p>
         </div>
     @else
@@ -89,7 +91,7 @@
             <div class="card-header">
                 <div>
                     <p class="cliente-nome">{{ $s->cliente?->nome ?? 'Aluno' }}</p>
-                    <span class="valor-tag"><i class="fas fa-dollar-sign"></i> R$ {{ number_format($s->valor, 2, ',', '.') }} — pago</span>
+                    <span class="valor-tag"><i class="ph ph-currency-dollar"></i> R$ {{ number_format($s->valor, 2, ',', '.') }} — pago</span>
                 </div>
                 <div style="display:flex; flex-direction:column; align-items:flex-end; gap:8px;">
                     <span class="badge badge-pendente">Pendente</span>
@@ -99,22 +101,22 @@
 
             <div class="info-grid">
                 <div class="info-item">
-                    <label><i class="fas fa-bullseye"></i> Objetivos</label>
+                    <label><i class="ph ph-target"></i> Objetivos</label>
                     <p>{{ $s->objetivos }}</p>
                 </div>
                 <div class="info-item">
-                    <label><i class="fas fa-signal"></i> Nível de Experiência</label>
+                    <label><i class="ph ph-cell-signal-full"></i> Nível de Experiência</label>
                     <p>{{ ucfirst($s->nivel_experiencia) }}</p>
                 </div>
                 @if($s->condicoes_clinicas)
                 <div class="info-item full">
-                    <label><i class="fas fa-heartbeat"></i> Condições Clínicas</label>
+                    <label><i class="ph ph-heartbeat"></i> Condições Clínicas</label>
                     <p>{{ $s->condicoes_clinicas }}</p>
                 </div>
                 @endif
                 @if($s->observacoes)
                 <div class="info-item full">
-                    <label><i class="fas fa-comment"></i> Observações</label>
+                    <label><i class="ph ph-chat-circle"></i> Observações</label>
                     <p>{{ $s->observacoes }}</p>
                 </div>
                 @endif
@@ -122,11 +124,11 @@
 
             <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
                 <a href="{{ route('fichas-treino.aluno', $s->cliente_id) }}" class="btn-concluir" style="background:rgba(212,255,0,0.1); color:var(--primary); border:1px solid var(--primary);">
-                    <i class="fas fa-plus"></i> Criar Ficha para {{ $s->cliente?->nome ?? 'Aluno' }}
+                    <i class="ph ph-plus"></i> Criar Ficha para {{ $s->cliente?->nome ?? 'Aluno' }}
                 </a>
                 <form action="{{ route('personal.solicitacoes-ficha.concluir', $s->id) }}" method="POST" onsubmit="return confirm('Marcar como concluída?')">
                     @csrf
-                    <button type="submit" class="btn-concluir"><i class="fas fa-check"></i> Marcar como Concluída</button>
+                    <button type="submit" class="btn-concluir"><i class="ph ph-check"></i> Marcar como Concluída</button>
                 </form>
             </div>
         </div>

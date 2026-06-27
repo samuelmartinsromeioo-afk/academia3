@@ -7,6 +7,8 @@
     <link rel="icon" type="image/png" href="{{ asset('SnrFit.png') }}">
     @include('partials.pwa')
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/regular/style.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/fill/style.css">
     <style>
         :root { --primary: #d4ff00; --bg: #0a0a0a; --card: #141414; --border: #222; }
         body { background: var(--bg); color: white; font-family: 'Inter', sans-serif; padding: 0; margin: 0; }
@@ -20,9 +22,9 @@
         .value { color: var(--primary); font-weight: 800; font-size: 1.2rem; }
     </style>
 </head>
-<body>
+<body class="ed-page">
 <div class="top-bar">
-    <a href="javascript:history.back()" style="color: #888; text-decoration: none;"><i class="fas fa-arrow-left"></i> Voltar</a>
+    <a href="javascript:history.back()" style="color: #888; text-decoration: none;"><i class="ph ph-arrow-left"></i> Voltar</a>
     <span style="font-weight: 800; color: var(--primary);">SNRFIT</span>
 </div>
 
@@ -35,14 +37,14 @@
     @forelse($precos as $p)
         <div class="price-item">
             <div class="freq">
-                <i class="fas fa-calendar-alt" style="color: var(--primary); margin-right: 10px;"></i>
+                <i class="ph ph-calendar" style="color: var(--primary); margin-right: 10px;"></i>
                 {{ $p->frequencia }}x na semana
             </div>
             <div class="value">R$ {{ number_format($p->valor_mensal, 2, ',', '.') }}</div>
         </div>
     @empty
         <div style="text-align: center; color: #555; margin-top: 50px;">
-            <i class="fas fa-info-circle" style="font-size: 2rem; display: block; margin-bottom: 10px;"></i>
+            <i class="ph ph-info" style="font-size: 2rem; display: block; margin-bottom: 10px;"></i>
             Este personal ainda não cadastrou valores.
         </div>
     @endforelse

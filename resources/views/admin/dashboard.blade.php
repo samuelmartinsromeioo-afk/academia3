@@ -7,6 +7,9 @@
     <link rel="icon" type="image/png" href="{{ asset('SnrFit.png') }}">
     @include('partials.pwa')
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/regular/style.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/fill/style.css">
+    <link rel="stylesheet" href="{{ asset('css/snrfit-brand.css') }}">
     <style>
         :root {
             --primary: #d4ff00;
@@ -333,19 +336,19 @@
         }
     </style>
 </head>
-<body>
+<body class="ed-page">
 
 {{-- TOP BAR --}}
 <div class="top-bar">
-    <h2><i class="fas fa-crown"></i> SNRFIT ADMIN</h2>
+    <h2><i class="ph ph-crown"></i> SNRFIT ADMIN</h2>
     <div class="admin-menu">
         <span style="color: var(--text-muted); font-size: 0.9rem;">
-            <i class="fas fa-user-circle"></i> {{ session('admin_nome') ?? 'Admin' }}
+            <i class="ph ph-user-circle"></i> {{ session('admin_nome') ?? 'Admin' }}
         </span>
         <form action="{{ route('admin.logout') }}" method="POST" style="margin: 0;">
             @csrf
             <button type="submit" class="btn-logout">
-                <i class="fas fa-sign-out-alt"></i> Sair
+                <i class="ph ph-sign-out"></i> Sair
             </button>
         </form>
     </div>
@@ -353,9 +356,10 @@
 
 <div class="container">
     {{-- CABEÇALHO DA PÁGINA --}}
-    <div class="page-header">
-        <h1>Dashboard Administrativo</h1>
-        <p>Bem-vindo de volta! Aqui está um resumo do seu sistema.</p>
+    <div class="page-header ed-head">
+        <div class="ed-eyebrow"><span class="ed-num">00</span> Controle geral</div>
+        <h1 class="ed-h">Painel <span class="ed-mark">Admin</span></h1>
+        <p style="margin-top:10px;">Aqui está um resumo do seu sistema.</p>
     </div>
 
     {{-- GRID DE ESTATÍSTICAS --}}
@@ -363,7 +367,7 @@
         {{-- TOTAL DE PERSONALS --}}
         <div class="stat-card">
             <div class="stat-card-icon">
-                <i class="fas fa-users"></i>
+                <i class="ph ph-users"></i>
             </div>
             <p class="stat-card-label">Total de Personals</p>
             <h3 class="stat-card-value">{{ $totalPersonals ?? 0 }}</h3>
@@ -372,7 +376,7 @@
         {{-- PERSONALS PENDENTES --}}
         <div class="stat-card">
             <div class="stat-card-icon">
-                <i class="fas fa-hourglass-half" style="color: #ffc107;"></i>
+                <i class="ph ph-hourglass-medium" style="color: #ffc107;"></i>
             </div>
             <p class="stat-card-label">Pendentes de Aprovação</p>
             <h3 class="stat-card-value" style="color: #ffc107;">{{ $personalsPendentes ?? 0 }}</h3>
@@ -381,7 +385,7 @@
         {{-- PERSONALS APROVADOS --}}
         <div class="stat-card">
             <div class="stat-card-icon">
-                <i class="fas fa-check-circle" style="color: var(--success);"></i>
+                <i class="ph ph-check-circle" style="color: var(--success);"></i>
             </div>
             <p class="stat-card-label">Aprovados</p>
             <h3 class="stat-card-value" style="color: var(--success);">{{ $personalsAprovados ?? 0 }}</h3>
@@ -390,7 +394,7 @@
         {{-- PERSONALS REJEITADOS --}}
         <div class="stat-card">
             <div class="stat-card-icon">
-                <i class="fas fa-times-circle" style="color: var(--error);"></i>
+                <i class="ph ph-x-circle" style="color: var(--error);"></i>
             </div>
             <p class="stat-card-label">Rejeitados</p>
             <h3 class="stat-card-value" style="color: var(--error);">{{ $personalsRejeitados ?? 0 }}</h3>
@@ -399,7 +403,7 @@
         {{-- TOTAL DE CLIENTES --}}
         <div class="stat-card">
             <div class="stat-card-icon">
-                <i class="fas fa-user-graduate" style="color: #00d4ff;"></i>
+                <i class="ph ph-student" style="color: #00d4ff;"></i>
             </div>
             <p class="stat-card-label">Total de Clientes</p>
             <h3 class="stat-card-value" style="color: #00d4ff;">{{ $totalClientes ?? 0 }}</h3>
@@ -408,7 +412,7 @@
         {{-- LUCRO TOTAL --}}
         <div class="stat-card">
             <div class="stat-card-icon">
-                <i class="fas fa-chart-line" style="color: #00ff88;"></i>
+                <i class="ph ph-chart-line" style="color: #00ff88;"></i>
             </div>
             <p class="stat-card-label">Lucro Total (Mês)</p>
             <h3 class="stat-card-value" style="color: #00ff88;">R$ {{ number_format($lucroTotal ?? 0, 2, ',', '.') }}</h3>
@@ -418,7 +422,7 @@
     {{-- ÚLTIMOS PERSONALS PENDENTES --}}
     <div>
         <h2 class="section-title">
-            <i class="fas fa-clock"></i> Últimos Cadastros Pendentes
+            <i class="ph ph-clock"></i> Últimos Cadastros Pendentes
         </h2>
 
         @if($ultimosPendentes && $ultimosPendentes->count() > 0)
@@ -432,9 +436,9 @@
                             <div class="personal-details">
                                 <h3>{{ $personal->nome ?? 'N/A' }}</h3>
                                 <p>
-                                    <i class="fas fa-envelope"></i> {{ $personal->email ?? 'N/A' }}
+                                    <i class="ph ph-envelope"></i> {{ $personal->email ?? 'N/A' }}
                                     <span style="margin: 0 8px; color: var(--border);">•</span>
-                                    <i class="fas fa-calendar"></i> 
+                                    <i class="ph ph-calendar"></i> 
                                     @if($personal->created_at)
                                         {{ $personal->created_at->format('d/m/Y') }}
                                     @else
@@ -447,14 +451,14 @@
                             {{ ucfirst($personal->status ?? 'pendente') }}
                         </span>
                         <a href="{{ route('admin.personals.detalhes', $personal->id) }}" class="btn-action">
-                            <i class="fas fa-arrow-right"></i> Revisar
+                            <i class="ph ph-arrow-right"></i> Revisar
                         </a>
                     </div>
                 @endforeach
             </div>
         @else
             <div class="empty-state">
-                <i class="fas fa-check-circle"></i>
+                <i class="ph ph-check-circle"></i>
                 <p>Nenhum personal pendente de aprovação! 🎉</p>
             </div>
         @endif
@@ -463,7 +467,7 @@
     {{-- LINK PARA MENU --}}
     <div style="margin-top: 40px; text-align: center; padding: 20px; background: var(--card-bg); border-radius: 12px; border: 1px solid var(--border);">
         <p style="color: var(--text-muted); margin-bottom: 16px;">
-            <i class="fas fa-info-circle"></i> Navegue para revisar personals pendentes
+            <i class="ph ph-info"></i> Navegue para revisar personals pendentes
         </p>
         <a href="{{ route('admin.personals.lista') }}" style="
             display: inline-flex;
@@ -482,7 +486,7 @@
         onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 10px 25px rgba(212, 255, 0, 0.2)'"
         onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none'"
         >
-            <i class="fas fa-list"></i> Ver Todos os Personals
+            <i class="ph ph-list"></i> Ver Todos os Personals
         </a>
         <a href="{{ route('admin.studios.lista') }}" style="
             display: inline-flex;
@@ -503,7 +507,7 @@
         onmouseover="this.style.background='rgba(212, 255, 0, 0.1)'"
         onmouseout="this.style.background='transparent'"
         >
-            <i class="fas fa-spa"></i> Ver Studios
+            <i class="ph ph-flower-lotus"></i> Ver Studios
         </a>
         <a href="{{ route('admin.lojas.lista') }}" style="
             display: inline-flex;
@@ -524,7 +528,7 @@
         onmouseover="this.style.background='rgba(212, 255, 0, 0.1)'"
         onmouseout="this.style.background='transparent'"
         >
-            <i class="fas fa-store"></i> Ver Lojas
+            <i class="ph ph-storefront"></i> Ver Lojas
         </a>
     </div>
 </div>

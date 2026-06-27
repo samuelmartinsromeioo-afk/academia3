@@ -7,6 +7,8 @@
     <link rel="icon" type="image/png" href="{{ asset('SnrFit.png') }}">
     @include('partials.pwa')
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/regular/style.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/fill/style.css">
     <style>
         :root {
             --primary: #d4ff00;
@@ -77,12 +79,12 @@
         .tipo-check i { color: var(--primary); width: 16px; text-align: center; }
     </style>
 </head>
-<body>
+<body class="ed-page">
 
 <div class="top-bar">
     <div style="display:flex; align-items:center; gap:12px;">
-        <a href="{{ route('personal.dashboard') }}" class="btn-back"><i class="fas fa-arrow-left"></i> Voltar</a>
-        <a href="{{ route('personal.avaliacao-fisica') }}" class="btn-back"><i class="fas fa-heart-pulse"></i> Avaliação Física</a>
+        <a href="{{ route('personal.dashboard') }}" class="btn-back"><i class="ph ph-arrow-left"></i> Voltar</a>
+        <a href="{{ route('personal.avaliacao-fisica') }}" class="btn-back"><i class="ph ph-heartbeat"></i> Avaliação Física</a>
     </div>
     <div style="display:flex; align-items:center; gap:12px;">
         <img src="{{ $personal->foto ? asset('storage/'.$personal->foto) : 'https://cdn-icons-png.flaticon.com/512/3135/3135715.png' }}" style="width:38px; height:38px; border-radius:50%; border:2px solid var(--primary); object-fit:cover;">
@@ -91,17 +93,17 @@
 </div>
 
 <div class="container">
-    <h1 class="page-title"><i class="fas fa-tags" style="margin-right:10px;"></i>Valores das Avaliações</h1>
+    <div class="ed-eyebrow"><i class="ph ph-tag"></i> Preços</div><h1 class="ed-h">Valores das <span class="ed-mark">Avaliações</span></h1>
     <p class="page-sub">Defina os preços avulsos de cada avaliação e monte pacotes. É isso que o cliente vê na hora de contratar.</p>
 
     @if(session('success'))
-        <div class="alert-success"><i class="fas fa-check-circle"></i> {{ session('success') }}</div>
+        <div class="alert-success"><i class="ph ph-check-circle"></i> {{ session('success') }}</div>
     @endif
     @if(session('error'))
-        <div class="alert-error"><i class="fas fa-exclamation-circle"></i> {{ session('error') }}</div>
+        <div class="alert-error"><i class="ph ph-warning-circle"></i> {{ session('error') }}</div>
     @endif
     @if($errors->any())
-        <div class="alert-error"><i class="fas fa-exclamation-circle"></i> {{ $errors->first() }}</div>
+        <div class="alert-error"><i class="ph ph-warning-circle"></i> {{ $errors->first() }}</div>
     @endif
 
     @php
@@ -118,7 +120,7 @@
             <div class="preco-grid">
                 @foreach($tiposCriaveis as $key)
                 <div class="preco-item">
-                    <label><i class="fas {{ $tiposMeta[$key]['icon'] }}"></i> {{ $tiposMeta[$key]['label'] }}</label>
+                    <label><i class="ph {{ $tiposMeta[$key]['icon'] }}"></i> {{ $tiposMeta[$key]['label'] }}</label>
                     <div class="preco-input-wrap">
                         <span>R$</span>
                         <input type="number" step="0.01" min="0" name="precos[{{ $key }}]" value="{{ $precos[$key] ?? '' }}" placeholder="—">
@@ -126,7 +128,7 @@
                 </div>
                 @endforeach
             </div>
-            <button type="submit" class="btn-primary" style="margin-top:18px;"><i class="fas fa-save"></i> Salvar preços</button>
+            <button type="submit" class="btn-primary" style="margin-top:18px;"><i class="ph ph-floppy-disk"></i> Salvar preços</button>
         </form>
     </div>
 
@@ -146,7 +148,7 @@
                     <p class="pacote-nome">{{ $pac->nome }} @unless($pac->ativo)<span class="badge-inativo">Inativo</span>@endunless</p>
                     <div class="pacote-chips">
                         @foreach($pac->tipos as $t)
-                            <span class="chip"><i class="fas {{ $tiposMeta[$t]['icon'] ?? 'fa-clipboard' }}"></i> {{ $tiposMeta[$t]['label'] ?? $t }}</span>
+                            <span class="chip"><i class="ph {{ $tiposMeta[$t]['icon'] ?? 'ph-clipboard' }}"></i> {{ $tiposMeta[$t]['label'] ?? $t }}</span>
                         @endforeach
                     </div>
                 </div>
@@ -160,10 +162,10 @@
                                 "valor" => $pac->valor,
                                 "tipos" => $pac->tipos,
                                 "ativo" => $pac->ativo,
-                            ]) }})'><i class="fas fa-pen"></i> Editar</button>
+                            ]) }})'><i class="ph ph-pen"></i> Editar</button>
                         <form action="{{ route('personal.avaliacao-fisica.pacotes.destroy', $pac->id) }}" method="POST" onsubmit="return confirm('Excluir este pacote?')" style="display:inline;">
                             @csrf @method('DELETE')
-                            <button type="submit" class="btn-icon danger"><i class="fas fa-trash-alt"></i></button>
+                            <button type="submit" class="btn-icon danger"><i class="ph ph-trash"></i></button>
                         </form>
                     </div>
                 </div>
@@ -172,14 +174,14 @@
         @endforeach
     @endif
 
-    <button type="button" class="btn-outline" style="margin-top:6px;" onclick="abrirModalPacote()"><i class="fas fa-plus"></i> Novo pacote de avaliação</button>
+    <button type="button" class="btn-outline" style="margin-top:6px;" onclick="abrirModalPacote()"><i class="ph ph-plus"></i> Novo pacote de avaliação</button>
 </div>
 
 {{-- MODAL CRIAR/EDITAR PACOTE --}}
 <div id="modalPacote" class="modal-overlay">
     <div class="modal-content">
-        <button class="modal-close" onclick="fecharModalPacote()"><i class="fas fa-times"></i></button>
-        <h2 id="modalPacoteTitulo"><i class="fas fa-box"></i> Novo Pacote de Avaliação</h2>
+        <button class="modal-close" onclick="fecharModalPacote()"><i class="ph ph-x"></i></button>
+        <h2 id="modalPacoteTitulo"><i class="ph ph-package"></i> Novo Pacote de Avaliação</h2>
         <form id="formPacote" method="POST" action="{{ route('personal.avaliacao-fisica.pacotes.store') }}">
             @csrf
             <input type="hidden" name="_method" id="pacoteMethod" value="POST">
@@ -197,7 +199,7 @@
                     @foreach($tiposCriaveis as $key)
                     <label class="tipo-check">
                         <input type="checkbox" name="tipos[]" value="{{ $key }}" class="pacote-tipo-check">
-                        <i class="fas {{ $tiposMeta[$key]['icon'] }}"></i> {{ $tiposMeta[$key]['label'] }}
+                        <i class="ph {{ $tiposMeta[$key]['icon'] }}"></i> {{ $tiposMeta[$key]['label'] }}
                     </label>
                     @endforeach
                 </div>
@@ -205,7 +207,7 @@
             <label class="tipo-check" style="margin-bottom:16px; width:fit-content;">
                 <input type="checkbox" name="ativo" id="pacoteAtivo" value="1" checked> Pacote ativo (visível para clientes)
             </label>
-            <button type="submit" class="btn-primary" style="width:100%; justify-content:center;"><i class="fas fa-save"></i> Salvar pacote</button>
+            <button type="submit" class="btn-primary" style="width:100%; justify-content:center;"><i class="ph ph-floppy-disk"></i> Salvar pacote</button>
         </form>
     </div>
 </div>
@@ -219,7 +221,7 @@
         document.querySelectorAll('.pacote-tipo-check').forEach(c => c.checked = false);
 
         if (pac) {
-            document.getElementById('modalPacoteTitulo').innerHTML = '<i class="fas fa-pen"></i> Editar Pacote';
+            document.getElementById('modalPacoteTitulo').innerHTML = '<i class="ph ph-pen"></i> Editar Pacote';
             form.action = rotaPacoteUpdateBase + '/' + pac.id;
             document.getElementById('pacoteMethod').value = 'PUT';
             document.getElementById('pacoteNome').value = pac.nome;
@@ -230,7 +232,7 @@
                 if (c) c.checked = true;
             });
         } else {
-            document.getElementById('modalPacoteTitulo').innerHTML = '<i class="fas fa-box"></i> Novo Pacote de Avaliação';
+            document.getElementById('modalPacoteTitulo').innerHTML = '<i class="ph ph-package"></i> Novo Pacote de Avaliação';
             form.action = rotaPacoteStore;
             document.getElementById('pacoteMethod').value = 'POST';
             document.getElementById('pacoteNome').value = '';

@@ -11,6 +11,9 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Syncopate:wght@700&family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/regular/style.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/fill/style.css">
+    <link rel="stylesheet" href="{{ asset('css/snrfit-brand.css') }}">
 
     <style>
         :root {
@@ -199,28 +202,30 @@
         }
     </style>
 </head>
-<body>
+<body class="ed-page">
 
     <header>
         <div class="logo">SNR<span>FIT</span></div>
+        <div style="font-family:'Inter',sans-serif; font-size:0.62rem; font-weight:600; letter-spacing:3px; text-transform:uppercase; color:var(--text-dim); margin-top:8px;">Treino que vira história</div>
     </header>
 
     <main class="selecao-container">
         <div class="header-text">
-            <h2>Escolha seu <span>Perfil de Acesso</span></h2>
-            <p>Selecione a opção que melhor descreve você na plataforma.</p>
+            <div class="ed-eyebrow" style="margin-bottom:16px;"><span class="ed-num">01</span> Comece agora</div>
+            <h2 class="ed-h">Escolha seu <span>Perfil de Acesso</span></h2>
+            <p>Seja qual for o seu lugar no fitness, sua história começa aqui.</p>
         </div>
 
         <div class="cards-grid">
             <a href="{{ route('cadastro.ir', ['tipo' => 'personal']) }}" class="card-link">
                 <div class="card">
                     <div class="icon-wrapper">
-                        <i class="fa-solid fa-dumbbell"></i>
+                        <i class="ph ph-barbell"></i>
                     </div>
                     <h3>Personal Trainer</h3>
                     <p>Crie treinos personalizados, acompanhe a evolução de seus alunos e gerencie sua agenda de consultoria.</p>
                     <div class="card-footer">
-                        <span class="go-btn">Começar agora <i class="fa-solid fa-arrow-right"></i></span>
+                        <span class="go-btn">Começar agora <i class="ph ph-arrow-right"></i></span>
                     </div>
                 </div>
             </a>
@@ -228,12 +233,12 @@
             <a href="{{ route('cadastro.ir', ['tipo' => 'cliente']) }}" class="card-link">
                 <div class="card">
                     <div class="icon-wrapper">
-                        <i class="fa-solid fa-user-ninja"></i>
+                        <i class="ph ph-person-simple-run"></i>
                     </div>
                     <h3>Aluno / Atleta</h3>
                     <p>Visualize suas fichas de treino, registre suas cargas e acompanhe seu progresso físico detalhadamente.</p>
                     <div class="card-footer">
-                        <span class="go-btn">Acessar treinos <i class="fa-solid fa-arrow-right"></i></span>
+                        <span class="go-btn">Acessar treinos <i class="ph ph-arrow-right"></i></span>
                     </div>
                 </div>
             </a>
@@ -241,12 +246,12 @@
             <a href="{{ route('cadastro.ir', ['tipo' => 'academia']) }}" class="card-link">
                 <div class="card">
                     <div class="icon-wrapper">
-                        <i class="fa-solid fa-vihara"></i>
+                        <i class="ph ph-buildings"></i>
                     </div>
                     <h3>Gestor Academia</h3>
                     <p>Controle financeiro, gestão de professores, check-in de alunos e relatórios administrativos completos.</p>
                     <div class="card-footer">
-                        <span class="go-btn">Painel Gestor <i class="fa-solid fa-arrow-right"></i></span>
+                        <span class="go-btn">Painel Gestor <i class="ph ph-arrow-right"></i></span>
                     </div>
                 </div>
             </a>
@@ -254,12 +259,12 @@
             <a href="{{ route('cadastro.ir', ['tipo' => 'studio']) }}" class="card-link">
                 <div class="card">
                     <div class="icon-wrapper">
-                        <i class="fa-solid fa-spa"></i>
+                        <i class="ph ph-flower-lotus"></i>
                     </div>
                     <h3>Studio Fitness</h3>
                     <p>Gerencie planos, horários com vagas, alunos e receba pagamentos online direto na sua conta.</p>
                     <div class="card-footer">
-                        <span class="go-btn">Cadastrar studio <i class="fa-solid fa-arrow-right"></i></span>
+                        <span class="go-btn">Cadastrar studio <i class="ph ph-arrow-right"></i></span>
                     </div>
                 </div>
             </a>
@@ -267,17 +272,22 @@
             <a href="{{ route('cadastro.ir', ['tipo' => 'loja']) }}" class="card-link">
                 <div class="card">
                     <div class="icon-wrapper">
-                        <i class="fa-solid fa-store"></i>
+                        <i class="ph ph-storefront"></i>
                     </div>
                     <h3>Loja de Suplementos</h3>
                     <p>Cadastre seus produtos fitness, defina preços, controle o estoque e venda direto para os alunos da plataforma.</p>
                     <div class="card-footer">
-                        <span class="go-btn">Cadastrar loja <i class="fa-solid fa-arrow-right"></i></span>
+                        <span class="go-btn">Cadastrar loja <i class="ph ph-arrow-right"></i></span>
                     </div>
                 </div>
             </a>
         </div>
     </main>
+
+    <footer class="snr-footer">
+        <div class="snr-voice">Feito pra quem <strong>não para</strong>.</div>
+        <div style="margin-top:8px; font-size:0.72rem; opacity:0.55;">© {{ date('Y') }} SnrFit</div>
+    </footer>
 
 </body>
 </html>

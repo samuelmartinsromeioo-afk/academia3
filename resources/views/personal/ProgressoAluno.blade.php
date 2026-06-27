@@ -7,11 +7,14 @@
     <title>Progresso · {{ $cliente->nome }}</title>
     <link rel="icon" type="image/png" href="{{ asset('SnrFit.png') }}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/regular/style.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/fill/style.css">
+    <link rel="stylesheet" href="{{ asset('css/snrfit-brand.css') }}">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
     <style>
-        :root { --primary:#F4BE16; --bg-dark:#000; --card-bg:#111317; --field:#1a1d23; --text-main:#fff; --text-muted:#9a9a9a; --green:#00e676; --red:#ff5252; --border:rgba(255,255,255,0.08); }
+        :root { --primary:var(--snr-lime); --bg-dark:var(--snr-bg); --card-bg:var(--snr-surface); --field:var(--snr-surface-2); --text-main:var(--snr-text); --text-muted:var(--snr-dim); --green:var(--snr-success); --red:var(--snr-error); --border:var(--snr-border); }
         * { margin:0; padding:0; box-sizing:border-box; }
-        body { background:var(--bg-dark); font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; color:var(--text-main); min-height:100vh; background-image:radial-gradient(circle at 12% -10%, rgba(244,190,22,0.1), transparent 45%); }
+        body { background:var(--bg-dark); font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; color:var(--text-main); min-height:100vh; background-image:radial-gradient(circle at 12% -10%, rgba(212,255,0,0.1), transparent 45%); }
         a { color:inherit; text-decoration:none; }
         .top-bar { display:flex; align-items:center; gap:15px; padding:15px 40px; background:rgba(0,0,0,0.6); border-bottom:1px solid var(--border); position:sticky; top:0; z-index:100; backdrop-filter:blur(10px); }
         .back-btn { background:var(--card-bg); border:1px solid var(--border); color:var(--primary); width:40px; height:40px; border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:1.1rem; }
@@ -58,22 +61,22 @@
     </style>
 </head>
 
-<body>
+<body class="ed-page">
     <div class="top-bar">
-        <a href="{{ route('fichas-treino.aluno', $cliente->id) }}" class="back-btn"><i class="fas fa-arrow-left"></i></a>
-        <span class="title"><i class="fas fa-chart-line"></i> Progresso do aluno</span>
+        <a href="{{ route('fichas-treino.aluno', $cliente->id) }}" class="back-btn"><i class="ph ph-arrow-left"></i></a>
+        <span class="title"><i class="ph ph-chart-line"></i> Progresso do aluno</span>
     </div>
 
     <div class="container">
-        <h1><i class="fas fa-chart-line"></i> {{ strtoupper($cliente->nome) }}</h1>
+        <div class="ed-eyebrow"><i class="ph ph-chart-line"></i> Progresso do aluno</div><h1 class="ed-h">{{ strtoupper($cliente->nome) }}</h1>
 
         @if(session('success'))
-            <div class="alert-ok"><i class="fas fa-check-circle"></i> {{ session('success') }}</div>
+            <div class="alert-ok"><i class="ph ph-check-circle"></i> {{ session('success') }}</div>
         @endif
 
         {{-- MEDIDAS --}}
         <div class="panel">
-            <div class="panel-title"><i class="fas fa-arrow-trend-up"></i> Evolução de medidas
+            <div class="panel-title"><i class="ph ph-trend-up"></i> Evolução de medidas
                 @if($medidas->count() > 0)
                 <select id="campoSel" onchange="renderChart()" style="margin-left:auto; width:auto;">
                     @foreach(\App\Models\MedidaCorporal::CAMPOS as $campo => $label)
@@ -101,11 +104,11 @@
 
         {{-- FOTOS --}}
         <div class="panel">
-            <div class="panel-title"><i class="fas fa-camera"></i> Fotos de progresso</div>
+            <div class="panel-title"><i class="ph ph-camera"></i> Fotos de progresso</div>
             @if($fotos->count() === 0)
                 <div class="empty">Sem fotos enviadas.</div>
             @else
-                <p class="hint"><i class="fas fa-circle-info"></i> Toque em duas fotos para comparar lado a lado.</p>
+                <p class="hint"><i class="ph ph-info"></i> Toque em duas fotos para comparar lado a lado.</p>
                 <div class="fotos-grid">
                     @foreach($fotos as $f)
                     <div class="foto-card" data-url="{{ asset('storage/'.$f->caminho) }}" data-cap="{{ $f->data->format('d/m/y') }}{{ $f->peso ? ' · '.$f->peso.'kg' : '' }}">
@@ -120,7 +123,7 @@
 
         {{-- METAS --}}
         <div class="panel">
-            <div class="panel-title"><i class="fas fa-bullseye"></i> Metas do aluno</div>
+            <div class="panel-title"><i class="ph ph-target"></i> Metas do aluno</div>
 
             <form method="POST" action="{{ route('metas.criar-aluno', $cliente->id) }}" style="margin-bottom:18px;">
                 @csrf
@@ -147,7 +150,7 @@
                         </select>
                     </div>
                 </div>
-                <button class="btn btn-primary"><i class="fas fa-bullseye"></i> Definir meta</button>
+                <button class="btn btn-primary"><i class="ph ph-target"></i> Definir meta</button>
             </form>
 
             @if($metas->isEmpty())
@@ -161,7 +164,7 @@
                                 <div class="tit">{{ $m->titulo }}</div>
                                 <div class="tipo">{{ $m->tipoLabel() }}{{ $m->exercicio ? ' · '.$m->exercicio : '' }}</div>
                             </div>
-                            @if($p['atingida'])<span class="badge-ok"><i class="fas fa-check"></i> Atingida</span>@endif
+                            @if($p['atingida'])<span class="badge-ok"><i class="ph ph-check"></i> Atingida</span>@endif
                         </div>
                         @if($m->tipo !== 'livre')
                             <div class="bar"><span style="width:{{ $p['percent'] }}%; {{ $p['atingida'] ? 'background:var(--green);' : '' }}"></span></div>
@@ -187,8 +190,8 @@
             const campo = document.getElementById('campoSel').value;
             const ctx = document.getElementById('chartMedidas').getContext('2d');
             const g = ctx.createLinearGradient(0,0,0,280);
-            g.addColorStop(0,'rgba(244,190,22,0.35)'); g.addColorStop(1,'rgba(244,190,22,0)');
-            const data = { labels: dadosMedidas.labels, datasets:[{ label:dadosMedidas.rotulos[campo], data:dadosMedidas.campos[campo], borderColor:'#F4BE16', backgroundColor:g, borderWidth:3, pointBackgroundColor:'#F4BE16', pointRadius:4, tension:0.3, fill:true, spanGaps:true }] };
+            g.addColorStop(0,'rgba(212,255,0,0.35)'); g.addColorStop(1,'rgba(212,255,0,0)');
+            const data = { labels: dadosMedidas.labels, datasets:[{ label:dadosMedidas.rotulos[campo], data:dadosMedidas.campos[campo], borderColor:'#d4ff00', backgroundColor:g, borderWidth:3, pointBackgroundColor:'#d4ff00', pointRadius:4, tension:0.3, fill:true, spanGaps:true }] };
             const opts = { responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{ y:{ticks:{color:'#9a9a9a'},grid:{color:'rgba(255,255,255,0.06)'}}, x:{ticks:{color:'#9a9a9a',maxTicksLimit:8},grid:{color:'rgba(255,255,255,0.04)'}} } };
             if (chart) { chart.data = data; chart.options = opts; chart.update(); } else chart = new Chart(ctx, { type:'line', data, options:opts });
         }

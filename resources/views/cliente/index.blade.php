@@ -7,6 +7,9 @@
     <link rel="icon" type="image/png" href="{{ asset('SnrFit.png') }}">
     @include('partials.pwa')
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/regular/style.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/fill/style.css">
+    <link rel="stylesheet" href="{{ asset('css/snrfit-brand.css') }}">
     <style>
         :root { 
             --primary: #d4ff00; 
@@ -359,24 +362,25 @@
     </style>
 </head>
 
-<body>
+<body class="ed-page">
 
-<div class="top-bar">
+<div class="top-bar" style="position:relative;">
+    <a href="{{ route('cliente.index') }}" class="snr-logo" style="position:absolute; left:50%; transform:translateX(-50%);">SNR<span>FIT</span></a>
     <div class="menu-container">
-        <button class="dots-btn" onclick="toggleMenu()"><i class="fas fa-bars"></i></button>
+        <button class="dots-btn" onclick="toggleMenu()"><i class="ph ph-list"></i></button>
         <div class="dropdown-menu" id="dropdownMenu">
-            <button type="button" onclick="window.location.href='{{ route('cliente.index') }}'"><i class="fas fa-chart-line"></i> Menu Principal</button>
-            <button type="button" onclick="toggleEditForm()"><i class="fas fa-user-edit"></i> Editar Perfil</button>
-            <button type="button" onclick="window.location.href='{{ route('progresso.index') }}'"><i class="fas fa-chart-line"></i> Meu Progresso</button>
-            <button type="button" onclick="window.location.href='{{ route('metas.index') }}'"><i class="fas fa-bullseye"></i> Minhas Metas</button>
-            <button type="button" onclick="window.location.href='{{ route('anamnese.form') }}'"><i class="fas fa-file-medical"></i> Anamnese</button>
-            <button type="button" onclick="window.location.href='{{ route('cliente.avaliacao-fisica') }}'"><i class="fas fa-heart-pulse"></i> Avaliação Física</button>
-            <button type="button" onclick="abrirHistoricoModal()"><i class="fas fa-history"></i> Ver Histórico</button>
-            <button type="button" onclick="window.location.href='{{ route('mapa.index') }}'"><i class="fas fa-map-marked-alt"></i> Ver Mapa</button>
-            <button type="button" onclick="window.location.href='{{ route('lgpd.meus-dados') }}'"><i class="fas fa-user-shield"></i> Privacidade e meus dados</button>
+            <button type="button" onclick="window.location.href='{{ route('cliente.index') }}'"><i class="ph ph-chart-line"></i> Menu Principal</button>
+            <button type="button" onclick="toggleEditForm()"><i class="ph ph-user-gear"></i> Editar Perfil</button>
+            <button type="button" onclick="window.location.href='{{ route('progresso.index') }}'"><i class="ph ph-chart-line"></i> Meu Progresso</button>
+            <button type="button" onclick="window.location.href='{{ route('metas.index') }}'"><i class="ph ph-target"></i> Minhas Metas</button>
+            <button type="button" onclick="window.location.href='{{ route('anamnese.form') }}'"><i class="ph ph-first-aid"></i> Anamnese</button>
+            <button type="button" onclick="window.location.href='{{ route('cliente.avaliacao-fisica') }}'"><i class="ph ph-heartbeat"></i> Avaliação Física</button>
+            <button type="button" onclick="abrirHistoricoModal()"><i class="ph ph-clock-counter-clockwise"></i> Ver Histórico</button>
+            <button type="button" onclick="window.location.href='{{ route('mapa.index') }}'"><i class="ph ph-map-pin-area"></i> Ver Mapa</button>
+            <button type="button" onclick="window.location.href='{{ route('lgpd.meus-dados') }}'"><i class="ph ph-shield-check"></i> Privacidade e meus dados</button>
             <form action="{{ route('login.logout') }}" method="POST">
                 @csrf
-                <button type="submit" style="color: #ff4444;"><i class="fas fa-power-off"></i> Sair</button>
+                <button type="submit" style="color: #ff4444;"><i class="ph ph-power"></i> Sair</button>
             </form>
         </div>
     </div>
@@ -405,29 +409,29 @@
     <div class="qa-scroll">
         <a href="{{ route('notificacoes.index') }}" class="qa-item">
             <span class="qa-ico" style="position:relative;">
-                <i class="fas fa-bell"></i>
+                <i class="ph ph-bell"></i>
                 <span data-notif-badge style="display:none; position:absolute; top:-4px; right:-4px; background:#ff3b30; color:#fff; font-size:0.6rem; font-weight:900; min-width:16px; height:16px; border-radius:8px; align-items:center; justify-content:center; padding:0 4px;">0</span>
             </span>
             <span class="qa-lbl">Avisos</span>
         </a>
-        <a href="{{ route('chat.index') }}" class="qa-item"><span class="qa-ico"><i class="fas fa-comments"></i></span><span class="qa-lbl">Chat</span></a>
-        <a href="{{ route('periodizacao.treino-do-dia') }}" class="qa-item"><span class="qa-ico"><i class="fas fa-calendar-day"></i></span><span class="qa-lbl">Treino do Dia</span></a>
-        <a href="{{ route('desempenho.meu') }}" class="qa-item"><span class="qa-ico"><i class="fas fa-bolt"></i></span><span class="qa-lbl">Meu Desempenho</span></a>
-        <a href="{{ route('fichas-treino.minhas') }}" class="qa-item"><span class="qa-ico"><i class="fas fa-dumbbell"></i></span><span class="qa-lbl">Minha Ficha</span></a>
-        <a href="{{ route('lojas.explorar') }}" class="qa-item"><span class="qa-ico"><i class="fas fa-store"></i></span><span class="qa-lbl">Lojas</span></a>
-        <a href="{{ route('personais.explorar') }}" class="qa-item"><span class="qa-ico"><i class="fas fa-user-tie"></i></span><span class="qa-lbl">Personais</span></a>
-        <a href="{{ route('academias.explorar') }}" class="qa-item"><span class="qa-ico"><i class="fas fa-building"></i></span><span class="qa-lbl">Academias</span></a>
-        <a href="{{ route('studios.explorar') }}" class="qa-item"><span class="qa-ico"><i class="fas fa-spa"></i></span><span class="qa-lbl">Studios</span></a>
+        <a href="{{ route('chat.index') }}" class="qa-item"><span class="qa-ico"><i class="ph ph-chats"></i></span><span class="qa-lbl">Chat</span></a>
+        <a href="{{ route('periodizacao.treino-do-dia') }}" class="qa-item"><span class="qa-ico"><i class="ph ph-calendar-dot"></i></span><span class="qa-lbl">Treino do Dia</span></a>
+        <a href="{{ route('desempenho.meu') }}" class="qa-item"><span class="qa-ico"><i class="ph ph-lightning"></i></span><span class="qa-lbl">Meu Desempenho</span></a>
+        <a href="{{ route('fichas-treino.minhas') }}" class="qa-item"><span class="qa-ico"><i class="ph ph-barbell"></i></span><span class="qa-lbl">Minha Ficha</span></a>
+        <a href="{{ route('lojas.explorar') }}" class="qa-item"><span class="qa-ico"><i class="ph ph-storefront"></i></span><span class="qa-lbl">Lojas</span></a>
+        <a href="{{ route('personais.explorar') }}" class="qa-item"><span class="qa-ico"><i class="ph ph-user-list"></i></span><span class="qa-lbl">Personais</span></a>
+        <a href="{{ route('academias.explorar') }}" class="qa-item"><span class="qa-ico"><i class="ph ph-building"></i></span><span class="qa-lbl">Academias</span></a>
+        <a href="{{ route('studios.explorar') }}" class="qa-item"><span class="qa-ico"><i class="ph ph-flower-lotus"></i></span><span class="qa-lbl">Studios</span></a>
     </div>
 
     @if(!$cliente->anamnese)
         <a href="{{ route('anamnese.form') }}" style="display:flex; align-items:center; gap:14px; background:rgba(244,190,22,0.1); border:1px solid #F4BE16; border-radius:14px; padding:16px 18px; margin-bottom:20px; color:#fff;">
-            <i class="fas fa-file-medical" style="color:#F4BE16; font-size:1.5rem;"></i>
+            <i class="ph ph-first-aid" style="color:#F4BE16; font-size:1.5rem;"></i>
             <div style="flex:1;">
                 <div style="font-weight:800;">Complete sua anamnese</div>
                 <div style="font-size:0.8rem; color:#bdbdbd;">Leva 2 minutos e ajuda seu personal a montar um treino seguro pra você.</div>
             </div>
-            <i class="fas fa-chevron-right" style="color:#F4BE16;"></i>
+            <i class="ph ph-caret-right" style="color:#F4BE16;"></i>
         </a>
     @endif
 
@@ -457,7 +461,7 @@
 
     @if(request('payment') === 'cancelled')
         <div id="avisoCancelado" style="background: rgba(255,68,68,0.2); border: 1px solid var(--error); color: #ff6666; padding: 15px; border-radius: 12px; margin-bottom: 20px;">
-            <i class="fas fa-times-circle"></i> Pagamento cancelado. Você pode tentar novamente quando quiser.
+            <i class="ph ph-x-circle"></i> Pagamento cancelado. Você pode tentar novamente quando quiser.
         </div>
         <script>
             setTimeout(() => {
@@ -467,34 +471,36 @@
         </script>
     @endif
 
-    <header id="mainHeader" style="margin-bottom: 30px;">
-        <h1 style="margin:0; font-size: 1.8rem; font-weight: 900; letter-spacing: -1px;">CENTRAL DO ALUNO</h1>
-        <p style="color: var(--text-muted); font-size: 0.9rem;">Bem-vindo de volta, foque nos seus objetivos.</p>
+    <header id="mainHeader" class="ed-head" style="margin-bottom: 30px;">
+        <div class="ed-eyebrow"><span class="ed-num">01</span> Central do aluno</div>
+        <h1 class="ed-h"><span id="snrSaud" data-snr-upper>OLÁ</span>, <span class="ed-mark">{{ strtoupper(explode(' ', trim($cliente->nome))[0]) }}</span></h1>
+        <p style="color: var(--text-muted); font-size: 0.9rem; margin-top:10px;">Mais um dia pra evoluir. Sua história se escreve agora. 💪</p>
+        @include('partials.brand-greeting-js')
     </header>
 
     {{-- FORMULÁRIO DE EDIÇÃO --}}
     <div id="editFormContainer" style="display: none;">
         <form action="{{ route('cliente.update', $cliente->id) }}" method="POST" class="profile-card" enctype="multipart/form-data">
             @csrf @method('PUT')
-            <i class="fas fa-times close-form" onclick="toggleEditForm()"></i>
+            <i class="ph ph-x close-form" onclick="toggleEditForm()"></i>
             <div class="section-title">Dados de Acesso</div>
             <div class="form-grid">
                 <div class="col-3">
                     <label>Nome Completo</label>
-                    <div class="input-wrapper"><i class="fas fa-user"></i><input type="text" name="nome" value="{{ $cliente->nome }}" required></div>
+                    <div class="input-wrapper"><i class="ph ph-user"></i><input type="text" name="nome" value="{{ $cliente->nome }}" required></div>
                 </div>
                 <div class="col-3">
                     <label>E-mail</label>
-                    <div class="input-wrapper"><i class="fas fa-envelope"></i><input type="email" name="email" value="{{ $cliente->email }}" required></div>
+                    <div class="input-wrapper"><i class="ph ph-envelope"></i><input type="email" name="email" value="{{ $cliente->email }}" required></div>
                 </div>
                 <div class="col-3">
                     <label>Nova Senha (deixe em branco)</label>
-                    <div class="input-wrapper"><i class="fas fa-lock"></i><input type="password" name="senha" placeholder="********"></div>
+                    <div class="input-wrapper"><i class="ph ph-lock"></i><input type="password" name="senha" placeholder="********"></div>
                 </div>
                 <div class="col-3">
                     <label>Sexo</label>
                     <div class="input-wrapper">
-                        <i class="fas fa-venus-mars"></i>
+                        <i class="ph ph-gender-intersex"></i>
                         <select name="sexo">
                             <option value="masculino" {{ $cliente->sexo == 'masculino' ? 'selected' : '' }}>Masculino</option>
                             <option value="feminino" {{ $cliente->sexo == 'feminino' ? 'selected' : '' }}>Feminino</option>
@@ -507,11 +513,11 @@
             <div class="form-grid">
                 <div class="col-3">
                     <label>Peso (kg)</label>
-                    <div class="input-wrapper"><i class="fas fa-weight"></i><input type="number" step="0.01" name="peso" value="{{ $cliente->peso }}"></div>
+                    <div class="input-wrapper"><i class="ph ph-scales"></i><input type="number" step="0.01" name="peso" value="{{ $cliente->peso }}"></div>
                 </div>
                 <div class="col-3">
                     <label>Altura (m)</label>
-                    <div class="input-wrapper"><i class="fas fa-ruler-vertical"></i><input type="number" step="0.01" name="altura" value="{{ $cliente->altura }}"></div>
+                    <div class="input-wrapper"><i class="ph ph-ruler"></i><input type="number" step="0.01" name="altura" value="{{ $cliente->altura }}"></div>
                 </div>
             </div>
             <div class="section-title">Localização</div>
@@ -519,30 +525,30 @@
                 <div class="col-2">
                     <label>CEP</label>
                     <div class="input-wrapper">
-                        <i class="fas fa-map-marker-alt"></i>
+                        <i class="ph ph-map-pin"></i>
                         <input type="text" name="cep" id="cep" placeholder="00000-000" 
                             oninput="this.value = mascaras.cep(this.value)" maxlength="9" required>
                     </div>
                 </div>  
                 <div class="col-4">
                     <label>Rua</label>
-                    <div class="input-wrapper"><i class="fas fa-road"></i><input type="text" name="rua" value="{{ $cliente->rua }}"></div>
+                    <div class="input-wrapper"><i class="ph ph-road-horizon"></i><input type="text" name="rua" value="{{ $cliente->rua }}"></div>
                 </div>
                 <div class="col-2">
                     <label>Bairro</label>
-                    <div class="input-wrapper"><i class="fas fa-home"></i><input type="text" name="bairro" value="{{ $cliente->bairro }}"></div>
+                    <div class="input-wrapper"><i class="ph ph-house"></i><input type="text" name="bairro" value="{{ $cliente->bairro }}"></div>
                 </div>
                 <div class="col-2">
                     <label>Cidade</label>
-                    <div class="input-wrapper"><i class="fas fa-city"></i><input type="text" name="cidade" value="{{ $cliente->cidade }}"></div>
+                    <div class="input-wrapper"><i class="ph ph-buildings"></i><input type="text" name="cidade" value="{{ $cliente->cidade }}"></div>
                 </div>
                 <div class="col-2">
                     <label>Estado</label>
-                    <div class="input-wrapper"><i class="fas fa-map"></i><input type="text" name="estado" value="{{ $cliente->estado }}"></div>
+                    <div class="input-wrapper"><i class="ph ph-map-trifold"></i><input type="text" name="estado" value="{{ $cliente->estado }}"></div>
                 </div>
                 <div class="col-6">
                     <label>Complemento</label>
-                    <div class="input-wrapper"><i class="fas fa-info-circle"></i><input type="text" name="complemento" value="{{ $cliente->complemento }}"></div>
+                    <div class="input-wrapper"><i class="ph ph-info"></i><input type="text" name="complemento" value="{{ $cliente->complemento }}"></div>
                 </div>
             </div>
             <div class="section-title">Foto de Perfil</div>
@@ -556,7 +562,7 @@
                             style="width:64px; height:64px; border-radius:50%; flex-shrink:0;">
                     @endif
                     <div class="input-wrapper" style="flex:1;">
-                        <i class="fas fa-camera"></i>
+                        <i class="ph ph-camera"></i>
                         <input type="file" name="foto" accept="image/*" style="padding:8px 12px;">
                     </div>
                 </div>
@@ -569,7 +575,7 @@
         <div class="profile-card" style="margin-top: 20px;">
             <div class="section-title">Minhas Assinaturas</div>
             <p style="color: var(--text-muted); font-size: 0.8rem; margin: -10px 0 15px 0;">
-                <i class="fas fa-info-circle" style="color: var(--primary);"></i>
+                <i class="ph ph-info" style="color: var(--primary);"></i>
                 Ao cancelar, não há mais cobranças mensais — mas o acesso continua até o fim do período já pago (30 dias a partir do último pagamento).
             </p>
 
@@ -587,7 +593,7 @@
                     </div>
                     <button type="button" id="btnCancelar-{{ $assinatura->id }}" onclick="cancelarAssinatura({{ $assinatura->id }})"
                         style="background:rgba(255,68,68,0.1); color:#ff6b6b; border:1px solid rgba(255,68,68,0.3); border-radius:10px; padding:9px 14px; font-weight:700; font-size:0.8rem; cursor:pointer; white-space:nowrap;">
-                        <i class="fas fa-times-circle"></i> Cancelar
+                        <i class="ph ph-x-circle"></i> Cancelar
                     </button>
                 </div>
             @empty
@@ -613,7 +619,7 @@
                     btn.disabled = true;
                     btn.style.opacity = '0.5';
                     btn.style.cursor = 'default';
-                    btn.innerHTML = '<i class="fas fa-check"></i> Cancelada';
+                    btn.innerHTML = '<i class="ph ph-check"></i> Cancelada';
                 }
                 alert(data.acesso_ate
                     ? ('Assinatura cancelada. Sem novas cobranças. Seu acesso continua até ' + data.acesso_ate + '.')
@@ -628,24 +634,29 @@
         {{-- PERSONALS --}}
         <div class="section-title">Personals Disponíveis</div>
         <p style="color: var(--text-muted); font-size: 0.8rem; margin: -10px 0 15px 0;">
-            <i class="fas fa-info-circle" style="color: var(--primary);"></i>
+            <i class="ph ph-info" style="color: var(--primary);"></i>
             Você pode contratar um personal com ou sem vínculo com academia.
         </p>
 
         <div class="dashboard-grid" style="grid-template-columns: repeat(2, 1fr);">
             @foreach($personals->take(4) as $p)
-            <div class="stat-card personal-card" style="position: relative; padding-top: 25px;">
-                
-                <div onclick="abrirAvaliacao({{ $p->id }}, '{{ addslashes($p->nome) }}')" 
-                     style="position: absolute; top: 10px; right: 10px; cursor: pointer; color: gold; font-size: 0.8rem; display: flex; align-items: center; gap: 5px; padding: 4px 10px; background: rgba(255, 215, 0, 0.1); border-radius: 20px; border: 1px solid rgba(255, 215, 0, 0.2); transition: 0.2s; box-shadow: 0 2px 4px rgba(0,0,0,0.1);"
+            <div class="stat-card personal-card" style="position: relative; padding-top: 14px;{{ $p->eh_pioneiro ? ' border:1px solid rgba(255,210,80,0.4); box-shadow:0 0 9px rgba(255,170,40,0.07);' : '' }}">
+
+                <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 6px; margin-bottom: 12px;">
+                <div onclick="abrirAvaliacao({{ $p->id }}, '{{ addslashes($p->nome) }}')"
+                     style="cursor: pointer; color: gold; font-size: 0.8rem; display: inline-flex; align-items: center; gap: 5px; padding: 4px 10px; background: rgba(255, 215, 0, 0.1); border-radius: 20px; border: 1px solid rgba(255, 215, 0, 0.2); transition: 0.2s; box-shadow: 0 2px 4px rgba(0,0,0,0.1);"
                      onmouseover="this.style.background='rgba(255, 215, 0, 0.3)'"
                      onmouseout="this.style.background='rgba(255, 215, 0, 0.1)'"
                      title="Clique para avaliar {{ $p->nome }}">
                     @if($p->eh_novo_profissional)
                         <strong style="color: white; font-size: 0.78rem;">Novo profissional</strong>
                     @else
-                        <i class="fas fa-star"></i>
+                        <i class="ph-fill ph-star"></i>
                         <strong style="color: white; font-size: 0.9rem;">{{ $p->media_avaliacao }}</strong>
+                    @endif
+                </div>
+                    @if($p->eh_pioneiro)
+                        @include('partials.badge-pioneiro', ['posicao' => $p->pioneiro_posicao, 'estado' => $p->estado])
                     @endif
                 </div>
 
@@ -657,7 +668,7 @@
                     @endif
 
                     <div>
-                        <h3 style="margin:0; font-size: 0.9rem; padding-right: 40px;">{{ $p->nome }}</h3>
+                        <h3 style="margin:0; font-size: 0.9rem;">{{ $p->nome }}</h3>
                         <p style="margin:0; font-size: 0.6rem; color: var(--primary);">Ativo na plataforma</p>
                     </div>
                 </div>
@@ -682,9 +693,9 @@
                 @endif
 
                 {{-- ✅ BOTÃO: VER DETALHES --}}
-                <div style="text-align: center; margin-top: 12px;">
-                    <button onclick="abrirDetalhesPersonal({{ $p->id }})" class="btn-action" style="padding: 8px 16px; font-size: 0.65rem; margin-top: 0; width: auto; display: inline-flex; align-items: center; justify-content: center; gap: 6px;">
-                        <i class="fas fa-eye"></i> Ver Detalhes
+                <div style="display: flex; justify-content: center; margin-top: 12px;">
+                    <button onclick="abrirDetalhesPersonal({{ $p->id }})" class="btn-action" style="padding: 8px 16px; font-size: 0.65rem; margin-top: 0; width: auto; display: inline-flex; align-items: center; justify-content: center;">
+                        Ver Detalhes
                     </button>
                 </div>
             </div>
@@ -693,7 +704,7 @@
         @if($personals->count() > 4)
         <div style="text-align: center; margin-top: 12px;">
             <a href="{{ route('personais.explorar') }}" style="display:inline-flex; align-items:center; gap:8px; color: var(--primary); font-size: 0.8rem; font-weight: 700;">
-                Ver todos os {{ $personals->count() }} personais <i class="fas fa-arrow-right"></i>
+                Ver todos os {{ $personals->count() }} personais <i class="ph ph-arrow-right"></i>
             </a>
         </div>
         @endif
@@ -708,14 +719,14 @@
                         <img src="{{ asset('storage/' . $academia->fotos->first()->path) }}" alt="Foto de {{ $academia->nome }}" style="width: 60px; height: 60px; border-radius: 12px; border: 1px solid var(--primary); object-fit: cover; flex-shrink: 0;">
                     @else
                         <div style="width: 60px; height: 60px; border-radius: 12px; border: 1px solid var(--primary); background: rgba(212, 255, 0, 0.08); display: flex; align-items: center; justify-content: center; flex-shrink: 0; color: var(--primary); font-size: 1.5rem;">
-                            <i class="fas fa-dumbbell"></i>
+                            <i class="ph ph-barbell"></i>
                         </div>
                     @endif
 
                     <div style="flex: 1;">
                         <strong style="display: block; font-size: 1.1rem; color: var(--primary);">{{ $academia->nome }}</strong>
                         <span style="color: var(--text-muted); font-size: 0.8rem;">
-                            <i class="fas fa-map-marker-alt"></i> {{ $academia->cidade }} - {{ $academia->estado }}
+                            <i class="ph ph-map-pin"></i> {{ $academia->cidade }} - {{ $academia->estado }}
                         </span>
                         <div style="margin-top: 5px; font-weight: 700; color: #fff;">
                             Mensalidade: R$ {{ number_format($academia->valor_mensalidade, 2, ',', '.') }}
@@ -724,7 +735,7 @@
 
                     <div style="display:flex; flex-direction:column; gap:8px; align-items:flex-end;">
                         <a href="{{ route('academias.detalhes', $academia->id) }}" class="btn-action btn-outline" style="margin:0; padding: 9px 18px; width: auto; font-size: 0.7rem; text-decoration:none; display:inline-flex; align-items:center; gap:6px;">
-                            <i class="fas fa-eye"></i> Ver Detalhes
+                            <i class="ph ph-eye"></i> Ver Detalhes
                         </a>
                         @if($cliente->academia_id == $academia->id)
                             <div class="badge-status" style="background: var(--primary); color: #000;">Meu Plano</div>
@@ -752,7 +763,7 @@
         @if($academias->count() > 4)
         <div style="text-align: center; margin-top: 12px;">
             <a href="{{ route('academias.explorar') }}" style="display:inline-flex; align-items:center; gap:8px; color: var(--primary); font-size: 0.8rem; font-weight: 700;">
-                Ver todas as {{ $academias->count() }} academias <i class="fas fa-arrow-right"></i>
+                Ver todas as {{ $academias->count() }} academias <i class="ph ph-arrow-right"></i>
             </a>
         </div>
         @endif
@@ -762,7 +773,7 @@
 {{-- ✅ NOVO: MODAL DE DETALHES DO PERSONAL --}}
 <div id="detalhesPersonalModal" class="modal-overlay">
     <div class="profile-card detalhes-personal-modal">
-        <i class="fas fa-times close-form" onclick="fecharDetalhesPersonal()"></i>
+        <i class="ph ph-x close-form" onclick="fecharDetalhesPersonal()"></i>
         
         {{-- HEADER COM FOTO E NOME --}}
         <div class="detalhes-header" id="detalhesHeader">
@@ -772,7 +783,7 @@
         {{-- GALERIA DE FOTOS --}}
         <div class="detalhes-section" id="detalhesGaleriaSection" style="display: none;">
             <div class="detalhes-section-title">
-                <i class="fas fa-images"></i> Galeria de Fotos
+                <i class="ph ph-images"></i> Galeria de Fotos
             </div>
             <div class="detalhes-galeria" id="detalhesGaleria">
                 {{-- Preenchido via JavaScript --}}
@@ -782,7 +793,7 @@
         {{-- ACADEMIAS ONDE ATUA --}}
         <div class="detalhes-section" id="detalhesAcademiasSection" style="display: none;">
             <div class="detalhes-section-title">
-                <i class="fas fa-building"></i> Academias onde atua
+                <i class="ph ph-building"></i> Academias onde atua
             </div>
             <div class="detalhes-academias" id="detalhesAcademias">
                 {{-- Preenchido via JavaScript --}}
@@ -792,7 +803,7 @@
         {{-- RESUMO --}}
         <div class="detalhes-section">
             <div class="detalhes-section-title">
-                <i class="fas fa-chart-bar"></i> Resumo
+                <i class="ph ph-chart-bar"></i> Resumo
             </div>
             <div class="detalhes-resumo-grid" id="detalhesResumo">
                 {{-- Preenchido via JavaScript --}}
@@ -802,16 +813,16 @@
         {{-- AÇÕES: AULA AVULSA, PACOTE, FICHA E AVALIAÇÃO FÍSICA --}}
         <div class="detalhes-actions" style="grid-template-columns: 1fr 1fr;">
             <button onclick="abrirAgendaDoDetalhes()" class="btn-action btn-outline" style="font-size:0.75rem;">
-                <i class="fas fa-calendar-day"></i> Aula Avulsa
+                <i class="ph ph-calendar-dot"></i> Aula Avulsa
             </button>
             <button onclick="abrirPacoteDoDetalhes()" class="btn-action" style="font-size:0.75rem;">
-                <i class="fas fa-calendar-week"></i> Contratar Pacote
+                <i class="ph ph-calendar"></i> Contratar Pacote
             </button>
             <button onclick="abrirFichaDoDetalhes()" class="btn-action" style="font-size:0.75rem; background: rgba(212,255,0,0.12); border:1px solid var(--primary); color: var(--primary);">
-                <i class="fas fa-clipboard-list"></i> Solicitar Ficha
+                <i class="ph ph-clipboard-text"></i> Solicitar Ficha
             </button>
             <button onclick="abrirAvFisicaDoDetalhes()" class="btn-action" style="font-size:0.75rem; background: rgba(212,255,0,0.12); border:1px solid var(--primary); color: var(--primary);">
-                <i class="fas fa-heart-pulse"></i> Avaliação Física
+                <i class="ph ph-heartbeat"></i> Avaliação Física
             </button>
         </div>
     </div>
@@ -820,7 +831,7 @@
 {{-- MODAL DE HISTÓRICO COMPLETO --}}
 <div id="historicoModal" class="modal-overlay">
     <div class="profile-card" style="width: 90%; max-width: 600px; border: 1px solid var(--primary); max-height: 90vh; overflow-y: auto;">
-        <i class="fas fa-times close-form" onclick="fecharHistoricoModal()"></i>
+        <i class="ph ph-x close-form" onclick="fecharHistoricoModal()"></i>
         <h2 style="color: var(--primary); margin-bottom: 5px;">Histórico Completo de Treinos</h2>
         <p style="color: var(--text-muted); font-size: 0.8rem; margin-bottom: 20px;">Todos os treinos realizados</p>
         
@@ -831,11 +842,11 @@
 {{-- MODAL DE AVALIAÇÃO --}}
 <div id="avaliacaoModal" class="modal-overlay">
     <div class="profile-card" style="width: 90%; max-width: 450px; border: 1px solid var(--primary);">
-        <i class="fas fa-times close-form" onclick="fecharAvaliacao()"></i>
+        <i class="ph ph-x close-form" onclick="fecharAvaliacao()"></i>
         <h2 id="nomePersonalAvaliacao" style="color: var(--primary); margin-bottom: 5px;">Avaliar Personal</h2>
         
         <div id="avisoAvaliacao" style="background: rgba(255, 68, 68, 0.1); border: 1px solid rgba(255, 68, 68, 0.3); color: #ff6666; padding: 15px; border-radius: 12px; margin-bottom: 20px; font-size: 0.8rem; text-align: center; display: none;">
-            <i class="fas fa-exclamation-circle"></i> 
+            <i class="ph ph-warning-circle"></i> 
             Você só pode avaliar após realizar uma aula com este personal.
         </div>
 
@@ -848,21 +859,21 @@
             <div style="text-align: center; margin-bottom: 15px;">
                 <div class="star-rating" style="display: flex; justify-content: center; gap: 10px; font-size: 2.5rem; color: #444; cursor: pointer; flex-direction: row-reverse;">
                     <input type="radio" name="nota" value="5" id="star5" style="display:none;" required>
-                    <label for="star5"><i class="fas fa-star"></i></label>
+                    <label for="star5"><i class="ph-fill ph-star"></i></label>
                     <input type="radio" name="nota" value="4" id="star4" style="display:none;">
-                    <label for="star4"><i class="fas fa-star"></i></label>
+                    <label for="star4"><i class="ph-fill ph-star"></i></label>
                     <input type="radio" name="nota" value="3" id="star3" style="display:none;">
-                    <label for="star3"><i class="fas fa-star"></i></label>
+                    <label for="star3"><i class="ph-fill ph-star"></i></label>
                     <input type="radio" name="nota" value="2" id="star2" style="display:none;">
-                    <label for="star2"><i class="fas fa-star"></i></label>
+                    <label for="star2"><i class="ph-fill ph-star"></i></label>
                     <input type="radio" name="nota" value="1" id="star1" style="display:none;">
-                    <label for="star1"><i class="fas fa-star"></i></label>
+                    <label for="star1"><i class="ph-fill ph-star"></i></label>
                 </div>
             </div>
 
             <label>Comentário (Opcional)</label>
             <div class="input-wrapper" style="height: auto; margin-top: 5px;">
-                <i class="fas fa-comment-dots" style="align-self: flex-start; margin-top: 15px;"></i>
+                <i class="ph ph-chat-dots" style="align-self: flex-start; margin-top: 15px;"></i>
                 <textarea name="comentario" placeholder="Conte o que achou..." style="width: 100%; background: transparent; border: none; color: white; padding: 15px 10px; min-height: 80px; resize: none; outline: none;"></textarea>
             </div>
 
@@ -883,11 +894,11 @@
 {{-- MODAL AULA AVULSA --}}
 <div id="agendaModal" class="modal-overlay">
     <div class="profile-card" style="width: 95%; max-width: 800px; border: 1px solid var(--primary); max-height: 90vh; overflow-y: auto;">
-        <i class="fas fa-times close-form" onclick="fecharAgenda()"></i>
+        <i class="ph ph-x close-form" onclick="fecharAgenda()"></i>
 
         <h2 id="nomePersonalAgenda" style="color: var(--primary); margin-bottom: 5px;">Aula Avulsa</h2>
         <p style="color: var(--text-muted); font-size: 0.8rem; margin-bottom: 20px;">
-            <i class="fas fa-info-circle"></i> Selecione uma data disponível e o horário para agendar sua aula
+            <i class="ph ph-info"></i> Selecione uma data disponível e o horário para agendar sua aula
         </p>
 
         {{-- Input oculto mantido para compatibilidade com pagarPixAvulsa / abrirCartaoAvulsa --}}
@@ -901,10 +912,10 @@
 
                 <div style="background: rgba(212, 255, 0, 0.05); padding: 12px; border-radius: 10px; border: 1px solid var(--border); margin-bottom: 15px;">
                     <p style="margin: 0 0 8px 0; font-size: 0.75rem; color: var(--text-muted);">
-                        <i class="fas fa-calendar"></i> Data: <span id="avulsaDataSelecionada" style="color: var(--primary); font-weight: 900;">Nenhuma</span>
+                        <i class="ph ph-calendar"></i> Data: <span id="avulsaDataSelecionada" style="color: var(--primary); font-weight: 900;">Nenhuma</span>
                     </p>
                     <p style="margin: 0; font-size: 0.75rem; color: var(--text-muted);">
-                        <i class="fas fa-clock"></i> Horário: <span id="avulsaHorarioSelecionado" style="color: var(--primary); font-weight: 900;">Nenhum</span>
+                        <i class="ph ph-clock"></i> Horário: <span id="avulsaHorarioSelecionado" style="color: var(--primary); font-weight: 900;">Nenhum</span>
                     </p>
                 </div>
 
@@ -912,10 +923,10 @@
 
                 <div style="display:flex; gap:10px;">
                     <button type="button" class="btn-action" style="margin-top:0; flex:1;" id="btnAvulsaPix" disabled onclick="pagarPixAvulsaNovo()">
-                        <i class="fas fa-qrcode"></i> Pagar via PIX
+                        <i class="ph ph-qr-code"></i> Pagar via PIX
                     </button>
                     <button type="button" class="btn-action" style="margin-top:0; flex:1; background:rgba(255,255,255,0.08); color:#fff; border:1px solid rgba(255,255,255,0.15);" id="btnAvulsaCartao" disabled onclick="pagarCartaoAvulsaNovo()">
-                        <i class="fas fa-credit-card"></i> Pagar com Cartão
+                        <i class="ph ph-credit-card"></i> Pagar com Cartão
                     </button>
                 </div>
             </div>
@@ -924,11 +935,11 @@
             <div>
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
                     <button type="button" onclick="mesAnteriorAvulsaModal()" class="btn-action btn-outline" style="padding: 8px 12px; margin: 0; width: auto; font-size: 0.7rem;">
-                        <i class="fas fa-chevron-left"></i>
+                        <i class="ph ph-caret-left"></i>
                     </button>
                     <span id="avulsaMesLabel" style="color: var(--primary); font-weight: 900; text-transform: uppercase; font-size: 0.8rem; min-width: 150px; text-align: center;"></span>
                     <button type="button" onclick="mesProximoAvulsaModal()" class="btn-action btn-outline" style="padding: 8px 12px; margin: 0; width: auto; font-size: 0.7rem;">
-                        <i class="fas fa-chevron-right"></i>
+                        <i class="ph ph-caret-right"></i>
                     </button>
                 </div>
 
@@ -951,11 +962,11 @@
 {{-- MODAL CONTRATAÇÃO DE PACOTE --}}
 <div id="pacoteModal" class="modal-overlay">
     <div class="profile-card" style="width: 95%; max-width: 800px; border: 1px solid var(--primary); max-height: 90vh; overflow-y: auto;">
-        <i class="fas fa-times close-form" onclick="fecharPacoteModal()"></i>
+        <i class="ph ph-x close-form" onclick="fecharPacoteModal()"></i>
         
         <h2 id="nomePacotePersonal" style="color: var(--primary); margin-bottom: 5px;">Contratar Pacote</h2>
         <p style="color: var(--text-muted); font-size: 0.8rem; margin-bottom: 20px;">
-            <i class="fas fa-info-circle"></i> Selecione o pacote, os dias do mês e o horário desejado para agendar seus treinos
+            <i class="ph ph-info"></i> Selecione o pacote, os dias do mês e o horário desejado para agendar seus treinos
         </p>
 
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
@@ -968,10 +979,10 @@
 
                 <div style="background: rgba(212, 255, 0, 0.05); padding: 12px; border-radius: 10px; border: 1px solid var(--border); margin-bottom: 20px;">
                     <p style="margin: 0 0 8px 0; font-size: 0.75rem; color: var(--text-muted);">
-                        <i class="fas fa-calendar"></i> <span style="color: var(--primary); font-weight: 900;" id="contadorDias">0</span> dia(s) selecionado(s)
+                        <i class="ph ph-calendar"></i> <span style="color: var(--primary); font-weight: 900;" id="contadorDias">0</span> dia(s) selecionado(s)
                     </p>
                     <p style="margin: 0; font-size: 0.75rem; color: var(--text-muted);">
-                        <i class="fas fa-clock"></i> Horário: <span id="horarioSelecionado" style="color: var(--primary); font-weight: 900;">Nenhum</span>
+                        <i class="ph ph-clock"></i> Horário: <span id="horarioSelecionado" style="color: var(--primary); font-weight: 900;">Nenhum</span>
                     </p>
                 </div>
 
@@ -990,10 +1001,10 @@
 
                     <div style="display:flex; gap:10px; margin-top:0;">
                         <button type="submit" class="btn-action" style="margin-top:0; flex:1;" id="btnConfirmarContratacao" disabled>
-                            <i class="fas fa-qrcode"></i> Pagar via PIX
+                            <i class="ph ph-qr-code"></i> Pagar via PIX
                         </button>
                         <button type="button" class="btn-action" style="margin-top:0; flex:1; background:rgba(255,255,255,0.08); color:#fff; border:1px solid rgba(255,255,255,0.15);" id="btnPagarCartao" disabled onclick="abrirCartaoPacote()">
-                            <i class="fas fa-credit-card"></i> Pagar com Cartão
+                            <i class="ph ph-credit-card"></i> Pagar com Cartão
                         </button>
                     </div>
                 </form>
@@ -1002,13 +1013,13 @@
             <div>
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
                     <button type="button" onclick="mesAnterior()" class="btn-action btn-outline" style="padding: 8px 12px; margin: 0; width: auto; font-size: 0.7rem;">
-                        <i class="fas fa-chevron-left"></i>
+                        <i class="ph ph-caret-left"></i>
                     </button>
                     <span id="mesSelecionado" style="color: var(--primary); font-weight: 900; text-transform: uppercase; font-size: 0.8rem; min-width: 150px; text-align: center;">
                         Fevereiro 2025
                     </span>
                     <button type="button" onclick="mesProximo()" class="btn-action btn-outline" style="padding: 8px 12px; margin: 0; width: auto; font-size: 0.7rem;">
-                        <i class="fas fa-chevron-right"></i>
+                        <i class="ph ph-caret-right"></i>
                     </button>
                 </div>
 
@@ -1033,11 +1044,11 @@
 {{-- MODAL SOLICITAR FICHA PERSONALIZADA --}}
 <div id="fichaModal" class="modal-overlay">
     <div class="profile-card" style="width: 95%; max-width: 600px; border: 1px solid var(--primary); max-height: 90vh; overflow-y: auto;">
-        <i class="fas fa-times close-form" onclick="fecharFichaModal()"></i>
+        <i class="ph ph-x close-form" onclick="fecharFichaModal()"></i>
 
         <h2 id="nomeFichaPersonal" style="color: var(--primary); margin-bottom: 5px;">Solicitar Ficha</h2>
         <p style="color: var(--text-muted); font-size: 0.8rem; margin-bottom: 20px;">
-            <i class="fas fa-info-circle"></i> Preencha o briefing para que o personal monte sua ficha personalizada
+            <i class="ph ph-info"></i> Preencha o briefing para que o personal monte sua ficha personalizada
         </p>
 
         {{-- Valor --}}
@@ -1050,21 +1061,21 @@
             <div class="col-6">
                 <label>Objetivos *</label>
                 <div class="input-wrapper">
-                    <i class="fas fa-bullseye"></i>
+                    <i class="ph ph-target"></i>
                     <textarea id="fichaObjetivos" rows="3" placeholder="Ex: Perda de peso, ganho de massa muscular, condicionamento físico..." style="background:transparent; border:none; color:#fff; outline:none; flex:1; padding:12px 0; resize:none; font-size:0.9rem; font-family:inherit;"></textarea>
                 </div>
             </div>
             <div class="col-6">
                 <label>Condições Clínicas / Restrições</label>
                 <div class="input-wrapper">
-                    <i class="fas fa-heartbeat"></i>
+                    <i class="ph ph-heartbeat"></i>
                     <textarea id="fichaCondicoes" rows="3" placeholder="Ex: Lesão no joelho, hipertensão, diabetes... (deixe em branco se não houver)" style="background:transparent; border:none; color:#fff; outline:none; flex:1; padding:12px 0; resize:none; font-size:0.9rem; font-family:inherit;"></textarea>
                 </div>
             </div>
             <div class="col-3">
                 <label>Nível de Experiência *</label>
                 <div class="input-wrapper">
-                    <i class="fas fa-signal"></i>
+                    <i class="ph ph-cell-signal-full"></i>
                     <select id="fichaNivel" style="background:transparent; border:none; color:#fff; outline:none; flex:1; padding:12px 0; font-size:0.9rem; font-family:inherit; cursor:pointer;">
                         <option value="iniciante">Iniciante</option>
                         <option value="intermediario">Intermediário</option>
@@ -1075,7 +1086,7 @@
             <div class="col-3">
                 <label>Observações Adicionais</label>
                 <div class="input-wrapper">
-                    <i class="fas fa-comment"></i>
+                    <i class="ph ph-chat-circle"></i>
                     <input type="text" id="fichaObs" placeholder="Qualquer informação extra..." style="background:transparent; border:none; color:#fff; outline:none; flex:1; padding:12px 0; font-size:0.9rem;">
                 </div>
             </div>
@@ -1083,10 +1094,10 @@
 
         <div style="display:flex; gap:10px; margin-top:20px;">
             <button type="button" class="btn-action" style="flex:1; margin-top:0;" id="btnFichaPix" onclick="pagarFichaPix()">
-                <i class="fas fa-qrcode"></i> Pagar via PIX
+                <i class="ph ph-qr-code"></i> Pagar via PIX
             </button>
             <button type="button" class="btn-action" style="flex:1; margin-top:0; background:rgba(255,255,255,0.08); color:#fff; border:1px solid rgba(255,255,255,0.15);" id="btnFichaCartao" onclick="pagarFichaCartao()">
-                <i class="fas fa-credit-card"></i> Pagar com Cartão
+                <i class="ph ph-credit-card"></i> Pagar com Cartão
             </button>
         </div>
     </div>
@@ -1109,32 +1120,32 @@
 </style>
 <div id="avFisicaModal" class="modal-overlay">
     <div class="profile-card" style="width: 95%; max-width: 540px; border: 1px solid var(--primary); max-height: 90vh; overflow-y: auto;">
-        <i class="fas fa-times close-form" onclick="fecharAvFisicaModal()"></i>
+        <i class="ph ph-x close-form" onclick="fecharAvFisicaModal()"></i>
 
         <h2 id="nomeAvFisicaPersonal" style="color: var(--primary); margin-bottom: 5px;">Avaliação Física</h2>
         <p style="color: var(--text-muted); font-size: 0.8rem; margin-bottom: 18px;">
-            <i class="fas fa-info-circle"></i> Escolha um pacote ou uma avaliação avulsa. Após o pagamento, o personal entra em contato para agendar.
+            <i class="ph ph-info"></i> Escolha um pacote ou uma avaliação avulsa. Após o pagamento, o personal entra em contato para agendar.
         </p>
 
         <div id="avFisicaLista"></div>
 
         <label style="margin-top:18px; display:block;">Observações (Opcional)</label>
         <div class="input-wrapper" style="height: auto; margin-top: 5px;">
-            <i class="fas fa-comment" style="align-self: flex-start; margin-top: 15px;"></i>
+            <i class="ph ph-chat-circle" style="align-self: flex-start; margin-top: 15px;"></i>
             <textarea id="avFisicaObs" rows="2" placeholder="Ex: melhor horário, restrições de saúde..." style="background:transparent; border:none; color:#fff; outline:none; flex:1; padding:12px 0; resize:none; font-size:0.9rem; font-family:inherit;"></textarea>
         </div>
 
         <div id="avFisicaFooter" style="display:none; margin-top:18px; border-top:1px solid var(--border); padding-top:16px;">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; flex-wrap:wrap; gap:8px;">
-                <span style="color: var(--text-muted); font-size: 0.8rem; font-weight: 700;"><i class="fas fa-check-circle" style="color:var(--primary);"></i> <span id="avFisicaSelLabel">—</span></span>
+                <span style="color: var(--text-muted); font-size: 0.8rem; font-weight: 700;"><i class="ph ph-check-circle" style="color:var(--primary);"></i> <span id="avFisicaSelLabel">—</span></span>
                 <span id="avFisicaValorDisplay" style="color: var(--primary); font-size: 1.3rem; font-weight: 900;">R$ 0,00</span>
             </div>
             <div style="display:flex; gap:10px;">
                 <button type="button" class="btn-action" style="flex:1; margin-top:0;" onclick="pagarAvFisicaPix()">
-                    <i class="fas fa-qrcode"></i> Pagar via PIX
+                    <i class="ph ph-qr-code"></i> Pagar via PIX
                 </button>
                 <button type="button" class="btn-action" style="flex:1; margin-top:0; background:rgba(255,255,255,0.08); color:#fff; border:1px solid rgba(255,255,255,0.15);" onclick="pagarAvFisicaCartao()">
-                    <i class="fas fa-credit-card"></i> Cartão
+                    <i class="ph ph-credit-card"></i> Cartão
                 </button>
             </div>
         </div>
@@ -1144,7 +1155,7 @@
 {{-- MODAL SELETOR DE HORÁRIOS --}}
 <div id="horarioModal" class="modal-overlay" style="display: none;">
     <div class="profile-card" style="width: 90%; max-width: 450px; border: 1px solid var(--primary);">
-        <i class="fas fa-times close-form" onclick="fecharHorarioModal()"></i>
+        <i class="ph ph-x close-form" onclick="fecharHorarioModal()"></i>
         <h2 style="color: var(--primary); margin-bottom: 5px;" id="tituloHorarioModal">Selecione um Horário</h2>
         <p style="color: var(--text-muted); font-size: 0.8rem; margin-bottom: 20px;">Escolha o horário desejado para este dia</p>
         <div id="listaHorariosDisp" style="max-height: 400px; overflow-y: auto;"></div>
@@ -1154,7 +1165,7 @@
 {{-- MODAL GALERIA VISUALIZAÇÃO --}}
 <div id="modalGaleriaView" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.95); z-index:9999; justify-content:center; align-items:center; backdrop-filter:blur(8px);">
     <div style="background:var(--card-bg); border-radius:24px; padding:30px; width:90%; max-width:550px; border:1px solid var(--border); position:relative;">
-        <i class="fas fa-times" onclick="fecharGaleria()" style="position:absolute; top:20px; right:25px; cursor:pointer; color:var(--text-muted); font-size:1.2rem;"></i>
+        <i class="ph ph-x" onclick="fecharGaleria()" style="position:absolute; top:20px; right:25px; cursor:pointer; color:var(--text-muted); font-size:1.2rem;"></i>
         <h3 id="galeriaViewTitulo" style="color:var(--primary); margin:0 0 20px; font-size:1.1rem; font-weight:900;"></h3>
         <div id="galeriaViewGrid" style="display:grid; grid-template-columns:repeat(3,1fr); gap:10px;"></div>
     </div>
@@ -1214,7 +1225,10 @@
                 @endforeach
             ],
             total_avaliacoes: {{ $p->avaliacoes->count() ?? 0 }},
-            eh_novo: {{ $p->eh_novo_profissional ? 'true' : 'false' }}
+            eh_novo: {{ $p->eh_novo_profissional ? 'true' : 'false' }},
+            pioneiro: {{ $p->eh_pioneiro ? 'true' : 'false' }},
+            pioneiro_posicao: {{ $p->pioneiro_posicao ?? 'null' }},
+            estado: '{{ addslashes($p->estado ?? '') }}'
         },
         @endforeach
     };
@@ -1243,7 +1257,7 @@
         // HEADER
         const fotoHTML = personal.foto 
             ? `<img src="${personal.foto}" alt="${personal.nome}" class="detalhes-foto">`
-            : `<div class="detalhes-foto-placeholder"><i class="fas fa-user"></i></div>`;
+            : `<div class="detalhes-foto-placeholder"><i class="ph ph-user"></i></div>`;
 
         document.getElementById('detalhesHeader').innerHTML = `
             ${fotoHTML}
@@ -1252,9 +1266,10 @@
                 <p>Personal Trainer Certificado</p>
                 <div class="detalhes-avaliacao">
                     ${personal.eh_novo
-                        ? `<span style="color: var(--primary);"><i class="fas fa-seedling"></i> Novo profissional</span>`
-                        : `<i class="fas fa-star"></i> ${personal.avaliacao} <span style="color: var(--text-muted); font-size: 0.7rem;">(${personal.total_avaliacoes} avaliações)</span>`}
+                        ? `<span style="color: var(--primary);"><i class="ph ph-plant"></i> Novo profissional</span>`
+                        : `<i class="ph-fill ph-star"></i> ${personal.avaliacao} <span style="color: var(--text-muted); font-size: 0.7rem;">(${personal.total_avaliacoes} avaliações)</span>`}
                 </div>
+                ${personal.pioneiro ? `<div style="margin-top:8px;"><span title="Um dos 100 primeiros personais${personal.estado ? ' de ' + personal.estado : ''} a entrar na plataforma" style="display:inline-flex; align-items:center; gap:6px; background:linear-gradient(135deg,#FFE259,#FFA751); color:#1a1200; font-weight:800; font-size:0.68rem; text-transform:uppercase; letter-spacing:0.5px; padding:5px 12px; border-radius:20px; box-shadow:0 2px 10px rgba(255,170,40,0.35); border:1px solid rgba(255,210,80,0.7);"><i class="ph ph-crown"></i> Pioneiro${personal.pioneiro_posicao ? ' #' + personal.pioneiro_posicao : ''}</span></div>` : ''}
             </div>
         `;
 
@@ -1274,7 +1289,7 @@
             const academiasArray = personal.academias.split('\n').filter(a => a.trim());
             document.getElementById('detalhesAcademias').innerHTML = academiasArray.map(a => `
                 <div class="detalhes-academia-item">
-                    <i class="fas fa-building"></i>
+                    <i class="ph ph-building"></i>
                     <span>${a.trim()}</span>
                 </div>
             `).join('');
@@ -1294,22 +1309,22 @@
 
         document.getElementById('detalhesResumo').innerHTML = `
             <div class="detalhes-resumo-card">
-                <i class="fas fa-dollar-sign"></i>
+                <i class="ph ph-currency-dollar"></i>
                 <div class="label">Aula Avulsa</div>
                 <div class="valor">R$ ${parseFloat(personal.valor_secao).toFixed(2).replace('.', ',')}</div>
             </div>
             <div class="detalhes-resumo-card">
-                <i class="fas fa-box"></i>
+                <i class="ph ph-package"></i>
                 <div class="label">Pacote a partir de</div>
                 <div class="valor">${menorPacote > 0 ? 'R$ ' + parseFloat(menorPacote).toFixed(2).replace('.', ',') : '-'}</div>
             </div>
             <div class="detalhes-resumo-card">
-                <i class="fas fa-clipboard-list"></i>
+                <i class="ph ph-clipboard-text"></i>
                 <div class="label">Ficha Personalizada</div>
                 <div class="valor">${parseFloat(personal.valor_ficha) > 0 ? 'R$ ' + parseFloat(personal.valor_ficha).toFixed(2).replace('.', ',') : 'Consulte'}</div>
             </div>
             <div class="detalhes-resumo-card">
-                <i class="fas fa-heart-pulse"></i>
+                <i class="ph ph-heartbeat"></i>
                 <div class="label">Avaliação Física</div>
                 <div class="valor">${menorAvaliacao > 0 ? 'A partir de R$ ' + parseFloat(menorAvaliacao).toFixed(2).replace('.', ',') : 'Consulte'}</div>
             </div>
@@ -1477,7 +1492,7 @@
 
         // PACOTES
         if (pacotes.length) {
-            html += '<div style="margin-bottom:18px;"><div class="avf-sec-title"><i class="fas fa-box"></i> Pacotes</div>';
+            html += '<div style="margin-bottom:18px;"><div class="avf-sec-title"><i class="ph ph-package"></i> Pacotes</div>';
             pacotes.forEach(p => {
                 const chips = (p.tipos || []).map(t => '<span class="avf-chip">' + avfEsc(meta[t]?.label || t) + '</span>').join('');
                 html += '<div class="avf-opt" data-kind="pacote" data-id="' + p.id + '" data-valor="' + p.valor + '" data-label="' + avfEsc(p.nome) + '">'
@@ -1491,21 +1506,21 @@
         let avulsas = '';
         tipos.forEach(t => {
             const label = meta[t]?.label || t;
-            const icon  = meta[t]?.icon || 'fa-clipboard';
+            const icon  = meta[t]?.icon || 'ph-clipboard';
             const preco = parseFloat(precos[t]) || 0;
             if (preco > 0) {
                 avulsas += '<div class="avf-opt" data-kind="avulso" data-tipo="' + t + '" data-valor="' + preco + '" data-label="' + avfEsc(label) + '">'
-                    + '<div class="avf-opt-nome"><i class="fas ' + icon + '"></i> ' + avfEsc(label) + '</div>'
+                    + '<div class="avf-opt-nome"><i class="ph ' + icon + '"></i> ' + avfEsc(label) + '</div>'
                     + '<div class="avf-opt-valor">' + moneyBR(preco) + '</div></div>';
             } else if (emPacote[t]) {
-                avulsas += '<div class="avf-opt avf-disabled"><div class="avf-opt-nome"><i class="fas ' + icon + '"></i> ' + avfEsc(label) + '</div>'
+                avulsas += '<div class="avf-opt avf-disabled"><div class="avf-opt-nome"><i class="ph ' + icon + '"></i> ' + avfEsc(label) + '</div>'
                     + '<div class="avf-na">Disponível só no pacote</div></div>';
             } else {
-                avulsas += '<div class="avf-opt avf-disabled"><div class="avf-opt-nome"><i class="fas ' + icon + '"></i> ' + avfEsc(label) + '</div>'
+                avulsas += '<div class="avf-opt avf-disabled"><div class="avf-opt-nome"><i class="ph ' + icon + '"></i> ' + avfEsc(label) + '</div>'
                     + '<div class="avf-na">Personal não trabalha com essa avaliação</div></div>';
             }
         });
-        html += '<div><div class="avf-sec-title"><i class="fas fa-heart-pulse"></i> Avaliações avulsas</div>' + avulsas + '</div>';
+        html += '<div><div class="avf-sec-title"><i class="ph ph-heartbeat"></i> Avaliações avulsas</div>' + avulsas + '</div>';
 
         document.getElementById('avFisicaLista').innerHTML = html;
 
@@ -1627,7 +1642,7 @@
         const container = document.getElementById('listaHistoricoCompleto');
         
         if (window.historicoData.length === 0) {
-            container.innerHTML = '<div class="stat-card" style="padding: 20px; border-style: dashed;"><p style="color: var(--text-muted); margin: 0; font-size: 0.85rem;"><i class="fas fa-history"></i> Nenhum treino realizado ainda.</p></div>';
+            container.innerHTML = '<div class="stat-card" style="padding: 20px; border-style: dashed;"><p style="color: var(--text-muted); margin: 0; font-size: 0.85rem;"><i class="ph ph-clock-counter-clockwise"></i> Nenhum treino realizado ainda.</p></div>';
         } else {
             container.innerHTML = window.historicoData.map(treino => `
                 <div class="list-item" style="border-left-color: var(--text-muted); opacity: 0.8; flex-direction: column; align-items: flex-start; gap: 10px;">
@@ -1636,10 +1651,10 @@
                             ${treino.personal}
                         </strong>
                         <span style="color: var(--text-muted); font-size: 0.8rem;">
-                            <i class="far fa-calendar-alt"></i> ${treino.data}
+                            <i class="ph ph-calendar"></i> ${treino.data}
                             às ${treino.hora_inicio}
                         </span>
-                        ${treino.academia ? `<span style="display: block; color: var(--text-muted); font-size: 0.75rem; margin-top: 3px;"><i class="fas fa-dumbbell"></i> ${treino.academia}</span>` : ''}
+                        ${treino.academia ? `<span style="display: block; color: var(--text-muted); font-size: 0.75rem; margin-top: 3px;"><i class="ph ph-barbell"></i> ${treino.academia}</span>` : ''}
                     </div>
                     <div style="width: 100%; text-align: right;">
                         <div class="badge-status" style="background: rgba(160,160,160,0.1); color: var(--text-muted); display: inline-block;">Concluído</div>
@@ -1685,7 +1700,7 @@
                 <div>
                     <strong style="display: block; font-size: 1rem;">${agendamento.personal}</strong>
                     <span style="color: var(--text-muted); font-size: 0.8rem;">
-                        <i class="far fa-calendar-alt"></i> ${agendamento.data}
+                        <i class="ph ph-calendar"></i> ${agendamento.data}
                         às ${agendamento.hora}
                     </span>
                 </div>
@@ -1798,7 +1813,7 @@
         if (academias.length > 0) {
             container.innerHTML = `
                 <label style="display:block; color:var(--primary); font-weight:900; text-transform:uppercase; font-size:0.7rem; margin-bottom:6px;">
-                    <i class="fas fa-map-marker-alt"></i> Academia / Local de Treino
+                    <i class="ph ph-map-pin"></i> Academia / Local de Treino
                 </label>
                 <select id="academiaPackSelect"
                         onchange="document.getElementById('pacote_academia_nome').value = this.value; atualizarBotao();"
@@ -1813,7 +1828,7 @@
         } else {
             container.innerHTML = `
                 <p style="color:var(--text-muted); font-size:0.8rem; padding:10px 12px; background:rgba(255,255,255,0.04); border-radius:10px; border:1px solid var(--border,#333); margin:0;">
-                    <i class="fas fa-info-circle"></i> O personal ainda não informou as academias em que trabalha.
+                    <i class="ph ph-info"></i> O personal ainda não informou as academias em que trabalha.
                 </p>`;
         }
 
@@ -1963,7 +1978,7 @@
                 container.innerHTML = horarios.map(h => `
                     <div class="horario-selecionavel" onclick="selecionarHorario(${dia}, '${h.inicio}', '${h.fim}', ${ano}, ${mes})">
                         <span style="font-weight: 700; color: var(--primary);">${h.label}</span>
-                        <i class="fas fa-check" style="color: var(--primary);"></i>
+                        <i class="ph ph-check" style="color: var(--primary);"></i>
                     </div>
                 `).join('');
             })
@@ -2072,7 +2087,7 @@
         if (academias.length > 0) {
             container.innerHTML = `
                 <label style="display:block; color:var(--primary); font-weight:900; text-transform:uppercase; font-size:0.7rem; margin-bottom:6px;">
-                    <i class="fas fa-map-marker-alt"></i> Academia / Local de Treino
+                    <i class="ph ph-map-pin"></i> Academia / Local de Treino
                 </label>
                 <select onchange="document.getElementById('avulsaAcademiaNomeInput').value=this.value"
                         style="width:100%; background:var(--bg-dark,#111); border:1px solid var(--border,#333); color:#fff; padding:10px 12px; border-radius:10px; font-size:0.85rem; outline:none; cursor:pointer; margin-bottom:0;">
@@ -2088,7 +2103,7 @@
         } else {
             container.innerHTML = `
                 <p style="color:var(--text-muted); font-size:0.8rem; padding:10px 12px; background:rgba(255,255,255,0.04); border-radius:10px; border:1px solid var(--border,#333); margin:0 0 15px;">
-                    <i class="fas fa-info-circle"></i> O personal ainda não informou as academias em que trabalha.
+                    <i class="ph ph-info"></i> O personal ainda não informou as academias em que trabalha.
                 </p>`;
             document.getElementById('avulsaAcademiaNomeInput').value = '';
         }
@@ -2143,7 +2158,7 @@
         document.getElementById('avulsaHorarioSelecionado').textContent = 'Nenhum';
 
         const listEl = document.getElementById('avulsaHorariosList');
-        listEl.innerHTML = `<p style="color:var(--text-muted); font-size:0.8rem; text-align:center;"><i class="fas fa-circle-notch fa-spin"></i> Buscando horários...</p>`;
+        listEl.innerHTML = `<p style="color:var(--text-muted); font-size:0.8rem; text-align:center;"><i class="ph ph-circle-notch ph-spin"></i> Buscando horários...</p>`;
 
         try {
             const res   = await fetch(`/horarios-disponiveis/${avulsaPersonalId}/${dataStr}`, { headers: { 'Accept': 'application/json' } });
@@ -2154,12 +2169,12 @@
             } else {
                 listEl.innerHTML = `
                     <label style="display:block; color:var(--primary); font-weight:900; text-transform:uppercase; font-size:0.7rem; margin-bottom:8px;">
-                        <i class="fas fa-clock"></i> Horários disponíveis
+                        <i class="ph ph-clock"></i> Horários disponíveis
                     </label>
                     ${slots.map(s => `
                         <div class="horario-selecionavel" onclick="selecionarHorarioAvulsa('${s.inicio}','${s.fim}',this)">
                             <span style="font-weight:800; color:#fff;">${s.inicio} às ${s.fim}</span>
-                            <i class="fas fa-check-circle" style="color:var(--primary); display:none;"></i>
+                            <i class="ph ph-check-circle" style="color:var(--primary); display:none;"></i>
                         </div>
                     `).join('')}
                 `;
@@ -2181,11 +2196,11 @@
         document.querySelectorAll('#avulsaHorariosList .horario-selecionavel').forEach(h => {
             h.style.borderColor = 'transparent';
             h.style.background  = 'var(--input-bg)';
-            h.querySelector('.fa-check-circle').style.display = 'none';
+            h.querySelector('.ph-check-circle').style.display = 'none';
         });
         el.style.borderColor = 'var(--primary)';
         el.style.background  = 'rgba(212,255,0,0.08)';
-        el.querySelector('.fa-check-circle').style.display = 'block';
+        el.querySelector('.ph-check-circle').style.display = 'block';
     }
 
     function mesAnteriorAvulsaModal() {
@@ -2320,7 +2335,7 @@
         const btn = document.getElementById('btnConfirmarContratacao');
         const originalHTML = btn.innerHTML;
         btn.disabled = true;
-        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Gerando Pix...';
+        btn.innerHTML = '<i class="ph ph-spinner ph-spin"></i> Gerando Pix...';
 
         const payload = {
             tipo:              'pacote',
@@ -2475,8 +2490,8 @@
                         <div>
                             <div style="font-weight:800; font-size:1rem; color:#d4ff00; margin-bottom:4px;">${p.nome}</div>
                             <div style="font-size:0.8rem; color:#a0a0a0;">
-                                <i class="fas fa-calendar-alt"></i> ${p.duracao} ${p.duracao === 1 ? 'mês' : 'meses'}
-                                ${p.descricao ? `<br><i class="fas fa-list-ul"></i> ${p.descricao}` : ''}
+                                <i class="ph ph-calendar"></i> ${p.duracao} ${p.duracao === 1 ? 'mês' : 'meses'}
+                                ${p.descricao ? `<br><i class="ph ph-list-bullets"></i> ${p.descricao}` : ''}
                             </div>
                         </div>
                         <div style="text-align:right; flex-shrink:0;">
@@ -2488,12 +2503,12 @@
                         <button onclick="pagarPlanoAcademia(${academiaId}, ${p.id}, '${p.nome}', '${academiaNome}', ${p.valor})"
                             style="flex:1; background:#d4ff00; color:#000; border:none; border-radius:8px; padding:10px; font-weight:900; font-size:0.8rem; cursor:pointer; transition:0.2s;"
                             onmouseover="this.style.background='#e8ff40'" onmouseout="this.style.background='#d4ff00'">
-                            <i class="fas fa-qrcode"></i> PIX
+                            <i class="ph ph-qr-code"></i> PIX
                         </button>
                         <button onclick="abrirCartaoAcademia(${academiaId}, ${p.id}, '${p.nome}', '${academiaNome}', ${p.valor})"
                             style="flex:1; background:rgba(255,255,255,0.08); color:#fff; border:1px solid rgba(255,255,255,0.2); border-radius:8px; padding:10px; font-weight:900; font-size:0.8rem; cursor:pointer; transition:0.2s;"
                             onmouseover="this.style.background='rgba(255,255,255,0.15)'" onmouseout="this.style.background='rgba(255,255,255,0.08)'">
-                            <i class="fas fa-credit-card"></i> Cartão
+                            <i class="ph ph-credit-card"></i> Cartão
                         </button>
                     </div>
                 </div>
@@ -2575,7 +2590,7 @@
     <div style="background:#16181d; border:1px solid rgba(255,255,255,0.08); border-radius:20px; padding:32px; max-width:460px; width:100%; position:relative; max-height:90vh; overflow-y:auto;">
         <button onclick="fecharModalCartao()" style="position:absolute; top:16px; right:16px; background:none; border:none; color:#a0a0a0; font-size:1.2rem; cursor:pointer;">✕</button>
 
-        <h3 style="color:#fff; font-size:1.1rem; font-weight:900; margin:0 0 4px;"><i class="fas fa-credit-card" style="color:var(--primary);"></i> PAGAMENTO COM CARTÃO</h3>
+        <h3 style="color:#fff; font-size:1.1rem; font-weight:900; margin:0 0 4px;"><i class="ph ph-credit-card" style="color:var(--primary);"></i> PAGAMENTO COM CARTÃO</h3>
         <p id="cartaoDescricao" style="color:#a0a0a0; font-size:0.8rem; margin:0 0 4px;"></p>
         <p id="cartaoValor" style="color:#fff; font-size:1.4rem; font-weight:700; margin:0 0 20px;"></p>
 
@@ -2653,7 +2668,7 @@
 
             <button type="submit" id="btnSubmeterCartao"
                 style="width:100%; background:var(--primary); color:#000; border:none; border-radius:12px; padding:14px; font-weight:900; font-size:0.95rem; cursor:pointer;">
-                <i class="fas fa-lock"></i> Pagar com Segurança
+                <i class="ph ph-lock"></i> Pagar com Segurança
             </button>
         </form>
     </div>
@@ -2713,7 +2728,7 @@
         document.getElementById('cartaoSucesso').style.display = 'none';
         const btn = document.getElementById('btnSubmeterCartao');
         btn.disabled = false;
-        btn.innerHTML = '<i class="fas fa-lock"></i> Pagar com Segurança';
+        btn.innerHTML = '<i class="ph ph-lock"></i> Pagar com Segurança';
     }
 
     async function submeterCartao(e) {
@@ -2746,7 +2761,7 @@
 
         const btn = document.getElementById('btnSubmeterCartao');
         btn.disabled = true;
-        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processando...';
+        btn.innerHTML = '<i class="ph ph-spinner ph-spin"></i> Processando...';
         document.getElementById('cartaoErro').style.display = 'none';
 
         try {
@@ -2777,7 +2792,7 @@
             document.getElementById('cartaoErro').textContent = err.message;
             document.getElementById('cartaoErro').style.display = 'block';
             btn.disabled = false;
-            btn.innerHTML = '<i class="fas fa-lock"></i> Pagar com Segurança';
+            btn.innerHTML = '<i class="ph ph-lock"></i> Pagar com Segurança';
         }
     }
 

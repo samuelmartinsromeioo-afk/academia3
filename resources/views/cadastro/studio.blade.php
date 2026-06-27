@@ -9,6 +9,8 @@
 
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/regular/style.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/fill/style.css">
 
     <style>
         :root { --primary: #d4ff00; --bg-dark: #0a0b0d; --card-bg: #16181d; --text-main: #ffffff; --error: #ff4444; }
@@ -31,14 +33,14 @@
         .hint { font-size: 0.72rem; color: #9ca3af; margin-top: 6px; display: block; }
     </style>
 </head>
-<body>
+<body class="ed-page">
 
 <div class="auth-card">
     <h2 style="text-align: center; margin-bottom: 30px; letter-spacing: 2px;">CADASTRO DE STUDIO</h2>
 
     @if (session('sucesso'))
         <div class="alert alert-success">
-            <i class="fa-solid fa-circle-check"></i> {{ session('sucesso') }}
+            <i class="ph ph-check-circle"></i> {{ session('sucesso') }}
         </div>
     @endif
 
@@ -58,7 +60,7 @@
         <div class="form-group">
             <label>CNPJ</label>
             <div class="input-wrapper">
-                <i class="fa-solid fa-building"></i>
+                <i class="ph ph-building"></i>
                 <input type="text" name="cnpj" value="{{ old('cnpj') }}" placeholder="00.000.000/0000-00"
                         oninput="this.value = mascaras.cnpj(this.value)" maxlength="18" required>
             </div>
@@ -67,7 +69,7 @@
         <div class="form-group">
             <label>Nome do Studio</label>
             <div class="input-wrapper">
-                <i class="fa-solid fa-spa"></i>
+                <i class="ph ph-flower-lotus"></i>
                 <input type="text" name="nome" id="nome" value="{{ old('nome') }}" required>
             </div>
         </div>
@@ -75,7 +77,7 @@
         <div class="form-group">
             <label>WhatsApp</label>
             <div class="input-wrapper">
-                <i class="fa-brands fa-whatsapp"></i>
+                <i class="ph ph-whatsapp-logo"></i>
                 <input type="text" name="whatsapp" value="{{ old('whatsapp') }}" placeholder="(11) 99999-9999"
                         oninput="this.value = mascaras.telefone(this.value)" maxlength="15">
             </div>
@@ -84,11 +86,11 @@
         <div class="form-group">
             <label>CEP</label>
             <div class="input-wrapper">
-                <i class="fa-solid fa-map-location-dot"></i>
+                <i class="ph ph-map-pin-area"></i>
                 <input type="text" name="cep" id="cep" value="{{ old('cep') }}" placeholder="00000-000"
                         oninput="this.value = mascaras.cep(this.value)" maxlength="9" required>
             </div>
-            <span id="cep-loading" class="loading"><i class="fa-solid fa-spinner fa-spin"></i> Buscando CEP...</span>
+            <span id="cep-loading" class="loading"><i class="ph ph-spinner ph-spin"></i> Buscando CEP...</span>
         </div>
 
         <div class="form-group">
@@ -116,7 +118,7 @@
         <div class="form-group">
             <label>Número/Complemento</label>
             <div class="input-wrapper">
-                <i class="fa-solid fa-house-chimney"></i>
+                <i class="ph ph-house"></i>
                 <input type="text" name="complemento" value="{{ old('complemento') }}" placeholder="Ex: 123 ou Sala 2">
             </div>
         </div>
@@ -124,7 +126,7 @@
         <div class="form-group full-width">
             <label>Endereço Completo</label>
             <div class="input-wrapper">
-                <i class="fa-solid fa-map"></i>
+                <i class="ph ph-map-trifold"></i>
                 <input type="text" name="endereco" id="endereco_completo" value="{{ old('endereco') }}" placeholder="Rua, Bairro - Cidade/UF" required>
             </div>
         </div>
@@ -132,7 +134,7 @@
         <div class="form-group">
             <label>Valor da Aula Avulsa (R$)</label>
             <div class="input-wrapper">
-                <i class="fa-solid fa-dollar-sign"></i>
+                <i class="ph ph-currency-dollar"></i>
                 <input type="number" step="0.01" min="0" name="valor_aula" value="{{ old('valor_aula') }}" required>
             </div>
             <span class="hint">Valor cobrado por aula agendada no seu studio.</span>
@@ -141,7 +143,7 @@
         <div class="form-group">
             <label>Capacidade por Horário</label>
             <div class="input-wrapper">
-                <i class="fa-solid fa-users"></i>
+                <i class="ph ph-users"></i>
                 <input type="number" min="1" max="500" name="capacidade_padrao" value="{{ old('capacidade_padrao', 10) }}" required>
             </div>
             <span class="hint">Quantos alunos podem treinar ao mesmo tempo.</span>
@@ -150,7 +152,7 @@
         <div class="form-group">
             <label>E-mail</label>
             <div class="input-wrapper">
-                <i class="fa-solid fa-envelope"></i>
+                <i class="ph ph-envelope"></i>
                 <input type="email" name="email" value="{{ old('email') }}" required>
             </div>
         </div>
@@ -158,7 +160,7 @@
         <div class="form-group">
             <label>Senha</label>
             <div class="input-wrapper">
-                <i class="fa-solid fa-key"></i>
+                <i class="ph ph-key"></i>
                 <input type="password" name="senha" minlength="8" required>
             </div>
         </div>
@@ -166,7 +168,7 @@
         <div class="form-group full-width">
             <label>Confirmar Senha</label>
             <div class="input-wrapper">
-                <i class="fa-solid fa-shield-halved"></i>
+                <i class="ph ph-shield-check"></i>
                 <input type="password" name="senha_confirmation" minlength="8" required>
             </div>
         </div>
@@ -174,7 +176,7 @@
         <div class="form-group">
             <label>Tipo de Studio</label>
             <div class="input-wrapper">
-                <i class="fa-solid fa-tag"></i>
+                <i class="ph ph-tag"></i>
                 <select name="tipo" required>
                     <option value="" disabled {{ old('tipo') ? '' : 'selected' }}>Selecione o tipo...</option>
                     <option value="yoga_pilates" {{ old('tipo') === 'yoga_pilates' ? 'selected' : '' }}>🧘 Yoga / Pilates</option>
@@ -190,7 +192,7 @@
         <div class="form-group">
             <label>Modalidades Oferecidas</label>
             <div class="input-wrapper">
-                <i class="fa-solid fa-person-running"></i>
+                <i class="ph ph-person-simple-run"></i>
                 <input type="text" name="modalidades" value="{{ old('modalidades') }}" placeholder="Ex: Pilates, Funcional, Cross Training, Yoga">
             </div>
         </div>
@@ -206,11 +208,11 @@
         <input type="hidden" name="longitude" id="longitude" value="{{ old('longitude') }}">
 
         <button type="submit" class="btn-submit full-width">
-            FINALIZAR CADASTRO <i class="fa-solid fa-paper-plane" style="margin-left: 10px;"></i>
+            FINALIZAR CADASTRO <i class="ph ph-paper-plane-tilt" style="margin-left: 10px;"></i>
         </button>
 
         <p class="full-width" style="text-align:center; color:#9ca3af; font-size:0.85rem; margin-top:5px;">
-            <i class="fa-solid fa-clock"></i> Após o cadastro, seu studio passará por análise do administrador antes da liberação do acesso.
+            <i class="ph ph-clock"></i> Após o cadastro, seu studio passará por análise do administrador antes da liberação do acesso.
         </p>
     </form>
 </div>
@@ -241,7 +243,7 @@ document.getElementById('cep').addEventListener('blur', function() {
                             document.getElementById('latitude').value  = results[0].lat;
                             document.getElementById('longitude').value = results[0].lon;
                             document.getElementById('cep-loading').innerHTML =
-                                '<i class="fa-solid fa-check" style="color:#d4ff00"></i> Localização encontrada!';
+                                '<i class="ph ph-check" style="color:#d4ff00"></i> Localização encontrada!';
                         }
                     })
                     .catch(() => {})
@@ -249,7 +251,7 @@ document.getElementById('cep').addEventListener('blur', function() {
                         setTimeout(() => {
                             document.getElementById('cep-loading').style.display = 'none';
                             document.getElementById('cep-loading').innerHTML =
-                                '<i class="fa-solid fa-spinner fa-spin"></i> Buscando CEP...';
+                                '<i class="ph ph-spinner ph-spin"></i> Buscando CEP...';
                         }, 2000);
                     });
             } else {

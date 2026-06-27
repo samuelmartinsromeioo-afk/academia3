@@ -7,6 +7,8 @@
     <title>Feed de Atividade</title>
     <link rel="icon" type="image/png" href="{{ asset('SnrFit.png') }}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/regular/style.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/fill/style.css">
     <style>
         :root { --primary:#F4BE16; --bg-dark:#000; --card-bg:#111317; --text-main:#fff; --text-muted:#9a9a9a; --green:#00e676; --red:#ff5252; --border:rgba(255,255,255,0.08); }
         * { margin:0; padding:0; box-sizing:border-box; }
@@ -42,28 +44,28 @@
     </style>
 </head>
 
-<body>
+<body class="ed-page">
     <div class="top-bar">
-        <a href="{{ route('personal.dashboard') }}" class="back-btn"><i class="fas fa-arrow-left"></i></a>
-        <span class="title"><i class="fas fa-rss"></i> Feed de Atividade</span>
+        <a href="{{ route('personal.dashboard') }}" class="back-btn"><i class="ph ph-arrow-left"></i></a>
+        <span class="title"><i class="ph ph-rss"></i> Feed de Atividade</span>
     </div>
 
     <div class="container">
-        <h1><i class="fas fa-rss"></i> FEED DE ATIVIDADE</h1>
+        <div class="ed-eyebrow"><i class="ph ph-rss"></i> Atividade</div><h1 class="ed-h">Feed de <span class="ed-mark">Atividade</span></h1>
 
         <div class="cards">
             <div class="card">
-                <div class="ico"><i class="fas fa-dumbbell"></i></div>
+                <div class="ico"><i class="ph ph-barbell"></i></div>
                 <div class="v">{{ $treinosHoje }}</div>
                 <div class="l">Treinos hoje</div>
             </div>
             <div class="card">
-                <div class="ico"><i class="fas fa-trophy"></i></div>
+                <div class="ico"><i class="ph ph-trophy"></i></div>
                 <div class="v">{{ count($recordes) }}</div>
                 <div class="l">Recordes (14d)</div>
             </div>
             <div class="card {{ $sumidos > 0 ? 'alert' : '' }}">
-                <div class="ico"><i class="fas fa-user-clock"></i></div>
+                <div class="ico"><i class="ph ph-clock-user"></i></div>
                 <div class="v" style="{{ $sumidos > 0 ? 'color:var(--red)' : '' }}">{{ $sumidos }}</div>
                 <div class="l">Sumidos</div>
                 <a href="{{ route('aderencia.dashboard') }}">ver painel</a>
@@ -72,10 +74,10 @@
 
         @if(count($recordes) > 0)
         <div class="panel">
-            <div class="panel-title"><i class="fas fa-trophy"></i> Recordes recentes</div>
+            <div class="panel-title"><i class="ph ph-trophy"></i> Recordes recentes</div>
             @foreach($recordes as $r)
                 <div class="rec">
-                    <div class="ico"><i class="fas fa-trophy"></i></div>
+                    <div class="ico"><i class="ph ph-trophy"></i></div>
                     <div class="txt">{{ $r['cliente'] }} <small>{{ $r['exercicio'] }} · {{ $r['data']->format('d/m') }}</small></div>
                     <div class="peso">{{ rtrim(rtrim(number_format($r['peso'],2,',','.'),'0'),',') }} kg</div>
                 </div>
@@ -84,7 +86,7 @@
         @endif
 
         <div class="panel">
-            <div class="panel-title"><i class="fas fa-clock-rotate-left"></i> Atividade recente (14 dias)</div>
+            <div class="panel-title"><i class="ph ph-clock-counter-clockwise"></i> Atividade recente (14 dias)</div>
             @if($atividades->isEmpty())
                 <div class="empty">Nenhum treino concluído pelos seus alunos nos últimos 14 dias.</div>
             @else

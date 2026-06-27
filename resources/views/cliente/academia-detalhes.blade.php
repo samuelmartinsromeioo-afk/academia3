@@ -8,6 +8,8 @@
     @include('partials.pwa')
     <link href="https://fonts.googleapis.com/css2?family=Syncopate:wght@700&family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/regular/style.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/fill/style.css">
     <style>
         :root {
             --primary: #d4ff00;
@@ -128,7 +130,7 @@
         }
     </style>
 </head>
-<body>
+<body class="ed-page">
 
 @php
     $diasSemana = [0 => 'Domingo', 1 => 'Segunda', 2 => 'Terça', 3 => 'Quarta', 4 => 'Quinta', 5 => 'Sexta', 6 => 'Sábado'];
@@ -136,21 +138,21 @@
 
 <div class="top-bar">
     <div class="logo">SNR<span>FIT</span></div>
-    <a href="{{ route('academias.explorar') }}" class="btn-top"><i class="fas fa-arrow-left"></i> Voltar às academias</a>
+    <a href="{{ route('academias.explorar') }}" class="btn-top"><i class="ph ph-arrow-left"></i> Voltar às academias</a>
 </div>
 
 <div class="container">
 
     {{-- HEADER --}}
     <div class="header-card">
-        <div class="header-icon"><i class="fas fa-dumbbell"></i></div>
+        <div class="header-icon"><i class="ph ph-barbell"></i></div>
         <div class="header-info">
             <h1>{{ $academia->nome }}</h1>
             @if($academia->tipos_aulas)
-                <div class="modalidades"><i class="fas fa-bolt"></i> {{ $academia->tipos_aulas }}</div>
+                <div class="modalidades"><i class="ph ph-lightning"></i> {{ $academia->tipos_aulas }}</div>
             @endif
-            <div class="meta"><i class="fas fa-map-marker-alt"></i> {{ $academia->endereco ?? ($academia->cidade . ' - ' . $academia->estado) }}</div>
-            <div class="meta"><i class="fas fa-id-card"></i> Mensalidade: <strong style="color:#fff;">R$ {{ number_format($academia->valor_mensalidade ?? 0, 2, ',', '.') }}</strong></div>
+            <div class="meta"><i class="ph ph-map-pin"></i> {{ $academia->endereco ?? ($academia->cidade . ' - ' . $academia->estado) }}</div>
+            <div class="meta"><i class="ph ph-identification-card"></i> Mensalidade: <strong style="color:#fff;">R$ {{ number_format($academia->valor_mensalidade ?? 0, 2, ',', '.') }}</strong></div>
             @if($academia->descricao)
                 <p class="descricao">{{ $academia->descricao }}</p>
             @endif
@@ -160,7 +162,7 @@
     {{-- GALERIA --}}
     @if($academia->fotos->isNotEmpty())
         <div class="section">
-            <div class="section-title"><i class="fas fa-images"></i> Fotos da academia</div>
+            <div class="section-title"><i class="ph ph-images"></i> Fotos da academia</div>
             <div class="galeria-grid">
                 @foreach($academia->fotos as $foto)
                     <img src="{{ asset('storage/' . $foto->path) }}" alt="{{ $foto->legenda ?? $academia->nome }}" title="{{ $foto->legenda }}" onclick="window.open(this.src, '_blank')">
@@ -171,7 +173,7 @@
 
     {{-- PLANOS E MENSALIDADE --}}
     <div class="section">
-        <div class="section-title"><i class="fas fa-id-card"></i> Planos e mensalidade</div>
+        <div class="section-title"><i class="ph ph-identification-card"></i> Planos e mensalidade</div>
 
         <div class="mensalidade-box">
             <div>
@@ -182,8 +184,8 @@
                 <div class="valor">R$ {{ number_format($academia->valor_mensalidade ?? 0, 2, ',', '.') }} <small>/mês</small></div>
                 @if(($academia->valor_mensalidade ?? 0) > 0)
                     <div class="botoes-pagamento" style="margin-top:10px; min-width:190px;">
-                        <button class="btn-pix" onclick="pagarMensalidadePix()"><i class="fas fa-qrcode"></i> PIX</button>
-                        <button class="btn-cartao" onclick="pagarMensalidadeCartao()"><i class="fas fa-credit-card"></i> Cartão</button>
+                        <button class="btn-pix" onclick="pagarMensalidadePix()"><i class="ph ph-qr-code"></i> PIX</button>
+                        <button class="btn-cartao" onclick="pagarMensalidadeCartao()"><i class="ph ph-credit-card"></i> Cartão</button>
                     </div>
                 @endif
             </div>
@@ -203,8 +205,8 @@
                             <p class="desc"></p>
                         @endif
                         <div class="botoes-pagamento">
-                            <button class="btn-pix" onclick="pagarPlanoPix({{ $plano->id }}, {!! json_encode($plano->nome) !!}, {{ $plano->valor }})"><i class="fas fa-qrcode"></i> PIX</button>
-                            <button class="btn-cartao" onclick="pagarPlanoCartao({{ $plano->id }}, {!! json_encode($plano->nome) !!}, {{ $plano->valor }})"><i class="fas fa-credit-card"></i> Cartão</button>
+                            <button class="btn-pix" onclick="pagarPlanoPix({{ $plano->id }}, {!! json_encode($plano->nome) !!}, {{ $plano->valor }})"><i class="ph ph-qr-code"></i> PIX</button>
+                            <button class="btn-cartao" onclick="pagarPlanoCartao({{ $plano->id }}, {!! json_encode($plano->nome) !!}, {{ $plano->valor }})"><i class="ph ph-credit-card"></i> Cartão</button>
                         </div>
                     </div>
                 @endforeach
@@ -214,7 +216,7 @@
 
     {{-- PROFISSIONAIS --}}
     <div class="section">
-        <div class="section-title"><i class="fas fa-user-tie"></i> Profissionais</div>
+        <div class="section-title"><i class="ph ph-user-list"></i> Profissionais</div>
         @if($academia->professores->isEmpty())
             <p class="empty">A academia ainda não cadastrou seus profissionais.</p>
         @else
@@ -222,10 +224,10 @@
                 @foreach($academia->professores as $prof)
                     <div class="prof-card {{ $prof->resumo ? 'clickable' : '' }}"
                          @if($prof->resumo) onclick="verProfissional({!! json_encode($prof->nome) !!}, {!! json_encode($prof->resumo) !!})" @endif>
-                        <div class="avatar"><i class="fas fa-user"></i></div>
+                        <div class="avatar"><i class="ph ph-user"></i></div>
                         <div>
                             <div class="nome">{{ $prof->nome }}</div>
-                            @if($prof->resumo)<div class="ver"><i class="fas fa-eye"></i> Ver resumo</div>@endif
+                            @if($prof->resumo)<div class="ver"><i class="ph ph-eye"></i> Ver resumo</div>@endif
                         </div>
                     </div>
                 @endforeach
@@ -235,7 +237,7 @@
 
     {{-- AULAS --}}
     <div class="section">
-        <div class="section-title"><i class="fas fa-people-group"></i> Aulas</div>
+        <div class="section-title"><i class="ph ph-users-three"></i> Aulas</div>
         @if($academia->aulas->isEmpty())
             <p class="empty">A academia ainda não divulgou suas aulas.</p>
         @else
@@ -245,7 +247,7 @@
                         <h4>{{ $aula->nome }}</h4>
                         @if(!is_null($aula->dia_semana) || $aula->hora_inicio || $aula->professor)
                             <div class="horario">
-                                @if(!is_null($aula->dia_semana))<span><i class="fas fa-calendar-day"></i> {{ $diasSemana[$aula->dia_semana] ?? '' }}</span>@endif
+                                @if(!is_null($aula->dia_semana))<span><i class="ph ph-calendar-dot"></i> {{ $diasSemana[$aula->dia_semana] ?? '' }}</span>@endif
                                 @if($aula->hora_inicio)<span>· {{ \Illuminate\Support\Str::substr($aula->hora_inicio, 0, 5) }}@if($aula->duracao_min) ({{ $aula->duracao_min }}min)@endif</span>@endif
                                 @if($aula->professor)
                                     <span>· @if($aula->professor?->resumo)<a class="prof-link" onclick="verProfissional({!! json_encode($aula->professor?->nome) !!}, {!! json_encode($aula->professor?->resumo) !!})">{{ $aula->professor?->nome }}</a>@else{{ $aula->professor?->nome }}@endif</span>
@@ -261,7 +263,7 @@
 
     {{-- INFRAESTRUTURA --}}
     <div class="section">
-        <div class="section-title"><i class="fas fa-building"></i> Infraestrutura</div>
+        <div class="section-title"><i class="ph ph-building"></i> Infraestrutura</div>
         @if($academia->infraestrutura)
             <p class="infra">{{ $academia->infraestrutura }}</p>
         @else
@@ -274,7 +276,7 @@
 <div class="modal-overlay" id="profModal">
     <div class="modal-box">
         <button class="modal-fechar" onclick="fecharProfModal()">✕</button>
-        <h3><i class="fas fa-user-tie"></i> <span id="profModalNome">Profissional</span></h3>
+        <h3><i class="ph ph-user-list"></i> <span id="profModalNome">Profissional</span></h3>
         <p class="modal-resumo" id="profModalResumo"></p>
     </div>
 </div>
@@ -283,7 +285,7 @@
 <div class="modal-overlay" id="modalPix">
     <div class="modal-box">
         <button class="modal-fechar" onclick="fecharModalPix()">✕</button>
-        <h3><i class="fas fa-qrcode"></i> PAGAMENTO PIX</h3>
+        <h3><i class="ph ph-qr-code"></i> PAGAMENTO PIX</h3>
         <p class="modal-sub" id="pixDescricao"></p>
         <p class="modal-valor" id="pixValor">Gerando QR Code...</p>
         <p id="pixRecorrenteNota" style="display:none; color:#d4ff00; font-size:0.78rem; font-weight:700; margin:0 0 12px; background:rgba(212,255,0,0.08); border:1px solid rgba(212,255,0,0.25); border-radius:10px; padding:8px 12px;">
@@ -292,7 +294,7 @@
         <img class="pix-qr" id="pixQr" src="" alt="QR Code PIX">
         <div class="pix-copia-wrap">
             <input type="text" id="pixCopia" readonly>
-            <button onclick="copiarPix()"><i class="fas fa-copy"></i></button>
+            <button onclick="copiarPix()"><i class="ph ph-copy"></i></button>
         </div>
         <p style="color: var(--text-muted); font-size: 0.75rem; text-align: center;">Escaneie o QR Code ou use o copia e cola. A confirmação é automática.</p>
         <p class="pix-status" id="pixStatus"></p>
@@ -303,7 +305,7 @@
 <div class="modal-overlay" id="modalCartao">
     <div class="modal-box">
         <button class="modal-fechar" onclick="fecharModalCartao()">✕</button>
-        <h3><i class="fas fa-credit-card"></i> PAGAMENTO COM CARTÃO</h3>
+        <h3><i class="ph ph-credit-card"></i> PAGAMENTO COM CARTÃO</h3>
         <p class="modal-sub" id="cartaoDescricao"></p>
         <p class="modal-valor" id="cartaoValor"></p>
 
@@ -352,7 +354,7 @@
             <p class="erro-msg" id="cartaoErro"></p>
             <p class="ok-msg" id="cartaoSucesso">✅ Pagamento aprovado! Atualizando...</p>
 
-            <button type="submit" class="btn-confirmar" id="btnSubmeterCartao"><i class="fas fa-lock"></i> Pagar com Segurança</button>
+            <button type="submit" class="btn-confirmar" id="btnSubmeterCartao"><i class="ph ph-lock"></i> Pagar com Segurança</button>
         </form>
     </div>
 </div>
@@ -454,7 +456,7 @@
         document.getElementById('cartaoSucesso').style.display = 'none';
         const btn = document.getElementById('btnSubmeterCartao');
         btn.disabled = false;
-        btn.innerHTML = '<i class="fas fa-lock"></i> Pagar com Segurança';
+        btn.innerHTML = '<i class="ph ph-lock"></i> Pagar com Segurança';
         document.getElementById('cartaoTelefone').value = CLIENTE_TEL || '';
         document.getElementById('cartaoCEP').value = CLIENTE_CEP || '';
         document.getElementById('modalCartao').classList.add('aberto');
@@ -491,7 +493,7 @@
 
         const btn = document.getElementById('btnSubmeterCartao');
         btn.disabled = true;
-        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processando...';
+        btn.innerHTML = '<i class="ph ph-spinner ph-spin"></i> Processando...';
         document.getElementById('cartaoErro').style.display = 'none';
 
         try {
@@ -513,7 +515,7 @@
             document.getElementById('cartaoErro').textContent = err.message;
             document.getElementById('cartaoErro').style.display = 'block';
             btn.disabled = false;
-            btn.innerHTML = '<i class="fas fa-lock"></i> Pagar com Segurança';
+            btn.innerHTML = '<i class="ph ph-lock"></i> Pagar com Segurança';
         }
     }
 

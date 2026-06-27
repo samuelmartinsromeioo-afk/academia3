@@ -7,6 +7,8 @@
     <link rel="icon" type="image/png" href="{{ asset('SnrFit.png') }}">
     @include('partials.pwa')
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/regular/style.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/fill/style.css">
     <style>
         :root {
             --primary: #d4ff00;
@@ -121,11 +123,11 @@
         }
     </style>
 </head>
-<body>
+<body class="ed-page">
 
 <div class="top-bar">
     <div style="display:flex; align-items:center; gap:12px;">
-        <a href="{{ route('personal.avaliacao-fisica') }}" class="btn-back"><i class="fas fa-arrow-left"></i> Voltar</a>
+        <a href="{{ route('personal.avaliacao-fisica') }}" class="btn-back"><i class="ph ph-arrow-left"></i> Voltar</a>
     </div>
     <div style="display:flex; align-items:center; gap:12px;">
         <img src="{{ $personal->foto ? asset('storage/'.$personal->foto) : 'https://cdn-icons-png.flaticon.com/512/3135/3135715.png' }}" style="width:38px; height:38px; border-radius:50%; border:2px solid var(--primary); object-fit:cover;">
@@ -136,22 +138,22 @@
 <div class="container">
     <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:15px; flex-wrap:wrap; margin-bottom:6px;">
         <div>
-            <h1 class="page-title"><i class="fas fa-heart-pulse" style="margin-right:10px;"></i>{{ $cliente->nome }}</h1>
+            <div class="ed-eyebrow"><i class="ph ph-heartbeat"></i> AvaliaÃ§Ã£o do aluno</div><h1 class="ed-h">{{ $cliente->nome }}</h1>
             <p class="page-sub">Registros de avaliação física do aluno. Cada avaliação é salva separadamente.</p>
         </div>
         <div style="display:flex; gap:10px; flex-wrap:wrap;">
-            <button class="btn-primary" onclick="abrirModalRegistro()"><i class="fas fa-plus"></i> Novo Registro</button>
+            <button class="btn-primary" onclick="abrirModalRegistro()"><i class="ph ph-plus"></i> Novo Registro</button>
         </div>
     </div>
 
     @if(session('success'))
-        <div class="alert-success"><i class="fas fa-check-circle"></i> {{ session('success') }}</div>
+        <div class="alert-success"><i class="ph ph-check-circle"></i> {{ session('success') }}</div>
     @endif
     @if(session('error'))
-        <div class="alert-error"><i class="fas fa-exclamation-circle"></i> {{ session('error') }}</div>
+        <div class="alert-error"><i class="ph ph-warning-circle"></i> {{ session('error') }}</div>
     @endif
     @if($errors->any())
-        <div class="alert-error"><i class="fas fa-exclamation-circle"></i> {{ $errors->first() }}</div>
+        <div class="alert-error"><i class="ph ph-warning-circle"></i> {{ $errors->first() }}</div>
     @endif
 
     @php
@@ -168,20 +170,20 @@
 
     <div class="tipo-tabs">
         <a href="{{ route('personal.avaliacao-fisica.aluno', $cliente->id) }}{{ $mesFiltro ? '?mes='.$mesFiltro : '' }}" class="tipo-tab {{ !$tipoFiltro ? 'active' : '' }}">
-            <i class="fas fa-list"></i> Todos
+            <i class="ph ph-list"></i> Todos
         </a>
         @foreach($tiposCriaveis as $key)
         <a href="{{ route('personal.avaliacao-fisica.aluno', $cliente->id) }}?tipo={{ $key }}{{ $mesFiltro ? '&mes='.$mesFiltro : '' }}" class="tipo-tab {{ $tipoFiltro === $key ? 'active' : '' }}">
-            <i class="fas {{ $tipos[$key]['icon'] }}"></i> {{ $tipos[$key]['label'] }}
+            <i class="ph {{ $tipos[$key]['icon'] }}"></i> {{ $tipos[$key]['label'] }}
         </a>
         @endforeach
         <a href="{{ route('personal.avaliacao-fisica.aluno', $cliente->id) }}?tipo=resumo{{ $mesFiltro ? '&mes='.$mesFiltro : '' }}" class="tipo-tab {{ $tipoFiltro === 'resumo' ? 'active' : '' }}">
-            <i class="fas fa-chart-simple"></i> Resumo
+            <i class="ph ph-chart-bar"></i> Resumo
         </a>
     </div>
 
     <div class="filtro-bar">
-        <label style="color:var(--text-muted); font-size:0.7rem; font-weight:800; text-transform:uppercase;"><i class="fas fa-filter"></i> Filtrar por mês:</label>
+        <label style="color:var(--text-muted); font-size:0.7rem; font-weight:800; text-transform:uppercase;"><i class="ph ph-funnel"></i> Filtrar por mês:</label>
         <select onchange="filtrarMes(this.value)">
             <option value="">Todos os meses</option>
             @foreach($mesesDisponiveis as $m)
@@ -193,18 +195,18 @@
     @if($tipoFiltro === 'resumo')
         @if(empty($resumo))
             <div class="empty-state">
-                <i class="fas fa-chart-simple"></i>
+                <i class="ph ph-chart-bar"></i>
                 <p>Nenhum dado para montar o resumo{{ $mesFiltro ? ' nesse mês' : '' }}.<br>Adicione registros nas categorias para visualizar tudo aqui.</p>
             </div>
         @else
-            <p style="color:var(--text-muted); font-size:0.8rem; margin:0 0 16px;"><i class="fas fa-info-circle"></i> Resumo com base no registro mais recente de cada categoria{{ $mesFiltro ? ' no mês selecionado' : '' }}.</p>
+            <p style="color:var(--text-muted); font-size:0.8rem; margin:0 0 16px;"><i class="ph ph-info"></i> Resumo com base no registro mais recente de cada categoria{{ $mesFiltro ? ' no mês selecionado' : '' }}.</p>
             <div class="resumo-grid">
                 @foreach($resumo as $key => $item)
                 <div class="resumo-card">
-                    <div class="resumo-icon"><i class="fas {{ $tipos[$key]['icon'] ?? 'fa-clipboard' }}"></i></div>
+                    <div class="resumo-icon"><i class="ph {{ $tipos[$key]['icon'] ?? 'ph-clipboard' }}"></i></div>
                     <h3>{{ $tipos[$key]['label'] ?? $key }}</h3>
                     <div class="resumo-valor">{{ $item['valor'] }}</div>
-                    <div class="resumo-data"><i class="far fa-calendar-alt"></i> {{ $item['registro']->data_avaliacao->format('d/m/Y') }}</div>
+                    <div class="resumo-data"><i class="ph ph-calendar"></i> {{ $item['registro']->data_avaliacao->format('d/m/Y') }}</div>
 
                     @if($item['detalhe'])
                         <div class="resumo-detalhe">{{ $item['detalhe'] }}</div>
@@ -218,7 +220,7 @@
 
                     @if($key === 'bioimpedancia' && $item['registro']->arquivo)
                         <div style="margin-top:12px;">
-                            <a href="{{ asset('storage/'.$item['registro']->arquivo) }}" target="_blank" class="btn-pdf"><i class="fas fa-file-pdf"></i> Abrir PDF</a>
+                            <a href="{{ asset('storage/'.$item['registro']->arquivo) }}" target="_blank" class="btn-pdf"><i class="ph ph-file-pdf"></i> Abrir PDF</a>
                         </div>
                     @endif
 
@@ -235,7 +237,7 @@
 
     @elseif($registros->isEmpty())
         <div class="empty-state">
-            <i class="fas fa-clipboard"></i>
+            <i class="ph ph-clipboard"></i>
             <p>Nenhum registro encontrado{{ $tipoFiltro || $mesFiltro ? ' para esse filtro' : '' }}.<br>Clique em "Novo Registro" para começar.</p>
         </div>
     @else
@@ -243,13 +245,13 @@
         <div class="card">
             <div class="registro-head">
                 <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
-                    <span class="tipo-badge"><i class="fas {{ $tipos[$r->tipo]['icon'] ?? 'fa-clipboard' }}"></i> {{ $tipos[$r->tipo]['label'] ?? $r->tipo }}</span>
-                    <span class="data-registro"><i class="far fa-calendar-alt"></i> {{ $r->data_avaliacao->format('d/m/Y') }}</span>
+                    <span class="tipo-badge"><i class="ph {{ $tipos[$r->tipo]['icon'] ?? 'ph-clipboard' }}"></i> {{ $tipos[$r->tipo]['label'] ?? $r->tipo }}</span>
+                    <span class="data-registro"><i class="ph ph-calendar"></i> {{ $r->data_avaliacao->format('d/m/Y') }}</span>
                 </div>
                 <form action="{{ route('personal.avaliacao-fisica.destroy', $r->id) }}" method="POST" onsubmit="return confirm('Excluir este registro?')">
                     @csrf
                     @method('DELETE')
-                    <button type="submit" class="btn-delete"><i class="fas fa-trash-alt"></i></button>
+                    <button type="submit" class="btn-delete"><i class="ph ph-trash"></i></button>
                 </form>
             </div>
 
@@ -262,8 +264,8 @@
 {{-- MODAL NOVO REGISTRO --}}
 <div id="modalRegistro" class="modal-overlay">
     <div class="modal-content">
-        <button class="modal-close" onclick="fecharModalRegistro()"><i class="fas fa-times"></i></button>
-        <h2><i class="fas fa-plus-circle"></i> Novo Registro</h2>
+        <button class="modal-close" onclick="fecharModalRegistro()"><i class="ph ph-x"></i></button>
+        <h2><i class="ph ph-plus-circle"></i> Novo Registro</h2>
         <p class="modal-sub">Escolha o tipo de avaliação e preencha apenas o que for medir — cada registro é salvo de forma independente.</p>
 
         <form action="{{ route('personal.avaliacao-fisica.store', $cliente->id) }}" method="POST" enctype="multipart/form-data">
@@ -493,10 +495,10 @@
             {{-- POSTURAL --}}
             <div class="campos-tipo" data-tipo="postural" style="display:none;">
                 <div class="postural-foto-grid">
-                    <div class="form-group"><label><i class="fas fa-arrow-up"></i> Foto Anterior</label><input type="file" name="foto_anterior" accept="image/*"></div>
-                    <div class="form-group"><label><i class="fas fa-arrow-down"></i> Foto Posterior</label><input type="file" name="foto_posterior" accept="image/*"></div>
-                    <div class="form-group"><label><i class="fas fa-arrow-right"></i> Lateral Direita</label><input type="file" name="foto_lateral_direita" accept="image/*"></div>
-                    <div class="form-group"><label><i class="fas fa-arrow-left"></i> Lateral Esquerda</label><input type="file" name="foto_lateral_esquerda" accept="image/*"></div>
+                    <div class="form-group"><label><i class="ph ph-arrow-up"></i> Foto Anterior</label><input type="file" name="foto_anterior" accept="image/*"></div>
+                    <div class="form-group"><label><i class="ph ph-arrow-down"></i> Foto Posterior</label><input type="file" name="foto_posterior" accept="image/*"></div>
+                    <div class="form-group"><label><i class="ph ph-arrow-right"></i> Lateral Direita</label><input type="file" name="foto_lateral_direita" accept="image/*"></div>
+                    <div class="form-group"><label><i class="ph ph-arrow-left"></i> Lateral Esquerda</label><input type="file" name="foto_lateral_esquerda" accept="image/*"></div>
                 </div>
                 <div class="form-group" style="margin-top:8px;">
                     <label>Checklist Postural (marque os que se aplicam)</label>
@@ -570,7 +572,7 @@
                 <textarea name="observacoes" rows="2" placeholder="Anotações sobre a avaliação (opcional)"></textarea>
             </div>
 
-            <button type="submit" class="btn-primary" style="width:100%; justify-content:center;"><i class="fas fa-save"></i> Salvar Registro</button>
+            <button type="submit" class="btn-primary" style="width:100%; justify-content:center;"><i class="ph ph-floppy-disk"></i> Salvar Registro</button>
         </form>
     </div>
 </div>

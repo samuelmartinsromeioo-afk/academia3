@@ -8,6 +8,8 @@
     @include('partials.pwa')
     <link href="https://fonts.googleapis.com/css2?family=Syncopate:wght@700&family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/regular/style.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/fill/style.css">
     <style>
         :root {
             --primary: #d4ff00;
@@ -381,7 +383,7 @@
         }
     </style>
 </head>
-<body>
+<body class="ed-page">
 
 @php
     $diasSemana = [0 => 'Domingo', 1 => 'Segunda', 2 => 'Terça', 3 => 'Quarta', 4 => 'Quinta', 5 => 'Sexta', 6 => 'Sábado'];
@@ -390,35 +392,35 @@
 
 <div class="top-bar">
     <div class="logo">SNR<span>FIT</span></div>
-    <a href="{{ route('studios.explorar') }}" class="btn-top"><i class="fas fa-arrow-left"></i> Voltar aos studios</a>
+    <a href="{{ route('studios.explorar') }}" class="btn-top"><i class="ph ph-arrow-left"></i> Voltar aos studios</a>
 </div>
 
 <div class="container">
 
     @if (session('sucesso'))
         <div style="background: rgba(212,255,0,0.1); border: 1px solid rgba(212,255,0,0.35); color: var(--primary); padding: 14px 18px; border-radius: 12px; margin-bottom: 20px; font-size: 0.88rem;">
-            <i class="fas fa-check-circle"></i> {{ session('sucesso') }}
+            <i class="ph ph-check-circle"></i> {{ session('sucesso') }}
         </div>
     @endif
     @if (session('error'))
         <div style="background: rgba(255,77,77,0.1); border: 1px solid rgba(255,77,77,0.35); color: #ff6b6b; padding: 14px 18px; border-radius: 12px; margin-bottom: 20px; font-size: 0.88rem;">
-            <i class="fas fa-exclamation-circle"></i> {{ session('error') }}
+            <i class="ph ph-warning-circle"></i> {{ session('error') }}
         </div>
     @endif
 
     <!-- HEADER -->
     <div class="header-card">
-        <div class="header-icon"><i class="fas fa-spa"></i></div>
+        <div class="header-icon"><i class="ph ph-flower-lotus"></i></div>
         <div class="header-info">
             <h1>{{ $studio->nome }}</h1>
             @if ($studio->modalidades)
-                <div class="modalidades"><i class="fas fa-dumbbell"></i> {{ $studio->modalidades }}</div>
+                <div class="modalidades"><i class="ph ph-barbell"></i> {{ $studio->modalidades }}</div>
             @endif
-            <div class="meta"><i class="fas fa-map-marker-alt"></i> {{ $studio->endereco ?? ($studio->cidade . ' - ' . $studio->estado) }}</div>
+            <div class="meta"><i class="ph ph-map-pin"></i> {{ $studio->endereco ?? ($studio->cidade . ' - ' . $studio->estado) }}</div>
             @if ($studio->whatsapp)
-                <div class="meta"><i class="fab fa-whatsapp"></i> {{ $studio->whatsapp }}</div>
+                <div class="meta"><i class="ph ph-whatsapp-logo"></i> {{ $studio->whatsapp }}</div>
             @endif
-            <div class="meta"><i class="fas fa-tag"></i> Aula avulsa: <strong style="color:#fff;">R$ {{ number_format($studio->valor_aula ?? 0, 2, ',', '.') }}</strong></div>
+            <div class="meta"><i class="ph ph-tag"></i> Aula avulsa: <strong style="color:#fff;">R$ {{ number_format($studio->valor_aula ?? 0, 2, ',', '.') }}</strong></div>
             @if ($studio->descricao)
                 <p class="descricao">{{ $studio->descricao }}</p>
             @endif
@@ -427,7 +429,7 @@
             <div class="nota">{{ $studio->media_avaliacao }}</div>
             <div class="stars">
                 @for ($i = 1; $i <= 5; $i++)
-                    <i class="fa-star {{ $i <= round($mediaNota) ? 'fas' : 'far' }}"></i>
+                    <i class="ph-star {{ $i <= round($mediaNota) ? 'ph' : 'ph' }}"></i>
                 @endfor
             </div>
             <div class="count">{{ $studio->avaliacoes->count() }} avaliações</div>
@@ -437,7 +439,7 @@
     <!-- GALERIA -->
     @if ($studio->fotos->isNotEmpty())
         <div class="section">
-            <div class="section-title"><i class="fas fa-images"></i> Galeria</div>
+            <div class="section-title"><i class="ph ph-images"></i> Galeria</div>
             <div class="galeria-grid">
                 @foreach ($studio->fotos as $foto)
                     <img src="{{ asset('storage/' . $foto->path) }}" alt="{{ $foto->legenda ?? $studio->nome }}" title="{{ $foto->legenda }}" onclick="window.open(this.src, '_blank')">
@@ -448,7 +450,7 @@
 
     <!-- FUNCIONAMENTO -->
     <div class="section">
-        <div class="section-title"><i class="fas fa-clock"></i> Horário de funcionamento</div>
+        <div class="section-title"><i class="ph ph-clock"></i> Horário de funcionamento</div>
         @if ($studio->horarios->isEmpty())
             <p class="empty">O studio ainda não divulgou seus horários.</p>
         @else
@@ -465,7 +467,7 @@
 
     <!-- PLANOS -->
     <div class="section">
-        <div class="section-title"><i class="fas fa-id-card"></i> Planos mensais</div>
+        <div class="section-title"><i class="ph ph-identification-card"></i> Planos mensais</div>
         @if ($studio->planos->isEmpty())
             <p class="empty">Este studio ainda não oferece planos mensais. Você pode agendar aulas avulsas abaixo.</p>
         @else
@@ -480,8 +482,8 @@
                             <p class="desc"></p>
                         @endif
                         <div class="botoes-pagamento">
-                            <button class="btn-pix" onclick="pagarPlanoPix({{ $plano->id }}, {!! json_encode($plano->nome) !!}, {{ $plano->valor }})"><i class="fas fa-qrcode"></i> PIX</button>
-                            <button class="btn-cartao" onclick="pagarPlanoCartao({{ $plano->id }}, {!! json_encode($plano->nome) !!}, {{ $plano->valor }})"><i class="fas fa-credit-card"></i> Cartão</button>
+                            <button class="btn-pix" onclick="pagarPlanoPix({{ $plano->id }}, {!! json_encode($plano->nome) !!}, {{ $plano->valor }})"><i class="ph ph-qr-code"></i> PIX</button>
+                            <button class="btn-cartao" onclick="pagarPlanoCartao({{ $plano->id }}, {!! json_encode($plano->nome) !!}, {{ $plano->valor }})"><i class="ph ph-credit-card"></i> Cartão</button>
                         </div>
                     </div>
                 @endforeach
@@ -491,31 +493,31 @@
 
     <!-- AULA AVULSA -->
     <div class="section">
-        <div class="section-title"><i class="fas fa-calendar-plus"></i> Agendar aula avulsa</div>
+        <div class="section-title"><i class="ph ph-calendar-plus"></i> Agendar aula avulsa</div>
         <div class="aula-header">
             <div>
                 <label for="dataAula">Escolha a data</label>
                 <input type="date" id="dataAula" min="{{ today()->format('Y-m-d') }}" value="{{ today()->format('Y-m-d') }}">
             </div>
-            <div class="valor-aula-tag"><i class="fas fa-tag"></i> R$ {{ number_format($studio->valor_aula ?? 0, 2, ',', '.') }} por aula</div>
+            <div class="valor-aula-tag"><i class="ph ph-tag"></i> R$ {{ number_format($studio->valor_aula ?? 0, 2, ',', '.') }} por aula</div>
         </div>
 
         <div id="slotsContainer">
-            <p class="empty"><i class="fas fa-circle-notch fa-spin"></i> Carregando horários...</p>
+            <p class="empty"><i class="ph ph-circle-notch ph-spin"></i> Carregando horários...</p>
         </div>
 
         <div class="slot-acao" id="slotAcao">
             <div class="info">Horário selecionado: <span id="slotSelecionadoLabel"></span></div>
             <div class="botoes-pagamento">
-                <button class="btn-pix" onclick="pagarAulaPix()"><i class="fas fa-qrcode"></i> Pagar com PIX</button>
-                <button class="btn-cartao" onclick="pagarAulaCartao()"><i class="fas fa-credit-card"></i> Cartão</button>
+                <button class="btn-pix" onclick="pagarAulaPix()"><i class="ph ph-qr-code"></i> Pagar com PIX</button>
+                <button class="btn-cartao" onclick="pagarAulaCartao()"><i class="ph ph-credit-card"></i> Cartão</button>
             </div>
         </div>
     </div>
 
     <!-- AVALIAÇÕES -->
     <div class="section">
-        <div class="section-title"><i class="fas fa-star"></i> Avaliações</div>
+        <div class="section-title"><i class="ph-fill ph-star"></i> Avaliações</div>
 
         <form action="{{ route('avaliar.store') }}" method="POST" style="margin-bottom: 26px; padding-bottom: 22px; border-bottom: 1px solid var(--border);">
             @csrf
@@ -523,19 +525,19 @@
             <p style="color: var(--text-muted); font-size: 0.82rem; margin-bottom: 12px;">Já treinou aqui? Deixe a sua avaliação.</p>
             <div class="star-rating" style="display: inline-flex; gap: 8px; font-size: 1.8rem; color: #444; cursor: pointer; flex-direction: row-reverse; margin-bottom: 14px;">
                 <input type="radio" name="nota" value="5" id="star5" style="display:none;" required>
-                <label for="star5"><i class="fas fa-star"></i></label>
+                <label for="star5"><i class="ph-fill ph-star"></i></label>
                 <input type="radio" name="nota" value="4" id="star4" style="display:none;">
-                <label for="star4"><i class="fas fa-star"></i></label>
+                <label for="star4"><i class="ph-fill ph-star"></i></label>
                 <input type="radio" name="nota" value="3" id="star3" style="display:none;">
-                <label for="star3"><i class="fas fa-star"></i></label>
+                <label for="star3"><i class="ph-fill ph-star"></i></label>
                 <input type="radio" name="nota" value="2" id="star2" style="display:none;">
-                <label for="star2"><i class="fas fa-star"></i></label>
+                <label for="star2"><i class="ph-fill ph-star"></i></label>
                 <input type="radio" name="nota" value="1" id="star1" style="display:none;">
-                <label for="star1"><i class="fas fa-star"></i></label>
+                <label for="star1"><i class="ph-fill ph-star"></i></label>
             </div>
             <textarea name="comentario" placeholder="Conte como foi a sua experiência (opcional)..." maxlength="500" style="width: 100%; background: rgba(255,255,255,0.04); border: 1px solid var(--border); border-radius: 12px; color: #fff; padding: 13px 14px; min-height: 80px; resize: vertical; outline: none; font-family: inherit; font-size: 0.85rem; margin-bottom: 12px;"></textarea>
             <button type="submit" style="background: var(--studio-color); color: #fff; border: none; border-radius: 10px; padding: 11px 22px; font-weight: 800; font-size: 0.8rem; cursor: pointer; font-family: inherit;">
-                <i class="fas fa-paper-plane"></i> Enviar avaliação
+                <i class="ph ph-paper-plane-tilt"></i> Enviar avaliação
             </button>
         </form>
         <style>
@@ -551,10 +553,10 @@
             @foreach ($studio->avaliacoes as $av)
                 <div class="avaliacao-item">
                     <div class="topo">
-                        <span class="nome"><i class="fas fa-user-circle" style="color: var(--studio-color);"></i> {{ $av->cliente?->nome ?? 'Aluno' }}</span>
+                        <span class="nome"><i class="ph ph-user-circle" style="color: var(--studio-color);"></i> {{ $av->cliente?->nome ?? 'Aluno' }}</span>
                         <span class="stars">
                             @for ($i = 1; $i <= 5; $i++)
-                                <i class="fa-star {{ $i <= $av->nota ? 'fas' : 'far' }}"></i>
+                                <i class="ph-star {{ $i <= $av->nota ? 'ph' : 'ph' }}"></i>
                             @endfor
                         </span>
                     </div>
@@ -572,7 +574,7 @@
 <div class="modal-overlay" id="profModal">
     <div class="modal-box">
         <button class="modal-fechar" onclick="fecharProfModal()">✕</button>
-        <h3><i class="fas fa-user-tie"></i> <span id="profModalNome">Profissional</span></h3>
+        <h3><i class="ph ph-user-list"></i> <span id="profModalNome">Profissional</span></h3>
         <p id="profModalResumo" style="color: var(--text-muted); font-size: 0.9rem; line-height: 1.6; white-space: pre-line; margin-top: 12px;"></p>
     </div>
 </div>
@@ -581,7 +583,7 @@
 <div class="modal-overlay" id="modalPix">
     <div class="modal-box">
         <button class="modal-fechar" onclick="fecharModalPix()">✕</button>
-        <h3><i class="fas fa-qrcode"></i> PAGAMENTO PIX</h3>
+        <h3><i class="ph ph-qr-code"></i> PAGAMENTO PIX</h3>
         <p class="modal-sub" id="pixDescricao"></p>
         <p class="modal-valor" id="pixValor">Gerando QR Code...</p>
         <p id="pixRecorrenteNota" style="display:none; color:#d4ff00; font-size:0.78rem; font-weight:700; margin:0 0 12px; background:rgba(212,255,0,0.08); border:1px solid rgba(212,255,0,0.25); border-radius:10px; padding:8px 12px;">
@@ -590,7 +592,7 @@
         <img class="pix-qr" id="pixQr" src="" alt="QR Code PIX">
         <div class="pix-copia-wrap">
             <input type="text" id="pixCopia" readonly>
-            <button onclick="copiarPix()"><i class="fas fa-copy"></i></button>
+            <button onclick="copiarPix()"><i class="ph ph-copy"></i></button>
         </div>
         <p style="color: var(--text-muted); font-size: 0.75rem; text-align: center;">Escaneie o QR Code ou use o copia e cola. A confirmação é automática.</p>
         <p class="pix-status" id="pixStatus"></p>
@@ -601,7 +603,7 @@
 <div class="modal-overlay" id="modalCartao">
     <div class="modal-box">
         <button class="modal-fechar" onclick="fecharModalCartao()">✕</button>
-        <h3><i class="fas fa-credit-card"></i> PAGAMENTO COM CARTÃO</h3>
+        <h3><i class="ph ph-credit-card"></i> PAGAMENTO COM CARTÃO</h3>
         <p class="modal-sub" id="cartaoDescricao"></p>
         <p class="modal-valor" id="cartaoValor"></p>
 
@@ -650,7 +652,7 @@
             <p class="erro-msg" id="cartaoErro"></p>
             <p class="ok-msg" id="cartaoSucesso">✅ Pagamento aprovado! Atualizando...</p>
 
-            <button type="submit" class="btn-confirmar" id="btnSubmeterCartao"><i class="fas fa-lock"></i> Pagar com Segurança</button>
+            <button type="submit" class="btn-confirmar" id="btnSubmeterCartao"><i class="ph ph-lock"></i> Pagar com Segurança</button>
         </form>
     </div>
 </div>
@@ -680,7 +682,7 @@
 
         if (!data) return;
 
-        container.innerHTML = '<p class="empty"><i class="fas fa-circle-notch fa-spin"></i> Carregando horários...</p>';
+        container.innerHTML = '<p class="empty"><i class="ph ph-circle-notch ph-spin"></i> Carregando horários...</p>';
 
         try {
             const res = await fetch(`/studio-horarios-disponiveis/${STUDIO_ID}/${data}`, {
@@ -691,7 +693,7 @@
             if (!res.ok) throw new Error(slots.erro || 'Erro ao carregar horários.');
 
             if (!Array.isArray(slots) || slots.length === 0) {
-                container.innerHTML = '<p class="empty"><i class="fas fa-calendar-times"></i> O studio não funciona nesta data ou todos os horários estão indisponíveis.</p>';
+                container.innerHTML = '<p class="empty"><i class="ph ph-calendar-x"></i> O studio não funciona nesta data ou todos os horários estão indisponíveis.</p>';
                 return;
             }
 
@@ -700,12 +702,12 @@
                 <div class="slot-card ${s.vagas === 0 ? 'lotado' : ''}" id="slot-${i}"
                      ${s.vagas === 0 ? '' : `onclick="selecionarSlot(${i})"`}>
                     <div class="hora">${escHtml(s.label)}${s.duracao ? ` <span style="color:var(--text-muted); font-weight:600; font-size:0.74rem;">· ${s.duracao}min</span>` : ''}</div>
-                    ${s.profissional ? `<div class="vagas" style="margin-bottom:4px;"><i class="fas fa-chalkboard-teacher" style="color:var(--studio-color);"></i> ${s.professor_resumo ? `<a href="#" onclick="event.stopPropagation(); verProfessor(${i}); return false;" style="color:var(--studio-color); text-decoration:underline; font-weight:700;">${escHtml(s.profissional)}</a>` : escHtml(s.profissional)}</div>` : ''}
+                    ${s.profissional ? `<div class="vagas" style="margin-bottom:4px;"><i class="ph ph-chalkboard-teacher" style="color:var(--studio-color);"></i> ${s.professor_resumo ? `<a href="#" onclick="event.stopPropagation(); verProfessor(${i}); return false;" style="color:var(--studio-color); text-decoration:underline; font-weight:700;">${escHtml(s.profissional)}</a>` : escHtml(s.profissional)}</div>` : ''}
                     <div class="vagas"><strong>${s.vagas}</strong>/${s.capacidade} vagas</div>
                 </div>
             `).join('') + '</div>';
         } catch (err) {
-            container.innerHTML = `<p class="empty" style="color:#ff6b6b;"><i class="fas fa-exclamation-triangle"></i> ${err.message}</p>`;
+            container.innerHTML = `<p class="empty" style="color:#ff6b6b;"><i class="ph ph-warning"></i> ${err.message}</p>`;
         }
     }
 
@@ -825,7 +827,7 @@
         document.getElementById('cartaoSucesso').style.display = 'none';
         const btn = document.getElementById('btnSubmeterCartao');
         btn.disabled = false;
-        btn.innerHTML = '<i class="fas fa-lock"></i> Pagar com Segurança';
+        btn.innerHTML = '<i class="ph ph-lock"></i> Pagar com Segurança';
         document.getElementById('cartaoTelefone').value = CLIENTE_TEL || '';
         document.getElementById('cartaoCEP').value = CLIENTE_CEP || '';
         document.getElementById('modalCartao').classList.add('aberto');
@@ -882,7 +884,7 @@
 
         const btn = document.getElementById('btnSubmeterCartao');
         btn.disabled = true;
-        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processando...';
+        btn.innerHTML = '<i class="ph ph-spinner ph-spin"></i> Processando...';
         document.getElementById('cartaoErro').style.display = 'none';
 
         try {
@@ -904,7 +906,7 @@
             document.getElementById('cartaoErro').textContent = err.message;
             document.getElementById('cartaoErro').style.display = 'block';
             btn.disabled = false;
-            btn.innerHTML = '<i class="fas fa-lock"></i> Pagar com Segurança';
+            btn.innerHTML = '<i class="ph ph-lock"></i> Pagar com Segurança';
         }
     }
 

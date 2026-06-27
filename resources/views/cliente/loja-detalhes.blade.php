@@ -8,6 +8,8 @@
     @include('partials.pwa')
     <link href="https://fonts.googleapis.com/css2?family=Syncopate:wght@700&family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/regular/style.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/fill/style.css">
     <style>
         :root {
             --primary: #d4ff00;
@@ -186,15 +188,15 @@
         @media (max-width: 600px) { .top-bar { padding: 14px 20px; } .btn-whats { margin-left: 0; width: 100%; justify-content: center; } }
     </style>
 </head>
-<body>
+<body class="ed-page">
 
 <div class="top-bar">
     <div class="logo">SNR<span>FIT</span></div>
     <div class="top-actions">
         <button class="cart-top" id="cartTop" onclick="abrirCarrinho()" style="display:none;">
-            <i class="fas fa-shopping-cart"></i> Carrinho <span class="count" id="cartCount">0</span>
+            <i class="ph ph-shopping-cart"></i> Carrinho <span class="count" id="cartCount">0</span>
         </button>
-        <a href="{{ route('lojas.explorar') }}" class="btn-top"><i class="fas fa-arrow-left"></i> Todas as lojas</a>
+        <a href="{{ route('lojas.explorar') }}" class="btn-top"><i class="ph ph-arrow-left"></i> Todas as lojas</a>
     </div>
 </div>
 
@@ -210,28 +212,28 @@
             @if ($loja->logo)
                 <img src="{{ asset('storage/' . $loja->logo) }}" alt="{{ $loja->nome }}">
             @else
-                <i class="fas fa-store"></i>
+                <i class="ph ph-storefront"></i>
             @endif
         </div>
         <div style="flex:1; min-width:200px;">
             <h1>{{ $loja->nome }}</h1>
-            <div class="meta"><i class="fas fa-map-marker-alt"></i> {{ $loja->cidade }}{{ $loja->estado ? ' - ' . $loja->estado : '' }}</div>
+            <div class="meta"><i class="ph ph-map-pin"></i> {{ $loja->cidade }}{{ $loja->estado ? ' - ' . $loja->estado : '' }}</div>
             @if ($loja->descricao)
                 <p class="desc">{{ $loja->descricao }}</p>
             @endif
         </div>
         @if ($whatsDigits)
             <a href="https://wa.me/{{ $whatsDigits }}?text={{ $whatsMsg }}" target="_blank" class="btn-whats">
-                <i class="fa-brands fa-whatsapp"></i> Falar com a loja
+                <i class="ph ph-whatsapp-logo"></i> Falar com a loja
             </a>
         @endif
     </div>
 
-    <h2 class="section-title"><i class="fas fa-box-open"></i> Produtos</h2>
+    <h2 class="section-title"><i class="ph ph-package"></i> Produtos</h2>
 
     @if ($loja->produtos->isEmpty())
         <div class="empty-state">
-            <i class="fas fa-box-open"></i>
+            <i class="ph ph-package"></i>
             <p>Esta loja ainda não cadastrou produtos.</p>
         </div>
     @else
@@ -242,7 +244,7 @@
                         @if ($produto->imagem)
                             <img src="{{ asset('storage/' . $produto->imagem) }}" alt="{{ $produto->nome }}">
                         @else
-                            <i class="fas fa-box"></i>
+                            <i class="ph ph-package"></i>
                         @endif
                         @if ($produto->estoque <= 0)
                             <div class="esgotado">Esgotado</div>
@@ -259,13 +261,13 @@
                         <div class="prod-foot">
                             <div class="prod-preco">R$ {{ number_format($produto->preco, 2, ',', '.') }}</div>
                             @if ($produto->estoque > 0)
-                                <div class="prod-estoque ok"><i class="fas fa-check"></i> {{ $produto->estoque }} em estoque</div>
+                                <div class="prod-estoque ok"><i class="ph ph-check"></i> {{ $produto->estoque }} em estoque</div>
                                 <button class="btn-add" data-id="{{ $produto->id }}" data-nome="{{ $produto->nome }}" data-preco="{{ $produto->preco }}" data-estoque="{{ $produto->estoque }}">
-                                    <i class="fas fa-cart-plus"></i> Adicionar
+                                    <i class="ph ph-shopping-cart"></i> Adicionar
                                 </button>
                             @else
                                 <div class="prod-estoque">Indisponível</div>
-                                <button class="btn-add" disabled><i class="fas fa-ban"></i> Esgotado</button>
+                                <button class="btn-add" disabled><i class="ph ph-prohibit"></i> Esgotado</button>
                             @endif
                         </div>
                     </div>
@@ -282,20 +284,20 @@
 
         {{-- Passo 1: carrinho --}}
         <div id="stepCarrinho">
-            <h3><i class="fas fa-shopping-cart"></i> Seu carrinho</h3>
+            <h3><i class="ph ph-shopping-cart"></i> Seu carrinho</h3>
             <div id="cartItens"></div>
             <p id="cartVazio" class="modal-sub" style="display:none;">Seu carrinho está vazio.</p>
             <div class="cart-total"><span>Total</span> <span class="v" id="cartTotal">R$ 0,00</span></div>
-            <button class="btn-confirmar" id="btnIrCheckout" onclick="irParaEntrega()"><i class="fas fa-arrow-right"></i> Continuar</button>
+            <button class="btn-confirmar" id="btnIrCheckout" onclick="irParaEntrega()"><i class="ph ph-arrow-right"></i> Continuar</button>
         </div>
 
         {{-- Passo 2: entrega + pagamento --}}
         <div id="stepEntrega" style="display:none;">
-            <h3><i class="fas fa-truck"></i> Entrega e pagamento</h3>
+            <h3><i class="ph ph-truck"></i> Entrega e pagamento</h3>
 
             <div class="entrega-tabs">
-                <div class="entrega-tab active" id="tabRetirada" onclick="setEntrega('retirada')"><i class="fas fa-store"></i> Retirar na loja</div>
-                <div class="entrega-tab" id="tabEntrega" onclick="setEntrega('entrega')"><i class="fas fa-truck"></i> Combinar entrega</div>
+                <div class="entrega-tab active" id="tabRetirada" onclick="setEntrega('retirada')"><i class="ph ph-storefront"></i> Retirar na loja</div>
+                <div class="entrega-tab" id="tabEntrega" onclick="setEntrega('entrega')"><i class="ph ph-truck"></i> Combinar entrega</div>
             </div>
 
             <div id="formEntrega" style="display:none;">
@@ -310,7 +312,7 @@
                 <div class="campo">
                     <label>CEP</label>
                     <input id="entCep" type="text" maxlength="9" placeholder="00000-000" oninput="fmtCep(this)" onblur="buscarCep()">
-                    <span class="loading-cep" id="cepLoading"><i class="fas fa-spinner fa-spin"></i> Buscando...</span>
+                    <span class="loading-cep" id="cepLoading"><i class="ph ph-spinner ph-spin"></i> Buscando...</span>
                 </div>
                 <div class="linha campo">
                     <div style="flex:3;"><label>Rua</label><input id="entRua" type="text" maxlength="255"></div>
@@ -335,10 +337,10 @@
             <div class="cart-total"><span>Total</span> <span class="v" id="cartTotal2">R$ 0,00</span></div>
             <p class="erro-msg" id="checkoutErro"></p>
             <div class="botoes-pagamento">
-                <button class="btn-pix" onclick="pagarPix()"><i class="fas fa-qrcode"></i> PIX</button>
-                <button class="btn-cartao" onclick="pagarCartao()"><i class="fas fa-credit-card"></i> Cartão</button>
+                <button class="btn-pix" onclick="pagarPix()"><i class="ph ph-qr-code"></i> PIX</button>
+                <button class="btn-cartao" onclick="pagarCartao()"><i class="ph ph-credit-card"></i> Cartão</button>
             </div>
-            <button class="btn-top" style="margin-top:14px; width:100%; justify-content:center;" onclick="voltarCarrinho()"><i class="fas fa-arrow-left"></i> Voltar ao carrinho</button>
+            <button class="btn-top" style="margin-top:14px; width:100%; justify-content:center;" onclick="voltarCarrinho()"><i class="ph ph-arrow-left"></i> Voltar ao carrinho</button>
         </div>
     </div>
 </div>
@@ -347,13 +349,13 @@
 <div class="modal-overlay" id="modalPix">
     <div class="modal-box">
         <button class="modal-fechar" onclick="fecharModalPix()">✕</button>
-        <h3><i class="fas fa-qrcode"></i> PAGAMENTO PIX</h3>
+        <h3><i class="ph ph-qr-code"></i> PAGAMENTO PIX</h3>
         <p class="modal-sub" id="pixDescricao"></p>
         <p class="modal-valor" id="pixValor">Gerando QR Code...</p>
         <img class="pix-qr" id="pixQr" src="" alt="QR Code PIX">
         <div class="pix-copia-wrap">
             <input type="text" id="pixCopia" readonly>
-            <button onclick="copiarPix()"><i class="fas fa-copy"></i></button>
+            <button onclick="copiarPix()"><i class="ph ph-copy"></i></button>
         </div>
         <p style="color: var(--text-muted); font-size: 0.75rem; text-align: center;">Escaneie o QR Code ou use o copia e cola. A confirmação é automática.</p>
         <p class="pix-status" id="pixStatus"></p>
@@ -364,7 +366,7 @@
 <div class="modal-overlay" id="modalCartao">
     <div class="modal-box">
         <button class="modal-fechar" onclick="fecharModalCartao()">✕</button>
-        <h3><i class="fas fa-credit-card"></i> PAGAMENTO COM CARTÃO</h3>
+        <h3><i class="ph ph-credit-card"></i> PAGAMENTO COM CARTÃO</h3>
         <p class="modal-valor" id="cartaoValor"></p>
         <form id="formCartao" onsubmit="submeterCartao(event)" autocomplete="off">
             <div class="campo"><label>Número do cartão</label><input id="cartaoNumero" type="text" inputmode="numeric" maxlength="19" placeholder="0000 0000 0000 0000" oninput="fmtCartao(this)" required></div>
@@ -383,7 +385,7 @@
             <div class="campo"><label>Telefone</label><input id="cartaoTelefone" type="text" inputmode="numeric" maxlength="15" placeholder="(11) 99999-9999" oninput="fmtTel(this)" required></div>
             <p class="erro-msg" id="cartaoErro"></p>
             <p class="ok-msg" id="cartaoSucesso">✅ Pagamento aprovado! Atualizando...</p>
-            <button type="submit" class="btn-confirmar" id="btnSubmeterCartao"><i class="fas fa-lock"></i> Pagar com Segurança</button>
+            <button type="submit" class="btn-confirmar" id="btnSubmeterCartao"><i class="ph ph-lock"></i> Pagar com Segurança</button>
         </form>
     </div>
 </div>
@@ -415,18 +417,18 @@
     }
 
     function flash() {
-        const fab = document.getElementById('cartTop');
-        fab.style.transform = 'scale(1.08)';
-        setTimeout(() => fab.style.transform = '', 150);
+        const ph = document.getElementById('cartTop');
+        ph.style.transform = 'scale(1.08)';
+        setTimeout(() => ph.style.transform = '', 150);
     }
 
     function totalCart() { return cart.reduce((s, i) => s + i.preco * i.qtd, 0); }
     function countCart() { return cart.reduce((s, i) => s + i.qtd, 0); }
 
     function atualizarFab() {
-        const fab = document.getElementById('cartTop');
+        const ph = document.getElementById('cartTop');
         document.getElementById('cartCount').textContent = countCart();
-        fab.style.display = cart.length === 0 ? 'none' : 'inline-flex';
+        ph.style.display = cart.length === 0 ? 'none' : 'inline-flex';
     }
 
     // Liga os botões "Adicionar" (data-* evita problemas de aspas no onclick).
@@ -472,7 +474,7 @@
                         <span>${i.qtd}</span>
                         <button onclick="changeQty(${i.id},1)">+</button>
                     </div>
-                    <button class="ci-remove" onclick="removeItem(${i.id})"><i class="fas fa-trash"></i></button>
+                    <button class="ci-remove" onclick="removeItem(${i.id})"><i class="ph ph-trash"></i></button>
                 </div>`).join('');
         }
         const t = brl(totalCart());
@@ -603,7 +605,7 @@
         document.getElementById('cartaoErro').style.display = 'none';
         document.getElementById('cartaoSucesso').style.display = 'none';
         const btn = document.getElementById('btnSubmeterCartao');
-        btn.disabled = false; btn.innerHTML = '<i class="fas fa-lock"></i> Pagar com Segurança';
+        btn.disabled = false; btn.innerHTML = '<i class="ph ph-lock"></i> Pagar com Segurança';
         document.getElementById('cartaoTelefone').value = CLIENTE_TEL || '';
         document.getElementById('cartaoCEP').value = CLIENTE_CEP || '';
         document.getElementById('modalCartao').classList.add('aberto');
@@ -628,7 +630,7 @@
             telefone: document.getElementById('cartaoTelefone').value.replace(/\D/g, ''),
         };
         const btn = document.getElementById('btnSubmeterCartao');
-        btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processando...';
+        btn.disabled = true; btn.innerHTML = '<i class="ph ph-spinner ph-spin"></i> Processando...';
         document.getElementById('cartaoErro').style.display = 'none';
         try {
             const res = await fetch('/api/criar-pagamento-cartao-loja', {
@@ -647,7 +649,7 @@
             }
         } catch (err) {
             const er = document.getElementById('cartaoErro'); er.textContent = err.message; er.style.display = 'block';
-            btn.disabled = false; btn.innerHTML = '<i class="fas fa-lock"></i> Pagar com Segurança';
+            btn.disabled = false; btn.innerHTML = '<i class="ph ph-lock"></i> Pagar com Segurança';
         }
     }
 

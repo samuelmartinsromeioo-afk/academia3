@@ -7,6 +7,8 @@
     <title>Política de Privacidade — SnrFit</title>
     <link rel="icon" type="image/png" href="{{ asset('SnrFit.png') }}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/regular/style.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/fill/style.css">
     <style>
         :root { --primary:#F4BE16; --bg:#0a0b0d; --card:#14161a; --text:#e8e8e8; --muted:#9a9a9a; --border:rgba(255,255,255,0.08); }
         * { margin:0; padding:0; box-sizing:border-box; }
@@ -28,9 +30,9 @@
     </style>
 </head>
 
-<body>
+<body class="ed-page">
     <div class="top">
-        <a href="{{ url()->previous() }}" class="back"><i class="fas fa-arrow-left"></i></a>
+        <a href="{{ url()->previous() }}" class="back"><i class="ph ph-arrow-left"></i></a>
         <span class="logo">SnrFit</span>
     </div>
 
@@ -40,7 +42,7 @@
 
         <p>Esta política explica como o <strong>SnrFit</strong> coleta, usa, compartilha e protege os seus dados pessoais, e quais são os seus direitos como titular.</p>
 
-        <h2><i class="fas fa-database"></i> 1. Dados que coletamos</h2>
+        <h2><i class="ph ph-database"></i> 1. Dados que coletamos</h2>
         <ul>
             <li><strong>Cadastro:</strong> nome, e-mail, telefone/WhatsApp, foto e, no caso de profissionais, CPF, CREF e endereço.</li>
             <li><strong>Dados de treino:</strong> fichas, exercícios, cargas, frequência e metas.</li>
@@ -49,11 +51,11 @@
             <li><strong>Mensagens</strong> trocadas no chat entre aluno e personal.</li>
         </ul>
         <div class="box sens">
-            <strong><i class="fas fa-heart-pulse"></i> Dados sensíveis de saúde (art. 11 da LGPD):</strong>
+            <strong><i class="ph ph-heartbeat"></i> Dados sensíveis de saúde (art. 11 da LGPD):</strong>
             a anamnese (PAR-Q, lesões, doenças, medicamentos, restrições) é um dado sensível, coletado <strong>mediante o seu consentimento</strong> e usado exclusivamente para o personal montar um treino seguro. Você pode deixá-la em branco ou removê-la a qualquer momento.
         </div>
 
-        <h2><i class="fas fa-bullseye"></i> 2. Para que usamos</h2>
+        <h2><i class="ph ph-target"></i> 2. Para que usamos</h2>
         <ul>
             <li>Prestar o serviço: conectar alunos e personais, montar e acompanhar treinos.</li>
             <li>Processar pagamentos e assinaturas.</li>
@@ -61,10 +63,10 @@
             <li>Segurança, prevenção a fraudes e cumprimento de obrigações legais.</li>
         </ul>
 
-        <h2><i class="fas fa-scale-balanced"></i> 3. Base legal</h2>
+        <h2><i class="ph ph-scales"></i> 3. Base legal</h2>
         <p>Tratamos seus dados com base na <strong>execução do contrato</strong> (uso da plataforma), no <strong>consentimento</strong> (especialmente para dados sensíveis de saúde) e no <strong>cumprimento de obrigações legais</strong> (ex.: registros financeiros).</p>
 
-        <h2><i class="fas fa-share-nodes"></i> 4. Com quem compartilhamos</h2>
+        <h2><i class="ph ph-share-network"></i> 4. Com quem compartilhamos</h2>
         <ul>
             <li><strong>Seu personal/academia:</strong> vê os dados necessários para te atender (treinos, evolução e anamnese).</li>
             <li><strong>Asaas</strong> (processamento de pagamentos), <strong>provedores de e-mail e WhatsApp</strong> (envio de notificações).</li>
@@ -72,10 +74,10 @@
         </ul>
         <p class="muted">Não vendemos seus dados pessoais.</p>
 
-        <h2><i class="fas fa-clock"></i> 5. Por quanto tempo guardamos</h2>
+        <h2><i class="ph ph-clock"></i> 5. Por quanto tempo guardamos</h2>
         <p>Mantemos seus dados enquanto sua conta estiver ativa. Ao excluir a conta, anonimizamos seu perfil e apagamos os dados pessoais e sensíveis. Registros financeiros podem ser retidos pelo prazo exigido pela legislação fiscal.</p>
 
-        <h2><i class="fas fa-user-shield"></i> 6. Seus direitos (LGPD)</h2>
+        <h2><i class="ph ph-shield-check"></i> 6. Seus direitos (LGPD)</h2>
         <p>Você pode, a qualquer momento:</p>
         <ul>
             <li><strong>Acessar</strong> e <strong>exportar</strong> seus dados (formato legível por máquina).</li>
@@ -87,13 +89,13 @@
             Exerça esses direitos na página <strong>“Privacidade e meus dados”</strong> dentro do app (menu da sua conta), ou pelo contato abaixo.
         </div>
 
-        <h2><i class="fas fa-lock"></i> 7. Segurança</h2>
+        <h2><i class="ph ph-lock"></i> 7. Segurança</h2>
         <p>Senhas são armazenadas com hash (bcrypt); o acesso é protegido por sessão, limite de tentativas de login e cabeçalhos de segurança. Recomendamos uso sob conexão HTTPS.</p>
 
-        <h2><i class="fas fa-cookie"></i> 8. Cookies</h2>
+        <h2><i class="ph ph-cookie"></i> 8. Cookies</h2>
         <p>Utilizamos apenas cookies essenciais de sessão, necessários para manter você autenticado. Não usamos cookies de rastreamento de terceiros.</p>
 
-        <h2><i class="fas fa-envelope"></i> 9. Contato (Encarregado/DPO)</h2>
+        <h2><i class="ph ph-envelope"></i> 9. Contato (Encarregado/DPO)</h2>
         <p>Dúvidas ou solicitações sobre seus dados: <a href="mailto:privacidade@snrfit.com.br">privacidade@snrfit.com.br</a>.</p>
 
         <p class="muted" style="margin-top:30px;">Esta política pode ser atualizada. Avisaremos sobre mudanças relevantes.</p>

@@ -7,6 +7,8 @@
     <title>Templates de Ficha</title>
     <link rel="icon" type="image/png" href="{{ asset('SnrFit.png') }}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/regular/style.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/fill/style.css">
     <style>
         :root { --primary:#F4BE16; --bg-dark:#000; --card-bg:#111317; --field:#1a1d23; --text-main:#fff; --text-muted:#9a9a9a; --green:#00e676; --red:#ff5252; --border:rgba(255,255,255,0.08); }
         * { margin:0; padding:0; box-sizing:border-box; }
@@ -45,39 +47,39 @@
     </style>
 </head>
 
-<body>
+<body class="ed-page">
     <div class="top-bar">
-        <a href="{{ route('fichas-treino.alunos') }}" class="back-btn"><i class="fas fa-arrow-left"></i></a>
-        <span class="title"><i class="fas fa-clone"></i> Templates de Ficha</span>
+        <a href="{{ route('fichas-treino.alunos') }}" class="back-btn"><i class="ph ph-arrow-left"></i></a>
+        <span class="title"><i class="ph ph-copy"></i> Templates de Ficha</span>
     </div>
 
     <div class="container">
-        <h1><i class="fas fa-clone"></i> TEMPLATES DE FICHA</h1>
+        <div class="ed-eyebrow"><i class="ph ph-copy"></i> Modelos</div><h1 class="ed-h">Templates de <span class="ed-mark">Ficha</span></h1>
         <p class="subtitle">Modelos reutilizáveis para montar fichas rápido e aplicar a qualquer aluno.</p>
 
-        @if(session('success'))<div class="alert-ok"><i class="fas fa-check-circle"></i> {{ session('success') }}</div>@endif
-        @if(session('error'))<div class="alert-err"><i class="fas fa-exclamation-circle"></i> {{ session('error') }}</div>@endif
+        @if(session('success'))<div class="alert-ok"><i class="ph ph-check-circle"></i> {{ session('success') }}</div>@endif
+        @if(session('error'))<div class="alert-err"><i class="ph ph-warning-circle"></i> {{ session('error') }}</div>@endif
 
         <div class="panel">
-            <div class="panel-title"><i class="fas fa-plus"></i> Novo template</div>
+            <div class="panel-title"><i class="ph ph-plus"></i> Novo template</div>
             <form method="POST" action="{{ route('templates.criar') }}">
                 @csrf
                 <div class="row">
                     <div class="fg" style="flex:2;"><label class="lbl">Nome</label><input type="text" name="nome" placeholder="ex: Peito e Tríceps (Hipertrofia)" required></div>
                     <div class="fg"><label class="lbl">Nível</label><select name="nivel"><option value="iniciante">Iniciante</option><option value="avancado">Avançado</option></select></div>
                 </div>
-                <button class="btn btn-primary"><i class="fas fa-clone"></i> Criar template</button>
+                <button class="btn btn-primary"><i class="ph ph-copy"></i> Criar template</button>
             </form>
         </div>
 
         @if($templates->isEmpty())
-            <div class="empty"><i class="fas fa-clone" style="font-size:2.2rem; color:var(--primary); display:block; margin-bottom:10px; opacity:0.7;"></i>Nenhum template ainda. Crie um acima ou use "Salvar como template" numa ficha existente.</div>
+            <div class="empty"><i class="ph ph-copy" style="font-size:2.2rem; color:var(--primary); display:block; margin-bottom:10px; opacity:0.7;"></i>Nenhum template ainda. Crie um acima ou use "Salvar como template" numa ficha existente.</div>
         @else
             @foreach($templates as $t)
                 <div class="tpl">
                     <div class="tpl-head">
                         <div class="nome">{{ $t->nome }} <span class="badge">{{ $t->nivel }}</span></div>
-                        <form method="POST" action="{{ route('templates.deletar', $t->id) }}" onsubmit="return confirm('Excluir template?')">@csrf @method('DELETE')<button class="btn btn-danger btn-sm"><i class="fas fa-trash"></i></button></form>
+                        <form method="POST" action="{{ route('templates.deletar', $t->id) }}" onsubmit="return confirm('Excluir template?')">@csrf @method('DELETE')<button class="btn btn-danger btn-sm"><i class="ph ph-trash"></i></button></form>
                     </div>
 
                     @if(empty($t->exercicios))
@@ -89,7 +91,7 @@
                                 @foreach($t->exercicios as $i => $ex)
                                 <tr>
                                     <td>{{ $ex['nome'] ?? '-' }}</td><td class="c">{{ $ex['series'] ?? '-' }}</td><td class="c">{{ $ex['repeticoes'] ?? '-' }}</td><td class="c">{{ isset($ex['peso']) && $ex['peso'] !== null ? $ex['peso'].' kg' : '-' }}</td>
-                                    <td class="c"><form method="POST" action="{{ route('templates.exercicio.del', [$t->id, $i]) }}">@csrf @method('DELETE')<button class="btn btn-danger btn-sm" style="padding:5px 9px;"><i class="fas fa-xmark"></i></button></form></td>
+                                    <td class="c"><form method="POST" action="{{ route('templates.exercicio.del', [$t->id, $i]) }}">@csrf @method('DELETE')<button class="btn btn-danger btn-sm" style="padding:5px 9px;"><i class="ph ph-x"></i></button></form></td>
                                 </tr>
                                 @endforeach
                             </tbody>
@@ -104,7 +106,7 @@
                             <div class="fg"><label class="lbl">Séries</label><input type="number" name="series" min="1" value="3" required></div>
                             <div class="fg"><label class="lbl">Reps</label><input type="number" name="repeticoes" min="1" value="10" required></div>
                             <div class="fg"><label class="lbl">Peso</label><input type="number" step="0.5" name="peso"></div>
-                            <div class="fg" style="justify-content:flex-end;"><button class="btn btn-ghost btn-sm"><i class="fas fa-plus"></i> Add</button></div>
+                            <div class="fg" style="justify-content:flex-end;"><button class="btn btn-ghost btn-sm"><i class="ph ph-plus"></i> Add</button></div>
                         </div>
                     </form>
 
@@ -122,7 +124,7 @@
                                     @endforeach
                                 </select>
                             </div>
-                            <div class="fg" style="justify-content:flex-end;"><button class="btn btn-primary btn-sm"><i class="fas fa-wand-magic-sparkles"></i> Aplicar</button></div>
+                            <div class="fg" style="justify-content:flex-end;"><button class="btn btn-primary btn-sm"><i class="ph ph-magic-wand"></i> Aplicar</button></div>
                         </div>
                     </form>
                 </div>

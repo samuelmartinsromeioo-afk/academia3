@@ -7,6 +7,8 @@
     <link rel="icon" type="image/png" href="{{ asset('SnrFit.png') }}">
     @include('partials.pwa')
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/regular/style.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/fill/style.css">
     <style>
         :root {
             --primary: #d4ff00;
@@ -283,13 +285,13 @@
         }
     </style>
 </head>
-<body>
+<body class="ed-page">
 
 {{-- TOP BAR --}}
 <div class="top-bar">
-    <h2><i class="fas fa-spa"></i> {{ $studio->nome ?? 'N/A' }}</h2>
+    <h2><i class="ph ph-flower-lotus"></i> {{ $studio->nome ?? 'N/A' }}</h2>
     <a href="{{ route('admin.studios.lista') }}" class="btn-back">
-        <i class="fas fa-arrow-left"></i> Voltar
+        <i class="ph ph-arrow-left"></i> Voltar
     </a>
 </div>
 
@@ -297,20 +299,20 @@
 
     @if(session('success'))
         <div style="background: rgba(40,167,69,0.15); border: 1px solid rgba(40,167,69,0.4); border-radius: 12px; padding: 14px 18px; margin-bottom: 20px; color: #4caf50; font-weight: 700;">
-            <i class="fas fa-check-circle"></i> {{ session('success') }}
+            <i class="ph ph-check-circle"></i> {{ session('success') }}
         </div>
     @endif
 
     @if(session('error'))
         <div style="background: rgba(255,68,68,0.1); border: 1px solid rgba(255,68,68,0.3); border-radius: 12px; padding: 14px 18px; margin-bottom: 20px; color: #ff6b6b; font-weight: 700;">
-            <i class="fas fa-exclamation-circle"></i> {{ session('error') }}
+            <i class="ph ph-warning-circle"></i> {{ session('error') }}
         </div>
     @endif
 
     {{-- CABEÇALHO --}}
     <div class="header-card">
         <div class="photo-container">
-            <i class="fas fa-spa"></i>
+            <i class="ph ph-flower-lotus"></i>
         </div>
 
         <div class="header-info">
@@ -319,7 +321,7 @@
 
             <div class="info-grid">
                 <div class="info-item">
-                    <div class="info-icon"><i class="fas fa-envelope"></i></div>
+                    <div class="info-icon"><i class="ph ph-envelope"></i></div>
                     <div class="info-content">
                         <h3>Email</h3>
                         <p>{{ $studio->email ?? 'N/A' }}</p>
@@ -327,7 +329,7 @@
                 </div>
 
                 <div class="info-item">
-                    <div class="info-icon"><i class="fas fa-building"></i></div>
+                    <div class="info-icon"><i class="ph ph-building"></i></div>
                     <div class="info-content">
                         <h3>CNPJ</h3>
                         <p>{{ $studio->cnpj ?? 'N/A' }}</p>
@@ -335,7 +337,7 @@
                 </div>
 
                 <div class="info-item">
-                    <div class="info-icon"><i class="fab fa-whatsapp"></i></div>
+                    <div class="info-icon"><i class="ph ph-whatsapp-logo"></i></div>
                     <div class="info-content">
                         <h3>WhatsApp</h3>
                         <p>{{ $studio->whatsapp ?? 'Não informado' }}</p>
@@ -343,7 +345,7 @@
                 </div>
 
                 <div class="info-item">
-                    <div class="info-icon"><i class="fas fa-calendar"></i></div>
+                    <div class="info-icon"><i class="ph ph-calendar"></i></div>
                     <div class="info-content">
                         <h3>Cadastro</h3>
                         <p>{{ $studio->created_at ? $studio->created_at->format('d/m/Y') : 'N/A' }}</p>
@@ -351,7 +353,7 @@
                 </div>
 
                 <div class="info-item">
-                    <div class="info-icon"><i class="fas fa-users"></i></div>
+                    <div class="info-icon"><i class="ph ph-users"></i></div>
                     <div class="info-content">
                         <h3>Alunos</h3>
                         <p>{{ $studio->clientes_count ?? 0 }} aluno(s)</p>
@@ -359,7 +361,7 @@
                 </div>
 
                 <div class="info-item">
-                    <div class="info-icon"><i class="fas fa-map-marker-alt"></i></div>
+                    <div class="info-icon"><i class="ph ph-map-pin"></i></div>
                     <div class="info-content">
                         <h3>Endereço</h3>
                         <p>{{ $studio->endereco ?? 'N/A' }}</p>
@@ -402,14 +404,14 @@
     <h2 class="section-title">Status</h2>
     <div class="status-card">
         <span class="status-badge status-{{ $studio->status ?? 'pendente' }}">
-            <i class="fas fa-circle-{{ ($studio->status ?? 'pendente') === 'aprovado' ? 'check' : 'info' }}"></i>
+            <i class="ph {{ ($studio->status ?? 'pendente') === 'aprovado' ? 'ph-check-circle' : 'ph-info' }}"></i>
             {{ ucfirst($studio->status ?? 'pendente') }}
         </span>
 
         @if($studio->status === 'rejeitado' && $studio->motivo_rejeicao)
             <div style="background: rgba(255, 68, 68, 0.05); padding: 16px; border-radius: 10px; border-left: 4px solid var(--error); margin-top: 16px;">
                 <p style="color: var(--text-muted); font-size: 0.8rem; margin-bottom: 6px; text-transform: uppercase; font-weight: 700;">
-                    <i class="fas fa-ban"></i> Motivo da Rejeição
+                    <i class="ph ph-prohibit"></i> Motivo da Rejeição
                 </p>
                 <p style="margin: 0; color: var(--text-main);">{{ $studio->motivo_rejeicao }}</p>
             </div>
@@ -423,26 +425,26 @@
             <form method="POST" action="{{ route('admin.studios.aprovar', $studio->id) }}">
                 @csrf
                 <button type="submit" class="btn-approve">
-                    <i class="fas fa-check"></i> Aprovar Cadastro
+                    <i class="ph ph-check"></i> Aprovar Cadastro
                 </button>
             </form>
 
             <button type="button" class="btn-reject" onclick="abrirModalRejeicao()">
-                <i class="fas fa-times"></i> Rejeitar Cadastro
+                <i class="ph ph-x"></i> Rejeitar Cadastro
             </button>
 
             <form method="POST" action="{{ route('admin.studios.deletar', $studio->id) }}" onsubmit="return confirm('Tem certeza? Esta ação é irreversível!');" style="margin-left: auto;">
                 @csrf
                 @method('DELETE')
                 <button type="submit" class="btn-delete">
-                    <i class="fas fa-trash"></i> Deletar
+                    <i class="ph ph-trash"></i> Deletar
                 </button>
             </form>
         </div>
     @elseif($studio->status === 'rejeitado')
         <div style="background: rgba(255, 68, 68, 0.1); padding: 20px; border-radius: 12px; border: 1px solid rgba(255, 68, 68, 0.2);">
             <p style="color: var(--error); margin: 0; font-weight: 700;">
-                <i class="fas fa-exclamation-circle"></i> Este cadastro foi rejeitado
+                <i class="ph ph-warning-circle"></i> Este cadastro foi rejeitado
             </p>
         </div>
     @else
@@ -450,14 +452,14 @@
 
         <div style="background: rgba(40, 167, 69, 0.1); padding: 16px 20px; border-radius: 12px; border: 1px solid rgba(40, 167, 69, 0.2); margin-bottom: 16px;">
             <p style="color: var(--success); margin: 0; font-weight: 700;">
-                <i class="fas fa-check-circle"></i> Este studio foi aprovado
+                <i class="ph ph-check-circle"></i> Este studio foi aprovado
             </p>
         </div>
 
         {{-- Status da conta Asaas --}}
         @if($studio->asaas_wallet_id)
             <div style="background: rgba(212, 255, 0, 0.07); padding: 16px 20px; border-radius: 12px; border: 1px solid rgba(212, 255, 0, 0.3); margin-bottom: 16px; display: flex; align-items: center; gap: 12px;">
-                <i class="fas fa-check-circle" style="color: var(--primary); font-size: 1.2rem;"></i>
+                <i class="ph ph-check-circle" style="color: var(--primary); font-size: 1.2rem;"></i>
                 <div>
                     <p style="margin: 0; font-weight: 700; color: #fff; font-size: 0.9rem;">Conta Asaas configurada</p>
                     <p style="margin: 0; color: #a0a0a0; font-size: 0.75rem;">Split de pagamentos ativo — 90% vai direto para a carteira deste studio.</p>
@@ -467,7 +469,7 @@
         @else
             <div style="background: rgba(255, 165, 0, 0.08); padding: 16px 20px; border-radius: 12px; border: 1px solid rgba(255, 165, 0, 0.3); margin-bottom: 16px; display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;">
                 <div style="display: flex; align-items: center; gap: 12px;">
-                    <i class="fas fa-exclamation-triangle" style="color: #ffa500; font-size: 1.2rem;"></i>
+                    <i class="ph ph-warning" style="color: #ffa500; font-size: 1.2rem;"></i>
                     <div>
                         <p style="margin: 0; font-weight: 700; color: #fff; font-size: 0.9rem;">Conta Asaas não configurada</p>
                         <p style="margin: 0; color: #a0a0a0; font-size: 0.75rem;">O studio não consegue receber pagamentos online até a conta ser criada.</p>
@@ -477,7 +479,7 @@
                     onsubmit="return confirm('Criar conta Asaas (Pessoa Jurídica) para {{ $studio->nome }}? Os dados serão enviados à Asaas agora.');">
                     @csrf
                     <button type="submit" style="background: #ffa500; color: #000; border: none; border-radius: 10px; padding: 10px 18px; font-weight: 900; font-size: 0.82rem; cursor: pointer; white-space: nowrap;">
-                        <i class="fas fa-plus-circle"></i> Criar Conta Asaas
+                        <i class="ph ph-plus-circle"></i> Criar Conta Asaas
                     </button>
                 </form>
             </div>
@@ -489,7 +491,7 @@
                 @csrf
                 @method('DELETE')
                 <button type="submit" class="btn-delete">
-                    <i class="fas fa-trash"></i> Deletar Studio
+                    <i class="ph ph-trash"></i> Deletar Studio
                 </button>
             </form>
         </div>
@@ -499,7 +501,7 @@
 {{-- MODAL DE REJEIÇÃO --}}
 <div class="modal" id="modalRejeicao">
     <div class="modal-content">
-        <h2><i class="fas fa-exclamation-circle"></i> Rejeitar Cadastro</h2>
+        <h2><i class="ph ph-warning-circle"></i> Rejeitar Cadastro</h2>
         <p>Explique o motivo pelo qual está rejeitando este studio:</p>
 
         <form action="{{ route('admin.studios.rejeitar', $studio->id) }}" method="POST">
@@ -513,10 +515,10 @@
 
             <div class="modal-buttons">
                 <button type="submit" class="confirm">
-                    <i class="fas fa-check"></i> Confirmar Rejeição
+                    <i class="ph ph-check"></i> Confirmar Rejeição
                 </button>
                 <button type="button" class="cancel" onclick="fecharModalRejeicao()">
-                    <i class="fas fa-times"></i> Cancelar
+                    <i class="ph ph-x"></i> Cancelar
                 </button>
             </div>
         </form>

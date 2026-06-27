@@ -7,6 +7,8 @@
     <title>Frequência e Aderência</title>
     <link rel="icon" type="image/png" href="{{ asset('SnrFit.png') }}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/regular/style.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/fill/style.css">
     <style>
         :root {
             --primary: #F4BE16;
@@ -112,18 +114,18 @@
     </style>
 </head>
 
-<body>
+<body class="ed-page">
     <div class="top-bar">
-        <a href="{{ route('personal.dashboard') }}" class="back-btn" title="Voltar"><i class="fas fa-arrow-left"></i></a>
-        <span class="title"><i class="fas fa-bolt"></i> Frequência &amp; Aderência</span>
+        <a href="{{ route('personal.dashboard') }}" class="back-btn" title="Voltar"><i class="ph ph-arrow-left"></i></a>
+        <span class="title"><i class="ph ph-lightning"></i> Frequência &amp; Aderência</span>
     </div>
 
     <div class="container">
-        <h1><i class="fas fa-bolt"></i> FREQUÊNCIA &amp; ADERÊNCIA</h1>
+        <div class="ed-eyebrow"><i class="ph ph-lightning"></i> Engajamento</div><h1 class="ed-h">Frequência &amp; <span class="ed-mark">Aderência</span></h1>
         <p class="subtitle">Treinos realizados x planejados no mês atual.</p>
 
         @if(session('success'))
-            <div class="alert-ok"><i class="fas fa-check-circle"></i> {{ session('success') }}</div>
+            <div class="alert-ok"><i class="ph ph-check-circle"></i> {{ session('success') }}</div>
         @endif
 
         <div class="resumo">
@@ -143,7 +145,7 @@
 
         @if(count($alunos) === 0)
             <div class="empty">
-                <i class="fas fa-user-slash"></i>
+                <i class="ph ph-user-minus"></i>
                 <p>Você ainda não montou fichas para nenhum aluno.</p>
                 <small>A aderência aparece aqui assim que houver fichas de treino ativas.</small>
             </div>
@@ -163,7 +165,7 @@
                                 <div class="sub">{{ $a['fichasAtivas'] }} ficha(s) ativa(s)</div>
                             </div>
                             @if($a['sumido'])
-                                <span class="badge-sumido"><i class="fas fa-triangle-exclamation"></i> Sumido</span>
+                                <span class="badge-sumido"><i class="ph ph-warning"></i> Sumido</span>
                             @endif
                         </div>
 
@@ -195,14 +197,14 @@
                         </div>
 
                         <div class="aluno-actions">
-                            <a href="{{ route('fichas-treino.aluno', $cliente->id) }}" class="fichas"><i class="fas fa-dumbbell"></i> Fichas</a>
-                            <a href="{{ route('evolucao-carga.aluno', $cliente->id) }}" class="evolucao"><i class="fas fa-bolt"></i> Evolução</a>
+                            <a href="{{ route('fichas-treino.aluno', $cliente->id) }}" class="fichas"><i class="ph ph-barbell"></i> Fichas</a>
+                            <a href="{{ route('evolucao-carga.aluno', $cliente->id) }}" class="evolucao"><i class="ph ph-lightning"></i> Evolução</a>
                         </div>
 
                         @if($a['sumido'])
                             <form method="POST" action="{{ route('aderencia.cutucar', $cliente->id) }}">
                                 @csrf
-                                <button type="submit" class="btn-cutucar"><i class="fas fa-paper-plane"></i> Enviar incentivo</button>
+                                <button type="submit" class="btn-cutucar"><i class="ph ph-paper-plane-tilt"></i> Enviar incentivo</button>
                             </form>
                         @endif
                     </div>

@@ -7,6 +7,8 @@
     <title>Privacidade e meus dados</title>
     <link rel="icon" type="image/png" href="{{ asset('SnrFit.png') }}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/regular/style.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/fill/style.css">
     <style>
         :root { --primary:#F4BE16; --bg:#000; --card:#111317; --field:#1a1d23; --text:#fff; --muted:#9a9a9a; --red:#ff5252; --green:#00e676; --border:rgba(255,255,255,0.08); }
         * { margin:0; padding:0; box-sizing:border-box; }
@@ -39,37 +41,37 @@
     </style>
 </head>
 
-<body>
+<body class="ed-page">
     <div class="top-bar">
-        <a href="{{ $voltar }}" class="back-btn"><i class="fas fa-arrow-left"></i></a>
-        <span class="title"><i class="fas fa-user-shield"></i> Privacidade e meus dados</span>
+        <a href="{{ $voltar }}" class="back-btn"><i class="ph ph-arrow-left"></i></a>
+        <span class="title"><i class="ph ph-shield-check"></i> Privacidade e meus dados</span>
     </div>
 
     <div class="container">
-        <h1><i class="fas fa-user-shield"></i> MEUS DADOS</h1>
+        <h1><i class="ph ph-shield-check"></i> MEUS DADOS</h1>
         <p class="subtitle">Seus direitos sobre os seus dados pessoais, conforme a LGPD.</p>
 
         <div class="panel">
-            <h2><i class="fas fa-file-shield"></i> Política de Privacidade</h2>
+            <h2><i class="ph ph-file-lock"></i> Política de Privacidade</h2>
             <p>Entenda quais dados coletamos, por que, com quem compartilhamos e por quanto tempo guardamos.</p>
-            <a href="{{ route('lgpd.politica') }}" target="_blank" class="btn btn-ghost"><i class="fas fa-up-right-from-square"></i> Ler política</a>
+            <a href="{{ route('lgpd.politica') }}" target="_blank" class="btn btn-ghost"><i class="ph ph-arrow-square-out"></i> Ler política</a>
         </div>
 
         <div class="panel">
-            <h2><i class="fas fa-download"></i> Exportar meus dados</h2>
+            <h2><i class="ph ph-download-simple"></i> Exportar meus dados</h2>
             <p>Baixe uma cópia de todos os seus dados em formato JSON (acesso e portabilidade).</p>
-            <a href="{{ route('lgpd.exportar') }}" class="btn btn-primary"><i class="fas fa-download"></i> Baixar meus dados</a>
+            <a href="{{ route('lgpd.exportar') }}" class="btn btn-primary"><i class="ph ph-download-simple"></i> Baixar meus dados</a>
         </div>
 
         <div class="panel danger">
-            <h2><i class="fas fa-triangle-exclamation"></i> Excluir minha conta</h2>
+            <h2><i class="ph ph-warning"></i> Excluir minha conta</h2>
             <p>
                 Esta ação encerra sua conta, remove seus dados pessoais e sensíveis (saúde, fotos, medidas, mensagens) e
                 não pode ser desfeita. Registros financeiros podem ser retidos pelo prazo exigido por lei, de forma desvinculada da sua identidade.
             </p>
 
             @if($errors->any())
-                <div class="err"><i class="fas fa-circle-exclamation"></i> {{ $errors->first() }}</div>
+                <div class="err"><i class="ph ph-warning-circle"></i> {{ $errors->first() }}</div>
             @endif
 
             <form method="POST" action="{{ route('lgpd.excluir') }}" onsubmit="return confirm('Tem certeza? Esta ação é irreversível.')">
@@ -82,7 +84,7 @@
                     <input type="checkbox" required>
                     Entendo que esta ação é permanente e que meus dados pessoais serão removidos.
                 </label>
-                <button type="submit" class="btn btn-danger"><i class="fas fa-trash"></i> Excluir minha conta definitivamente</button>
+                <button type="submit" class="btn btn-danger"><i class="ph ph-trash"></i> Excluir minha conta definitivamente</button>
             </form>
         </div>
     </div>

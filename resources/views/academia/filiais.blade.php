@@ -7,6 +7,8 @@
     <link rel="icon" type="image/png" href="{{ asset('SnrFit.png') }}">
     @include('partials.pwa')
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/regular/style.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/fill/style.css">
     <style>
         :root {
             --primary: #d4ff00;
@@ -151,26 +153,26 @@
         }
     </style>
 </head>
-<body>
+<body class="ed-page">
 
 <div class="top-bar">
     <button class="back-btn" onclick="window.location.href='{{ route('academia.dashboard') }}'" title="Voltar">
-        <i class="fas fa-arrow-left"></i>
+        <i class="ph ph-arrow-left"></i>
     </button>
     <div class="profile-header">
-        <i class="fas fa-map-marker-alt" style="color: var(--primary);"></i>
+        <i class="ph ph-map-pin" style="color: var(--primary);"></i>
         Filiais — {{ $academia->nome }}
     </div>
 </div>
 
 <div class="container">
-    <h1><i class="fas fa-map-marker-alt"></i> MINHAS FILIAIS</h1>
+    <h1><i class="ph ph-map-pin"></i> MINHAS FILIAIS</h1>
 
     @if(session('success'))
-    <div class="alert-success"><i class="fas fa-check-circle"></i> {{ session('success') }}</div>
+    <div class="alert-success"><i class="ph ph-check-circle"></i> {{ session('success') }}</div>
     @endif
     @if(session('error'))
-    <div class="alert-error"><i class="fas fa-exclamation-circle"></i> {{ session('error') }}</div>
+    <div class="alert-error"><i class="ph ph-warning-circle"></i> {{ session('error') }}</div>
     @endif
 
     <div class="filiais-grid">
@@ -178,14 +180,14 @@
         <div class="filial-card">
             <div class="filial-nome">{{ $filial->nome }}</div>
             <div class="filial-info">
-                <div><i class="fas fa-map-pin"></i> {{ $filial->rua }}, {{ $filial->bairro }}</div>
-                <div><i class="fas fa-city"></i> {{ $filial->cidade }} — {{ $filial->estado }}</div>
-                <div><i class="fas fa-mailbox"></i> CEP: {{ $filial->cep }}</div>
+                <div><i class="ph ph-map-pin"></i> {{ $filial->rua }}, {{ $filial->bairro }}</div>
+                <div><i class="ph ph-buildings"></i> {{ $filial->cidade }} — {{ $filial->estado }}</div>
+                <div><i class="ph ph-mailbox"></i> CEP: {{ $filial->cep }}</div>
                 @if($filial->complemento)
-                <div><i class="fas fa-info-circle"></i> {{ $filial->complemento }}</div>
+                <div><i class="ph ph-info"></i> {{ $filial->complemento }}</div>
                 @endif
                 @if($filial->telefone)
-                <div><i class="fas fa-phone"></i> {{ $filial->telefone }}</div>
+                <div><i class="ph ph-phone"></i> {{ $filial->telefone }}</div>
                 @endif
             </div>
             <div class="filial-actions">
@@ -202,19 +204,19 @@
                     '{{ $filial->latitude ?? '' }}',
                     '{{ $filial->longitude ?? '' }}'
                 )">
-                    <i class="fas fa-pen"></i> Editar
+                    <i class="ph ph-pen"></i> Editar
                 </button>
                 <form action="{{ route('academia.filiais.destroy', $filial->id) }}" method="POST"
                       onsubmit="return confirm('Remover esta filial?')">
                     @csrf @method('DELETE')
-                    <button type="submit" class="btn-del"><i class="fas fa-trash"></i></button>
+                    <button type="submit" class="btn-del"><i class="ph ph-trash"></i></button>
                 </form>
             </div>
         </div>
         @endforeach
 
         <button class="btn-nova-filial" onclick="document.getElementById('modalNovaFilial').classList.add('active')">
-            <i class="fas fa-plus-circle"></i> Nova Filial
+            <i class="ph ph-plus-circle"></i> Nova Filial
         </button>
     </div>
 </div>
@@ -222,41 +224,41 @@
 {{-- MODAL NOVA FILIAL --}}
 <div id="modalNovaFilial" class="modal-overlay">
     <div class="modal-content">
-        <h2><i class="fas fa-plus-circle"></i> NOVA FILIAL</h2>
+        <h2><i class="ph ph-plus-circle"></i> NOVA FILIAL</h2>
         <form action="{{ route('academia.filiais.store') }}" method="POST">
             @csrf
             <div class="form-grid">
                 <div class="form-group full">
                     <label>Nome da Filial</label>
-                    <div class="input-wrap"><i class="fas fa-building"></i><input type="text" name="nome" placeholder="Ex: Unidade Centro" required></div>
+                    <div class="input-wrap"><i class="ph ph-building"></i><input type="text" name="nome" placeholder="Ex: Unidade Centro" required></div>
                 </div>
                 <div class="form-group">
                     <label>CEP</label>
-                    <div class="input-wrap"><i class="fas fa-mail-bulk"></i><input type="text" name="cep" placeholder="00000-000" maxlength="9" oninput="mascaraCep(this)" required></div>
+                    <div class="input-wrap"><i class="ph ph-envelope"></i><input type="text" name="cep" placeholder="00000-000" maxlength="9" oninput="mascaraCep(this)" required></div>
                 </div>
                 <div class="form-group">
                     <label>Telefone (opcional)</label>
-                    <div class="input-wrap"><i class="fas fa-phone"></i><input type="text" name="telefone" placeholder="(00) 00000-0000" maxlength="20"></div>
+                    <div class="input-wrap"><i class="ph ph-phone"></i><input type="text" name="telefone" placeholder="(00) 00000-0000" maxlength="20"></div>
                 </div>
                 <div class="form-group full">
                     <label>Rua</label>
-                    <div class="input-wrap"><i class="fas fa-road"></i><input type="text" name="rua" id="nova_rua" required></div>
+                    <div class="input-wrap"><i class="ph ph-road-horizon"></i><input type="text" name="rua" id="nova_rua" required></div>
                 </div>
                 <div class="form-group">
                     <label>Bairro</label>
-                    <div class="input-wrap"><i class="fas fa-home"></i><input type="text" name="bairro" id="nova_bairro" required></div>
+                    <div class="input-wrap"><i class="ph ph-house"></i><input type="text" name="bairro" id="nova_bairro" required></div>
                 </div>
                 <div class="form-group">
                     <label>Cidade</label>
-                    <div class="input-wrap"><i class="fas fa-city"></i><input type="text" name="cidade" id="nova_cidade" required></div>
+                    <div class="input-wrap"><i class="ph ph-buildings"></i><input type="text" name="cidade" id="nova_cidade" required></div>
                 </div>
                 <div class="form-group">
                     <label>Estado (UF)</label>
-                    <div class="input-wrap"><i class="fas fa-map"></i><input type="text" name="estado" id="nova_estado" maxlength="2" required></div>
+                    <div class="input-wrap"><i class="ph ph-map-trifold"></i><input type="text" name="estado" id="nova_estado" maxlength="2" required></div>
                 </div>
                 <div class="form-group">
                     <label>Complemento (opcional)</label>
-                    <div class="input-wrap"><i class="fas fa-info-circle"></i><input type="text" name="complemento"></div>
+                    <div class="input-wrap"><i class="ph ph-info"></i><input type="text" name="complemento"></div>
                 </div>
             </div>
             <input type="hidden" id="nova_latitude" name="latitude">
@@ -272,41 +274,41 @@
 {{-- MODAL EDITAR FILIAL --}}
 <div id="modalEditarFilial" class="modal-overlay">
     <div class="modal-content">
-        <h2><i class="fas fa-pen"></i> EDITAR FILIAL</h2>
+        <h2><i class="ph ph-pen"></i> EDITAR FILIAL</h2>
         <form id="formEditarFilial" method="POST">
             @csrf @method('PUT')
             <div class="form-grid">
                 <div class="form-group full">
                     <label>Nome da Filial</label>
-                    <div class="input-wrap"><i class="fas fa-building"></i><input type="text" id="e_nome" name="nome" required></div>
+                    <div class="input-wrap"><i class="ph ph-building"></i><input type="text" id="e_nome" name="nome" required></div>
                 </div>
                 <div class="form-group">
                     <label>CEP</label>
-                    <div class="input-wrap"><i class="fas fa-mail-bulk"></i><input type="text" id="e_cep" name="cep" maxlength="9" oninput="mascaraCep(this)" required></div>
+                    <div class="input-wrap"><i class="ph ph-envelope"></i><input type="text" id="e_cep" name="cep" maxlength="9" oninput="mascaraCep(this)" required></div>
                 </div>
                 <div class="form-group">
                     <label>Telefone (opcional)</label>
-                    <div class="input-wrap"><i class="fas fa-phone"></i><input type="text" id="e_telefone" name="telefone" maxlength="20"></div>
+                    <div class="input-wrap"><i class="ph ph-phone"></i><input type="text" id="e_telefone" name="telefone" maxlength="20"></div>
                 </div>
                 <div class="form-group full">
                     <label>Rua</label>
-                    <div class="input-wrap"><i class="fas fa-road"></i><input type="text" id="e_rua" name="rua" required></div>
+                    <div class="input-wrap"><i class="ph ph-road-horizon"></i><input type="text" id="e_rua" name="rua" required></div>
                 </div>
                 <div class="form-group">
                     <label>Bairro</label>
-                    <div class="input-wrap"><i class="fas fa-home"></i><input type="text" id="e_bairro" name="bairro" required></div>
+                    <div class="input-wrap"><i class="ph ph-house"></i><input type="text" id="e_bairro" name="bairro" required></div>
                 </div>
                 <div class="form-group">
                     <label>Cidade</label>
-                    <div class="input-wrap"><i class="fas fa-city"></i><input type="text" id="e_cidade" name="cidade" required></div>
+                    <div class="input-wrap"><i class="ph ph-buildings"></i><input type="text" id="e_cidade" name="cidade" required></div>
                 </div>
                 <div class="form-group">
                     <label>Estado (UF)</label>
-                    <div class="input-wrap"><i class="fas fa-map"></i><input type="text" id="e_estado" name="estado" maxlength="2" required></div>
+                    <div class="input-wrap"><i class="ph ph-map-trifold"></i><input type="text" id="e_estado" name="estado" maxlength="2" required></div>
                 </div>
                 <div class="form-group">
                     <label>Complemento (opcional)</label>
-                    <div class="input-wrap"><i class="fas fa-info-circle"></i><input type="text" id="e_complemento" name="complemento"></div>
+                    <div class="input-wrap"><i class="ph ph-info"></i><input type="text" id="e_complemento" name="complemento"></div>
                 </div>
             </div>
             <input type="hidden" id="e_latitude" name="latitude">

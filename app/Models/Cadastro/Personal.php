@@ -52,11 +52,16 @@ class Personal extends Model
         'valor_ficha',
         'valor_avaliacao',
         'precos_avaliacao',
+        'pioneiro_posicao',
     ];
 
     protected $casts = [
         'precos_avaliacao' => 'array',
+        'pioneiro_posicao' => 'integer',
     ];
+
+    /** Quantidade de personais por estado que recebem o selo de pioneiro. */
+    public const LIMITE_PIONEIROS_POR_ESTADO = 100;
 
     /**
      * Nunca exponha a key da subconta Asaas em JSON, dd() ou logs.
@@ -137,6 +142,40 @@ class Personal extends Model
     public function getEhNovoProfissionalAttribute(): bool
     {
         return $this->avaliacoes->count() < self::MIN_AVALIACOES_PUBLICAS;
+    }
+
+    /**
+     * Personal entre os 100 primeiros a se cadastrar no seu estado (pioneiro).
+     */
+    public function getEhPioneiroAttribute(): bool
+    {
+        return ! is_null($this->pioneiro_posicao);
+    }
+
+    /**
+     * Define a posição de pioneiro deste personal: se ele está entre os
+     * LIMITE_PIONEIROS_POR_ESTADO primeiros a se cadastrar no seu estado,
+     * grava a posição (1..limite); caso contrário mantém NULL. A posição é a
+     * próxima livre do estado (maior já atribuída + 1), o que a mantém única e
+     * estável mesmo após exclusões. Deve ser chamado logo após criar o registro.
+     */
+    public function definirPosicaoPioneiro(): void
+    {
+        if (empty($this->estado)) {
+            return;
+        }
+
+        // Próxima posição livre do estado = maior posição já atribuída + 1.
+        // Usar a "marca d'água" (e não uma contagem de linhas) mantém as
+        // posições únicas e monotônicas mesmo que um personal anterior seja
+        // excluído: a vaga liberada vira um buraco permanente em vez de ser
+        // reaproveitada e gerar números repetidos (ex.: dois "#100").
+        $posicao = (int) static::where('estado', $this->estado)->max('pioneiro_posicao') + 1;
+
+        if ($posicao <= self::LIMITE_PIONEIROS_POR_ESTADO) {
+            $this->pioneiro_posicao = $posicao;
+            $this->save();
+        }
     }
 
     public function getFaturamentoMensalAttribute()

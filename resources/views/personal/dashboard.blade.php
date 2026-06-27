@@ -8,6 +8,9 @@
     <link rel="icon" type="image/png" href="{{ asset('SnrFit.png') }}">
     @include('partials.pwa')
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/regular/style.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/fill/style.css">
+    <link rel="stylesheet" href="{{ asset('css/snrfit-brand.css') }}">
     <style>
         :root {
             --primary: #d4ff00;
@@ -589,11 +592,11 @@
     </style>
 </head>
 
-<body>
+<body class="ed-page">
 
     <div class="top-bar">
         <div class="menu-container">
-            <button class="dots-btn" id="btnMenu" onclick="toggleMenu()"><i class="fas fa-bars"></i></button>
+            <button class="dots-btn" id="btnMenu" onclick="toggleMenu()"><i class="ph ph-list"></i></button>
             <div class="dropdown-menu" id="dropdownMenu">
                 <div class="menu-rating-header">
                     @php
@@ -603,29 +606,30 @@
                     <span class="rating-number">{{ number_format($media, 1) }}</span>
                     <div class="stars-row">
                         @for ($i = 1; $i <= 5; $i++)
-                            @if ($i <=$media) <i class="fas fa-star"></i>
-                            @elseif ($i - 0.5 <= $media) <i class="fas fa-star-half-alt"></i>
-                                @else <i class="far fa-star"></i>
+                            @if ($i <=$media) <i class="ph-fill ph-star"></i>
+                            @elseif ($i - 0.5 <= $media) <i class="ph-fill ph-star-half"></i>
+                                @else <i class="ph ph-star"></i>
                                 @endif
                                 @endfor
                     </div>
                     <span class="rating-label">{{ $totalAvals }} Avaliações</span>
                 </div>
-                <button type="button" id="btnOpenUpdate"><i class="fas fa-user-edit"></i> Meu Perfil</button>
-                <button type="button" id="btnOpenPlanos"><i class="fas fa-tags" style="color: var(--primary);"></i> Meus Pacotes</button>
+                <button type="button" id="btnOpenUpdate"><i class="ph ph-user-gear"></i> Meu Perfil</button>
+                <button type="button" id="btnOpenPlanos"><i class="ph ph-tag" style="color: var(--primary);"></i> Meus Pacotes</button>
                 <a href="{{ route('personal.avaliacao-fisica.valores') }}" style="display:flex; align-items:center; gap:12px; padding:15px 20px; color:#fff; text-decoration:none; font-size:14px; transition:0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.05)';this.style.color='#d4ff00'" onmouseout="this.style.background='';this.style.color='#fff'">
-                    <i class="fas fa-tags" style="color: var(--primary);"></i> Valores Avaliações
+                    <i class="ph ph-tag" style="color: var(--primary);"></i> Valores Avaliações
                 </a>
-                <button type="button" id="btnOpenFinance"><i class="fas fa-wallet" style="color: var(--success)"></i> Minhas Finanças</button>
-                <button type="button" id="btnOpenCarteira"><i class="fas fa-piggy-bank" style="color: var(--primary)"></i> Minha Carteira</button>
-                <button type="button" id="btnOpenGaleria"><i class="fas fa-images"></i> Minha Galeria</button>
-                <button type="button" id="btnOpenAvaliacoes"><i class="fas fa-star" style="color: var(--primary)"></i> Minhas Avaliações</button>
+                <button type="button" id="btnOpenFinance"><i class="ph ph-wallet" style="color: var(--success)"></i> Minhas Finanças</button>
+                <button type="button" id="btnOpenCarteira"><i class="ph ph-piggy-bank" style="color: var(--primary)"></i> Minha Carteira</button>
+                <button type="button" id="btnOpenGaleria"><i class="ph ph-images"></i> Minha Galeria</button>
+                <button type="button" id="btnOpenAvaliacoes"><i class="ph-fill ph-star" style="color: var(--primary)"></i> Minhas Avaliações</button>
                 <a href="{{ route('lgpd.meus-dados') }}" style="display:flex; align-items:center; gap:12px; padding:15px 20px; color:#fff; text-decoration:none; font-size:14px; transition:0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.05)';this.style.color='#d4ff00'" onmouseout="this.style.background='';this.style.color='#fff'">
-                    <i class="fas fa-user-shield" style="color: var(--primary);"></i> Privacidade e meus dados
+                    <i class="ph ph-shield-check" style="color: var(--primary);"></i> Privacidade e meus dados
                 </a>
-                <form action="{{ route('login.logout') }}" method="POST"> @csrf <button type="submit" style="color: var(--error)"><i class="fas fa-power-off"></i> Sair</button></form>
+                <form action="{{ route('login.logout') }}" method="POST"> @csrf <button type="submit" style="color: var(--error)"><i class="ph ph-power"></i> Sair</button></form>
             </div>
         </div>
+        <a href="#" class="snr-logo" style="position:absolute; left:50%; transform:translateX(-50%);">SNR<span>FIT</span></a>
         <div class="profile-header">
             <img src="{{ $personal->foto ? asset('storage/' . $personal->foto) . '?t=' . time() : 'https://cdn-icons-png.flaticon.com/512/3135/3135715.png' }}" class="avatar-img">
             <span style="font-weight: 700; font-size: 0.9rem;">{{ $personal->nome }}</span>
@@ -635,13 +639,13 @@
     <div class="container">
         @if(session('success'))
         <div style="background: rgba(0, 255, 136, 0.1); color: var(--success); padding: 15px; border-radius: 12px; border: 1px solid var(--success); margin-bottom: 20px; font-size: 0.9rem;">
-            <i class="fas fa-check-circle"></i> {{ session('success') }}
+            <i class="ph ph-check-circle"></i> {{ session('success') }}
         </div>
         @endif
 
         @if(session('error'))
         <div style="background: rgba(255, 68, 68, 0.1); color: var(--error); padding: 15px; border-radius: 12px; border: 1px solid var(--error); margin-bottom: 20px; font-size: 0.9rem;">
-            <i class="fas fa-exclamation-circle"></i> {{ session('error') }}
+            <i class="ph ph-warning-circle"></i> {{ session('error') }}
         </div>
         @endif
 
@@ -657,33 +661,35 @@
         <div class="qa-scroll">
             <a href="{{ route('notificacoes.index') }}" class="qa-item">
                 <span class="qa-ico" style="position:relative;">
-                    <i class="fas fa-bell"></i>
+                    <i class="ph ph-bell"></i>
                     <span data-notif-badge style="display:none; position:absolute; top:-4px; right:-4px; background:#ff3b30; color:#fff; font-size:0.6rem; font-weight:900; min-width:16px; height:16px; border-radius:8px; align-items:center; justify-content:center; padding:0 4px;">0</span>
                 </span>
                 <span class="qa-lbl">Avisos</span>
             </a>
-            <a href="{{ route('chat.index') }}" class="qa-item"><span class="qa-ico"><i class="fas fa-comments"></i></span><span class="qa-lbl">Chat</span></a>
-            <button type="button" class="qa-item" onclick="document.getElementById('modalAlunos').style.display='block'"><span class="qa-ico"><i class="fas fa-users"></i></span><span class="qa-lbl">Meus Alunos</span></button>
-            <a href="{{ route('personal.frequencia') }}" class="qa-item"><span class="qa-ico"><i class="fas fa-user-check"></i></span><span class="qa-lbl">Frequência</span></a>
-            <a href="{{ route('personal.avaliacao-fisica') }}" class="qa-item"><span class="qa-ico"><i class="fas fa-heart-pulse"></i></span><span class="qa-lbl">Avaliação Física</span></a>
-            <a href="{{ route('personal.solicitacoes-ficha') }}" class="qa-item"><span class="qa-ico"><i class="fas fa-clipboard-list"></i></span><span class="qa-lbl">Solicitações</span></a>
+            <a href="{{ route('chat.index') }}" class="qa-item"><span class="qa-ico"><i class="ph ph-chats"></i></span><span class="qa-lbl">Chat</span></a>
+            <button type="button" class="qa-item" onclick="document.getElementById('modalAlunos').style.display='block'"><span class="qa-ico"><i class="ph ph-users"></i></span><span class="qa-lbl">Meus Alunos</span></button>
+            <a href="{{ route('personal.frequencia') }}" class="qa-item"><span class="qa-ico"><i class="ph ph-user-check"></i></span><span class="qa-lbl">Frequência</span></a>
+            <a href="{{ route('personal.avaliacao-fisica') }}" class="qa-item"><span class="qa-ico"><i class="ph ph-heartbeat"></i></span><span class="qa-lbl">Avaliação Física</span></a>
+            <a href="{{ route('personal.solicitacoes-ficha') }}" class="qa-item"><span class="qa-ico"><i class="ph ph-clipboard-text"></i></span><span class="qa-lbl">Solicitações</span></a>
         </div>
 
-        <header style="margin-bottom: 30px; display: flex; justify-content: space-between; align-items: center;">
-            <h1 style="margin:0; font-size: 2rem; font-weight: 900;">Minha Agenda</h1>
+        <div class="ed-eyebrow"><span class="ed-num">01</span> <span id="snrSaud">Olá</span>, {{ explode(' ', trim($personal->nome))[0] }} — bora pra cima</div>
+        @include('partials.brand-greeting-js')
+        <header style="margin-bottom: 30px; display: flex; justify-content: space-between; align-items: flex-end; gap:16px; flex-wrap:wrap;">
+            <h1 class="ed-h">Minha <span class="ed-mark">Agenda</span></h1>
             <button id="btnOpenBloqueio" class="btn-save" style="width: auto; padding: 12px 25px; margin: 0; font-size: 0.75rem;">
-                <i class="fas fa-calendar-plus"></i> BLOQUEAR HORÁRIO
+                <i class="ph ph-calendar-plus"></i> BLOQUEAR HORÁRIO
             </button>
         </header>
 
         <div class="calendar-nav">
-            <a href="?data={{ $inicioSemana->copy()->subWeek()->format('Y-m-d') }}" class="nav-link"><i class="fas fa-chevron-left"></i> Semana Anterior</a>
+            <a href="?data={{ $inicioSemana->copy()->subWeek()->format('Y-m-d') }}" class="nav-link"><i class="ph ph-caret-left"></i> Semana Anterior</a>
             <span style="font-weight: 800; font-size: 0.9rem; color: var(--primary);">{{ $inicioSemana->format('d/m') }} até {{ $inicioSemana->copy()->endOfWeek()->format('d/m') }}</span>
             <div class="nav-buttons-group">
                 <a href="?data={{ now()->format('Y-m-d') }}" class="nav-link" title="Voltar para a semana atual">
-                    <i class="fas fa-calendar-check"></i> Hoje
+                    <i class="ph ph-calendar-check"></i> Hoje
                 </a>
-                <a href="?data={{ $inicioSemana->copy()->addWeek()->format('Y-m-d') }}" class="nav-link">Próxima Semana <i class="fas fa-chevron-right"></i></a>
+                <a href="?data={{ $inicioSemana->copy()->addWeek()->format('Y-m-d') }}" class="nav-link">Próxima Semana <i class="ph ph-caret-right"></i></a>
             </div>
         </div>
 
@@ -711,7 +717,7 @@
 
             <div class="agenda-notes">
                 <h3 id="summary-title" style="color: var(--primary); font-size: 0.8rem; margin: 0 0 15px 0; text-transform: uppercase; letter-spacing: 1px;">
-                    <i class="fas fa-list-ul"></i> Compromissos do Dia
+                    <i class="ph ph-list-bullets"></i> Compromissos do Dia
                 </h3>
                 <div id="summary-content"></div>
             </div>
@@ -724,7 +730,7 @@
     <div id="modalDetalhesAluno" class="modal-overlay" style="z-index: 2001;">
         <div class="modal-content" style="max-width: 500px;">
             <h2 style="color: var(--primary); font-size: 1.4rem; margin-top: 0; font-weight: 900; display: flex; align-items: center; gap: 10px;">
-                <i class="fas fa-user-check"></i> DETALHES DO ALUNO
+                <i class="ph ph-user-check"></i> DETALHES DO ALUNO
             </h2>
             <div id="detalhesAlunoContent" style="display: flex; flex-direction: column; gap: 15px;">
                 <p style="text-align: center; color: var(--text-muted);">Carregando...</p>
@@ -737,7 +743,7 @@
     <div id="modalAlunos" class="modal-overlay">
         <div class="modal-content" style="max-width: 600px;">
             <h2 style="color: var(--primary); font-size: 1.4rem; margin-top: 0; font-weight: 900; display: flex; align-items: center; gap: 10px;">
-                <i class="fas fa-users"></i> MEUS ALUNOS
+                <i class="ph ph-users"></i> MEUS ALUNOS
             </h2>
             <div class="alunos-list" style="display: flex; flex-direction: column; gap: 15px; max-height: 400px; overflow-y: auto; padding-right: 10px;">
                 @php
@@ -754,27 +760,27 @@
                     <div style="flex: 1;">
                         <h3 style="margin: 0 0 5px 0; font-size: 1.1rem; color: #fff;">{{ $agendamento->cliente?->nome ?? 'Aluno Sem Nome' }}</h3>
                         <p style="margin: 0; font-size: 0.8rem; color: var(--text-muted);">
-                            <i class="fas fa-bullseye" style="color: var(--primary);"></i>
+                            <i class="ph ph-target" style="color: var(--primary);"></i>
                             {{ $agendamento->cliente?->resumo_objetivo ?? 'Objetivo não informado' }}
                         </p>
                     </div>
                     <button type="button" onclick="abrirDetalhesAluno({{ $agendamento->cliente?->id }})" style="background: rgba(212,255,0,0.15); color: var(--primary); border: 1px solid rgba(212,255,0,0.4); width: 40px; height: 40px; border-radius: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: 0.3s; font-weight: 900;" title="Ver informações do aluno">
-                        <i class="fas fa-user-circle"></i>
+                        <i class="ph ph-user-circle"></i>
                     </button>
                     <a href="{{ route('fichas-treino.aluno', $agendamento->cliente?->id) }}" style="background: rgba(212,255,0,0.15); color: var(--primary); border: 1px solid rgba(212,255,0,0.4); width: 40px; height: 40px; border-radius: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: 0.3s; font-weight: 900; text-decoration: none;" title="Visualizar fichas">
-                        <i class="fas fa-eye"></i>
+                        <i class="ph ph-eye"></i>
                     </a>
                     <button type="button"
                         data-cliente-id="{{ $agendamento->cliente?->id }}"
                         data-cliente-nome="{{ $agendamento->cliente?->nome }}"
                         onclick="abrirModalCriarFichaAluno(this.dataset.clienteId, this.dataset.clienteNome)"
                         style="background: rgba(212,255,0,0.2); color: var(--primary); border: 1px solid var(--primary); width: 40px; height: 40px; border-radius: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: 0.3s; font-weight: 900;" title="Criar ficha de treino">
-                        <i class="fas fa-dumbbell"></i>
+                        <i class="ph ph-barbell"></i>
                     </button>
                 </div>
                 @empty
                 <div style="text-align: center; padding: 40px 20px; opacity: 0.5;">
-                    <i class="fas fa-user-slash" style="font-size: 3rem; margin-bottom: 15px; color: var(--text-muted);"></i>
+                    <i class="ph ph-user-minus" style="font-size: 3rem; margin-bottom: 15px; color: var(--text-muted);"></i>
                     <p style="color: var(--text-muted);">Você ainda não possui alunos vinculados.</p>
                 </div>
                 @endforelse
@@ -787,7 +793,7 @@
     <div id="modalCriarFichaAluno" class="modal-overlay">
         <div class="modal-content" style="max-width: 500px;">
             <h2 style="color: var(--primary); font-size: 1.4rem; margin-top: 0; font-weight: 900;">
-                <i class="fas fa-plus"></i> CRIAR FICHA DE TREINO
+                <i class="ph ph-plus"></i> CRIAR FICHA DE TREINO
             </h2>
             <p id="nomeAlunoModalFicha" style="color: var(--text-muted); margin-bottom: 20px;"></p>
             
@@ -810,7 +816,7 @@
                 </div>
 
                 <label>Nome do Treino</label>
-                <div class="input-wrapper"><i class="fas fa-dumbbell"></i><input type="text" name="nome_treino" placeholder="Ex: Peito e Costas" required></div>
+                <div class="input-wrapper"><i class="ph ph-barbell"></i><input type="text" name="nome_treino" placeholder="Ex: Peito e Costas" required></div>
 
                 <label>Observações</label>
                 <div class="input-wrapper" style="padding: 12px; min-height: 80px;">
@@ -844,7 +850,7 @@
             {{-- Pacotes --}}
             <div class="finance-card" style="background: rgba(212, 255, 0, 0.08); border: 1px solid rgba(212, 255, 0, 0.3);">
                 <span style="font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase;">
-                    <i class="fas fa-dumbbell"></i> Pacotes Contratados
+                    <i class="ph ph-barbell"></i> Pacotes Contratados
                 </span>
                 <span class="finance-value">R$ {{ number_format($resultado['pacotes'] ?? 0, 2, ',', '.') }}</span>
                 <small style="color: var(--text-muted); font-size: 0.7rem; margin-top: 8px; display: block;">
@@ -855,7 +861,7 @@
             {{-- Aulas Avulsas --}}
             <div class="finance-card" style="background: rgba(0, 255, 136, 0.08); border: 1px solid rgba(0, 255, 136, 0.3);">
                 <span style="font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase;">
-                    <i class="fas fa-star"></i> Aulas Avulsas
+                    <i class="ph-fill ph-star"></i> Aulas Avulsas
                 </span>
                 <span class="finance-value" style="color: var(--success);">R$ {{ number_format($resultado['avulsas'] ?? 0, 2, ',', '.') }}</span>
                 <small style="color: var(--text-muted); font-size: 0.7rem; margin-top: 8px; display: block;">
@@ -879,11 +885,11 @@
     <div id="modalCarteira" class="modal-overlay" style="display:none;">
         <div class="modal-content" style="max-width:480px;">
             <h2 style="color:var(--primary); font-size:1.4rem; margin-top:0; font-weight:900; text-align:center;">
-                <i class="fas fa-piggy-bank"></i> MINHA CARTEIRA
+                <i class="ph ph-piggy-bank"></i> MINHA CARTEIRA
             </h2>
 
             <div id="carteiraLoading" style="text-align:center; padding:30px 0; color:#a0a0a0;">
-                <i class="fas fa-spinner fa-spin fa-2x"></i><br><br>Consultando saldo...
+                <i class="ph ph-spinner ph-spin fa-2x"></i><br><br>Consultando saldo...
             </div>
 
             <div id="carteiraConteudo" style="display:none;">
@@ -893,7 +899,7 @@
                 </div>
 
                 <div id="carteiraSemPix" style="display:none; background:rgba(255,165,0,0.1); border:1px solid rgba(255,165,0,0.3); border-radius:12px; padding:14px; margin-bottom:16px; font-size:0.82rem; color:#ffa500; text-align:center;">
-                    <i class="fas fa-exclamation-triangle"></i> Cadastre sua chave PIX no perfil para poder sacar.
+                    <i class="ph ph-warning"></i> Cadastre sua chave PIX no perfil para poder sacar.
                 </div>
 
                 <div id="carteiraSaqueForm">
@@ -911,7 +917,7 @@
 
                     <button id="btnSacar" onclick="confirmarSaque()"
                         style="width:100%; background:var(--primary); color:#000; border:none; border-radius:12px; padding:14px; font-weight:900; font-size:0.95rem; cursor:pointer;">
-                        <i class="fas fa-arrow-down"></i> Sacar via PIX
+                        <i class="ph ph-arrow-down"></i> Sacar via PIX
                     </button>
                 </div>
 
@@ -921,7 +927,7 @@
             </div>
 
             <div id="carteiraSemConta" style="display:none; text-align:center; padding:20px 0; color:#a0a0a0; font-size:0.85rem;">
-                <i class="fas fa-info-circle fa-2x" style="margin-bottom:12px; display:block;"></i>
+                <i class="ph ph-info fa-2x" style="margin-bottom:12px; display:block;"></i>
                 Sua conta de repasse ainda está sendo configurada.<br>
                 Os saques estarão disponíveis em breve.
             </div>
@@ -942,35 +948,35 @@
                 <div class="form-grid">
                     <div class="full-width">
                         <label>Foto de Perfil</label>
-                        <div class="input-wrapper"><i class="fas fa-camera"></i><input type="file" name="foto" accept="image/*"></div>
+                        <div class="input-wrapper"><i class="ph ph-camera"></i><input type="file" name="foto" accept="image/*"></div>
                     </div>
                     <div>
                         <label>Nome Completo</label>
-                        <div class="input-wrapper"><i class="fas fa-user"></i><input type="text" name="nome" value="{{ $personal->nome }}" required></div>
+                        <div class="input-wrapper"><i class="ph ph-user"></i><input type="text" name="nome" value="{{ $personal->nome }}" required></div>
                     </div>
                     <div>
                         <label>CREF (não editável)</label>
-                        <div class="input-wrapper" style="opacity: 0.7;"><i class="fas fa-id-badge"></i><input type="text" value="{{ $personal->cref ?? 'Não informado' }}" disabled></div>
+                        <div class="input-wrapper" style="opacity: 0.7;"><i class="ph ph-identification-badge"></i><input type="text" value="{{ $personal->cref ?? 'Não informado' }}" disabled></div>
                     </div>
                     <div>
                         <label>Valor por Seção (R$)</label>
-                        <div class="input-wrapper"><i class="fas fa-dollar-sign"></i><input type="number" step="0.01" name="valor_secao" value="{{ $personal->valor_secao }}"></div>
+                        <div class="input-wrapper"><i class="ph ph-currency-dollar"></i><input type="number" step="0.01" name="valor_secao" value="{{ $personal->valor_secao }}"></div>
                     </div>
                     <div>
                         <label>Valor da Ficha Personalizada (R$)</label>
-                        <div class="input-wrapper"><i class="fas fa-clipboard-list"></i><input type="number" step="0.01" name="valor_ficha" value="{{ $personal->valor_ficha }}" placeholder="0.00"></div>
+                        <div class="input-wrapper"><i class="ph ph-clipboard-text"></i><input type="number" step="0.01" name="valor_ficha" value="{{ $personal->valor_ficha }}" placeholder="0.00"></div>
                     </div>
                     <div class="full-width">
                         <label>Chave Pix</label>
-                        <div class="input-wrapper"><i class="fas fa-key"></i><input type="text" name="chave_pix" value="{{ $personal->chave_pix }}" placeholder="CPF, e-mail, telefone ou chave aleatória"></div>
+                        <div class="input-wrapper"><i class="ph ph-key"></i><input type="text" name="chave_pix" value="{{ $personal->chave_pix }}" placeholder="CPF, e-mail, telefone ou chave aleatória"></div>
                     </div>
                     <div class="full-width">
                         <label>Academias em que atua</label>
                         <p style="color: var(--text-muted); font-size: 0.73rem; margin: 3px 0 8px;">
-                            <i class="fas fa-info-circle"></i> Uma por linha. Não precisa ser uma academia cadastrada na plataforma.
+                            <i class="ph ph-info"></i> Uma por linha. Não precisa ser uma academia cadastrada na plataforma.
                         </p>
                         <div class="input-wrapper" style="height: auto; align-items: flex-start; padding: 12px 15px;">
-                            <i class="fas fa-dumbbell" style="margin-top: 2px; flex-shrink: 0;"></i>
+                            <i class="ph ph-barbell" style="margin-top: 2px; flex-shrink: 0;"></i>
                             <textarea name="academias" rows="4"
                                       placeholder="Academia XYZ&#10;Smart Fitness&#10;Strong Gym&#10;..."
                                       style="background: transparent; border: none; color: #fff; width: 100%; outline: none; resize: vertical; font-size: 0.9rem; line-height: 1.6;">{{ $personal->academias }}</textarea>
@@ -989,7 +995,7 @@
     <div id="modalPlanos" class="modal-overlay">
         <div class="modal-content" style="max-width: 650px;">
             <h2 style="color: var(--primary); font-size: 1.4rem; margin-top: 0; font-weight: 900; display: flex; align-items: center; gap: 10px;">
-                <i class="fas fa-tags"></i> MEUS PACOTES
+                <i class="ph ph-tag"></i> MEUS PACOTES
             </h2>
 
             <form action="{{ route('pacotes.store') }}" method="POST">
@@ -997,7 +1003,7 @@
                 <input type="hidden" name="personal_id" value="{{ session('personal_id') ?? $personal->id }}">
 
                 <p style="color: var(--text-muted); font-size: 0.8rem; margin-bottom: 20px;">
-                    <i class="fas fa-info-circle"></i> Defina os valores mensais para cada frequência de treino. Deixe em branco ou 0 para não oferecer essa opção.
+                    <i class="ph ph-info"></i> Defina os valores mensais para cada frequência de treino. Deixe em branco ou 0 para não oferecer essa opção.
                 </p>
 
                 <div class="planos-grid">
@@ -1011,7 +1017,7 @@
                     <div>
                         <label>{{ $vezes }}x na Semana</label>
                         <div class="input-wrapper">
-                            <i class="fas fa-dumbbell"></i>
+                            <i class="ph ph-barbell"></i>
                             <input type="number" step="0.01" name="precos[{{ $vezes }}]"
                                 value="{{ $precosSalvos[$vezes] ?? '' }}" placeholder="R$ 0,00">
                         </div>
@@ -1034,17 +1040,17 @@
             <form action="{{ route('personal.storeHorario') }}" method="POST">
                 @csrf
                 <label>Data</label>
-                <div class="input-wrapper"><i class="fas fa-calendar"></i><input type="date" name="data" id="modal_data" required></div>
+                <div class="input-wrapper"><i class="ph ph-calendar"></i><input type="date" name="data" id="modal_data" required></div>
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
                     <div><label>Início</label>
-                        <div class="input-wrapper"><i class="fas fa-clock"></i><input type="time" name="hora_inicio" required></div>
+                        <div class="input-wrapper"><i class="ph ph-clock"></i><input type="time" name="hora_inicio" required></div>
                     </div>
                     <div><label>Fim</label>
-                        <div class="input-wrapper"><i class="fas fa-clock"></i><input type="time" name="hora_fim" required></div>
+                        <div class="input-wrapper"><i class="ph ph-clock"></i><input type="time" name="hora_fim" required></div>
                     </div>
                 </div>
                 <label>Motivo</label>
-                <div class="input-wrapper"><i class="fas fa-pen"></i><input type="text" name="descricao" placeholder="Ex: Almoço / Ocupado"></div>
+                <div class="input-wrapper"><i class="ph ph-pen"></i><input type="text" name="descricao" placeholder="Ex: Almoço / Ocupado"></div>
                 <button type="submit" class="btn-save">Confirmar Bloqueio</button>
                 <button type="button" onclick="closeModalHorario()" class="btn-save btn-cancel">Voltar</button>
             </form>
@@ -1055,7 +1061,7 @@
     <div id="modalGaleria" class="modal-overlay">
         <div class="modal-content" style="max-width: 600px;">
             <h2 style="color: var(--primary); font-size: 1.4rem; margin-top: 0; font-weight: 900;">
-                <i class="fas fa-images"></i> MINHA GALERIA
+                <i class="ph ph-images"></i> MINHA GALERIA
             </h2>
             <p style="color: var(--text-muted); font-size: 0.8rem; margin-bottom: 15px;">
                 Fotos visíveis para clientes no seu perfil. Máximo 9 fotos.
@@ -1079,7 +1085,7 @@
                         <button type="button"
                             onclick="removerFoto({{ $foto->id }}, this)"
                             style="background: var(--error); color: #fff; border: none; padding: 6px 12px; border-radius: 8px; cursor: pointer; font-size: 0.75rem;">
-                            <i class="fas fa-trash"></i> Remover
+                            <i class="ph ph-trash"></i> Remover
                         </button>
                     </div>
                 </div>
@@ -1088,7 +1094,7 @@
                 {{-- Slot de upload --}}
                 <div class="galeria-upload-slot" id="galeriaSlot" onclick="document.getElementById('inputFotoGaleria').click()"
                      style="{{ $personal->fotos->count() >= 9 ? 'display:none' : '' }}">
-                    <i class="fas fa-plus-circle"></i>
+                    <i class="ph ph-plus-circle"></i>
                     <span id="galeriaSlotLabel">Adicionar</span>
                 </div>
             </div>
@@ -1100,7 +1106,7 @@
             <div id="galeriaLegendaArea" style="margin-top: 15px; {{ $personal->fotos->count() >= 9 ? 'display:none' : '' }}">
                 <label>Legenda (opcional — preencha antes de escolher a foto)</label>
                 <div class="input-wrapper">
-                    <i class="fas fa-pen"></i>
+                    <i class="ph ph-pen"></i>
                     <input type="text" id="galeriaLegenda" placeholder="Ex: Treino funcional, Avaliação...">
                 </div>
             </div>
@@ -1113,7 +1119,7 @@
     <div id="modalAvaliacoes" class="modal-overlay">
         <div class="modal-content" style="max-width: 600px;">
             <h2 style="color: var(--primary); font-size: 1.4rem; margin-top: 0; font-weight: 900; display: flex; align-items: center; gap: 10px;">
-                <i class="fas fa-star"></i> MINHAS AVALIAÇÕES
+                <i class="ph-fill ph-star"></i> MINHAS AVALIAÇÕES
             </h2>
 
             @php
@@ -1132,9 +1138,9 @@
                     <span style="font-size: 3rem; font-weight: 900; color: var(--primary); line-height: 1;">{{ number_format($mediaAval, 1) }}</span>
                     <div style="color: var(--primary); font-size: 0.8rem; margin: 6px 0 4px;">
                         @for ($i = 1; $i <= 5; $i++)
-                            @if ($i <=$mediaAval) <i class="fas fa-star"></i>
-                            @elseif ($i - 0.5 <= $mediaAval) <i class="fas fa-star-half-alt"></i>
-                                @else <i class="far fa-star" style="opacity:0.3"></i>
+                            @if ($i <=$mediaAval) <i class="ph-fill ph-star"></i>
+                            @elseif ($i - 0.5 <= $mediaAval) <i class="ph-fill ph-star-half"></i>
+                                @else <i class="ph ph-star" style="opacity:0.3"></i>
                                 @endif
                                 @endfor
                     </div>
@@ -1149,7 +1155,7 @@
                     @endphp
                     <div style="display: flex; align-items: center; gap: 8px; font-size: 0.75rem;">
                         <span style="color: var(--text-muted); width: 10px; text-align: right;">{{ $estrela }}</span>
-                        <i class="fas fa-star" style="color: var(--primary); font-size: 0.65rem;"></i>
+                        <i class="ph-fill ph-star" style="color: var(--primary); font-size: 0.65rem;"></i>
                         <div class="nota-bar-bg">
                             <div class="nota-bar-fill" style="width: {{ $pct }}%;"></div>
                         </div>
@@ -1172,8 +1178,8 @@
                         </div>
                         <div style="color: var(--primary); font-size: 0.8rem; flex-shrink:0;">
                             @for ($i = 1; $i <= 5; $i++)
-                                @if ($i <=$avaliacao->nota) <i class="fas fa-star"></i>
-                                @else <i class="far fa-star" style="opacity: 0.25"></i>
+                                @if ($i <=$avaliacao->nota) <i class="ph-fill ph-star"></i>
+                                @else <i class="ph ph-star" style="opacity: 0.25"></i>
                                 @endif
                                 @endfor
                         </div>
@@ -1186,13 +1192,13 @@
                     @endif
 
                     <small style="color: rgba(255,255,255,0.2); font-size: 0.7rem;">
-                        <i class="fas fa-clock"></i>
+                        <i class="ph ph-clock"></i>
                         {{ \Carbon\Carbon::parse($avaliacao->created_at)->format('d/m/Y') }}
                     </small>
                 </div>
                 @empty
                 <div style="text-align: center; padding: 50px 20px; opacity: 0.4;">
-                    <i class="fas fa-star" style="font-size: 3rem; margin-bottom: 15px; color: var(--text-muted); display: block;"></i>
+                    <i class="ph-fill ph-star" style="font-size: 3rem; margin-bottom: 15px; color: var(--text-muted); display: block;"></i>
                     <p style="color: var(--text-muted); margin: 0;">Você ainda não recebeu avaliações.</p>
                 </div>
                 @endforelse
@@ -1319,7 +1325,7 @@
 
             const btn = document.getElementById('btnSacar');
             btn.disabled = true;
-            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processando...';
+            btn.innerHTML = '<i class="ph ph-spinner ph-spin"></i> Processando...';
             document.getElementById('carteiraSaqueErro').style.display = 'none';
 
             try {
@@ -1340,7 +1346,7 @@
                 document.getElementById('carteiraSaqueErro').textContent = err.message;
                 document.getElementById('carteiraSaqueErro').style.display = 'block';
                 btn.disabled = false;
-                btn.innerHTML = '<i class="fas fa-arrow-down"></i> Sacar via PIX';
+                btn.innerHTML = '<i class="ph ph-arrow-down"></i> Sacar via PIX';
             }
         }
 
@@ -1420,7 +1426,7 @@
 
                             <div style="background: rgba(212,255,0,0.05); border: 1px solid var(--primary); border-radius: 16px; padding: 15px;">
                                 <p style="margin: 0 0 12px 0; font-size: 0.9rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;">
-                                    <i class="fas fa-birthday-cake" style="color: var(--primary);"></i> Idade
+                                    <i class="ph ph-cake" style="color: var(--primary);"></i> Idade
                                 </p>
                                 <p style="margin: 0 0 15px 0; font-size: 1.4rem; color: var(--primary); font-weight: 900;">
                                     ${escHtml(idade)} anos
@@ -1429,7 +1435,7 @@
 
                             <div style="background: rgba(212,255,0,0.05); border: 1px solid var(--primary); border-radius: 16px; padding: 15px; margin-top: 12px;">
                                 <p style="margin: 0 0 12px 0; font-size: 0.9rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;">
-                                    <i class="fas fa-heart-pulse" style="color: var(--primary);"></i> Condição Clínica
+                                    <i class="ph ph-heartbeat" style="color: var(--primary);"></i> Condição Clínica
                                 </p>
                                 <p style="margin: 0 0 15px 0; font-size: 0.95rem; color: #fff; line-height: 1.6;">
                                     ${escHtml(dados.condicao_clinica || 'Nenhuma condição registrada')}
@@ -1438,7 +1444,7 @@
 
                             <div style="background: rgba(212,255,0,0.05); border: 1px solid var(--primary); border-radius: 16px; padding: 15px; margin-top: 12px;">
                                 <p style="margin: 0 0 12px 0; font-size: 0.9rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;">
-                                    <i class="fas fa-dumbbell" style="color: var(--primary);"></i> Pacote Contratado
+                                    <i class="ph ph-barbell" style="color: var(--primary);"></i> Pacote Contratado
                                 </p>
                                 <p style="margin: 0 0 15px 0; font-size: 1.1rem; color: var(--primary); font-weight: 900;">
                                     ${pacoteInfo}
@@ -1515,7 +1521,7 @@
 
             const content = document.getElementById('summary-content');
             const parts = dateStr.split('-');
-            document.getElementById('summary-title').innerHTML = `<i class="fas fa-calendar-day"></i> AGENDA (${parts[2]}/${parts[1]})`;
+            document.getElementById('summary-title').innerHTML = `<i class="ph ph-calendar-dot"></i> AGENDA (${parts[2]}/${parts[1]})`;
             content.innerHTML = `<p style="text-align:center; color:var(--text-muted); padding:30px; font-size:0.8rem;">Buscando...</p>`;
 
             fetch(`/personal/agenda/${dateStr}`)
@@ -1523,7 +1529,7 @@
                 .then(dados => {
                     content.innerHTML = "";
                     if (!dados || dados.length === 0) {
-                        content.innerHTML = `<div style="text-align:center; padding-top:40px; opacity:0.3;"><i class="fas fa-coffee" style="font-size:2rem;"></i><p>Nada para hoje! Horário livre.</p></div>`;
+                        content.innerHTML = `<div style="text-align:center; padding-top:40px; opacity:0.3;"><i class="ph ph-coffee" style="font-size:2rem;"></i><p>Nada para hoje! Horário livre.</p></div>`;
                         return;
                     }
                     dados.forEach(item => {
@@ -1535,11 +1541,11 @@
                         const podeCancelar = diffHoras >= 24;
 
                         let nomeExibicao = "";
-                        let icone = '<i class="fas fa-lock" style="opacity:0.5"></i>';
+                        let icone = '<i class="ph ph-lock" style="opacity:0.5"></i>';
 
                         if (item.cliente && (item.cliente.nome || item.cliente.name)) {
                             nomeExibicao = `<strong>${item.cliente.nome || item.cliente.name}</strong>`;
-                            icone = '<i class="fas fa-user-circle" style="color:var(--primary)"></i>';
+                            icone = '<i class="ph ph-user-circle" style="color:var(--primary)"></i>';
                         } else {
                             nomeExibicao = item.descricao || "Horário Bloqueado";
                         }
@@ -1550,14 +1556,14 @@
                                     <strong style="color:var(--primary);">${item.hora_inicio.substring(0,5)} - ${item.hora_fim.substring(0,5)}</strong>
                                     <p style="margin:5px 0 0 0; font-size:0.85rem;">${icone} ${nomeExibicao}</p>
                                     <small style="color:var(--text-muted); font-size:0.7rem; display:block; margin-top:5px;">
-                                        <i class="fas fa-dumbbell"></i>
+                                        <i class="ph ph-barbell"></i>
                                         ${item.academia_nome || (item.academia ? (item.academia.nome || item.academia.name) : 'Local não informado')}
                                     </small>
                                 </div>
                                 <button type="button" class="btn-delete-agenda"
                                     onclick="cancelarComJustificativa(${item.id})"
                                     ${!podeCancelar ? 'disabled title="Mínimo 24h de antecedência"' : ''}>
-                                    <i class="fas fa-trash-alt"></i>
+                                    <i class="ph ph-trash"></i>
                                 </button>
                             </div>`;
                     });
@@ -1684,7 +1690,7 @@
                             ${data.foto.legenda ? `<span class="galeria-item-legenda">${data.foto.legenda}</span>` : ''}
                             <button type="button" onclick="removerFoto(${data.foto.id}, this)"
                                 style="background:var(--error);color:#fff;border:none;padding:6px 12px;border-radius:8px;cursor:pointer;font-size:0.75rem;">
-                                <i class="fas fa-trash"></i> Remover
+                                <i class="ph ph-trash"></i> Remover
                             </button>
                         </div>`;
                     grid.insertBefore(novoItem, slot);
@@ -1692,12 +1698,12 @@
                     document.getElementById('galeriaLegenda').value = '';
                     input.value = '';
                     atualizarContador(data.total);
-                    galeriaMsg('<i class="fas fa-check-circle"></i> Foto adicionada com sucesso!', 'ok');
+                    galeriaMsg('<i class="ph ph-check-circle"></i> Foto adicionada com sucesso!', 'ok');
                 } else {
-                    galeriaMsg('<i class="fas fa-exclamation-circle"></i> ' + (data.erro || 'Erro ao enviar.'), 'err');
+                    galeriaMsg('<i class="ph ph-warning-circle"></i> ' + (data.erro || 'Erro ao enviar.'), 'err');
                 }
             })
-            .catch(() => galeriaMsg('<i class="fas fa-exclamation-circle"></i> Erro de conexão ao enviar a foto.', 'err'))
+            .catch(() => galeriaMsg('<i class="ph ph-warning-circle"></i> Erro de conexão ao enviar a foto.', 'err'))
             .finally(() => {
                 label.textContent = 'Adicionar';
                 slot.style.opacity = '1';
@@ -1724,17 +1730,17 @@
                     if (item) item.remove();
                     const total = document.querySelectorAll('#galeriaGrid .galeria-item').length;
                     atualizarContador(total);
-                    galeriaMsg('<i class="fas fa-check-circle"></i> Foto removida.', 'ok');
+                    galeriaMsg('<i class="ph ph-check-circle"></i> Foto removida.', 'ok');
                 } else {
-                    galeriaMsg('<i class="fas fa-exclamation-circle"></i> ' + (data.erro || 'Erro ao remover.'), 'err');
+                    galeriaMsg('<i class="ph ph-warning-circle"></i> ' + (data.erro || 'Erro ao remover.'), 'err');
                     btn.disabled = false;
-                    btn.innerHTML = '<i class="fas fa-trash"></i> Remover';
+                    btn.innerHTML = '<i class="ph ph-trash"></i> Remover';
                 }
             })
             .catch(() => {
-                galeriaMsg('<i class="fas fa-exclamation-circle"></i> Erro de conexão.', 'err');
+                galeriaMsg('<i class="ph ph-warning-circle"></i> Erro de conexão.', 'err');
                 btn.disabled = false;
-                btn.innerHTML = '<i class="fas fa-trash"></i> Remover';
+                btn.innerHTML = '<i class="ph ph-trash"></i> Remover';
             });
         }
     </script>

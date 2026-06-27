@@ -8,8 +8,11 @@
     <title>Conversa</title>
     <link rel="icon" type="image/png" href="{{ asset('SnrFit.png') }}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/regular/style.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/fill/style.css">
+    <link rel="stylesheet" href="{{ asset('css/snrfit-brand.css') }}">
     <style>
-        :root { --primary:#F4BE16; --bg-dark:#000; --card-bg:#111317; --field:#1a1d23; --text-main:#fff; --text-muted:#9a9a9a; --border:rgba(255,255,255,0.08); }
+        :root { --primary:var(--snr-lime); --bg-dark:var(--snr-bg); --card-bg:var(--snr-surface); --field:var(--snr-surface-2); --text-main:var(--snr-text); --text-muted:var(--snr-dim); --border:var(--snr-border); }
         * { margin:0; padding:0; box-sizing:border-box; }
         html,body { height:100%; }
         body { background:var(--bg-dark); font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; color:var(--text-main); display:flex; flex-direction:column; height:100vh; }
@@ -32,10 +35,10 @@
     </style>
 </head>
 
-<body>
+<body class="ed-page">
     <div class="top-bar">
-        <a href="{{ route('chat.index') }}" class="back-btn"><i class="fas fa-arrow-left"></i></a>
-        <img src="https://ui-avatars.com/api/?name={{ urlencode($outro?->nome ?? 'Contato') }}&background=F4BE16&color=000" alt="">
+        <a href="{{ route('chat.index') }}" class="back-btn"><i class="ph ph-arrow-left"></i></a>
+        <img src="https://ui-avatars.com/api/?name={{ urlencode($outro?->nome ?? 'Contato') }}&background=d4ff00&color=0a0b0d" alt="">
         <div class="nome">{{ $outro?->nome ?? 'Contato' }}</div>
     </div>
 
@@ -44,7 +47,7 @@
     <div class="composer">
         <form id="formMsg" onsubmit="return enviar(event)">
             <input type="text" id="texto" placeholder="Mensagem..." autocomplete="off" maxlength="2000" required>
-            <button type="submit"><i class="fas fa-paper-plane"></i></button>
+            <button type="submit"><i class="ph ph-paper-plane-tilt"></i></button>
         </form>
     </div>
 

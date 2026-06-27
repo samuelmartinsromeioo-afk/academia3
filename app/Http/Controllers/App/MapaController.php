@@ -40,7 +40,9 @@ class MapaController extends Controller
         $personals = Personal::whereNotNull('latitude')
             ->whereNotNull('longitude')
             ->where('status', 'aprovado')
-            ->get(['id', 'nome', 'cidade', 'estado', 'valor_secao', 'foto', 'latitude', 'longitude'])
+            ->orderByRaw('pioneiro_posicao IS NULL')
+            ->orderBy('pioneiro_posicao')
+            ->get(['id', 'nome', 'cidade', 'estado', 'valor_secao', 'foto', 'latitude', 'longitude', 'pioneiro_posicao'])
             ->map(fn($p) => [
                 'tipo'      => 'personal',
                 'id'        => $p->id,
@@ -48,7 +50,8 @@ class MapaController extends Controller
                 'cidade'    => $p->cidade,
                 'estado'    => $p->estado,
                 'endereco'  => "$p->cidade - $p->estado",
-                'info'      => 'Valor/sessão: R$ ' . number_format($p->valor_secao ?? 0, 2, ',', '.'),
+                'info'      => 'Valor/sessão: R$ ' . number_format($p->valor_secao ?? 0, 2, ',', '.') . (is_null($p->pioneiro_posicao) ? '' : ' · ⭐ Pioneiro'),
+                'pioneiro'  => ! is_null($p->pioneiro_posicao),
                 'latitude'  => (float) $p->latitude,
                 'longitude' => (float) $p->longitude,
             ]);

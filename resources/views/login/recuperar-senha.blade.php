@@ -10,6 +10,8 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Syncopate:wght@700&family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/regular/style.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/fill/style.css">
  
     <style>
         :root {
@@ -155,7 +157,7 @@
         @media (max-width: 480px) { .card { padding: 30px; } }
     </style>
 </head>
-<body>
+<body class="ed-page">
  
 <header>
     <a href="{{ route('login.create') }}" style="text-decoration:none;">
@@ -167,7 +169,7 @@
     <div class="card">
  
         <div class="icon-lock">
-            <i class="fa-solid fa-lock"></i>
+            <i class="ph ph-lock"></i>
         </div>
  
         <h2>Esqueceu a senha?</h2>
@@ -175,7 +177,7 @@
  
         @if(session('sucesso'))
             <div class="alert-success">
-                <i class="fa-solid fa-circle-check" style="margin-top:2px; flex-shrink:0;"></i>
+                <i class="ph ph-check-circle" style="margin-top:2px; flex-shrink:0;"></i>
                 <span>{{ session('sucesso') }}</span>
             </div>
         @endif
@@ -201,13 +203,13 @@
             </div>
  
             <button type="submit" class="btn-primary">
-                <i class="fa-solid fa-paper-plane me-2"></i> Enviar link de recuperação
+                <i class="ph ph-paper-plane-tilt me-2"></i> Enviar link de recuperação
             </button>
         </form>
  
         <div class="back-link">
             <a href="{{ route('login.create') }}">
-                <i class="fa-solid fa-arrow-left"></i> Voltar ao login
+                <i class="ph ph-arrow-left"></i> Voltar ao login
             </a>
         </div>
  

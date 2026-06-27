@@ -7,6 +7,8 @@
     <link rel="icon" type="image/png" href="{{ asset('SnrFit.png') }}">
     @include('partials.pwa')
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/regular/style.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/fill/style.css">
     <style>
         :root {
             --primary: #d4ff00; --bg-dark: #0a0b0d; --card-bg: #16181d;
@@ -34,10 +36,10 @@
         @media (max-width: 600px) { .top-bar { padding: 15px 20px; } }
     </style>
 </head>
-<body>
+<body class="ed-page">
 
 <div class="top-bar">
-    <a href="{{ route('personal.dashboard') }}" class="btn-back"><i class="fas fa-arrow-left"></i> Voltar</a>
+    <a href="{{ route('personal.dashboard') }}" class="btn-back"><i class="ph ph-arrow-left"></i> Voltar</a>
     <div style="display:flex; align-items:center; gap:12px;">
         <img src="{{ $personal->foto ? asset('storage/'.$personal->foto) : 'https://cdn-icons-png.flaticon.com/512/3135/3135715.png' }}" style="width:38px; height:38px; border-radius:50%; border:2px solid var(--primary); object-fit:cover;">
         <span style="font-weight:700; font-size:0.9rem;">{{ $personal->nome }}</span>
@@ -45,16 +47,16 @@
 </div>
 
 <div class="container">
-    <h1 class="page-title"><i class="fas fa-user-check" style="margin-right:10px;"></i>Frequência dos Alunos</h1>
+    <div class="ed-eyebrow"><i class="ph ph-user-check"></i> Presença</div><h1 class="ed-h">Frequência dos <span class="ed-mark">Alunos</span></h1>
     <p class="page-sub">Marque presenças e faltas, acompanhe quem é assíduo e veja o resumo de cada aluno.</p>
 
     @if(session('success'))
-        <div class="card" style="border-color: rgba(0,255,136,0.3); color: var(--success); font-size:0.85rem; font-weight:700;"><i class="fas fa-check-circle"></i> {{ session('success') }}</div>
+        <div class="card" style="border-color: rgba(0,255,136,0.3); color: var(--success); font-size:0.85rem; font-weight:700;"><i class="ph ph-check-circle"></i> {{ session('success') }}</div>
     @endif
 
     @if($alunos->isEmpty())
         <div class="empty-state">
-            <i class="fas fa-users-slash"></i>
+            <i class="ph ph-users"></i>
             <p>Nenhum aluno encontrado ainda.</p>
         </div>
     @else
@@ -65,16 +67,16 @@
                     <div>
                         <p class="aluno-nome">{{ $aluno->nome }}</p>
                         <span class="freq-badge" style="background: {{ $c['cor'] }}1a; color: {{ $c['cor'] }}; border: 1px solid {{ $c['cor'] }}55;">
-                            <i class="fas fa-circle" style="font-size:0.5rem;"></i> {{ $c['label'] }}
+                            <i class="ph ph-circle" style="font-size:0.5rem;"></i> {{ $c['label'] }}
                             @if($c['taxa'] !== null) · {{ round($c['taxa'] * 100) }}% @endif
                         </span>
                         <div class="meta">
-                            <span><i class="fas fa-calendar-check" style="color:var(--success);"></i> <b>{{ $s['presentes'] }}</b> presença(s)</span>
-                            <span><i class="fas fa-calendar-xmark" style="color:var(--error);"></i> <b>{{ $s['faltas'] }}</b> falta(s)</span>
-                            <span><i class="fas fa-list-check"></i> <b>{{ $s['total'] }}</b> registro(s)</span>
+                            <span><i class="ph ph-calendar-check" style="color:var(--success);"></i> <b>{{ $s['presentes'] }}</b> presença(s)</span>
+                            <span><i class="ph ph-calendar-x" style="color:var(--error);"></i> <b>{{ $s['faltas'] }}</b> falta(s)</span>
+                            <span><i class="ph ph-list-checks"></i> <b>{{ $s['total'] }}</b> registro(s)</span>
                         </div>
                     </div>
-                    <a href="{{ route('personal.frequencia.aluno', $aluno->id) }}" class="btn-primary"><i class="fas fa-calendar-day"></i> Marcar / Ver</a>
+                    <a href="{{ route('personal.frequencia.aluno', $aluno->id) }}" class="btn-primary"><i class="ph ph-calendar-dot"></i> Marcar / Ver</a>
                 </div>
             </div>
         @endforeach

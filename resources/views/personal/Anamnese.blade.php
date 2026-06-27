@@ -7,14 +7,17 @@
     <title>Anamnese · {{ $cliente->nome }}</title>
     <link rel="icon" type="image/png" href="{{ asset('SnrFit.png') }}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/regular/style.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/fill/style.css">
+    <link rel="stylesheet" href="{{ asset('css/snrfit-brand.css') }}">
     <style>
         :root {
-            --primary: #F4BE16; --bg-dark: #000000; --card-bg: #111317;
-            --text-main: #ffffff; --text-muted: #9a9a9a; --green: #00e676; --red: #ff5252;
+            --primary: var(--snr-lime); --bg-dark: var(--snr-bg); --card-bg: var(--snr-surface);
+            --text-main: var(--snr-text); --text-muted: var(--snr-dim); --green: var(--snr-success); --red: var(--snr-error);
             --border: rgba(255, 255, 255, 0.08);
         }
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { background-color: var(--bg-dark); font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; color: var(--text-main); min-height: 100vh; background-image: radial-gradient(circle at 12% -10%, rgba(244, 190, 22, 0.10), transparent 45%); }
+        body { background-color: var(--bg-dark); font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; color: var(--text-main); min-height: 100vh; background-image: radial-gradient(circle at 12% -10%, rgba(212, 255, 0, 0.10), transparent 45%); }
         a { color: inherit; text-decoration: none; }
         .top-bar { display: flex; align-items: center; gap: 15px; padding: 15px 40px; background: rgba(0,0,0,0.6); border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 100; backdrop-filter: blur(10px); }
         .back-btn { background: var(--card-bg); border: 1px solid var(--border); color: var(--primary); width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1.1rem; transition: 0.3s; }
@@ -50,19 +53,19 @@
     </style>
 </head>
 
-<body>
+<body class="ed-page">
     <div class="top-bar">
-        <a href="{{ url()->previous() }}" class="back-btn" title="Voltar"><i class="fas fa-arrow-left"></i></a>
-        <span class="title"><i class="fas fa-file-medical"></i> Anamnese</span>
+        <a href="{{ url()->previous() }}" class="back-btn" title="Voltar"><i class="ph ph-arrow-left"></i></a>
+        <span class="title"><i class="ph ph-first-aid"></i> Anamnese</span>
     </div>
 
     <div class="container">
-        <h1><i class="fas fa-file-medical"></i> {{ strtoupper($cliente->nome) }}</h1>
+        <div class="ed-eyebrow"><i class="ph ph-first-aid"></i> Anamnese do aluno</div><h1 class="ed-h">{{ strtoupper($cliente->nome) }}</h1>
 
         @if(!$anamnese)
             <p class="subtitle">Anamnese do aluno.</p>
             <div class="empty">
-                <i class="fas fa-file-circle-xmark"></i>
+                <i class="ph ph-file-x"></i>
                 <p>Este aluno ainda não preencheu a anamnese.</p>
                 <small>Peça para ele completar pelo menu "Anamnese" no app.</small>
             </div>
@@ -73,7 +76,7 @@
 
             @if($anamnese->temAlertaParq())
                 <div class="alerta-parq">
-                    <i class="fas fa-triangle-exclamation"></i>
+                    <i class="ph ph-warning"></i>
                     Atenção: há resposta(s) "Sim" no PAR-Q. Recomenda-se avaliação médica antes de intensificar os treinos.
                 </div>
             @endif
@@ -88,13 +91,13 @@
             @endphp
 
             <div class="panel">
-                <div class="panel-title"><i class="fas fa-bullseye"></i> Objetivos</div>
+                <div class="panel-title"><i class="ph ph-target"></i> Objetivos</div>
                 <div class="field"><div class="k">Objetivo principal</div>{!! $campo($anamnese->objetivo_principal) !!}</div>
                 <div class="field"><div class="k">Nível de atividade</div>{!! $campo($anamnese->nivel_atividade ? ucfirst($anamnese->nivel_atividade) : '') !!}</div>
             </div>
 
             <div class="panel">
-                <div class="panel-title"><i class="fas fa-notes-medical"></i> Saúde &amp; histórico</div>
+                <div class="panel-title"><i class="ph ph-notepad"></i> Saúde &amp; histórico</div>
                 <div class="field"><div class="k">Histórico de lesões</div>{!! $campo($anamnese->historico_lesoes) !!}</div>
                 <div class="field"><div class="k">Restrições médicas</div>{!! $campo($anamnese->restricoes_medicas) !!}</div>
                 <div class="field"><div class="k">Doenças pré-existentes</div>{!! $campo($anamnese->doencas_preexistentes) !!}</div>
@@ -103,7 +106,7 @@
             </div>
 
             <div class="panel">
-                <div class="panel-title"><i class="fas fa-heart-pulse"></i> PAR-Q</div>
+                <div class="panel-title"><i class="ph ph-heartbeat"></i> PAR-Q</div>
                 @foreach(\App\Models\Anamnese::PERGUNTAS_PARQ as $c => $pergunta)
                     <div class="parq-item">
                         <span>{{ $pergunta }}</span>
@@ -121,7 +124,7 @@
 
             @if(trim((string) $anamnese->observacoes) !== '')
                 <div class="panel">
-                    <div class="panel-title"><i class="fas fa-comment"></i> Observações</div>
+                    <div class="panel-title"><i class="ph ph-chat-circle"></i> Observações</div>
                     <div class="field"><span class="v">{{ $anamnese->observacoes }}</span></div>
                 </div>
             @endif

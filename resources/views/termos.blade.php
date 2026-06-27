@@ -8,6 +8,8 @@
     <link rel="icon" type="image/png" href="{{ asset('SnrFit.png') }}">
     @include('partials.pwa')
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/regular/style.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/fill/style.css">
     <style>
         :root {
             --primary: #d4ff00;
@@ -269,25 +271,25 @@
     </style>
 </head>
 
-<body>
+<body class="ed-page">
 
     <div class="top-bar">
         <a href="/" class="logo">
-            <i class="fas fa-dumbbell"></i> SNR
+            <i class="ph ph-barbell"></i> SNR
         </a>
         <div style="display: flex; gap: 10px; align-items: center;">
             <button class="print-btn" onclick="window.print()">
-                <i class="fas fa-print"></i> Imprimir
+                <i class="ph ph-printer"></i> Imprimir
             </button>
             <a href="/" class="back-btn">
-                <i class="fas fa-chevron-left"></i> Voltar
+                <i class="ph ph-caret-left"></i> Voltar
             </a>
         </div>
     </div>
 
     <div class="container">
         <div class="header">
-            <h1><i class="fas fa-file-contract"></i> Termos de Uso</h1>
+            <h1><i class="ph ph-file-text"></i> Termos de Uso</h1>
             <p>Leia com atenção antes de usar nossa plataforma</p>
             <p style="margin-top: 10px; font-size: 0.85rem; color: rgba(255,255,255,0.5);">
                 Última atualização: {{ date('d/m/Y') }}
@@ -297,7 +299,7 @@
         <div class="content">
 
             <div class="toc">
-                <h3><i class="fas fa-list"></i> Índice</h3>
+                <h3><i class="ph ph-list"></i> Índice</h3>
                 <ul>
                     <li><a href="#secao-1">1. Apresentação e Aceitação dos Termos</a></li>
                     <li><a href="#secao-2">2. Descrição da Plataforma</a></li>

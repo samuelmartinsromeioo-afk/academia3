@@ -8,6 +8,8 @@
     @include('partials.pwa')
     <link href="https://fonts.googleapis.com/css2?family=Syncopate:wght@700&family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/regular/style.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/fill/style.css">
     <style>
         :root {
             --primary: #d4ff00;
@@ -273,7 +275,7 @@
         .modal-close:hover { color: var(--error); }
     </style>
 </head>
-<body>
+<body class="ed-page">
 
 @php
     $diasSemana = [0 => 'Domingo', 1 => 'Segunda-feira', 2 => 'Terça-feira', 3 => 'Quarta-feira', 4 => 'Quinta-feira', 5 => 'Sexta-feira', 6 => 'Sábado'];
@@ -282,7 +284,7 @@
 
 <div class="top-bar">
     <div class="logo">SNR<span>FIT</span><small>| Studio</small></div>
-    <a href="{{ route('studio.dashboard') }}" class="btn-top"><i class="fas fa-arrow-left"></i> Voltar ao painel</a>
+    <a href="{{ route('studio.dashboard') }}" class="btn-top"><i class="ph ph-arrow-left"></i> Voltar ao painel</a>
 </div>
 
 <div class="container">
@@ -292,14 +294,14 @@
     </div>
 
     @if (session('success'))
-        <div class="alert alert-success"><i class="fas fa-check-circle"></i> {{ session('success') }}</div>
+        <div class="alert alert-success"><i class="ph ph-check-circle"></i> {{ session('success') }}</div>
     @endif
     @if (session('error'))
-        <div class="alert alert-error"><i class="fas fa-exclamation-circle"></i> {{ session('error') }}</div>
+        <div class="alert alert-error"><i class="ph ph-warning-circle"></i> {{ session('error') }}</div>
     @endif
     @if ($errors->any())
         <div class="alert alert-error">
-            <i class="fas fa-exclamation-circle"></i> Corrija os erros abaixo:
+            <i class="ph ph-warning-circle"></i> Corrija os erros abaixo:
             <ul>
                 @foreach ($errors->all() as $erro)
                     <li>{{ $erro }}</li>
@@ -311,7 +313,7 @@
     <!-- HORÁRIO DE FUNCIONAMENTO -->
     <div class="section">
         <div class="section-title">
-            <i class="fas fa-clock"></i> Horário de funcionamento
+            <i class="ph ph-clock"></i> Horário de funcionamento
             <span class="hint">Capacidade em branco usa o padrão do studio ({{ $studio->capacidade_padrao }} alunos)</span>
         </div>
 
@@ -338,13 +340,13 @@
                     <label for="capacidade">Capacidade por horário</label>
                     <input type="number" name="capacidade" id="capacidade" min="1" max="500" placeholder="Padrão: {{ $studio->capacidade_padrao }}" value="{{ old('capacidade') }}">
                 </div>
-                <button type="submit" class="btn"><i class="fas fa-save"></i> Salvar</button>
+                <button type="submit" class="btn"><i class="ph ph-floppy-disk"></i> Salvar</button>
             </div>
         </form>
 
         <div style="margin-top: 24px;">
             @if ($horarios->isEmpty())
-                <p class="empty"><i class="fas fa-info-circle"></i> Nenhum horário cadastrado ainda. Enquanto não houver funcionamento definido, os clientes não verão horários disponíveis.</p>
+                <p class="empty"><i class="ph ph-info"></i> Nenhum horário cadastrado ainda. Enquanto não houver funcionamento definido, os clientes não verão horários disponíveis.</p>
             @else
                 <table class="resp-cards">
                     <thead>
@@ -365,7 +367,7 @@
                                     <form method="POST" action="{{ route('studio.horarios.destroy', $h->id) }}" style="display:inline;" onsubmit="return confirm('Remover o funcionamento de {{ $diasSemana[$h->dia_semana] ?? '' }}?');">
                                         @csrf
                                         @method('DELETE')
-                                        <button type="submit" class="btn-danger"><i class="fas fa-trash"></i> Remover</button>
+                                        <button type="submit" class="btn-danger"><i class="ph ph-trash"></i> Remover</button>
                                     </form>
                                 </td>
                             </tr>
@@ -379,7 +381,7 @@
     <!-- PROFISSIONAIS -->
     <div class="section">
         <div class="section-title">
-            <i class="fas fa-user-tie"></i> Profissionais
+            <i class="ph ph-user-list"></i> Profissionais
             <span class="hint">Cadastre uma vez com um breve resumo e reutilize em vários horários de aula.</span>
         </div>
 
@@ -394,18 +396,18 @@
                     <label for="prof_resumo">Breve resumo</label>
                     <textarea name="resumo" id="prof_resumo" maxlength="2000" placeholder="Ex: Educadora física (CREF 12345), especialista em pilates e reabilitação, 8 anos de experiência."></textarea>
                 </div>
-                <button type="submit" class="btn"><i class="fas fa-plus"></i> Cadastrar profissional</button>
+                <button type="submit" class="btn"><i class="ph ph-plus"></i> Cadastrar profissional</button>
             </div>
         </form>
 
         <div style="margin-top: 24px;">
             @if ($professores->isEmpty())
-                <p class="empty"><i class="fas fa-info-circle"></i> Nenhum profissional cadastrado ainda.</p>
+                <p class="empty"><i class="ph ph-info"></i> Nenhum profissional cadastrado ainda.</p>
             @else
                 @foreach ($professores as $prof)
                     <div class="prof-item">
                         <div>
-                            <div class="nome"><i class="fas fa-user-tie" style="color: var(--primary);"></i> {{ $prof->nome }}</div>
+                            <div class="nome"><i class="ph ph-user-list" style="color: var(--primary);"></i> {{ $prof->nome }}</div>
                             @if ($prof->resumo)
                                 <div class="resumo">{{ $prof->resumo }}</div>
                             @else
@@ -414,11 +416,11 @@
                         </div>
                         <div class="prof-actions">
                             <button type="button" class="btn-danger" style="border-color: var(--border); color: var(--text-main);"
-                                onclick='abrirEditarProfessor(@json($prof->id), @json($prof->nome), @json($prof->resumo))'><i class="fas fa-pen"></i></button>
+                                onclick='abrirEditarProfessor(@json($prof->id), @json($prof->nome), @json($prof->resumo))'><i class="ph ph-pen"></i></button>
                             <form method="POST" action="{{ route('studio.professores.destroy', $prof->id) }}" onsubmit="return confirm('Remover este profissional? Ele será desvinculado das aulas.');">
                                 @csrf
                                 @method('DELETE')
-                                <button type="submit" class="btn-danger"><i class="fas fa-trash"></i></button>
+                                <button type="submit" class="btn-danger"><i class="ph ph-trash"></i></button>
                             </form>
                         </div>
                     </div>
@@ -430,7 +432,7 @@
     <!-- HORÁRIOS DE AULA -->
     <div class="section">
         <div class="section-title">
-            <i class="fas fa-chalkboard-teacher"></i> Horários de aula
+            <i class="ph ph-chalkboard-teacher"></i> Horários de aula
             <span class="hint">Defina horário de início, duração e o profissional. Quando há aulas num dia, elas substituem os slots automáticos de 1h.</span>
         </div>
 
@@ -466,13 +468,13 @@
                     <label for="aula_cap">Capacidade</label>
                     <input type="number" name="capacidade" id="aula_cap" min="1" max="500" placeholder="Padrão: {{ $studio->capacidade_padrao }}">
                 </div>
-                <button type="submit" class="btn"><i class="fas fa-plus"></i> Adicionar aula</button>
+                <button type="submit" class="btn"><i class="ph ph-plus"></i> Adicionar aula</button>
             </div>
         </form>
 
         <div style="margin-top: 24px;">
             @if ($aulas->isEmpty())
-                <p class="empty"><i class="fas fa-info-circle"></i> Nenhum horário de aula cadastrado. Sem aulas, os clientes verão slots automáticos de 1h dentro do funcionamento.</p>
+                <p class="empty"><i class="ph ph-info"></i> Nenhum horário de aula cadastrado. Sem aulas, os clientes verão slots automáticos de 1h dentro do funcionamento.</p>
             @else
                 <table class="resp-cards">
                     <thead>
@@ -497,7 +499,7 @@
                                     <form method="POST" action="{{ route('studio.aulas.destroy', $a->id) }}" style="display:inline;" onsubmit="return confirm('Remover esta aula?');">
                                         @csrf
                                         @method('DELETE')
-                                        <button type="submit" class="btn-danger"><i class="fas fa-trash"></i> Remover</button>
+                                        <button type="submit" class="btn-danger"><i class="ph ph-trash"></i> Remover</button>
                                     </form>
                                 </td>
                             </tr>
@@ -511,7 +513,7 @@
     <!-- SLOTS DO DIA -->
     <div class="section">
         <div class="section-title">
-            <i class="fas fa-calendar-day"></i> Vagas por horário — {{ $dataCarbon->format('d/m/Y') }} ({{ $diasSemana[$dataCarbon->dayOfWeek] }})
+            <i class="ph ph-calendar-dot"></i> Vagas por horário — {{ $dataCarbon->format('d/m/Y') }} ({{ $diasSemana[$dataCarbon->dayOfWeek] }})
         </div>
 
         <form method="GET" action="{{ route('studio.horarios') }}" class="date-form">
@@ -519,18 +521,18 @@
                 <label for="data">Escolher data</label>
                 <input type="date" name="data" id="data" value="{{ $dataSelecionada }}">
             </div>
-            <button type="submit" class="btn btn-outline"><i class="fas fa-search"></i> Ver horários</button>
+            <button type="submit" class="btn btn-outline"><i class="ph ph-magnifying-glass"></i> Ver horários</button>
         </form>
 
         @if (empty($slots))
-            <p class="empty"><i class="fas fa-info-circle"></i> Sem horários para este dia. Cadastre o funcionamento de {{ $diasSemana[$dataCarbon->dayOfWeek] }} acima ou verifique se todos os slots estão bloqueados.</p>
+            <p class="empty"><i class="ph ph-info"></i> Sem horários para este dia. Cadastre o funcionamento de {{ $diasSemana[$dataCarbon->dayOfWeek] }} acima ou verifique se todos os slots estão bloqueados.</p>
         @else
             <div class="slots-grid">
                 @foreach ($slots as $slot)
                     <div class="slot-card {{ $slot['vagas'] === 0 ? 'lotado' : '' }}">
-                        <div class="slot-hora"><i class="far fa-clock" style="color: var(--primary);"></i> {{ $slot['label'] }} <span style="color:var(--text-muted); font-weight:600; font-size:0.78rem;">· {{ $slot['duracao'] ?? 60 }}min</span></div>
+                        <div class="slot-hora"><i class="ph ph-clock" style="color: var(--primary);"></i> {{ $slot['label'] }} <span style="color:var(--text-muted); font-weight:600; font-size:0.78rem;">· {{ $slot['duracao'] ?? 60 }}min</span></div>
                         @if (!empty($slot['profissional']))
-                            <div class="slot-vagas" style="margin-bottom:6px;"><i class="fas fa-chalkboard-teacher" style="color: var(--primary);"></i> {{ $slot['profissional'] }}</div>
+                            <div class="slot-vagas" style="margin-bottom:6px;"><i class="ph ph-chalkboard-teacher" style="color: var(--primary);"></i> {{ $slot['profissional'] }}</div>
                         @endif
                         <div class="slot-vagas">
                             <strong>{{ $slot['vagas'] }}</strong> de {{ $slot['capacidade'] }} vagas livres
@@ -544,7 +546,7 @@
                             <input type="hidden" name="data" value="{{ $dataSelecionada }}">
                             <input type="hidden" name="hora_inicio" value="{{ $slot['inicio'] }}">
                             <input type="hidden" name="hora_fim" value="{{ $slot['fim'] }}">
-                            <button type="submit" class="btn-danger" style="width:100%;"><i class="fas fa-ban"></i> Bloquear</button>
+                            <button type="submit" class="btn-danger" style="width:100%;"><i class="ph ph-prohibit"></i> Bloquear</button>
                         </form>
                     </div>
                 @endforeach
@@ -555,7 +557,7 @@
     <!-- BLOQUEIOS DO DIA -->
     <div class="section">
         <div class="section-title">
-            <i class="fas fa-ban"></i> Bloqueios em {{ $dataCarbon->format('d/m/Y') }}
+            <i class="ph ph-prohibit"></i> Bloqueios em {{ $dataCarbon->format('d/m/Y') }}
         </div>
 
         @if ($bloqueios->isEmpty())
@@ -564,13 +566,13 @@
             @foreach ($bloqueios as $b)
                 <div class="bloqueio-item">
                     <div>
-                        <div class="hora"><i class="far fa-clock"></i> {{ substr($b->hora_inicio, 0, 5) }} - {{ substr($b->hora_fim, 0, 5) }}</div>
+                        <div class="hora"><i class="ph ph-clock"></i> {{ substr($b->hora_inicio, 0, 5) }} - {{ substr($b->hora_fim, 0, 5) }}</div>
                         <div class="desc">{{ $b->descricao }}</div>
                     </div>
                     <form method="POST" action="{{ route('studio.desbloquear-slot', $b->id) }}" onsubmit="return confirm('Liberar este horário novamente?');">
                         @csrf
                         @method('DELETE')
-                        <button type="submit" class="btn-danger"><i class="fas fa-unlock"></i> Desbloquear</button>
+                        <button type="submit" class="btn-danger"><i class="ph ph-lock-open"></i> Desbloquear</button>
                     </form>
                 </div>
             @endforeach
@@ -581,8 +583,8 @@
 <!-- MODAL EDITAR PROFISSIONAL -->
 <div class="modal-overlay" id="modalProfessor">
     <div class="modal-box">
-        <button type="button" class="modal-close" onclick="fecharEditarProfessor()"><i class="fas fa-times"></i></button>
-        <h3><i class="fas fa-user-pen" style="color: var(--primary);"></i> Editar profissional</h3>
+        <button type="button" class="modal-close" onclick="fecharEditarProfessor()"><i class="ph ph-x"></i></button>
+        <h3><i class="ph ph-user-gear" style="color: var(--primary);"></i> Editar profissional</h3>
         <form method="POST" id="formEditarProfessor">
             @csrf
             @method('PUT')
@@ -594,7 +596,7 @@
                 <label for="edit_prof_resumo">Breve resumo</label>
                 <textarea name="resumo" id="edit_prof_resumo" maxlength="2000"></textarea>
             </div>
-            <button type="submit" class="btn" style="width: 100%;"><i class="fas fa-save"></i> Salvar alterações</button>
+            <button type="submit" class="btn" style="width: 100%;"><i class="ph ph-floppy-disk"></i> Salvar alterações</button>
         </form>
     </div>
 </div>

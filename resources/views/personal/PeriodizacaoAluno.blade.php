@@ -7,14 +7,17 @@
     <title>Periodização · {{ $cliente->nome }}</title>
     <link rel="icon" type="image/png" href="{{ asset('SnrFit.png') }}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/regular/style.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/fill/style.css">
+    <link rel="stylesheet" href="{{ asset('css/snrfit-brand.css') }}">
     <style>
         :root {
-            --primary: #F4BE16; --bg-dark: #000000; --card-bg: #111317; --field: #1a1d23;
-            --text-main: #ffffff; --text-muted: #9a9a9a; --green: #00e676; --red: #ff5252;
-            --border: rgba(255, 255, 255, 0.08);
+            --primary: var(--snr-lime); --bg-dark: var(--snr-bg); --card-bg: var(--snr-surface); --field: var(--snr-surface-2);
+            --text-main: var(--snr-text); --text-muted: var(--snr-dim); --green: var(--snr-success); --red: var(--snr-error);
+            --border: var(--snr-border);
         }
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { background-color: var(--bg-dark); font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; color: var(--text-main); min-height: 100vh; background-image: radial-gradient(circle at 12% -10%, rgba(244, 190, 22, 0.10), transparent 45%); }
+        body { background-color: var(--bg-dark); font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; color: var(--text-main); min-height: 100vh; background-image: radial-gradient(circle at 12% -10%, rgba(212, 255, 0, 0.10), transparent 45%); }
         a { color: inherit; text-decoration: none; }
         .top-bar { display: flex; align-items: center; gap: 15px; padding: 15px 40px; background: rgba(0,0,0,0.6); border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 100; backdrop-filter: blur(10px); }
         .back-btn { background: var(--card-bg); border: 1px solid var(--border); color: var(--primary); width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1.1rem; transition: 0.3s; }
@@ -56,7 +59,7 @@
         .badge { font-size: 0.66rem; font-weight: 800; padding: 3px 9px; border-radius: 20px; background: rgba(255,255,255,0.05); border: 1px solid var(--border); color: var(--text-muted); }
         .badge.ativo { background: rgba(0,230,118,0.12); color: var(--green); border-color: rgba(0,230,118,0.4); }
         .badge.venc { background: rgba(255,82,82,0.15); color: var(--red); border-color: var(--red); }
-        .badge.ok { background: rgba(244,190,22,0.12); color: var(--primary); border-color: rgba(244,190,22,0.4); }
+        .badge.ok { background: rgba(212,255,0,0.12); color: var(--primary); border-color: rgba(212,255,0,0.4); }
         .meso-actions { display: flex; gap: 8px; flex-wrap: wrap; }
 
         .renovar-form { display: none; padding: 14px 18px; border-top: 1px dashed var(--border); background: rgba(0,0,0,0.2); }
@@ -81,28 +84,28 @@
     </style>
 </head>
 
-<body>
+<body class="ed-page">
     <div class="top-bar">
-        <a href="{{ route('periodizacao.index') }}" class="back-btn" title="Voltar"><i class="fas fa-arrow-left"></i></a>
-        <span class="title"><i class="fas fa-bolt"></i> Periodização</span>
+        <a href="{{ route('periodizacao.index') }}" class="back-btn" title="Voltar"><i class="ph ph-arrow-left"></i></a>
+        <span class="title"><i class="ph ph-lightning"></i> Periodização</span>
     </div>
 
     <div class="container">
-        <h1><i class="fas fa-bolt"></i> {{ strtoupper($cliente->nome) }}</h1>
+        <div class="ed-eyebrow"><i class="ph ph-lightning"></i> PeriodizaÃ§Ã£o</div><h1 class="ed-h">{{ strtoupper($cliente->nome) }}</h1>
 
         @if(session('success'))
-            <div class="alert alert-success"><i class="fas fa-check-circle"></i> {{ session('success') }}</div>
+            <div class="alert alert-success"><i class="ph ph-check-circle"></i> {{ session('success') }}</div>
         @endif
         @if(session('error'))
-            <div class="alert alert-error"><i class="fas fa-exclamation-circle"></i> {{ session('error') }}</div>
+            <div class="alert alert-error"><i class="ph ph-warning-circle"></i> {{ session('error') }}</div>
         @endif
         @if($errors->any())
-            <div class="alert alert-error"><i class="fas fa-exclamation-circle"></i> {{ $errors->first() }}</div>
+            <div class="alert alert-error"><i class="ph ph-warning-circle"></i> {{ $errors->first() }}</div>
         @endif
 
         {{-- NOVO MESOCICLO --}}
         <div class="panel">
-            <div class="panel-title"><i class="fas fa-plus"></i> Novo mesociclo</div>
+            <div class="panel-title"><i class="ph ph-plus"></i> Novo mesociclo</div>
             <form method="POST" action="{{ route('periodizacao.criar', $cliente->id) }}">
                 @csrf
                 <div class="row">
@@ -140,13 +143,13 @@
                     </div>
                 </div>
 
-                <button type="submit" class="btn btn-primary"><i class="fas fa-bolt"></i> Criar mesociclo</button>
+                <button type="submit" class="btn btn-primary"><i class="ph ph-lightning"></i> Criar mesociclo</button>
             </form>
         </div>
 
         {{-- MESOCICLOS EXISTENTES --}}
         @if($mesociclos->isEmpty())
-            <div class="empty"><i class="fas fa-layer-group"></i> Nenhum mesociclo criado para este aluno.</div>
+            <div class="empty"><i class="ph ph-stack"></i> Nenhum mesociclo criado para este aluno.</div>
         @else
             @foreach($mesociclos as $m)
                 @php $venc = $m->estaVencido(); $dias = $m->diasRestantes(); $fim = $m->dataFim(); @endphp
@@ -158,7 +161,7 @@
                                 <span class="badge {{ $m->ativo ? 'ativo' : '' }}">{{ $m->ativo ? 'Ativo' : 'Inativo' }}</span>
                                 <span class="badge">Início {{ $m->data_inicio?->format('d/m/Y') }}</span>
                                 @if($venc)
-                                    <span class="badge venc"><i class="fas fa-triangle-exclamation"></i> Vencido {{ $fim?->format('d/m/Y') }}</span>
+                                    <span class="badge venc"><i class="ph ph-warning"></i> Vencido {{ $fim?->format('d/m/Y') }}</span>
                                 @elseif($dias !== null)
                                     <span class="badge ok">Vence em {{ $fim?->format('d/m/Y') }} ({{ $dias }}d)</span>
                                 @else
@@ -170,13 +173,13 @@
                             @if(!$m->ativo)
                                 <form method="POST" action="{{ route('periodizacao.ativar', $m->id) }}">
                                     @csrf
-                                    <button class="btn btn-ghost btn-sm"><i class="fas fa-play"></i> Ativar</button>
+                                    <button class="btn btn-ghost btn-sm"><i class="ph ph-play"></i> Ativar</button>
                                 </form>
                             @endif
-                            <button class="btn btn-ghost btn-sm" onclick="toggleRenovar({{ $m->id }})"><i class="fas fa-rotate"></i> Renovar</button>
+                            <button class="btn btn-ghost btn-sm" onclick="toggleRenovar({{ $m->id }})"><i class="ph ph-arrows-clockwise"></i> Renovar</button>
                             <form method="POST" action="{{ route('periodizacao.deletar', $m->id) }}" onsubmit="return confirm('Excluir este mesociclo?')">
                                 @csrf @method('DELETE')
-                                <button class="btn btn-danger btn-sm"><i class="fas fa-trash"></i></button>
+                                <button class="btn btn-danger btn-sm"><i class="ph ph-trash"></i></button>
                             </form>
                         </div>
                     </div>
@@ -199,7 +202,7 @@
                                     <input type="date" name="data_fim">
                                 </div>
                                 <div class="fg" style="display:flex; align-items:flex-end;">
-                                    <button class="btn btn-primary btn-sm" style="width:100%;"><i class="fas fa-rotate"></i> Renovar a partir de hoje</button>
+                                    <button class="btn btn-primary btn-sm" style="width:100%;"><i class="ph ph-arrows-clockwise"></i> Renovar a partir de hoje</button>
                                 </div>
                             </div>
                         </form>
@@ -230,7 +233,7 @@
                                                 <td class="c">
                                                     <form method="POST" action="{{ route('periodizacao.exercicio.del', $ex->id) }}" onsubmit="return confirm('Remover exercício?')">
                                                         @csrf @method('DELETE')
-                                                        <button class="btn btn-danger btn-sm" style="padding:5px 9px;"><i class="fas fa-xmark"></i></button>
+                                                        <button class="btn btn-danger btn-sm" style="padding:5px 9px;"><i class="ph ph-x"></i></button>
                                                     </form>
                                                 </td>
                                             </tr>
@@ -239,7 +242,7 @@
                                 </table>
                             @endif
 
-                            <button class="btn btn-ghost btn-sm" onclick="toggleAddEx({{ $treino->id }})"><i class="fas fa-plus"></i> Adicionar exercício</button>
+                            <button class="btn btn-ghost btn-sm" onclick="toggleAddEx({{ $treino->id }})"><i class="ph ph-plus"></i> Adicionar exercício</button>
                             <div class="add-ex" id="addex-{{ $treino->id }}">
                                 <form method="POST" action="{{ route('periodizacao.exercicio.add', $treino->id) }}">
                                     @csrf
@@ -251,7 +254,7 @@
                                     </div>
                                     <div class="row">
                                         <div class="fg" style="flex:3;"><label>Observações</label><input type="text" name="observacoes" placeholder="Técnica, cadência..."></div>
-                                        <div class="fg" style="display:flex; align-items:flex-end;"><button class="btn btn-primary btn-sm" style="width:100%;"><i class="fas fa-check"></i> Salvar</button></div>
+                                        <div class="fg" style="display:flex; align-items:flex-end;"><button class="btn btn-primary btn-sm" style="width:100%;"><i class="ph ph-check"></i> Salvar</button></div>
                                     </div>
                                 </form>
                             </div>

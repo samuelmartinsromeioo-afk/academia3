@@ -7,6 +7,8 @@
     <link rel="icon" type="image/png" href="{{ asset('SnrFit.png') }}">
     @include('partials.pwa')
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/regular/style.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/fill/style.css">
     <style>
         :root {
             --primary: #d4ff00;
@@ -52,11 +54,11 @@
         }
     </style>
 </head>
-<body>
+<body class="ed-page">
 
 <div class="top-bar">
     <div style="display:flex; align-items:center; gap:12px;">
-        <a href="{{ route('personal.dashboard') }}" class="btn-back"><i class="fas fa-arrow-left"></i> Voltar</a>
+        <a href="{{ route('personal.dashboard') }}" class="btn-back"><i class="ph ph-arrow-left"></i> Voltar</a>
     </div>
     <div style="display:flex; align-items:center; gap:12px;">
         <img src="{{ $personal->foto ? asset('storage/'.$personal->foto) : 'https://cdn-icons-png.flaticon.com/512/3135/3135715.png' }}" style="width:38px; height:38px; border-radius:50%; border:2px solid var(--primary); object-fit:cover;">
@@ -65,21 +67,21 @@
 </div>
 
 <div class="container">
-    <h1 class="page-title"><i class="fas fa-heart-pulse" style="margin-right:10px;"></i>Avaliação Física</h1>
+    <div class="ed-eyebrow"><i class="ph ph-heartbeat"></i> Saúde</div><h1 class="ed-h">Avaliação <span class="ed-mark">Física</span></h1>
     <p class="page-sub">Acompanhe a evolução dos seus alunos com pacote mensal e de quem contratou a avaliação avulsa.</p>
 
     @if(session('success'))
-        <div class="alert-success"><i class="fas fa-check-circle"></i> {{ session('success') }}</div>
+        <div class="alert-success"><i class="ph ph-check-circle"></i> {{ session('success') }}</div>
     @endif
     @if(session('error'))
-        <div class="alert-error"><i class="fas fa-exclamation-circle"></i> {{ session('error') }}</div>
+        <div class="alert-error"><i class="ph ph-warning-circle"></i> {{ session('error') }}</div>
     @endif
 
     <div class="section-label">Alunos ({{ $clientes->count() }})</div>
 
     @if($clientes->isEmpty())
         <div class="empty-state">
-            <i class="fas fa-users-slash"></i>
+            <i class="ph ph-users"></i>
             <p>Nenhum aluno com pacote mensal ou avaliação avulsa paga ainda.</p>
         </div>
     @else
@@ -94,14 +96,14 @@
                     </span>
                     <div class="aluno-meta" style="margin-top:8px;">
                         @if($stats)
-                            <i class="fas fa-clipboard-check"></i> {{ $stats->total }} registro(s) — última em {{ \Carbon\Carbon::parse($stats->ultima)->format('d/m/Y') }}
+                            <i class="ph ph-clipboard-text"></i> {{ $stats->total }} registro(s) — última em {{ \Carbon\Carbon::parse($stats->ultima)->format('d/m/Y') }}
                         @else
-                            <i class="far fa-clipboard"></i> Nenhum registro ainda
+                            <i class="ph ph-clipboard"></i> Nenhum registro ainda
                         @endif
                     </div>
                 </div>
                 <a href="{{ route('personal.avaliacao-fisica.aluno', $c->id) }}" class="btn-primary">
-                    <i class="fas fa-chart-line"></i> Ver Avaliações
+                    <i class="ph ph-chart-line"></i> Ver Avaliações
                 </a>
             </div>
         </div>

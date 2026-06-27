@@ -1,0 +1,469 @@
+/* ============================================================================
+   SNR·FIT — Sistema de Marca (fonte única da verdade)
+   ----------------------------------------------------------------------------
+   Carregue em qualquer tela com:
+     <link rel="stylesheet" href="{{ asset('css/snrfit-brand.css') }}">
+   ou via partial:  @include('partials.brand-head')
+
+   Slogan oficial:  "Treino que vira história."
+   Voz da marca:    mentor motivador brasileiro — fala "você", incentiva sem
+                    forçar ("Bora", "Vem pra cima"), celebra evolução.
+   ============================================================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=Syncopate:wght@400;700&family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+/* Ícones Phosphor: animação de giro (substitui fa-spin) e alinhamento padrão */
+.ph, [class^="ph-"], [class*=" ph-"] { vertical-align: -0.075em; }
+.ph-spin { animation: snrSpin 0.9s linear infinite; display: inline-block; }
+@keyframes snrSpin { from { transform: rotate(0); } to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .ph-spin { animation: none; } }
+
+/* ----------------------------------------------------------------------------
+   1. Tokens canônicos
+   Mantém os MESMOS nomes de variável que as telas já usam (--primary,
+   --bg-dark, --card-bg, --text-main, --text-dim/--text-muted, --border...),
+   então tudo que já consome essas vars passa a herdar os valores oficiais.
+   ---------------------------------------------------------------------------- */
+:root {
+    /* Cor de marca */
+    --snr-lime:        #d4ff00;
+    --snr-lime-hover:  #b8de00;
+    --snr-lime-soft:   rgba(212, 255, 0, 0.12);
+    --snr-lime-line:   rgba(212, 255, 0, 0.25);
+
+    /* Superfícies (escala escura única) */
+    --snr-bg:      #0a0b0d;
+    --snr-surface: #16181d;
+    --snr-surface-2: #1e2127;
+    --snr-border:  rgba(255, 255, 255, 0.08);
+
+    /* Texto */
+    --snr-text:    #ffffff;
+    --snr-dim:     #9ca3af;
+
+    /* Semânticas */
+    --snr-success: #00c853;
+    --snr-error:   #ff4d4d;
+    --snr-warning: #ffb020;
+
+    /* Tipografia */
+    --snr-font-display: 'Syncopate', sans-serif;
+    --snr-font-body:    'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+
+    /* Raio e sombra */
+    --snr-radius: 16px;
+    --snr-radius-lg: 24px;
+    --snr-glow: 0 0 24px rgba(212, 255, 0, 0.18);
+
+    /* Aliases compatíveis com o código existente */
+    --primary:       var(--snr-lime);
+    --primary-hover: var(--snr-lime-hover);
+    --primary-soft:  var(--snr-lime-soft);
+    --bg-dark:       var(--snr-bg);
+    --card-bg:       var(--snr-surface);
+    --text-main:     var(--snr-text);
+    --text-dim:      var(--snr-dim);
+    --text-muted:    var(--snr-dim);
+    --border:        var(--snr-border);
+    --success:       var(--snr-success);
+    --error:         var(--snr-error);
+}
+
+/* ----------------------------------------------------------------------------
+   2. Logo / Assinatura da marca
+   Uso:
+     <a class="snr-logo" href="/">SNR<span>FIT</span></a>
+     <div class="snr-lockup">
+        <a class="snr-logo">SNR<span>FIT</span></a>
+        <span class="snr-tagline">Treino que vira história</span>
+     </div>
+   ---------------------------------------------------------------------------- */
+.snr-logo {
+    --logo-size: 1.15rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    font-family: var(--snr-font-display);
+    font-weight: 700;
+    font-size: var(--logo-size);
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    color: var(--snr-text);
+    text-decoration: none;
+    line-height: 1;
+}
+.snr-logo span { color: var(--snr-lime); }
+
+/* Ponto-pulso: o motivo visual assinatura (·) entre SNR e FIT */
+.snr-logo::after {
+    content: "";
+    width: 6px;
+    height: 6px;
+    margin-left: 8px;
+    border-radius: 50%;
+    background: var(--snr-lime);
+    box-shadow: 0 0 0 0 rgba(212, 255, 0, 0.55);
+    animation: snrPulse 2.4s infinite;
+}
+@keyframes snrPulse {
+    0%   { box-shadow: 0 0 0 0 rgba(212, 255, 0, 0.5); }
+    70%  { box-shadow: 0 0 0 9px rgba(212, 255, 0, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(212, 255, 0, 0); }
+}
+@media (prefers-reduced-motion: reduce) {
+    .snr-logo::after { animation: none; }
+}
+
+.snr-lockup {
+    display: inline-flex;
+    flex-direction: column;
+    gap: 4px;
+    line-height: 1;
+}
+.snr-tagline {
+    font-family: var(--snr-font-body);
+    font-size: 0.62rem;
+    font-weight: 600;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--snr-dim);
+}
+.snr-tagline em { color: var(--snr-lime); font-style: normal; }
+
+/* Selo/etiqueta de marca reutilizável */
+.snr-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.74rem;
+    font-weight: 600;
+    letter-spacing: 1.4px;
+    text-transform: uppercase;
+    color: var(--snr-lime);
+    background: var(--snr-lime-soft);
+    border: 1px solid var(--snr-lime-line);
+    border-radius: 999px;
+    padding: 7px 16px;
+}
+
+/* ----------------------------------------------------------------------------
+   3. Botões de marca
+   ---------------------------------------------------------------------------- */
+.snr-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    font-family: var(--snr-font-body);
+    font-weight: 700;
+    font-size: 0.92rem;
+    border-radius: 999px;
+    padding: 12px 24px;
+    cursor: pointer;
+    text-decoration: none;
+    border: 1px solid transparent;
+    transition: transform .2s ease, box-shadow .2s ease, background .2s ease, color .2s ease, border-color .2s ease;
+}
+.snr-btn-solid { background: var(--snr-lime); color: var(--snr-bg); }
+.snr-btn-solid:hover { transform: translateY(-2px); box-shadow: var(--snr-glow); }
+.snr-btn-ghost { background: transparent; color: var(--snr-text); border-color: var(--snr-border); }
+.snr-btn-ghost:hover { border-color: var(--snr-lime); color: var(--snr-lime); }
+
+/* ----------------------------------------------------------------------------
+   4. Rodapé / assinatura de marca + voz
+   ---------------------------------------------------------------------------- */
+.snr-footer {
+    text-align: center;
+    padding: 28px 20px;
+    color: var(--snr-dim);
+    font-family: var(--snr-font-body);
+    font-size: 0.8rem;
+}
+.snr-footer .snr-logo { --logo-size: 0.95rem; }
+.snr-footer .snr-voice { margin-top: 8px; opacity: 0.75; }
+
+/* Frase de voz da marca (assinatura emocional) */
+.snr-voice { font-style: italic; color: var(--snr-dim); }
+.snr-voice strong { color: var(--snr-lime); font-style: normal; font-weight: 600; }
+
+/* ----------------------------------------------------------------------------
+   5. Empty states humanizados
+   <div class="snr-empty"><i class="fa-solid fa-dumbbell"></i>
+        <h3>Sua história começa aqui</h3><p>...</p></div>
+   ---------------------------------------------------------------------------- */
+.snr-empty {
+    text-align: center;
+    padding: 48px 24px;
+    color: var(--snr-dim);
+}
+.snr-empty i { font-size: 2.2rem; color: var(--snr-lime); opacity: 0.85; margin-bottom: 14px; }
+.snr-empty h3 { font-family: var(--snr-font-body); font-weight: 800; color: var(--snr-text); margin: 0 0 6px; }
+.snr-empty p { margin: 0; font-size: 0.92rem; }
+
+/* ----------------------------------------------------------------------------
+   6. Tema escuro para telas/elementos Bootstrap
+   Escopo: adicione class="snr-dark" no <body>. Só aí o override age, para
+   não conflitar com telas que já têm o próprio dark custom.
+   ---------------------------------------------------------------------------- */
+body.snr-dark {
+    background-color: var(--snr-bg) !important;
+    background-image:
+        radial-gradient(circle at 12% 0%,  rgba(212,255,0,0.06) 0%, transparent 32%),
+        radial-gradient(circle at 88% 100%, rgba(212,255,0,0.05) 0%, transparent 36%);
+    color: var(--snr-text);
+    font-family: var(--snr-font-body);
+    min-height: 100vh;
+}
+body.snr-dark .navbar { background: rgba(10,11,13,0.85) !important; backdrop-filter: blur(10px); border-bottom: 1px solid var(--snr-border); }
+body.snr-dark .navbar-brand,
+body.snr-dark .nav-link { color: var(--snr-text) !important; }
+body.snr-dark .nav-link:hover { color: var(--snr-lime) !important; }
+body.snr-dark .card,
+body.snr-dark .list-group-item,
+body.snr-dark .dropdown-menu,
+body.snr-dark .modal-content {
+    background: var(--snr-surface) !important;
+    border: 1px solid var(--snr-border) !important;
+    color: var(--snr-text) !important;
+    border-radius: var(--snr-radius);
+}
+body.snr-dark .table { color: var(--snr-text); --bs-table-bg: transparent; --bs-table-color: var(--snr-text); border-color: var(--snr-border); }
+body.snr-dark .table > :not(caption) > * > * { background: transparent; color: var(--snr-text); border-color: var(--snr-border); }
+body.snr-dark .table thead th { color: var(--snr-dim); text-transform: uppercase; letter-spacing: 1px; font-size: 0.74rem; border-color: var(--snr-border); }
+body.snr-dark .table-hover > tbody > tr:hover > * { background: var(--snr-lime-soft); }
+body.snr-dark .form-control,
+body.snr-dark .form-select {
+    background: var(--snr-bg);
+    border: 1px solid var(--snr-border);
+    color: var(--snr-text);
+}
+body.snr-dark .form-control:focus,
+body.snr-dark .form-select:focus {
+    background: var(--snr-bg);
+    color: var(--snr-text);
+    border-color: var(--snr-lime);
+    box-shadow: 0 0 0 3px var(--snr-lime-soft);
+}
+body.snr-dark .form-control::placeholder { color: #565d6b; }
+body.snr-dark .btn-primary { background: var(--snr-lime); border-color: var(--snr-lime); color: var(--snr-bg); font-weight: 700; }
+body.snr-dark .btn-primary:hover { background: var(--snr-lime-hover); border-color: var(--snr-lime-hover); color: var(--snr-bg); }
+body.snr-dark .btn-outline-primary { color: var(--snr-lime); border-color: var(--snr-lime); }
+body.snr-dark .btn-outline-primary:hover { background: var(--snr-lime); color: var(--snr-bg); }
+body.snr-dark a { color: var(--snr-lime); }
+body.snr-dark .text-muted { color: var(--snr-dim) !important; }
+body.snr-dark .bg-light,
+body.snr-dark .bg-white { background: var(--snr-surface) !important; color: var(--snr-text); }
+body.snr-dark .alert-success { background: rgba(0,200,83,0.12); border: 1px solid rgba(0,200,83,0.3); color: var(--snr-success); }
+/* Toggler (hambúrguer) visível mesmo sem a classe navbar-dark */
+body.snr-dark .navbar-toggler { border-color: var(--snr-border); color: var(--snr-text); }
+body.snr-dark .navbar-toggler-icon {
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3e%3cpath stroke='%23d4ff00' stroke-linecap='round' stroke-miterlimit='10' stroke-width='2' d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e");
+}
+
+/* ============================================================================
+   DIREÇÃO DE ARTE — EDITORIAL ESPORTIVO
+   Tipografia gigante, números-índice, grifo lima em bloco, layout de revista.
+   Ative a página com <body class="ed-page"> e use os componentes .ed-*.
+   ============================================================================ */
+.ed-hero {
+    position: relative;
+    width: 100%;
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 40px 6vw 64px;
+    flex: 1;
+}
+
+.ed-kicker {
+    font-family: var(--snr-font-body);
+    font-size: 0.76rem;
+    font-weight: 700;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--snr-dim);
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 26px;
+}
+.ed-kicker .ed-num {
+    color: var(--snr-bg);
+    background: var(--snr-lime);
+    font-weight: 800;
+    padding: 2px 9px;
+    letter-spacing: 1px;
+}
+
+.ed-display {
+    font-family: var(--snr-font-display);
+    font-weight: 700;
+    font-size: clamp(2.6rem, 9vw, 6.4rem);
+    line-height: 0.95;
+    letter-spacing: -0.02em;
+    text-transform: uppercase;
+    margin: 0;
+}
+.ed-display .ed-dot { color: var(--snr-lime); }
+
+/* Grifo lima em bloco (destaque editorial) */
+.ed-mark {
+    background: var(--snr-lime);
+    color: var(--snr-bg);
+    padding: 0 0.08em;
+    -webkit-box-decoration-break: clone;
+    box-decoration-break: clone;
+}
+/* Grifo só na base (sublinhado grosso) */
+.ed-underline { box-shadow: inset 0 -0.16em 0 var(--snr-lime); }
+
+.ed-lead {
+    max-width: 560px;
+    color: var(--snr-dim);
+    font-size: 1.05rem;
+    line-height: 1.65;
+    margin: 28px 0 0;
+}
+
+/* Botões editoriais — retangulares, caixa alta, com deslocamento no hover */
+.ed-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    font-family: var(--snr-font-display);
+    font-weight: 700;
+    font-size: 0.76rem;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    padding: 17px 26px;
+    border: 1px solid transparent;
+    cursor: pointer;
+    text-decoration: none;
+    transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease, color .18s ease;
+}
+.ed-btn-solid { background: var(--snr-lime); color: var(--snr-bg); }
+.ed-btn-solid:hover { transform: translate(-2px, -2px); box-shadow: 6px 6px 0 rgba(212, 255, 0, 0.25); }
+.ed-btn-line { background: transparent; color: var(--snr-text); border-color: rgba(255, 255, 255, 0.22); }
+.ed-btn-line:hover { border-color: var(--snr-lime); color: var(--snr-lime); }
+
+/* Lista-índice de destaques (estilo revista) */
+.ed-index {
+    margin-top: 56px;
+    border-top: 1px solid var(--snr-border);
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+}
+.ed-index .ed-item {
+    padding: 22px 22px 22px 0;
+    border-bottom: 1px solid var(--snr-border);
+    border-right: 1px solid var(--snr-border);
+    display: flex;
+    gap: 14px;
+    align-items: flex-start;
+}
+.ed-index .ed-item:nth-child(3n) { border-right: 0; }
+.ed-item .ed-i-num { font-family: var(--snr-font-display); color: var(--snr-lime); font-size: 0.8rem; font-weight: 700; padding-top: 2px; }
+.ed-item .ed-i-txt { font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; font-size: 0.9rem; line-height: 1.3; }
+
+/* Rótulo vertical lateral */
+.ed-side {
+    position: absolute;
+    right: 1.2vw;
+    top: 70px;
+    writing-mode: vertical-rl;
+    text-orientation: mixed;
+    letter-spacing: 5px;
+    font-size: 0.64rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: var(--snr-dim);
+}
+
+/* Faixa marquee */
+.ed-marquee { background: var(--snr-lime); overflow: hidden; border-top: 3px solid var(--snr-bg); }
+.ed-marquee .track {
+    display: inline-block;
+    white-space: nowrap;
+    animation: edMarquee 26s linear infinite;
+    font-family: var(--snr-font-display);
+    font-weight: 700;
+    color: var(--snr-bg);
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    padding: 13px 0;
+    font-size: 0.88rem;
+}
+.ed-marquee .track span { padding: 0 22px; }
+@keyframes edMarquee { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+@media (prefers-reduced-motion: reduce) { .ed-marquee .track { animation: none; } }
+
+/* Fundo blueprint (linhas-guia sutis) e botões da navbar retangulares */
+.ed-page {
+    background-color: var(--snr-bg) !important;
+    background-image:
+        linear-gradient(rgba(255, 255, 255, 0.022) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.022) 1px, transparent 1px) !important;
+    background-size: 64px 64px !important;
+    background-attachment: fixed;
+}
+.ed-page .btn { border-radius: 0 !important; text-transform: uppercase; letter-spacing: 1.5px; font-size: 0.76rem; }
+
+/* ---- Escala editorial para TELAS INTERNAS (header menor que o hero) ---- */
+.ed-eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    font-family: var(--snr-font-body);
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--snr-dim);
+    margin-bottom: 10px;
+}
+.ed-eyebrow .ed-num {
+    color: var(--snr-bg);
+    background: var(--snr-lime);
+    font-weight: 800;
+    padding: 1px 7px;
+    letter-spacing: 1px;
+}
+.ed-h {
+    font-family: var(--snr-font-display) !important;
+    font-weight: 700 !important;
+    font-size: clamp(1.5rem, 3.4vw, 2.4rem) !important;
+    line-height: 0.98 !important;
+    letter-spacing: -0.01em;
+    text-transform: uppercase;
+    margin: 0;
+}
+.ed-h .ed-mark { font-size: inherit; }
+
+/* Título de seção editorial com numeral-índice (use data-num="03") */
+.ed-sec {
+    font-family: var(--snr-font-display);
+    font-weight: 700;
+    font-size: 1rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--snr-text);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 28px 0 16px;
+}
+.ed-sec::before {
+    content: attr(data-num);
+    color: var(--snr-lime);
+    font-size: 0.78rem;
+    border: 1px solid var(--snr-lime-line);
+    padding: 2px 8px;
+}
+/* Bloco de cabeçalho editorial pronto (eyebrow + título), com filete embaixo */
+.ed-head { padding-bottom: 18px; border-bottom: 1px solid var(--snr-border); margin-bottom: 24px; }
+
+@media (max-width: 760px) {
+    .ed-index { grid-template-columns: 1fr 1fr; }
+    .ed-index .ed-item:nth-child(3n) { border-right: 1px solid var(--snr-border); }
+    .ed-index .ed-item:nth-child(2n) { border-right: 0; }
+    .ed-side { display: none; }
+}

@@ -7,6 +7,8 @@
     <link rel="icon" type="image/png" href="{{ asset('SnrFit.png') }}">
     @include('partials.pwa')
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/regular/style.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/fill/style.css">
     <style>
         :root {
             --primary: #d4ff00;
@@ -270,13 +272,13 @@
         }
     </style>
 </head>
-<body>
+<body class="ed-page">
 
 {{-- TOP BAR --}}
 <div class="top-bar">
-    <h2><i class="fas fa-chart-pie"></i> Relatório Financeiro</h2>
+    <h2><i class="ph ph-chart-pie"></i> Relatório Financeiro</h2>
     <a href="{{ route('admin.dashboard') }}" class="btn-back">
-        <i class="fas fa-arrow-left"></i> Voltar
+        <i class="ph ph-arrow-left"></i> Voltar
     </a>
 </div>
 
@@ -314,7 +316,7 @@
 
     {{-- CARD DE RESUMO --}}
     <div class="summary-card">
-        <p><i class="fas fa-dollar-sign"></i> TOTAL FATURADO</p>
+        <p><i class="ph ph-currency-dollar"></i> TOTAL FATURADO</p>
         <div class="total">R$ {{ number_format($totalGeral, 2, ',', '.') }}</div>
         <p style="font-size: 0.8rem; margin-top: 12px;">
             Referente ao mês de {{ \Carbon\Carbon::createFromDate($ano, $mes, 1)->translatedFormat('F \\d\\e Y') }}
@@ -369,7 +371,7 @@
         {{-- RESUMO --}}
         <div style="background: var(--card-bg); border: 1px solid var(--border); border-radius: 16px; padding: 24px;">
             <h3 style="color: var(--primary); margin-bottom: 16px;">
-                <i class="fas fa-info-circle"></i> Resumo do Período
+                <i class="ph ph-info"></i> Resumo do Período
             </h3>
             <p style="color: var(--text-muted); margin: 0;">
                 Total faturado: <strong style="color: var(--primary); font-size: 1.1rem;">R$ {{ number_format($totalGeral, 2, ',', '.') }}</strong>
@@ -381,7 +383,7 @@
     @else
         <div class="table-container">
             <div class="empty-state">
-                <i class="fas fa-inbox"></i>
+                <i class="ph ph-tray"></i>
                 <p>Nenhum dado financeiro disponível para este período.</p>
             </div>
         </div>

@@ -7,6 +7,8 @@
     <link rel="icon" type="image/png" href="{{ asset('SnrFit.png') }}">
     @include('partials.pwa')
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/regular/style.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/fill/style.css">
     <style>
         :root {
             --primary: #d4ff00;
@@ -327,13 +329,13 @@
         }
     </style>
 </head>
-<body>
+<body class="ed-page">
 
 {{-- TOP BAR --}}
 <div class="top-bar">
-    <h2><i class="fas fa-list"></i> Gerenciar Personals</h2>
+    <h2><i class="ph ph-list"></i> Gerenciar Personals</h2>
     <a href="{{ route('admin.dashboard') }}" class="btn-back">
-        <i class="fas fa-arrow-left"></i> Voltar
+        <i class="ph ph-arrow-left"></i> Voltar
     </a>
 </div>
 
@@ -367,7 +369,7 @@
                 font-size: 0.8rem;
                 text-transform: uppercase;
             ">
-                <i class="fas fa-search"></i> Filtrar
+                <i class="ph ph-magnifying-glass"></i> Filtrar
             </button>
         </form>
     </div>
@@ -411,7 +413,7 @@
                             </td>
                             <td>
                                 <a href="{{ route('admin.personals.detalhes', $personal->id) }}" class="btn-view">
-                                    <i class="fas fa-eye"></i> Ver
+                                    <i class="ph ph-eye"></i> Ver
                                 </a>
                             </td>
                         </tr>
@@ -425,7 +427,7 @@
     @else
         <div class="table-container">
             <div class="empty-state">
-                <i class="fas fa-inbox"></i>
+                <i class="ph ph-tray"></i>
                 <p>Nenhum personal encontrado com esses critérios.</p>
             </div>
         </div>

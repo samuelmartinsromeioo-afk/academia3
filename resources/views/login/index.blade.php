@@ -10,6 +10,9 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Syncopate:wght@700&family=Inter:wght@300;400;500;600;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/regular/style.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/fill/style.css">
+    <link rel="stylesheet" href="{{ asset('css/snrfit-brand.css') }}">
 
     <style>
         :root {
@@ -388,6 +391,188 @@
             margin-top: 6px;
         }
 
+        /* ===== Seções de narrativa (story da landing) ===== */
+        .lp-sec {
+            width: 100%;
+            max-width: 1180px;
+            margin: 0 auto;
+            padding: 78px 6vw;
+            border-top: 1px solid rgba(255,255,255,0.06);
+        }
+
+        .lp-eyebrow {
+            display: inline-flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 0.7rem;
+            font-weight: 700;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            color: var(--text-dim);
+            margin-bottom: 16px;
+        }
+
+        .lp-eyebrow .num {
+            color: var(--bg-dark);
+            background: var(--primary);
+            font-family: 'Syncopate', sans-serif;
+            font-weight: 700;
+            padding: 2px 8px;
+            letter-spacing: 1px;
+        }
+
+        .lp-title {
+            font-family: 'Syncopate', sans-serif;
+            font-weight: 700;
+            font-size: clamp(1.7rem, 5vw, 3.1rem);
+            line-height: 1.04;
+            letter-spacing: -0.01em;
+            text-transform: uppercase;
+            margin: 0;
+        }
+
+        .lp-title .mark {
+            background: var(--primary);
+            color: var(--bg-dark);
+            padding: 0 0.08em;
+            -webkit-box-decoration-break: clone;
+            box-decoration-break: clone;
+        }
+
+        .lp-lead {
+            max-width: 640px;
+            color: var(--text-dim);
+            font-size: clamp(1rem, 1.5vw, 1.12rem);
+            line-height: 1.7;
+            margin: 24px 0 0;
+        }
+
+        .lp-lead strong { color: var(--text-main); font-weight: 600; }
+
+        /* --- Escada de crescimento --- */
+        .lp-ladder {
+            margin-top: 52px;
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1px;
+            background: rgba(255,255,255,0.06);
+            border: 1px solid rgba(255,255,255,0.06);
+        }
+
+        .lp-step {
+            background: var(--bg-dark);
+            padding: 30px 24px;
+            transition: 0.25s;
+        }
+
+        .lp-step:hover { background: rgba(212,255,0,0.04); }
+
+        .lp-step .step-num {
+            display: inline-block;
+            font-family: 'Syncopate', sans-serif;
+            font-size: 0.78rem;
+            font-weight: 700;
+            color: var(--bg-dark);
+            background: var(--primary);
+            padding: 3px 9px;
+        }
+
+        .lp-step h3 {
+            font-family: 'Syncopate', sans-serif;
+            font-size: 0.92rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin: 20px 0 10px;
+        }
+
+        .lp-step p { color: var(--text-dim); font-size: 0.86rem; line-height: 1.6; }
+
+        /* --- Sacadas rápidas --- */
+        .lp-saca {
+            margin-top: 48px;
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 14px;
+        }
+
+        .lp-saca-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 16px;
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.07);
+            border-left: 3px solid var(--primary);
+            padding: 22px 24px;
+            transition: 0.25s;
+        }
+
+        .lp-saca-item:hover {
+            background: var(--primary-soft);
+            transform: translateX(4px);
+        }
+
+        .lp-saca-item i { color: var(--primary); font-size: 1.45rem; flex-shrink: 0; margin-top: 1px; }
+        .lp-saca-item p { font-size: 0.95rem; line-height: 1.5; font-weight: 500; color: var(--text-main); }
+        .lp-saca-item strong { color: var(--primary); font-weight: 700; }
+
+        /* --- Bloco do aluno --- */
+        .lp-split {
+            display: grid;
+            grid-template-columns: 1.05fr 0.95fr;
+            gap: 56px;
+            align-items: center;
+        }
+
+        .lp-bullets { list-style: none; margin: 30px 0 0; padding: 0; }
+
+        .lp-bullets li {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            padding: 17px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.06);
+            font-size: 1rem;
+            font-weight: 500;
+        }
+
+        .lp-bullets li i { color: var(--primary); font-size: 1.3rem; flex-shrink: 0; }
+
+        .lp-aluno-card {
+            background: linear-gradient(160deg, rgba(212,255,0,0.10), rgba(212,255,0,0.02));
+            border: 1px solid rgba(212,255,0,0.25);
+            border-radius: 22px;
+            padding: 40px 36px;
+            text-align: center;
+        }
+
+        .lp-aluno-card .quote {
+            font-family: 'Syncopate', sans-serif;
+            font-size: clamp(1.1rem, 2.6vw, 1.5rem);
+            line-height: 1.2;
+            text-transform: uppercase;
+            margin: 0 0 28px;
+        }
+
+        .lp-aluno-card .quote .mark {
+            background: var(--primary);
+            color: var(--bg-dark);
+            padding: 0 0.08em;
+        }
+
+        .lp-aluno-card .ed-btn,
+        .lp-aluno-card .btn { width: 100%; justify-content: center; }
+
+        @media (max-width: 860px) {
+            .lp-ladder { grid-template-columns: 1fr 1fr; }
+            .lp-saca { grid-template-columns: 1fr; }
+            .lp-split { grid-template-columns: 1fr; gap: 36px; }
+        }
+
+        @media (max-width: 480px) {
+            .lp-ladder { grid-template-columns: 1fr; }
+            .lp-sec { padding: 60px 6vw; }
+        }
+
         /* ===== Responsivo ===== */
         @media (max-width: 560px) {
             .navbar { padding: 18px 5vw; }
@@ -399,17 +584,20 @@
         }
     </style>
 </head>
-<body>
+<body class="ed-page">
 
 <nav class="navbar">
     <div class="logo">
         <img src="{{ asset('SnrFit.png') }}" alt="SnrFit">
-        <div>SNR<span>FIT</span></div>
+        <div style="display:flex; flex-direction:column; gap:3px; line-height:1;">
+            <div>SNR<span>FIT</span></div>
+            <span style="font-family:'Inter',sans-serif; font-size:0.58rem; font-weight:600; letter-spacing:2px; color:var(--text-dim); text-transform:uppercase;">Treino que vira história</span>
+        </div>
     </div>
 
     <div class="nav-actions">
         <button type="button" class="btn btn-ghost" onclick="openModal()">
-            <i class="fa-solid fa-right-to-bracket"></i> Entrar
+            <i class="ph ph-sign-in"></i> Entrar
         </button>
         <a href="{{ route('cadastro.SelecaoCadastro') }}" class="btn btn-solid">
             Cadastrar-se
@@ -417,44 +605,171 @@
     </div>
 </nav>
 
-<main class="hero">
-    <div class="hero-badge">A plataforma completa do mundo fitness</div>
+<main class="ed-hero">
+    <div class="ed-side">SNR·FIT — EST. 2026</div>
 
-    <h1>Tudo o que o fitness precisa, reunido em <em>uma só plataforma</em>.</h1>
+    <div class="ed-kicker"><span class="ed-num">01</span> A plataforma completa do mundo fitness</div>
 
-    <p>Chega de espalhar a rotina por dezenas de serviços diferentes. Profissionais centralizam agenda, alunos, financeiro, divulgação e fichas de treino num único painel — mais tempo para o que importa e total independência de ferramentas de terceiros. E os alunos encontram personais, academias, planos e todo o universo fitness reunido em um só lugar, sem precisar procurar em mil cantos.</p>
+    <h1 class="ed-display">
+        Treino<br>
+        que <span class="ed-mark">vira</span><br>
+        história<span class="ed-dot">.</span>
+    </h1>
 
-    <div class="hero-cta">
-        <a href="{{ route('cadastro.SelecaoCadastro') }}" class="btn btn-solid">
-            Quero expandir meu negócio <i class="fa-solid fa-arrow-right"></i>
+    <p class="ed-lead">
+        Agenda, alunos, financeiro, fichas e divulgação num só painel — pro profissional.
+        Personais, academias, studios e planos reunidos num só lugar — pra quem treina.
+        Chega de espalhar sua rotina por mil apps.
+    </p>
+
+    <div style="display:flex; gap:14px; flex-wrap:wrap; margin:36px 0 8px;">
+        <a href="{{ route('cadastro.SelecaoCadastro') }}" class="ed-btn ed-btn-solid">
+            Quero expandir meu negócio <i class="ph ph-arrow-right"></i>
         </a>
-        <button type="button" class="btn btn-ghost" onclick="openModal()">
-            Já tenho conta
-        </button>
+        <button type="button" class="ed-btn ed-btn-line" onclick="openModal()">Já tenho conta</button>
     </div>
 
-    <div class="features">
-        <div class="feature"><i class="fa-solid fa-calendar-check"></i> Agenda sob controle</div>
-        <div class="feature"><i class="fa-solid fa-users"></i> Gestão completa de alunos</div>
-        <div class="feature"><i class="fa-solid fa-chart-line"></i> Financeiro do mês em tempo real</div>
-        <div class="feature"><i class="fa-solid fa-bullhorn"></i> Divulgação do seu perfil</div>
-        <div class="feature"><i class="fa-solid fa-dumbbell"></i> Fichas de treino profissionais</div>
-        <div class="feature"><i class="fa-solid fa-credit-card"></i> Pagamentos online</div>
+    <div class="ed-index">
+        <div class="ed-item"><span class="ed-i-num">01</span><span class="ed-i-txt">Agenda sob controle</span></div>
+        <div class="ed-item"><span class="ed-i-num">02</span><span class="ed-i-txt">Gestão completa de alunos</span></div>
+        <div class="ed-item"><span class="ed-i-num">03</span><span class="ed-i-txt">Financeiro em tempo real</span></div>
+        <div class="ed-item"><span class="ed-i-num">04</span><span class="ed-i-txt">Divulgação do seu perfil</span></div>
+        <div class="ed-item"><span class="ed-i-num">05</span><span class="ed-i-txt">Fichas de treino pro</span></div>
+        <div class="ed-item"><span class="ed-i-num">06</span><span class="ed-i-txt">Pagamentos online</span></div>
     </div>
 </main>
+
+{{-- ===== 02 · Cresça com a gente ===== --}}
+<section class="lp-sec">
+    <div class="lp-eyebrow"><span class="num">02</span> Cresça com a gente</div>
+    <h2 class="lp-title">
+        Comece com um aluno.<br>
+        Termine com uma <span class="mark">marca</span>.
+    </h2>
+    <p class="lp-lead">
+        A SnrFit cresce no seu ritmo. A cada aluno novo, a cada agenda lotada, a cada perfil
+        que aparece pra mais gente, a plataforma sobe junto com você. É o seu nome
+        <strong>alcançando novos lugares</strong> — com a gente do seu lado em cada passo.
+    </p>
+
+    <div class="lp-ladder">
+        <div class="lp-step">
+            <span class="step-num">01</span>
+            <h3>Comece</h3>
+            <p>Perfil no ar e seus primeiros alunos cadastrados em minutos. Sem dor de cabeça.</p>
+        </div>
+        <div class="lp-step">
+            <span class="step-num">02</span>
+            <h3>Organize</h3>
+            <p>Agenda, fichas, financeiro e pagamentos num painel só. Sua rotina para de viver espalhada.</p>
+        </div>
+        <div class="lp-step">
+            <span class="step-num">03</span>
+            <h3>Cresça</h3>
+            <p>Apareça na busca pra quem procura personal na região. Mais visibilidade vira mais aluno.</p>
+        </div>
+        <div class="lp-step">
+            <span class="step-num">04</span>
+            <h3>Alcance</h3>
+            <p>De autônomo a referência na cidade. Cada conquista registrada, cada evolução virando história.</p>
+        </div>
+    </div>
+</section>
+
+{{-- ===== 03 · Deixa com a gente (sacadas rápidas) ===== --}}
+<section class="lp-sec">
+    <div class="lp-eyebrow"><span class="num">03</span> Deixa com a gente</div>
+    <h2 class="lp-title">
+        Você treina.<br>
+        A gente cuida do <span class="mark">resto</span>.
+    </h2>
+    <p class="lp-lead">
+        Enquanto você foca no aluno, a plataforma trabalha nos bastidores. Olha o que roda no automático:
+    </p>
+
+    <div class="lp-saca">
+        <div class="lp-saca-item">
+            <i class="ph ph-whatsapp-logo"></i>
+            <p>Acabou a sessão? O aluno recebe o resumo no <strong>WhatsApp</strong>, sozinho.</p>
+        </div>
+        <div class="lp-saca-item">
+            <i class="ph ph-bell-ringing"></i>
+            <p>Aula marcada vira <strong>lembrete automático</strong>. Ninguém mais esquece o horário.</p>
+        </div>
+        <div class="lp-saca-item">
+            <i class="ph ph-chart-line-up"></i>
+            <p>Seu <strong>financeiro se calcula</strong> mês a mês. Pacote e avulsa, tudo somado.</p>
+        </div>
+        <div class="lp-saca-item">
+            <i class="ph ph-credit-card"></i>
+            <p><strong>Pagamento online</strong> integrado. Chega de cobrar na unha.</p>
+        </div>
+        <div class="lp-saca-item">
+            <i class="ph ph-clipboard-text"></i>
+            <p>Montou a ficha aqui, o aluno <strong>abre no celular</strong> na mesma hora.</p>
+        </div>
+        <div class="lp-saca-item">
+            <i class="ph ph-magnifying-glass"></i>
+            <p>Seu perfil <strong>aparece na busca</strong> pra quem procura personal por perto.</p>
+        </div>
+    </div>
+</section>
+
+{{-- ===== 04 · E pra quem treina? (o aluno) ===== --}}
+<section class="lp-sec">
+    <div class="lp-split">
+        <div>
+            <div class="lp-eyebrow"><span class="num">04</span> E pra quem treina?</div>
+            <h2 class="lp-title">
+                Pro profissional, gestão.<br>
+                Pra você, <span class="mark">evolução</span>.
+            </h2>
+            <p class="lp-lead">
+                O aluno não fica de fora. Quem treina na SnrFit tem o treino do dia sempre pronto,
+                a ficha no bolso e cada repetição virando gráfico. Você só precisa aparecer —
+                o progresso a gente registra.
+            </p>
+
+            <ul class="lp-bullets">
+                <li><i class="ph ph-calendar-check"></i> Treino do dia sempre pronto</li>
+                <li><i class="ph ph-barbell"></i> Sua ficha no bolso, onde estiver</li>
+                <li><i class="ph ph-chart-line-up"></i> Evolução de carga em gráfico</li>
+                <li><i class="ph ph-chat-circle-dots"></i> Conversa direta com seu personal</li>
+            </ul>
+        </div>
+
+        <div class="lp-aluno-card">
+            <p class="quote">Você só aparece.<br>O resto vira <span class="mark">história</span>.</p>
+            <a href="{{ route('cadastro.SelecaoCadastro') }}" class="ed-btn ed-btn-solid">
+                Quero treinar com a SnrFit <i class="ph ph-arrow-right"></i>
+            </a>
+        </div>
+    </div>
+</section>
+
+<div class="ed-marquee" aria-hidden="true">
+    <div class="track">
+        <span>Treino que vira história</span><span>•</span><span>SNR·FIT</span><span>•</span><span>Alcançando novos lugares</span><span>•</span><span>Bora pra cima</span><span>•</span><span>Sua evolução em um só lugar</span><span>•</span><span>Treino que vira história</span><span>•</span><span>SNR·FIT</span><span>•</span><span>Alcançando novos lugares</span><span>•</span><span>Bora pra cima</span><span>•</span><span>Sua evolução em um só lugar</span><span>•</span>
+    </div>
+</div>
+
+<footer class="snr-footer">
+    <div class="snr-voice">Aqui ninguém treina sozinho. <strong>Bora pra cima.</strong></div>
+    <div style="margin-top:10px; font-size:0.72rem; opacity:0.55;">© {{ date('Y') }} SnrFit — Treino que vira história.</div>
+</footer>
 
 <div class="modal-backdrop" id="login-modal" role="dialog" aria-modal="true" aria-labelledby="login-title">
     <div class="login-card">
         <button type="button" class="modal-close" onclick="closeModal()" aria-label="Fechar">
-            <i class="fa-solid fa-xmark"></i>
+            <i class="ph ph-x"></i>
         </button>
 
-        <h2 id="login-title">Bem-vindo de volta</h2>
-        <p class="subtitle">Acesse sua conta para continuar</p>
+        <h2 id="login-title">Que bom te ver de volta</h2>
+        <p class="subtitle">Sua evolução continua de onde parou. Bora?</p>
 
         @if(session('sucesso'))
         <div class="alert-success">
-            <i class="fa-solid fa-circle-check" style="margin-right:8px;"></i>{{ session('sucesso') }}
+            <i class="ph ph-check-circle" style="margin-right:8px;"></i>{{ session('sucesso') }}
         </div>
         @endif
 
@@ -464,7 +779,7 @@
             <div class="form-group">
                 <label for="login">E-mail ou CNPJ</label>
                 <div class="input-wrap">
-                    <i class="fa-solid fa-envelope"></i>
+                    <i class="ph ph-envelope"></i>
                     <input type="text" name="login" id="login"
                            class="form-control"
                            placeholder="ex@email.com ou 00.000.000/0001-00"
@@ -479,13 +794,13 @@
             <div class="form-group">
                 <label for="password">Senha</label>
                 <div class="input-wrap">
-                    <i class="fa-solid fa-lock"></i>
+                    <i class="ph ph-lock"></i>
                     <input type="password" name="senha" id="password"
                            class="form-control"
                            placeholder="Sua senha"
                            required>
                     <button type="button" class="toggle-pass" onclick="togglePassword()" aria-label="Mostrar senha">
-                        <i class="fa-solid fa-eye" id="toggle-icon"></i>
+                        <i class="ph ph-eye" id="toggle-icon"></i>
                     </button>
                 </div>
                 @error('senha')
@@ -535,8 +850,8 @@
         const icon = document.getElementById('toggle-icon');
         const show = input.type === 'password';
         input.type = show ? 'text' : 'password';
-        icon.classList.toggle('fa-eye', !show);
-        icon.classList.toggle('fa-eye-slash', show);
+        icon.classList.toggle('ph-eye', !show);
+        icon.classList.toggle('ph-eye-slash', show);
     }
 
     @if($errors->any() || session('sucesso'))

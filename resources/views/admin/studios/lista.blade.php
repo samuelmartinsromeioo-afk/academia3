@@ -7,6 +7,8 @@
     <link rel="icon" type="image/png" href="{{ asset('SnrFit.png') }}">
     @include('partials.pwa')
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/regular/style.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/fill/style.css">
     <style>
         :root {
             --primary: #d4ff00;
@@ -164,20 +166,20 @@
         }
     </style>
 </head>
-<body>
+<body class="ed-page">
 
 {{-- TOP BAR --}}
 <div class="top-bar">
-    <h2><i class="fas fa-spa"></i> Gerenciar Studios</h2>
+    <h2><i class="ph ph-flower-lotus"></i> Gerenciar Studios</h2>
     <a href="{{ route('admin.dashboard') }}" class="btn-back">
-        <i class="fas fa-arrow-left"></i> Voltar
+        <i class="ph ph-arrow-left"></i> Voltar
     </a>
 </div>
 
 <div class="container">
     @if(session('success'))
         <div style="background: rgba(40,167,69,0.15); border: 1px solid rgba(40,167,69,0.4); border-radius: 12px; padding: 14px 18px; margin-bottom: 20px; color: #4caf50; font-weight: 700;">
-            <i class="fas fa-check-circle"></i> {{ session('success') }}
+            <i class="ph ph-check-circle"></i> {{ session('success') }}
         </div>
     @endif
 
@@ -210,7 +212,7 @@
                 font-size: 0.8rem;
                 text-transform: uppercase;
             ">
-                <i class="fas fa-search"></i> Filtrar
+                <i class="ph ph-magnifying-glass"></i> Filtrar
             </button>
         </form>
     </div>
@@ -254,7 +256,7 @@
                             </td>
                             <td>
                                 <a href="{{ route('admin.studios.detalhes', $studio->id) }}" class="btn-view">
-                                    <i class="fas fa-eye"></i> Ver
+                                    <i class="ph ph-eye"></i> Ver
                                 </a>
                             </td>
                         </tr>
@@ -265,7 +267,7 @@
     @else
         <div class="table-container">
             <div class="empty-state">
-                <i class="fas fa-inbox"></i>
+                <i class="ph ph-tray"></i>
                 <p>Nenhum studio encontrado com esses critérios.</p>
             </div>
         </div>

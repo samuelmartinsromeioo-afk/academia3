@@ -10,6 +10,8 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Syncopate:wght@700&family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/regular/style.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/fill/style.css">
  
     <style>
         :root {
@@ -181,7 +183,7 @@
         @media (max-width: 480px) { .card { padding: 30px; } }
     </style>
 </head>
-<body>
+<body class="ed-page">
  
 <header>
     <a href="{{ route('login.create') }}" style="text-decoration:none;">
@@ -193,7 +195,7 @@
     <div class="card">
  
         <div class="icon-key">
-            <i class="fa-solid fa-key"></i>
+            <i class="ph ph-key"></i>
         </div>
  
         <h2>Nova senha</h2>
@@ -202,7 +204,7 @@
         @if($errors->any())
             <div class="alert-error">
                 @foreach($errors->all() as $error)
-                    <div><i class="fa-solid fa-circle-exclamation me-2"></i>{{ $error }}</div>
+                    <div><i class="ph ph-warning-circle me-2"></i>{{ $error }}</div>
                 @endforeach
             </div>
         @endif
@@ -226,7 +228,7 @@
                         autofocus
                     >
                     <button type="button" class="toggle-password" onclick="toggleVisibility('senha', this)">
-                        <i class="fa-solid fa-eye"></i>
+                        <i class="ph ph-eye"></i>
                     </button>
                 </div>
                 <div class="strength-bar">
@@ -250,7 +252,7 @@
                         required
                     >
                     <button type="button" class="toggle-password" onclick="toggleVisibility('senha_confirmation', this)">
-                        <i class="fa-solid fa-eye"></i>
+                        <i class="ph ph-eye"></i>
                     </button>
                 </div>
                 @error('senha_confirmation')
@@ -259,7 +261,7 @@
             </div>
  
             <button type="submit" class="btn-primary">
-                <i class="fa-solid fa-check me-2"></i> Salvar nova senha
+                <i class="ph ph-check me-2"></i> Salvar nova senha
             </button>
         </form>
  
@@ -272,10 +274,10 @@
         const icon = btn.querySelector('i');
         if (input.type === 'password') {
             input.type = 'text';
-            icon.classList.replace('fa-eye', 'fa-eye-slash');
+            icon.classList.replace('ph-eye', 'ph-eye-slash');
         } else {
             input.type = 'password';
-            icon.classList.replace('fa-eye-slash', 'fa-eye');
+            icon.classList.replace('ph-eye-slash', 'ph-eye');
         }
     }
  

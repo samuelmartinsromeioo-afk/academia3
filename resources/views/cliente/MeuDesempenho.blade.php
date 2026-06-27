@@ -7,6 +7,8 @@
     <title>Meu Desempenho</title>
     <link rel="icon" type="image/png" href="{{ asset('SnrFit.png') }}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/regular/style.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/fill/style.css">
     <style>
         :root {
             --primary: #F4BE16;
@@ -173,10 +175,10 @@
     </style>
 </head>
 
-<body>
+<body class="ed-page">
     <div class="top-bar">
-        <a href="{{ route('cliente.index') }}" class="back-btn" title="Voltar"><i class="fas fa-arrow-left"></i></a>
-        <span class="title"><i class="fas fa-bolt"></i> Meu Desempenho</span>
+        <a href="{{ route('cliente.index') }}" class="back-btn" title="Voltar"><i class="ph ph-arrow-left"></i></a>
+        <span class="title"><i class="ph ph-lightning"></i> Meu Desempenho</span>
     </div>
 
     <div class="container">
@@ -186,9 +188,9 @@
         @endphp
 
         <div class="streak-hero">
-            <i class="fas fa-bolt bolt-bg"></i>
-            <div class="nivel-chip"><i class="fas {{ $game['nivel']['icon'] }}"></i> Nível {{ $game['nivel']['nome'] }}</div>
-            <div class="num"><i class="fas fa-bolt"></i>{{ $streak['atual'] }}</div>
+            <i class="ph ph-lightning bolt-bg"></i>
+            <div class="nivel-chip"><i class="ph {{ $game['nivel']['icon'] }}"></i> Nível {{ $game['nivel']['nome'] }}</div>
+            <div class="num"><i class="ph ph-lightning"></i>{{ $streak['atual'] }}</div>
             <div class="lbl">{{ $streak['atual'] === 1 ? 'dia de sequência' : 'dias de sequência' }}</div>
             <div class="sub">
                 @if($streak['atual'] === 0)
@@ -201,17 +203,17 @@
 
         <div class="cards">
             <div class="card">
-                <div class="ico"><i class="fas fa-dumbbell"></i></div>
+                <div class="ico"><i class="ph ph-barbell"></i></div>
                 <div class="v">{{ $resumo['realizados'] }}<small>/{{ $resumo['planejados'] }}</small></div>
                 <div class="l">Treinos no mês</div>
             </div>
             <div class="card">
-                <div class="ico"><i class="fas fa-percent"></i></div>
+                <div class="ico"><i class="ph ph-percent"></i></div>
                 <div class="v" style="color: {{ $cor }};">{{ $perc !== null ? $perc.'%' : '–' }}</div>
                 <div class="l">Aderência</div>
             </div>
             <div class="card">
-                <div class="ico"><i class="fas fa-trophy"></i></div>
+                <div class="ico"><i class="ph ph-trophy"></i></div>
                 <div class="v">{{ $streak['recorde'] }}</div>
                 <div class="l">Recorde de dias</div>
             </div>
@@ -219,9 +221,9 @@
 
         @if($game['proxima'])
         <div class="secao">
-            <div class="secao-titulo"><i class="fas fa-flag-checkered"></i> Próxima meta</div>
+            <div class="secao-titulo"><i class="ph ph-flag-checkered"></i> Próxima meta</div>
             <div class="meta">
-                <div class="meta-ico"><i class="fas {{ $game['proxima']['icon'] }}"></i></div>
+                <div class="meta-ico"><i class="ph {{ $game['proxima']['icon'] }}"></i></div>
                 <div class="meta-txt">
                     <div class="top">Faltam <b>{{ $game['proxima']['faltam'] }}</b> dia(s) para <b>{{ $game['proxima']['label'] }}</b> · {{ $game['proxima']['dias'] }} dias seguidos</div>
                     <div class="meta-bar"><span style="width: {{ min(100, (int) round($streak['atual'] / $game['proxima']['dias'] * 100)) }}%;"></span></div>
@@ -231,11 +233,11 @@
         @endif
 
         <div class="secao">
-            <div class="secao-titulo"><i class="fas fa-award"></i> Medalhas</div>
+            <div class="secao-titulo"><i class="ph ph-medal"></i> Medalhas</div>
             <div class="medalhas">
                 @foreach($game['medalhas'] as $m)
                 <div class="medalha {{ $m['atingido'] ? 'on' : '' }}">
-                    <div class="disco"><i class="fas {{ $m['icon'] }}"></i></div>
+                    <div class="disco"><i class="ph {{ $m['icon'] }}"></i></div>
                     <div class="dias">{{ $m['dias'] }}d</div>
                     <div class="nome">{{ $m['label'] }}</div>
                 </div>
@@ -244,7 +246,7 @@
         </div>
 
         <div class="secao">
-            <div class="secao-titulo"><i class="fas fa-fire"></i> Consistência · últimas 12 semanas</div>
+            <div class="secao-titulo"><i class="ph ph-fire"></i> Consistência · últimas 12 semanas</div>
             <div class="heatmap">
                 @foreach($heatmap as $semana)
                     @foreach($semana as $cell)
@@ -261,7 +263,7 @@
 
         <div class="secao">
             <div class="secao-titulo">
-                <i class="fas fa-trophy"></i> Recordes pessoais
+                <i class="ph ph-trophy"></i> Recordes pessoais
                 @if($rpeMedio)
                     <span class="esforco-tag">Esforço médio: {{ number_format($rpeMedio, 1, ',', '.') }}/10</span>
                 @endif
@@ -273,7 +275,7 @@
                     @foreach($recordes as $r)
                         <div class="recorde-item">
                             <span class="rx-nome">{{ $r->nome_exercicio }}</span>
-                            <span class="rx-peso"><i class="fas fa-trophy"></i>{{ rtrim(rtrim(number_format($r->recorde, 2, ',', '.'), '0'), ',') }} kg</span>
+                            <span class="rx-peso"><i class="ph ph-trophy"></i>{{ rtrim(rtrim(number_format($r->recorde, 2, ',', '.'), '0'), ',') }} kg</span>
                         </div>
                     @endforeach
                 </div>
@@ -300,8 +302,8 @@
         </div>
 
         <div class="actions">
-            <a href="{{ route('evolucao-carga.minha') }}" class="primary"><i class="fas fa-bolt"></i> Evolução de Carga</a>
-            <a href="{{ route('fichas-treino.minhas') }}" class="ghost"><i class="fas fa-dumbbell"></i> Minhas Fichas</a>
+            <a href="{{ route('evolucao-carga.minha') }}" class="primary"><i class="ph ph-lightning"></i> Evolução de Carga</a>
+            <a href="{{ route('fichas-treino.minhas') }}" class="ghost"><i class="ph ph-barbell"></i> Minhas Fichas</a>
         </div>
     </div>
 </body>

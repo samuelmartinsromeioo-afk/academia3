@@ -7,6 +7,8 @@
     <link rel="icon" type="image/png" href="{{ asset('SnrFit.png') }}">
     @include('partials.pwa')
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/regular/style.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/fill/style.css">
     <style>
         :root {
             --primary: #d4ff00;
@@ -454,13 +456,13 @@
         }
     </style>
 </head>
-<body>
+<body class="ed-page">
 
 {{-- TOP BAR --}}
 <div class="top-bar">
-    <h2><i class="fas fa-user"></i> {{ $personal->nome ?? 'N/A' }}</h2>
+    <h2><i class="ph ph-user"></i> {{ $personal->nome ?? 'N/A' }}</h2>
     <a href="{{ route('admin.personals.lista') }}" class="btn-back">
-        <i class="fas fa-arrow-left"></i> Voltar
+        <i class="ph ph-arrow-left"></i> Voltar
     </a>
 </div>
 
@@ -468,13 +470,13 @@
 
     @if(session('success'))
         <div style="background: rgba(40,167,69,0.15); border: 1px solid rgba(40,167,69,0.4); border-radius: 12px; padding: 14px 18px; margin-bottom: 20px; color: #4caf50; font-weight: 700;">
-            <i class="fas fa-check-circle"></i> {{ session('success') }}
+            <i class="ph ph-check-circle"></i> {{ session('success') }}
         </div>
     @endif
 
     @if(session('error'))
         <div style="background: rgba(255,68,68,0.1); border: 1px solid rgba(255,68,68,0.3); border-radius: 12px; padding: 14px 18px; margin-bottom: 20px; color: #ff6b6b; font-weight: 700;">
-            <i class="fas fa-exclamation-circle"></i> {{ session('error') }}
+            <i class="ph ph-warning-circle"></i> {{ session('error') }}
         </div>
     @endif
 
@@ -484,7 +486,7 @@
             @if($personal->foto)
                 <img src="{{ asset('storage/' . $personal->foto) }}" alt="Foto de {{ $personal->nome ?? 'Personal' }}">
             @else
-                <i class="fas fa-user"></i>
+                <i class="ph ph-user"></i>
             @endif
         </div>
 
@@ -495,7 +497,7 @@
             <div class="info-grid">
                 <div class="info-item">
                     <div class="info-icon">
-                        <i class="fas fa-envelope"></i>
+                        <i class="ph ph-envelope"></i>
                     </div>
                     <div class="info-content">
                         <h3>Email</h3>
@@ -505,7 +507,7 @@
 
                 <div class="info-item">
                     <div class="info-icon">
-                        <i class="fas fa-phone"></i>
+                        <i class="ph ph-phone"></i>
                     </div>
                     <div class="info-content">
                         <h3>Telefone</h3>
@@ -515,7 +517,7 @@
 
                 <div class="info-item">
                     <div class="info-icon">
-                        <i class="fas fa-id-badge"></i>
+                        <i class="ph ph-identification-badge"></i>
                     </div>
                     <div class="info-content">
                         <h3>CREF</h3>
@@ -525,7 +527,7 @@
 
                 <div class="info-item">
                     <div class="info-icon">
-                        <i class="fas fa-calendar"></i>
+                        <i class="ph ph-calendar"></i>
                     </div>
                     <div class="info-content">
                         <h3>Cadastro</h3>
@@ -535,7 +537,7 @@
 
                 <div class="info-item">
                     <div class="info-icon">
-                        <i class="fas fa-users"></i>
+                        <i class="ph ph-users"></i>
                     </div>
                     <div class="info-content">
                         <h3>Clientes</h3>
@@ -558,10 +560,10 @@
             
             <div class="cert-actions">
                 <a href="{{ asset('storage/' . $personal->certificado) }}" target="_blank" class="btn-view-cert" download>
-                    <i class="fas fa-download"></i> Baixar Certificado
+                    <i class="ph ph-download-simple"></i> Baixar Certificado
                 </a>
                 <a href="{{ asset('storage/' . $personal->certificado) }}" target="_blank" class="btn-view-cert">
-                    <i class="fas fa-eye"></i> Abrir em Nova Aba
+                    <i class="ph ph-eye"></i> Abrir em Nova Aba
                 </a>
             </div>
         </div>
@@ -571,14 +573,14 @@
     <h2 class="section-title">Status</h2>
     <div class="status-card">
         <span class="status-badge status-{{ $personal->status ?? 'pendente' }}">
-            <i class="fas fa-circle-{{ ($personal->status ?? 'pendente') === 'aprovado' ? 'check' : 'info' }}"></i>
+            <i class="ph {{ ($personal->status ?? 'pendente') === 'aprovado' ? 'ph-check-circle' : 'ph-info' }}"></i>
             {{ ucfirst($personal->status ?? 'pendente') }}
         </span>
 
         @if($personal->status === 'rejeitado' && $personal->motivo_rejeicao)
             <div style="background: rgba(255, 68, 68, 0.05); padding: 16px; border-radius: 10px; border-left: 4px solid var(--error); margin-top: 16px;">
                 <p style="color: var(--text-muted); font-size: 0.8rem; margin-bottom: 6px; text-transform: uppercase; font-weight: 700;">
-                    <i class="fas fa-ban"></i> Motivo da Rejeição
+                    <i class="ph ph-prohibit"></i> Motivo da Rejeição
                 </p>
                 <p style="margin: 0; color: var(--text-main);">{{ $personal->motivo_rejeicao }}</p>
             </div>
@@ -617,26 +619,26 @@
             <form method="POST" action="{{ route('admin.personals.aprovar', $personal->id) }}">
                 @csrf
                 <button type="submit" class="btn-approve">
-                    <i class="fas fa-check"></i> Aprovar Cadastro
+                    <i class="ph ph-check"></i> Aprovar Cadastro
                 </button>
             </form>
 
             <button type="button" class="btn-reject" onclick="abrirModalRejeicao()">
-                <i class="fas fa-times"></i> Rejeitar Cadastro
+                <i class="ph ph-x"></i> Rejeitar Cadastro
             </button>
 
             <form method="POST" action="{{ route('admin.personals.deletar', $personal->id) }}" onsubmit="return confirm('Tem certeza? Esta ação é irreversível!');" style="margin-left: auto;">
                 @csrf
                 @method('DELETE')
                 <button type="submit" class="btn-delete">
-                    <i class="fas fa-trash"></i> Deletar
+                    <i class="ph ph-trash"></i> Deletar
                 </button>
             </form>
         </div>
     @elseif($personal->status === 'rejeitado')
         <div style="background: rgba(255, 68, 68, 0.1); padding: 20px; border-radius: 12px; border: 1px solid rgba(255, 68, 68, 0.2);">
             <p style="color: var(--error); margin: 0; font-weight: 700;">
-                <i class="fas fa-exclamation-circle"></i> Este cadastro foi rejeitado
+                <i class="ph ph-warning-circle"></i> Este cadastro foi rejeitado
             </p>
         </div>
     @else
@@ -644,14 +646,14 @@
 
         <div style="background: rgba(40, 167, 69, 0.1); padding: 16px 20px; border-radius: 12px; border: 1px solid rgba(40, 167, 69, 0.2); margin-bottom: 16px;">
             <p style="color: var(--success); margin: 0; font-weight: 700;">
-                <i class="fas fa-check-circle"></i> Este personal foi aprovado
+                <i class="ph ph-check-circle"></i> Este personal foi aprovado
             </p>
         </div>
 
         {{-- Status da conta Asaas --}}
         @if($personal->asaas_wallet_id)
             <div style="background: rgba(212, 255, 0, 0.07); padding: 16px 20px; border-radius: 12px; border: 1px solid rgba(212, 255, 0, 0.3); margin-bottom: 16px; display: flex; align-items: center; gap: 12px;">
-                <i class="fas fa-check-circle" style="color: var(--primary); font-size: 1.2rem;"></i>
+                <i class="ph ph-check-circle" style="color: var(--primary); font-size: 1.2rem;"></i>
                 <div>
                     <p style="margin: 0; font-weight: 700; color: #fff; font-size: 0.9rem;">Conta Asaas configurada</p>
                     <p style="margin: 0; color: #a0a0a0; font-size: 0.75rem;">Split de pagamentos ativo — 90% vai direto para a carteira deste personal.</p>
@@ -661,7 +663,7 @@
         @else
             <div style="background: rgba(255, 165, 0, 0.08); padding: 16px 20px; border-radius: 12px; border: 1px solid rgba(255, 165, 0, 0.3); margin-bottom: 16px; display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;">
                 <div style="display: flex; align-items: center; gap: 12px;">
-                    <i class="fas fa-exclamation-triangle" style="color: #ffa500; font-size: 1.2rem;"></i>
+                    <i class="ph ph-warning" style="color: #ffa500; font-size: 1.2rem;"></i>
                     <div>
                         <p style="margin: 0; font-weight: 700; color: #fff; font-size: 0.9rem;">Conta Asaas não configurada</p>
                         <p style="margin: 0; color: #a0a0a0; font-size: 0.75rem;">Os repasses estão sendo feitos manualmente via PIX.</p>
@@ -671,7 +673,7 @@
                     onsubmit="return confirm('Criar conta Asaas para {{ $personal->nome }}? Os dados serão enviados à Asaas agora.');">
                     @csrf
                     <button type="submit" style="background: #ffa500; color: #000; border: none; border-radius: 10px; padding: 10px 18px; font-weight: 900; font-size: 0.82rem; cursor: pointer; white-space: nowrap;">
-                        <i class="fas fa-plus-circle"></i> Criar Conta Asaas
+                        <i class="ph ph-plus-circle"></i> Criar Conta Asaas
                     </button>
                 </form>
             </div>
@@ -683,7 +685,7 @@
                 @csrf
                 @method('DELETE')
                 <button type="submit" class="btn-delete">
-                    <i class="fas fa-trash"></i> Deletar Personal
+                    <i class="ph ph-trash"></i> Deletar Personal
                 </button>
             </form>
         </div>
@@ -693,7 +695,7 @@
 {{-- MODAL DE REJEIÇÃO --}}
 <div class="modal" id="modalRejeicao">
     <div class="modal-content">
-        <h2><i class="fas fa-exclamation-circle"></i> Rejeitar Cadastro</h2>
+        <h2><i class="ph ph-warning-circle"></i> Rejeitar Cadastro</h2>
         <p>Explique o motivo pelo qual está rejeitando este personal:</p>
 
         <form action="{{ route('admin.personals.rejeitar', $personal->id) }}" method="POST">
@@ -707,10 +709,10 @@
 
             <div class="modal-buttons">
                 <button type="submit" class="confirm">
-                    <i class="fas fa-check"></i> Confirmar Rejeição
+                    <i class="ph ph-check"></i> Confirmar Rejeição
                 </button>
                 <button type="button" class="cancel" onclick="fecharModalRejeicao()">
-                    <i class="fas fa-times"></i> Cancelar
+                    <i class="ph ph-x"></i> Cancelar
                 </button>
             </div>
         </form>

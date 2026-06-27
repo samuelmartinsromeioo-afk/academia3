@@ -7,6 +7,8 @@
     <title>Executar Treino</title>
     <link rel="icon" type="image/png" href="{{ asset('SnrFit.png') }}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/regular/style.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/fill/style.css">
     <style>
         :root { --primary:#F4BE16; --bg-dark:#000; --card-bg:#111317; --field:#1a1d23; --text-main:#fff; --text-muted:#9a9a9a; --green:#00e676; --red:#ff5252; --border:rgba(255,255,255,0.08); }
         * { margin:0; padding:0; box-sizing:border-box; }
@@ -68,9 +70,9 @@
     </style>
 </head>
 
-<body>
+<body class="ed-page">
     <div class="top-bar">
-        <a href="{{ route('fichas-treino.minhas') }}" class="back-btn"><i class="fas fa-arrow-left"></i></a>
+        <a href="{{ route('fichas-treino.minhas') }}" class="back-btn"><i class="ph ph-arrow-left"></i></a>
         <div class="t">{{ $ficha->nome_treino }}<small>Modo execução guiada</small></div>
     </div>
 
@@ -85,7 +87,7 @@
 
         <div class="container">
             <div class="rest-config">
-                <i class="fas fa-hourglass-half" style="color:var(--primary);"></i> Tempo de descanso
+                <i class="ph ph-hourglass-medium" style="color:var(--primary);"></i> Tempo de descanso
                 <select onchange="rest_config(this.value)">
                     <option value="30">30s</option>
                     <option value="45">45s</option>
@@ -123,7 +125,7 @@
 
             {{-- FEEDBACK --}}
             <div class="panel">
-                <div class="panel-title"><i class="fas fa-face-smile"></i> Como foi o treino? (opcional)</div>
+                <div class="panel-title"><i class="ph ph-smiley"></i> Como foi o treino? (opcional)</div>
                 <div class="fb-emojis">
                     <label><input type="radio" name="sensacao" value="otimo"><span class="emo">😀</span><span class="cap">Ótimo</span></label>
                     <label><input type="radio" name="sensacao" value="bem"><span class="emo">🙂</span><span class="cap">Bem</span></label>
@@ -131,7 +133,7 @@
                     <label><input type="radio" name="sensacao" value="exausto"><span class="emo">🥵</span><span class="cap">Exausto</span></label>
                     <label><input type="radio" name="sensacao" value="dor"><span class="emo">🤕</span><span class="cap">Dor</span></label>
                 </div>
-                <div class="panel-title" style="margin:4px 0 10px;"><i class="fas fa-gauge-high"></i> Esforço</div>
+                <div class="panel-title" style="margin:4px 0 10px;"><i class="ph ph-gauge"></i> Esforço</div>
                 <div class="rpe-chips">
                     @for($n = 1; $n <= 10; $n++)<label><input type="radio" name="rpe" value="{{ $n }}">{{ $n }}</label>@endfor
                 </div>
@@ -139,7 +141,7 @@
         </div>
 
         <div class="finish-bar">
-            <button type="submit"><i class="fas fa-flag-checkered"></i> Finalizar treino</button>
+            <button type="submit"><i class="ph ph-flag-checkered"></i> Finalizar treino</button>
         </div>
     </form>
 

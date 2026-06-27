@@ -8,6 +8,8 @@
     <link rel="icon" type="image/png" href="{{ asset('SnrFit.png') }}">
     @include('partials.pwa')
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/regular/style.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/fill/style.css">
     <style>
         :root {
             --primary: #d4ff00;
@@ -450,12 +452,12 @@
     </style>
 </head>
 
-<body>
+<body class="ed-page">
 
     <!-- TOP BAR -->
     <div class="top-bar">
         <button class="back-btn" onclick="history.back()" title="Voltar">
-            <i class="fas fa-arrow-left"></i>
+            <i class="ph ph-arrow-left"></i>
         </button>
         <div class="profile-header">
             <span style="font-weight: 700; font-size: 0.9rem;">Minhas Fichas de Treino</span>
@@ -464,18 +466,18 @@
 
     <!-- CONTAINER -->
     <div class="container">
-        <h1><i class="fas fa-dumbbell"></i> MINHAS FICHAS DE TREINO</h1>
+        <div class="ed-eyebrow"><i class="ph ph-barbell"></i> Treino</div><h1 class="ed-h">Minhas Fichas de <span class="ed-mark">Treino</span></h1>
 
         @if(session('success'))
         <div class="alert alert-success">
-            <i class="fas fa-check-circle"></i>
+            <i class="ph ph-check-circle"></i>
             {{ session('success') }}
         </div>
         @endif
 
         @if($fichasPorPersonal->isEmpty())
             <div class="empty-state">
-                <i class="fas fa-calendar"></i>
+                <i class="ph ph-calendar"></i>
                 <p>Você não possui fichas de treino.</p>
                 <small>Seu personal criará suas fichas assim que contratar!</small>
             </div>
@@ -502,10 +504,10 @@
 
                             <div class="ficha-card">
                                 <div class="ficha-header">
-                                    <h3><i class="fas fa-calendar-day"></i> {{ $dias[$ficha->dia_semana] }}</h3>
+                                    <h3><i class="ph ph-calendar-dot"></i> {{ $dias[$ficha->dia_semana] }}</h3>
                                     <button class="btn-marcar {{ $estaConcluido ? 'concluido' : '' }}" 
                                         onclick="marcarConcluido({{ $ficha->id }})">
-                                        <i class="fas {{ $estaConcluido ? 'fa-check' : 'fa-square' }}"></i>
+                                        <i class="ph {{ $estaConcluido ? 'ph-check' : 'ph-square' }}"></i>
                                         {{ $estaConcluido ? 'CONCLUÍDO' : 'MARCAR' }}
                                     </button>
                                 </div>
@@ -517,7 +519,7 @@
                                 @endif
 
                                 <div class="exercicios-box">
-                                    <p class="exercicios-title"><i class="fas fa-list-ul"></i> Exercícios</p>
+                                    <p class="exercicios-title"><i class="ph ph-list-bullets"></i> Exercícios</p>
                                     
                                     @if($ficha->exercicios->isEmpty())
                                         <p class="empty-ex">Nenhum exercício</p>
@@ -560,7 +562,7 @@
     <!-- MODAL MARCAR COMO CONCLUÍDO -->
     <div id="modalMarcarConcluido" class="modal-overlay">
         <div class="modal-content">
-            <h2><i class="fas fa-check-circle"></i> MARCAR TREINO COMO CONCLUÍDO</h2>
+            <h2><i class="ph ph-check-circle"></i> MARCAR TREINO COMO CONCLUÍDO</h2>
             
             <form id="formMarcarConcluido" method="POST">
                 @csrf

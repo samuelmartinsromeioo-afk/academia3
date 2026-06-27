@@ -7,6 +7,8 @@
     <link rel="icon" type="image/png" href="{{ asset('SnrFit.png') }}">
     @include('partials.pwa')
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/regular/style.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/fill/style.css">
     <style>
         :root {
             --primary: #d4ff00; --bg-dark: #0a0b0d; --card-bg: #16181d;
@@ -74,19 +76,19 @@
         .modal-close { float: right; background: transparent; border: none; color: var(--text-muted); font-size: 1.3rem; cursor: pointer; }
     </style>
 </head>
-<body>
+<body class="ed-page">
 
 <div class="top-bar">
-    <h2><i class="fas fa-store"></i> {{ $loja->nome }}</h2>
-    <a href="{{ route('admin.lojas.lista') }}" class="btn-back"><i class="fas fa-arrow-left"></i> Voltar</a>
+    <h2><i class="ph ph-storefront"></i> {{ $loja->nome }}</h2>
+    <a href="{{ route('admin.lojas.lista') }}" class="btn-back"><i class="ph ph-arrow-left"></i> Voltar</a>
 </div>
 
 <div class="container">
-    @if(session('success'))<div class="alert"><i class="fas fa-check-circle"></i> {{ session('success') }}</div>@endif
-    @if($errors->any())<div class="alert alert-error"><i class="fas fa-exclamation-circle"></i> {{ $errors->first() }}</div>@endif
+    @if(session('success'))<div class="alert"><i class="ph ph-check-circle"></i> {{ session('success') }}</div>@endif
+    @if($errors->any())<div class="alert alert-error"><i class="ph ph-warning-circle"></i> {{ $errors->first() }}</div>@endif
 
     <div class="card">
-        <h3><i class="fas fa-circle-info"></i> Dados da Loja</h3>
+        <h3><i class="ph ph-info"></i> Dados da Loja</h3>
         <div class="info-grid">
             <div class="info-item"><label>Status</label>
                 <span class="status-badge status-{{ $loja->status }}">{{ $loja->status === 'rejeitado' ? 'Bloqueada' : 'Ativa' }}</span>
@@ -107,7 +109,7 @@
     </div>
 
     <div class="card">
-        <h3><i class="fas fa-box-open"></i> Produtos ({{ $loja->produtos->count() }})</h3>
+        <h3><i class="ph ph-package"></i> Produtos ({{ $loja->produtos->count() }})</h3>
         @if($loja->produtos->count() > 0)
             <table>
                 <thead>
@@ -131,22 +133,22 @@
     </div>
 
     <div class="card">
-        <h3><i class="fas fa-gear"></i> Ações</h3>
+        <h3><i class="ph ph-gear"></i> Ações</h3>
         <div class="actions">
             @if($loja->status === 'rejeitado')
                 <form method="POST" action="{{ route('admin.lojas.reativar', $loja->id) }}" style="margin:0;">
                     @csrf
-                    <button type="submit" class="btn btn-success"><i class="fas fa-circle-check"></i> Reativar Loja</button>
+                    <button type="submit" class="btn btn-success"><i class="ph ph-check-circle"></i> Reativar Loja</button>
                 </form>
             @else
                 <button type="button" class="btn btn-warning" onclick="document.getElementById('modalBloquear').style.display='block'">
-                    <i class="fas fa-ban"></i> Bloquear Loja
+                    <i class="ph ph-prohibit"></i> Bloquear Loja
                 </button>
             @endif
             <form method="POST" action="{{ route('admin.lojas.deletar', $loja->id) }}" onsubmit="return confirm('Excluir permanentemente a loja {{ addslashes($loja->nome) }} e todos os seus produtos?');" style="margin:0;">
                 @csrf
                 @method('DELETE')
-                <button type="submit" class="btn btn-danger"><i class="fas fa-trash"></i> Excluir Permanentemente</button>
+                <button type="submit" class="btn btn-danger"><i class="ph ph-trash"></i> Excluir Permanentemente</button>
             </form>
         </div>
     </div>
@@ -156,12 +158,12 @@
 <div id="modalBloquear" class="modal-overlay">
     <div class="modal-content">
         <button type="button" class="modal-close" onclick="document.getElementById('modalBloquear').style.display='none'">&times;</button>
-        <h2 style="color:#ffc107;"><i class="fas fa-ban"></i> Bloquear Loja</h2>
+        <h2 style="color:#ffc107;"><i class="ph ph-prohibit"></i> Bloquear Loja</h2>
         <p style="color:var(--text-muted); font-size:0.88rem; margin-bottom:16px;">A loja perderá o acesso ao painel. Informe o motivo:</p>
         <form method="POST" action="{{ route('admin.lojas.bloquear', $loja->id) }}">
             @csrf
             <textarea name="motivo" rows="4" minlength="10" maxlength="500" placeholder="Ex: Produtos em desacordo com as políticas da plataforma..." required></textarea>
-            <button type="submit" class="btn btn-warning" style="width:100%; justify-content:center;"><i class="fas fa-ban"></i> Confirmar Bloqueio</button>
+            <button type="submit" class="btn btn-warning" style="width:100%; justify-content:center;"><i class="ph ph-prohibit"></i> Confirmar Bloqueio</button>
         </form>
     </div>
 </div>

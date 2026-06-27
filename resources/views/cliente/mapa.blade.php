@@ -7,6 +7,8 @@
     <link rel="icon" type="image/png" href="{{ asset('SnrFit.png') }}">
     @include('partials.pwa')
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/regular/style.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/fill/style.css">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
     <style>
         :root {
@@ -248,6 +250,19 @@
         .badge-studio-danca        { background: rgba(0,204,221,0.12);   color: var(--studio-danca-color); }
         .badge-studio-outros       { background: rgba(177,76,255,0.1);   color: var(--studio-outros-color); }
 
+        /* Selo de Pioneiro no mapa (lista + popup) */
+        .badge-pioneiro-map {
+            display: inline-flex; align-items: center; gap: 5px;
+            background: linear-gradient(135deg,#FFE259,#FFA751);
+            color: #1a1200; font-weight: 800; font-size: 0.6rem;
+            text-transform: uppercase; letter-spacing: 0.5px;
+            padding: 3px 9px; border-radius: 20px;
+            border: 1px solid rgba(255,210,80,0.7);
+            box-shadow: 0 2px 8px rgba(255,170,40,0.3); white-space: nowrap;
+        }
+        .badge-pioneiro-map i { color: #000; }
+        .pin-card.pioneiro { border-color: rgba(255,210,80,0.5); }
+
         .empty-state {
             text-align: center;
             padding: 40px 20px;
@@ -388,15 +403,15 @@
         }
     </style>
 </head>
-<body>
+<body class="ed-page">
 
 <div class="top-bar">
     <a href="{{ route('cliente.index') }}">
-        <i class="fas fa-arrow-left"></i> Voltar
+        <i class="ph ph-arrow-left"></i> Voltar
     </a>
-    <h1><i class="fas fa-map-marked-alt"></i> &nbsp;MAPA DE ACADEMIAS & PERSONAIS</h1>
+    <div class="ed-eyebrow"><i class="ph ph-map-pin-area"></i> Por perto</div><h1 class="ed-h">Mapa de <span class="ed-mark">Academias</span> &amp; Personais</h1>
     <span style="font-size: 0.8rem; color: var(--text-muted);">
-        <i class="fas fa-map-pin" style="color: var(--primary);"></i> Localize profissionais perto de você
+        <i class="ph ph-map-pin" style="color: var(--primary);"></i> Localize profissionais perto de você
     </span>
 </div>
 
@@ -404,36 +419,36 @@
     <div class="sidebar">
         <div class="sidebar-header">
             <div class="search-wrapper">
-                <i class="fas fa-search"></i>
+                <i class="ph ph-magnifying-glass"></i>
                 <input type="text" id="searchInput" placeholder="Buscar por nome...">
             </div>
             <div class="cidade-select-wrapper">
-                <i class="fas fa-map-marker-alt"></i>
+                <i class="ph ph-map-pin"></i>
                 <select class="cidade-select" id="cidadeSelect">
                     <option value="">Todas as cidades</option>
                 </select>
             </div>
             <div class="filter-tabs" style="flex-wrap:wrap; gap:6px;">
                 <button class="filter-tab active-todos" onclick="filtrar('todos', this)">
-                    <i class="fas fa-globe"></i> Todos
+                    <i class="ph ph-globe"></i> Todos
                 </button>
                 <button class="filter-tab" onclick="filtrar('academia', this)">
-                    <i class="fas fa-dumbbell"></i> Academias
+                    <i class="ph ph-barbell"></i> Academias
                 </button>
                 <button class="filter-tab" onclick="filtrar('personal', this)">
-                    <i class="fas fa-user"></i> Personais
+                    <i class="ph ph-user"></i> Personais
                 </button>
                 <button class="filter-tab" onclick="filtrar('filial', this)">
-                    <i class="fas fa-map-marker-alt"></i> Filiais
+                    <i class="ph ph-map-pin"></i> Filiais
                 </button>
                 <button class="filter-tab" onclick="filtrar('studio', this)">
-                    <i class="fas fa-spa"></i> Studios
+                    <i class="ph ph-flower-lotus"></i> Studios
                 </button>
             </div>
         </div>
         <div class="sidebar-list" id="sidebarList">
             <div class="empty-state">
-                <i class="fas fa-circle-notch fa-spin"></i>
+                <i class="ph ph-circle-notch ph-spin"></i>
                 <p>Carregando locais...</p>
             </div>
         </div>
@@ -583,17 +598,17 @@
         if (pins.length === 0) {
             lista.innerHTML = `
                 <div class="empty-state">
-                    <i class="fas fa-map-pin"></i>
+                    <i class="ph ph-map-pin"></i>
                     <p>Nenhum local encontrado.</p>
                     <small style="font-size: 0.75rem;">Tente outro filtro ou busca.</small>
                 </div>`;
             return;
         }
 
-        const tipoIconFA = { academia: 'dumbbell', personal: 'user', filial: 'map-marker-alt',
-                             'studio-yoga_pilates': 'spa', 'studio-luta': 'fist-raised',
-                             'studio-crossfit': 'bolt', 'studio-fitness': 'dumbbell',
-                             'studio-danca': 'music', 'studio-outros': 'running' };
+        const tipoIconFA = { academia: 'barbell', personal: 'user', filial: 'map-pin',
+                             'studio-yoga_pilates': 'flower-lotus', 'studio-luta': 'hand-fist',
+                             'studio-crossfit': 'lightning', 'studio-fitness': 'barbell',
+                             'studio-danca': 'music-notes', 'studio-outros': 'person-simple-run' };
         const studioLabel = { yoga_pilates: 'Yoga / Pilates', luta: 'Luta / Artes Marciais',
                               crossfit: 'CrossFit / Funcional', fitness: 'Fitness / Musculação',
                               danca: 'Dança', outros: 'Outros' };
@@ -608,14 +623,14 @@
                             : pin.info;
             const faIcon = tipoIconFA[cssClass] || tipoIconFA[pin.tipo] || 'map-pin';
             return `
-            <div class="pin-card" id="card-${i}" onclick="focarPin(${pin.latitude}, ${pin.longitude}, ${i})">
+            <div class="pin-card${pin.pioneiro ? ' pioneiro' : ''}" id="card-${i}" onclick="focarPin(${pin.latitude}, ${pin.longitude}, ${i})">
                 <div class="pin-icon ${cssClass}">
-                    <i class="fas fa-${faIcon}"></i>
+                    <i class="ph ph-${faIcon}"></i>
                 </div>
                 <div class="pin-info" style="flex: 1; min-width: 0;">
                     <h4 style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${pin.nome}</h4>
                     <p>${pin.endereco}</p>
-                    <span class="badge-${cssClass}">${badgeText}</span>
+                    <span class="badge-${cssClass}">${badgeText}</span>${pin.pioneiro ? ' <span class="badge-pioneiro-map"><i class="ph-fill ph-crown"></i> Pioneiro</span>' : ''}
                 </div>
             </div>`;
         }).join('');
@@ -681,9 +696,10 @@
                         <span class="popup-badge" style="background: ${pinColor}22; color: ${pinColor};">
                             ${badgeLabel}
                         </span>
+                        ${pin.pioneiro ? '<span class="badge-pioneiro-map" style="margin-left:6px;"><i class="ph-fill ph-crown"></i> Pioneiro</span>' : ''}
                         <h3>${pin.nome}</h3>
-                        <p><i class="fas fa-map-marker-alt" style="color: var(--primary);"></i> ${pin.endereco}</p>
-                        <p class="popup-info-value"><i class="fas fa-tag"></i> ${pin.info}</p>
+                        <p><i class="ph ph-map-pin" style="color: var(--primary);"></i> ${pin.endereco}</p>
+                        <p class="popup-info-value"><i class="ph ph-tag"></i> ${pin.info}</p>
                     </div>
                 `);
 
@@ -737,7 +753,7 @@
             document.getElementById('loadingOverlay').style.display = 'none';
             document.getElementById('sidebarList').innerHTML = `
                 <div class="empty-state">
-                    <i class="fas fa-exclamation-triangle" style="color: var(--error);"></i>
+                    <i class="ph ph-warning" style="color: var(--error);"></i>
                     <p>Erro ao carregar dados.</p>
                 </div>`;
         });

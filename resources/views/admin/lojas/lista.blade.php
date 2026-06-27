@@ -7,6 +7,8 @@
     <link rel="icon" type="image/png" href="{{ asset('SnrFit.png') }}">
     @include('partials.pwa')
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/regular/style.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/fill/style.css">
     <style>
         :root {
             --primary: #d4ff00; --bg-dark: #0a0b0d; --card-bg: #16181d;
@@ -78,17 +80,17 @@
         }
     </style>
 </head>
-<body>
+<body class="ed-page">
 
 <div class="top-bar">
-    <h2><i class="fas fa-store"></i> Gerenciar Lojas</h2>
-    <a href="{{ route('admin.dashboard') }}" class="btn-back"><i class="fas fa-arrow-left"></i> Voltar</a>
+    <h2><i class="ph ph-storefront"></i> Gerenciar Lojas</h2>
+    <a href="{{ route('admin.dashboard') }}" class="btn-back"><i class="ph ph-arrow-left"></i> Voltar</a>
 </div>
 
 <div class="container">
     @if(session('success'))
         <div style="background: rgba(40,167,69,0.15); border: 1px solid rgba(40,167,69,0.4); border-radius: 12px; padding: 14px 18px; margin-bottom: 20px; color: #4caf50; font-weight: 700;">
-            <i class="fas fa-check-circle"></i> {{ session('success') }}
+            <i class="ph ph-check-circle"></i> {{ session('success') }}
         </div>
     @endif
 
@@ -107,7 +109,7 @@
                 <input type="text" name="busca" class="filter-input" placeholder="Nome, email ou CNPJ..." value="{{ $busca ?? '' }}">
             </div>
             <button type="submit" style="background: var(--primary); color: #000; border: none; padding: 10px 20px; border-radius: 8px; font-weight: 700; cursor: pointer; font-size: 0.8rem; text-transform: uppercase;">
-                <i class="fas fa-search"></i> Filtrar
+                <i class="ph ph-magnifying-glass"></i> Filtrar
             </button>
         </form>
     </div>
@@ -147,7 +149,7 @@
                             </td>
                             <td style="color: var(--text-muted);">{{ $loja->created_at ? $loja->created_at->format('d/m/Y') : 'N/A' }}</td>
                             <td>
-                                <a href="{{ route('admin.lojas.detalhes', $loja->id) }}" class="btn-view"><i class="fas fa-eye"></i> Ver</a>
+                                <a href="{{ route('admin.lojas.detalhes', $loja->id) }}" class="btn-view"><i class="ph ph-eye"></i> Ver</a>
                             </td>
                         </tr>
                     @endforeach
@@ -157,7 +159,7 @@
     @else
         <div class="table-container">
             <div class="empty-state">
-                <i class="fas fa-inbox"></i>
+                <i class="ph ph-tray"></i>
                 <p>Nenhuma loja encontrada com esses critérios.</p>
             </div>
         </div>

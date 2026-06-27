@@ -7,6 +7,8 @@
     <link rel="icon" type="image/png" href="{{ asset('SnrFit.png') }}">
     @include('partials.pwa')
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/regular/style.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/fill/style.css">
     <style>
         :root {
             --primary: #d4ff00;
@@ -137,11 +139,11 @@
         }
     </style>
 </head>
-<body>
+<body class="ed-page">
 
 <div class="top-bar">
     <div class="logo">SNR<span>FIT</span> <span style="font-family:'Inter'; font-size:0.65rem; color:var(--text-muted); letter-spacing:1px; text-transform:uppercase;">| Alunos</span></div>
-    <a href="{{ route('academia.dashboard') }}" class="btn-top"><i class="fas fa-arrow-left"></i> Voltar ao painel</a>
+    <a href="{{ route('academia.dashboard') }}" class="btn-top"><i class="ph ph-arrow-left"></i> Voltar ao painel</a>
 </div>
 
 <div class="container">
@@ -151,7 +153,7 @@
     </header>
 
     <div class="search-wrapper">
-        <i class="fas fa-search"></i>
+        <i class="ph ph-magnifying-glass"></i>
         <input type="text" id="buscaAluno" placeholder="Buscar aluno por nome...">
     </div>
 
@@ -175,28 +177,28 @@
 
                 <div class="aluno-data">
                     <div class="data-row">
-                        <i class="fas fa-hourglass-half"></i>
+                        <i class="ph ph-hourglass-medium"></i>
                         <div>
                             <span class="label">Idade</span>
                             <span class="value">{{ $nasc ? $nasc->age . ' anos' : 'Não informada' }}</span>
                         </div>
                     </div>
                     <div class="data-row">
-                        <i class="fas fa-cake-candles"></i>
+                        <i class="ph ph-cake"></i>
                         <div>
                             <span class="label">Data de aniversário</span>
                             <span class="value">{{ $nasc ? $nasc->format('d/m/Y') : 'Não informada' }}</span>
                         </div>
                     </div>
                     <div class="data-row">
-                        <i class="fas fa-heart-pulse"></i>
+                        <i class="ph ph-heartbeat"></i>
                         <div>
                             <span class="label">Condição clínica</span>
                             <span class="value">{{ $aluno->condicao_clinica ?: 'Nenhuma registrada' }}</span>
                         </div>
                     </div>
                     <div class="data-row">
-                        <i class="fas fa-bullseye"></i>
+                        <i class="ph ph-target"></i>
                         <div>
                             <span class="label">Objetivo</span>
                             <span class="value">{{ $aluno->resumo_objetivo ?: 'Não informado' }}</span>
@@ -205,19 +207,19 @@
                 </div>
 
                 <a href="{{ route('academia.aluno-fichas', $aluno->id) }}" class="btn-ficha">
-                    <i class="fas fa-clipboard-list"></i> Gerenciar Ficha
+                    <i class="ph ph-clipboard-text"></i> Gerenciar Ficha
                 </a>
             </div>
         @empty
             <div class="empty-state">
-                <i class="fas fa-users"></i>
+                <i class="ph ph-users"></i>
                 <p>Nenhum aluno vinculado à academia ainda.</p>
             </div>
         @endforelse
     </div>
 
     <div class="empty-state" id="semResultados" style="display:none;">
-        <i class="fas fa-search"></i>
+        <i class="ph ph-magnifying-glass"></i>
         <p>Nenhum aluno encontrado para a sua busca.</p>
     </div>
 </div>

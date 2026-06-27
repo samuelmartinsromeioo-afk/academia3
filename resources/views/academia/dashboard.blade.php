@@ -7,6 +7,9 @@
     <link rel="icon" type="image/png" href="{{ asset('SnrFit.png') }}">
     @include('partials.pwa')
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/regular/style.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/fill/style.css">
+    <link rel="stylesheet" href="{{ asset('css/snrfit-brand.css') }}">
     <style>
         :root {
             --primary: #d4ff00;
@@ -299,43 +302,44 @@
         }
     </style>
 </head>
-<body>
+<body class="ed-page">
 
-<div class="top-bar">
+<div class="top-bar" style="position:relative;">
+    <a href="#" class="snr-logo" style="position:absolute; left:50%; transform:translateX(-50%);">SNR<span>FIT</span></a>
     <div class="menu-container">
-        <button class="dots-btn" onclick="toggleMenu()"><i class="fas fa-bars"></i></button>
+        <button class="dots-btn" onclick="toggleMenu()"><i class="ph ph-list"></i></button>
         <div class="dropdown-menu" id="dropdownMenu">
             <button type="button" onclick="document.getElementById('modalUpdate').style.display='block'; toggleMenu();">
-                <i class="fas fa-building"></i> Meu Perfil
+                <i class="ph ph-building"></i> Meu Perfil
             </button>
             <button type="button" onclick="window.location.href='{{ route('academia.alunos') }}'">
-                <i class="fas fa-users"></i> Alunos
+                <i class="ph ph-users"></i> Alunos
             </button>
             <button type="button" onclick="abrirCarteira(); toggleMenu();">
-                <i class="fas fa-piggy-bank" style="color: var(--primary);"></i> Minha Carteira
+                <i class="ph ph-piggy-bank" style="color: var(--primary);"></i> Minha Carteira
             </button>
             <button type="button" onclick="window.location.href='{{ route('academia.filiais') }}'">
-                <i class="fas fa-map-marker-alt"></i> Filiais
+                <i class="ph ph-map-pin"></i> Filiais
             </button>
             <button type="button" onclick="window.location.href='{{ route('academia.gestao') }}'">
-                <i class="fas fa-user-tie"></i> Profissionais & Aulas
+                <i class="ph ph-user-list"></i> Profissionais & Aulas
             </button>
             <button type="button" onclick="document.getElementById('modalGaleriaAcademia').style.display='block'; toggleMenu();">
-                <i class="fas fa-images"></i> Galeria de Fotos
+                <i class="ph ph-images"></i> Galeria de Fotos
             </button>
             <button type="button" onclick="window.location.href='{{ route('lgpd.meus-dados') }}'">
-                <i class="fas fa-user-shield"></i> Privacidade e meus dados
+                <i class="ph ph-shield-check"></i> Privacidade e meus dados
             </button>
             <form action="{{ route('login.logout') }}" method="POST">
                 @csrf
                 <button type="submit" style="color: var(--error);">
-                    <i class="fas fa-power-off"></i> Sair
+                    <i class="ph ph-power"></i> Sair
                 </button>
             </form>
         </div>
     </div>
     <div class="profile-header">
-        <i class="fas fa-dumbbell" style="color: var(--primary); font-size: 1.2rem;"></i>
+        <i class="ph ph-barbell" style="color: var(--primary); font-size: 1.2rem;"></i>
         <span style="font-weight: 700; font-size: 0.9rem;">{{ $academia->nome }}</span>
     </div>
 </div>
@@ -343,52 +347,54 @@
 <div class="container">
     @if(session('success'))
     <div style="background: rgba(0,255,136,0.1); color: var(--success); padding: 15px; border-radius: 12px; border: 1px solid var(--success); margin-bottom: 20px; font-size: 0.9rem;">
-        <i class="fas fa-check-circle"></i> {{ session('success') }}
+        <i class="ph ph-check-circle"></i> {{ session('success') }}
     </div>
     @endif
     @if(session('error'))
     <div style="background: rgba(255,68,68,0.1); color: var(--error); padding: 15px; border-radius: 12px; border: 1px solid var(--error); margin-bottom: 20px; font-size: 0.9rem;">
-        <i class="fas fa-exclamation-circle"></i> {{ session('error') }}
+        <i class="ph ph-warning-circle"></i> {{ session('error') }}
     </div>
     @endif
 
-    <header style="margin-bottom: 30px;">
-        <h1 style="margin:0; font-size: 2rem; font-weight: 900;">Dashboard</h1>
-        <p style="color: var(--text-muted); font-size: 0.85rem; margin: 5px 0 0;">Bem-vindo, {{ $academia->nome }}</p>
+    <header class="ed-head" style="margin-bottom: 30px;">
+        <div class="ed-eyebrow"><span class="ed-num">01</span> <span id="snrSaud">Olá</span>, {{ $academia->nome }}</div>
+        <h1 class="ed-h">Painel da <span class="ed-mark">Academia</span></h1>
+        <p style="color: var(--text-muted); font-size: 0.85rem; margin: 10px 0 0;">Bora fazer a casa crescer.</p>
+        @include('partials.brand-greeting-js')
     </header>
 
     <div class="stats-grid">
         <div class="stat-card">
-            <i class="fas fa-users"></i>
+            <i class="ph ph-users"></i>
             <span>Total de Alunos</span>
             <h2>{{ $totalAlunos }}</h2>
         </div>
         <div class="stat-card">
-            <i class="fas fa-id-card"></i>
+            <i class="ph ph-identification-card"></i>
             <span>Planos Ativos</span>
             <h2>{{ $planosAtivos }}</h2>
         </div>
         <div class="stat-card">
-            <i class="fas fa-user-tie"></i>
+            <i class="ph ph-user-list"></i>
             <span>Personals</span>
             <h2>{{ $personals }}</h2>
         </div>
         <div class="stat-card">
-            <i class="fas fa-dollar-sign"></i>
+            <i class="ph ph-currency-dollar"></i>
             <span>Faturamento Est.</span>
             <h2 style="font-size: 1.2rem;">R$ {{ number_format($faturamento, 0, ',', '.') }}</h2>
         </div>
     </div>
 
     <div class="section-title">
-        <i class="fas fa-tags"></i> Meus Planos
+        <i class="ph ph-tag"></i> Meus Planos
         <span style="font-size: 0.75rem; font-weight: 700; color: {{ $planos->count() >= 5 ? 'var(--error)' : 'var(--primary)' }}; margin-left: 8px;">
             {{ $planos->count() }}/5
         </span>
     </div>
     @if(session('error'))
     <div style="background: rgba(255,68,68,0.1); color: var(--error); padding: 12px 16px; border-radius: 10px; border: 1px solid var(--error); margin-bottom: 15px; font-size: 0.85rem;">
-        <i class="fas fa-exclamation-circle"></i> {{ session('error') }}
+        <i class="ph ph-warning-circle"></i> {{ session('error') }}
     </div>
     @endif
     <div class="planos-grid">
@@ -403,7 +409,7 @@
                 <small>/mês</small>
             </div>
             <div class="plano-duracao">
-                <i class="fas fa-calendar-alt"></i>
+                <i class="ph ph-calendar"></i>
                 {{ $plano->duracao_meses }} {{ $plano->duracao_meses == 1 ? 'mês' : 'meses' }}
             </div>
             @if($plano->descricao)
@@ -411,11 +417,11 @@
             @endif
             <div class="plano-actions">
                 <button class="btn-plano-edit" onclick="abrirEditarPlano({{ $plano->id }}, '{{ addslashes($plano->nome) }}', {{ $plano->valor }}, {{ $plano->duracao_meses }}, '{{ addslashes($plano->descricao ?? '') }}', {{ $plano->ativo ? 'true' : 'false' }})">
-                    <i class="fas fa-pen"></i> Editar
+                    <i class="ph ph-pen"></i> Editar
                 </button>
                 <form action="{{ route('academia.planos.destroy', $plano->id) }}" method="POST" onsubmit="return confirm('Remover este plano?')">
                     @csrf @method('DELETE')
-                    <button type="submit" class="btn-plano-del"><i class="fas fa-trash"></i></button>
+                    <button type="submit" class="btn-plano-del"><i class="ph ph-trash"></i></button>
                 </form>
             </div>
         </div>
@@ -423,13 +429,13 @@
         @endforelse
         @if($planos->count() < 5)
         <button class="btn-novo-plano" onclick="document.getElementById('modalNovoPLano').style.display='block'">
-            <i class="fas fa-plus-circle"></i>
+            <i class="ph ph-plus-circle"></i>
             Novo Plano
         </button>
         @endif
     </div>
 
-    <div class="section-title"><i class="fas fa-users"></i> Últimos Alunos Cadastrados</div>
+    <div class="section-title"><i class="ph ph-users"></i> Últimos Alunos Cadastrados</div>
     <div class="alunos-list">
         @forelse($alunos as $aluno)
         <div class="aluno-item">
@@ -452,24 +458,24 @@
 <div id="modalNovoPLano" class="modal-overlay">
     <div class="modal-content">
         <h2 style="color: var(--primary); font-size: 1.4rem; margin-top: 0; font-weight: 900;">
-            <i class="fas fa-plus-circle"></i> NOVO PLANO
+            <i class="ph ph-plus-circle"></i> NOVO PLANO
         </h2>
         <form action="{{ route('academia.planos.store') }}" method="POST">
             @csrf
             <label>Nome do Plano</label>
-            <div class="input-wrapper"><i class="fas fa-tag"></i><input type="text" name="nome" placeholder="Ex: Básico, Premium, Black" required></div>
+            <div class="input-wrapper"><i class="ph ph-tag"></i><input type="text" name="nome" placeholder="Ex: Básico, Premium, Black" required></div>
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
                 <div>
                     <label>Valor Mensal (R$)</label>
-                    <div class="input-wrapper"><i class="fas fa-dollar-sign"></i><input type="number" step="0.01" name="valor" min="0" required></div>
+                    <div class="input-wrapper"><i class="ph ph-currency-dollar"></i><input type="number" step="0.01" name="valor" min="0" required></div>
                 </div>
                 <div style="min-width: 0;">
                     <label>Duração (meses)</label>
-                    <div class="input-wrapper"><i class="fas fa-calendar"></i><input type="number" name="duracao_meses" min="1" value="1" required></div>
+                    <div class="input-wrapper"><i class="ph ph-calendar"></i><input type="number" name="duracao_meses" min="1" value="1" required></div>
                 </div>
             </div>
             <label>Descrição (o que inclui)</label>
-            <div class="input-wrapper"><i class="fas fa-list"></i><textarea name="descricao" placeholder="Ex: Musculação + Aulas coletivas + Vestiário"></textarea></div>
+            <div class="input-wrapper"><i class="ph ph-list"></i><textarea name="descricao" placeholder="Ex: Musculação + Aulas coletivas + Vestiário"></textarea></div>
             <div style="display: flex; gap: 10px; margin-top: 20px;">
                 <button type="button" onclick="document.getElementById('modalNovoPLano').style.display='none'" class="btn-save btn-cancel">Cancelar</button>
                 <button type="submit" class="btn-save">Criar Plano</button>
@@ -482,24 +488,24 @@
 <div id="modalEditarPlano" class="modal-overlay">
     <div class="modal-content">
         <h2 style="color: var(--primary); font-size: 1.4rem; margin-top: 0; font-weight: 900;">
-            <i class="fas fa-pen"></i> EDITAR PLANO
+            <i class="ph ph-pen"></i> EDITAR PLANO
         </h2>
         <form id="formEditarPlano" method="POST">
             @csrf @method('PUT')
             <label>Nome do Plano</label>
-            <div class="input-wrapper"><i class="fas fa-tag"></i><input type="text" id="edit_nome" name="nome" required></div>
+            <div class="input-wrapper"><i class="ph ph-tag"></i><input type="text" id="edit_nome" name="nome" required></div>
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
                 <div>
                     <label>Valor Mensal (R$)</label>
-                    <div class="input-wrapper"><i class="fas fa-dollar-sign"></i><input type="number" step="0.01" id="edit_valor" name="valor" min="0" required></div>
+                    <div class="input-wrapper"><i class="ph ph-currency-dollar"></i><input type="number" step="0.01" id="edit_valor" name="valor" min="0" required></div>
                 </div>
                 <div>
                     <label>Duração (meses)</label>
-                    <div class="input-wrapper"><i class="fas fa-calendar"></i><input type="number" id="edit_duracao" name="duracao_meses" min="1" required></div>
+                    <div class="input-wrapper"><i class="ph ph-calendar"></i><input type="number" id="edit_duracao" name="duracao_meses" min="1" required></div>
                 </div>
             </div>
             <label>Descrição</label>
-            <div class="input-wrapper"><i class="fas fa-list"></i><textarea id="edit_descricao" name="descricao"></textarea></div>
+            <div class="input-wrapper"><i class="ph ph-list"></i><textarea id="edit_descricao" name="descricao"></textarea></div>
             <label class="toggle-ativo">
                 <input type="checkbox" id="edit_ativo" name="ativo" value="1">
                 Plano ativo (visível para clientes)
@@ -519,15 +525,15 @@
         <form action="{{ route('academia.update', $academia->id) }}" method="POST">
             @csrf @method('PUT')
             <label>Nome da Academia</label>
-            <div class="input-wrapper"><i class="fas fa-building"></i><input type="text" name="nome" value="{{ $academia->nome }}" required></div>
+            <div class="input-wrapper"><i class="ph ph-building"></i><input type="text" name="nome" value="{{ $academia->nome }}" required></div>
             <label>Cidade</label>
-            <div class="input-wrapper"><i class="fas fa-city"></i><input type="text" name="cidade" value="{{ $academia->cidade }}" required></div>
+            <div class="input-wrapper"><i class="ph ph-buildings"></i><input type="text" name="cidade" value="{{ $academia->cidade }}" required></div>
             <label>Valor Mensalidade (R$)</label>
-            <div class="input-wrapper"><i class="fas fa-dollar-sign"></i><input type="number" step="0.01" name="valor_mensalidade" value="{{ $academia->valor_mensalidade }}"></div>
+            <div class="input-wrapper"><i class="ph ph-currency-dollar"></i><input type="number" step="0.01" name="valor_mensalidade" value="{{ $academia->valor_mensalidade }}"></div>
             <label>Descrição</label>
-            <div class="input-wrapper"><i class="fas fa-pen"></i><textarea name="descricao">{{ $academia->descricao }}</textarea></div>
+            <div class="input-wrapper"><i class="ph ph-pen"></i><textarea name="descricao">{{ $academia->descricao }}</textarea></div>
             <label>Chave PIX (para receber os repasses)</label>
-            <div class="input-wrapper"><i class="fas fa-key"></i><input type="text" name="chave_pix" value="{{ $academia->chave_pix }}" placeholder="CPF/CNPJ, e-mail, telefone ou chave aleatória"></div>
+            <div class="input-wrapper"><i class="ph ph-key"></i><input type="text" name="chave_pix" value="{{ $academia->chave_pix }}" placeholder="CPF/CNPJ, e-mail, telefone ou chave aleatória"></div>
             <div style="display: flex; gap: 10px; margin-top: 20px;">
                 <button type="button" onclick="document.getElementById('modalUpdate').style.display='none'" class="btn-save btn-cancel">Cancelar</button>
                 <button type="submit" class="btn-save">Salvar</button>
@@ -540,7 +546,7 @@
 <div id="modalGaleriaAcademia" class="modal-overlay">
     <div class="modal-content" style="max-width: 600px;">
         <h2 style="color: var(--primary); font-size: 1.4rem; margin-top: 0; font-weight: 900;">
-            <i class="fas fa-images"></i> GALERIA DE FOTOS
+            <i class="ph ph-images"></i> GALERIA DE FOTOS
         </h2>
         <p style="color: var(--text-muted); font-size: 0.8rem; margin-bottom: 15px;">
             Mostre sua estrutura para os alunos!
@@ -560,7 +566,7 @@
                     <form action="{{ route('fotos.destroy', $foto->id) }}" method="POST" onsubmit="return confirm('Remover esta foto?')">
                         @csrf @method('DELETE')
                         <button type="submit" style="background: var(--error); color: #fff; border: none; padding: 6px 12px; border-radius: 8px; cursor: pointer; font-size: 0.75rem;">
-                            <i class="fas fa-trash"></i> Remover
+                            <i class="ph ph-trash"></i> Remover
                         </button>
                     </form>
                 </div>
@@ -569,7 +575,7 @@
 
             @if($academia->fotos->count() < 5)
             <label class="galeria-upload-slot" for="inputFotoGaleriaAcademia">
-                <i class="fas fa-plus-circle"></i>
+                <i class="ph ph-plus-circle"></i>
                 Adicionar
             </label>
             @endif
@@ -581,11 +587,11 @@
             <input type="file" id="inputFotoGaleriaAcademia" name="foto" accept="image/*" style="display: none;" onchange="document.getElementById('formGaleriaAcademia').submit()">
             <label style="margin-top: 10px;">Legenda (opcional)</label>
             <div class="input-wrapper">
-                <i class="fas fa-pen"></i>
+                <i class="ph ph-pen"></i>
                 <input type="text" name="legenda" placeholder="Ex: Sala de musculação, Vestiário...">
             </div>
             <p style="color: var(--text-muted); font-size: 0.72rem; margin-top: 8px;">
-                <i class="fas fa-info-circle"></i> Preencha a legenda antes de selecionar a foto.
+                <i class="ph ph-info"></i> Preencha a legenda antes de selecionar a foto.
             </p>
         </form>
         @endif
@@ -598,11 +604,11 @@
 <div id="modalCarteira" class="modal-overlay">
     <div class="modal-content" style="max-width: 480px;">
         <h2 style="color: var(--primary); font-size: 1.4rem; margin-top: 0; font-weight: 900; text-align: center;">
-            <i class="fas fa-piggy-bank"></i> CARTEIRA DA ACADEMIA
+            <i class="ph ph-piggy-bank"></i> CARTEIRA DA ACADEMIA
         </h2>
 
         <div id="carteiraLoading" style="text-align:center; padding:30px 0; color: var(--text-muted);">
-            <i class="fas fa-spinner fa-spin fa-2x"></i><br><br>Consultando saldo...
+            <i class="ph ph-spinner ph-spin fa-2x"></i><br><br>Consultando saldo...
         </div>
 
         <div id="carteiraConteudo" style="display:none;">
@@ -612,7 +618,7 @@
             </div>
 
             <div id="carteiraSemPix" style="display:none; background:rgba(255,165,0,0.1); border:1px solid rgba(255,165,0,0.3); border-radius:12px; padding:14px; margin-bottom:16px; font-size:0.82rem; color:#ffa500; text-align:center;">
-                <i class="fas fa-exclamation-triangle"></i> Cadastre sua chave PIX em "Meu Perfil" para poder sacar.
+                <i class="ph ph-warning"></i> Cadastre sua chave PIX em "Meu Perfil" para poder sacar.
             </div>
 
             <div id="carteiraSaqueForm">
@@ -630,7 +636,7 @@
 
                 <button type="button" id="btnSacar" onclick="confirmarSaque()"
                     style="width:100%; background:var(--primary); color:#000; border:none; border-radius:12px; padding:14px; font-weight:900; font-size:0.95rem; cursor:pointer;">
-                    <i class="fas fa-arrow-down"></i> Sacar via PIX
+                    <i class="ph ph-arrow-down"></i> Sacar via PIX
                 </button>
             </div>
 
@@ -640,13 +646,13 @@
         </div>
 
         <div id="carteiraSemConta" style="display:none; text-align:center; padding:10px 0;">
-            <i class="fas fa-piggy-bank fa-2x" style="margin-bottom:12px; display:block; color: var(--primary);"></i>
+            <i class="ph ph-piggy-bank fa-2x" style="margin-bottom:12px; display:block; color: var(--primary);"></i>
             <p style="color: var(--text-muted); font-size:0.85rem; margin-bottom:18px;">
                 Ative os recebimentos para que as mensalidades dos planos caiam direto na sua conta (com repasse automático de 90%).
             </p>
             <p id="carteiraContaErro" style="display:none; color:#ff6b6b; font-size:0.82rem; background:rgba(255,107,107,0.1); border:1px solid rgba(255,107,107,0.3); border-radius:8px; padding:10px 14px; margin-bottom:14px;"></p>
             <button type="button" id="btnAtivarConta" onclick="ativarRecebimentos()" class="btn-save" style="margin-top:0;">
-                <i class="fas fa-bolt"></i> Ativar recebimentos
+                <i class="ph ph-lightning"></i> Ativar recebimentos
             </button>
         </div>
 
@@ -728,7 +734,7 @@
     async function ativarRecebimentos() {
         const btn = document.getElementById('btnAtivarConta');
         btn.disabled = true;
-        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Ativando...';
+        btn.innerHTML = '<i class="ph ph-spinner ph-spin"></i> Ativando...';
         document.getElementById('carteiraContaErro').style.display = 'none';
 
         try {
@@ -747,7 +753,7 @@
             document.getElementById('carteiraContaErro').style.display = 'block';
         } finally {
             btn.disabled = false;
-            btn.innerHTML = '<i class="fas fa-bolt"></i> Ativar recebimentos';
+            btn.innerHTML = '<i class="ph ph-lightning"></i> Ativar recebimentos';
         }
     }
 
@@ -761,7 +767,7 @@
 
         const btn = document.getElementById('btnSacar');
         btn.disabled = true;
-        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processando...';
+        btn.innerHTML = '<i class="ph ph-spinner ph-spin"></i> Processando...';
         document.getElementById('carteiraSaqueErro').style.display = 'none';
 
         try {
@@ -782,7 +788,7 @@
             document.getElementById('carteiraSaqueErro').textContent = err.message;
             document.getElementById('carteiraSaqueErro').style.display = 'block';
             btn.disabled = false;
-            btn.innerHTML = '<i class="fas fa-arrow-down"></i> Sacar via PIX';
+            btn.innerHTML = '<i class="ph ph-arrow-down"></i> Sacar via PIX';
         }
     }
 </script>

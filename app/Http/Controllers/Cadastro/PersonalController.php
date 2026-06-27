@@ -66,6 +66,9 @@ class PersonalController extends Controller
 
         $personal = Personal::create($dados);
 
+        // Marca o personal como pioneiro se estiver entre os 100 primeiros do estado.
+        $personal->definirPosicaoPioneiro();
+
         $this->criarSubcontaAsaas($personal);
 
         return redirect()->route('login.index')->with('sucesso', 'Personal cadastrado com sucesso! Aguarde a aprovação do administrador.');
