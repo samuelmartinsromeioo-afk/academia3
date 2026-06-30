@@ -7,6 +7,7 @@ use App\Models\Cadastro\Personal;
 use App\Models\Cadastro\Cliente;
 use App\Models\Cadastro\Studio;
 use App\Models\Cadastro\Loja;
+use App\Models\Cadastro\Academia;
 use App\Models\Admin;
 use App\Models\Agenda;
 use Illuminate\Http\Request;
@@ -581,6 +582,125 @@ class AdminController extends Controller
         ]);
 
         return redirect()->back()->with('success', "Studio '{$studio->nome}' rejeitado.");
+    }
+
+    // ===================== ACADEMIAS =====================
+    public function listarAcademias(Request $request)
+    {
+        if (!session('admin_id')) {
+            return redirect()->route('admin.login');
+        }
+
+        $filtro = $request->query('status', 'todos');
+        $busca  = $request->query('busca', '');
+
+        $query = Academia::query();
+        if ($filtro !== 'todos') {
+            $query->where('status', $filtro);
+        }
+        if ($busca) {
+            $query->where(function ($q) use ($busca) {
+                $q->where('nome', 'LIKE', "%$busca%")
+                  ->orWhere('email', 'LIKE', "%$busca%")
+                  ->orWhere('cnpj', 'LIKE', "%$busca%");
+            });
+        }
+
+        $academias = $query->orderBy('nome')->get();
+
+        return view('admin.academias.lista', [
+            'academias' => $academias,
+            'filtro'    => $filtro,
+            'busca'     => $busca,
+        ]);
+    }
+
+    public function verDetalhesAcademia($id)
+    {
+        if (!session('admin_id')) {
+            return redirect()->route('admin.login');
+        }
+
+        $academia = Academia::findOrFail($id);
+
+        return view('admin.academias.detalhes', ['academia' => $academia]);
+    }
+
+    public function aprovarAcademia($id)
+    {
+        if (!session('admin_id')) {
+            return redirect()->route('admin.login');
+        }
+
+        $academia = Academia::findOrFail($id);
+        $academia->update([
+            'status'          => 'aprovado',
+            'data_aprovacao'  => now(),
+            'motivo_rejeicao' => null,
+        ]);
+
+        return redirect()->back()->with('success', "Academia '{$academia->nome}' aprovada com sucesso! ✅");
+    }
+
+    public function rejeitarAcademia($id, Request $request)
+    {
+        if (!session('admin_id')) {
+            return redirect()->route('admin.login');
+        }
+
+        $request->validate([
+            'motivo' => 'required|string|min:10|max:500',
+        ], [
+            'motivo.required' => 'Você deve informar o motivo da rejeição',
+            'motivo.min'      => 'O motivo deve ter pelo menos 10 caracteres',
+        ]);
+
+        $academia = Academia::findOrFail($id);
+        $academia->update([
+            'status'          => 'rejeitado',
+            'motivo_rejeicao' => $request->motivo,
+        ]);
+
+        return redirect()->back()->with('success', "Academia '{$academia->nome}' rejeitada.");
+    }
+
+    // ===================== LOJAS: aprovar / rejeitar =====================
+    public function aprovarLoja($id)
+    {
+        if (!session('admin_id')) {
+            return redirect()->route('admin.login');
+        }
+
+        $loja = Loja::findOrFail($id);
+        $loja->update([
+            'status'          => 'aprovado',
+            'data_aprovacao'  => now(),
+            'motivo_rejeicao' => null,
+        ]);
+
+        return redirect()->back()->with('success', "Loja '{$loja->nome}' aprovada com sucesso! ✅");
+    }
+
+    public function rejeitarLoja($id, Request $request)
+    {
+        if (!session('admin_id')) {
+            return redirect()->route('admin.login');
+        }
+
+        $request->validate([
+            'motivo' => 'required|string|min:10|max:500',
+        ], [
+            'motivo.required' => 'Você deve informar o motivo da rejeição',
+            'motivo.min'      => 'O motivo deve ter pelo menos 10 caracteres',
+        ]);
+
+        $loja = Loja::findOrFail($id);
+        $loja->update([
+            'status'          => 'rejeitado',
+            'motivo_rejeicao' => $request->motivo,
+        ]);
+
+        return redirect()->back()->with('success', "Loja '{$loja->nome}' rejeitada.");
     }
 
     public function deletarStudio($id)

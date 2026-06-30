@@ -652,7 +652,8 @@
 
             <div class="form-group">
                 <label>WhatsApp</label>
-                <input type="text" name="whatsapp" value="{{ old('whatsapp', $studio->whatsapp) }}" placeholder="(11) 99999-9999">
+                <input type="text" name="whatsapp" value="{{ old('whatsapp', $studio->whatsapp) }}" placeholder="(11) 99999-9999" maxlength="15"
+                    oninput="this.value=this.value.replace(/\D/g,'').replace(/(\d{2})(\d)/,'($1) $2').replace(/(\d{4,5})(\d{4})/,'$1-$2').replace(/(-\d{4})\d+?$/,'$1')">
             </div>
 
             <div class="form-group">
@@ -973,5 +974,6 @@
     });
 </script>
 
+@include('partials.celebracao-modal')
 </body>
 </html>

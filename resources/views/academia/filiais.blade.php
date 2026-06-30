@@ -168,6 +168,11 @@
 <div class="container">
     <h1><i class="ph ph-map-pin"></i> MINHAS FILIAIS</h1>
 
+    <div style="background:rgba(212,255,0,0.07); border:1px solid rgba(212,255,0,0.3); border-radius:12px; padding:13px 16px; margin-bottom:18px; font-size:0.82rem; color:#cfe88a; line-height:1.5;">
+        <i class="ph ph-info" style="color:var(--primary);"></i>
+        Cada filial é uma <strong>subconta</strong>: ela entra com o <strong>mesmo e-mail/CNPJ</strong> da academia ({{ $academia->email }}) e a <strong>senha que você definir</strong> aqui. A subconta vê só os alunos e dados da própria filial; você (conta principal) vê tudo, separado por filial.
+    </div>
+
     @if(session('success'))
     <div class="alert-success"><i class="ph ph-check-circle"></i> {{ session('success') }}</div>
     @endif
@@ -189,6 +194,8 @@
                 @if($filial->telefone)
                 <div><i class="ph ph-phone"></i> {{ $filial->telefone }}</div>
                 @endif
+                <div><i class="ph ph-users"></i> {{ $filial->clientes_count }} aluno(s)</div>
+                <div><i class="ph ph-{{ $filial->temSubconta() ? 'lock-key' : 'lock-open' }}" style="color: {{ $filial->temSubconta() ? 'var(--primary)' : 'inherit' }};"></i> Subconta: {{ $filial->temSubconta() ? 'ativa' : 'sem senha definida' }}</div>
             </div>
             <div class="filial-actions">
                 <button class="btn-edit" onclick="abrirEditar(
@@ -232,13 +239,17 @@
                     <label>Nome da Filial</label>
                     <div class="input-wrap"><i class="ph ph-building"></i><input type="text" name="nome" placeholder="Ex: Unidade Centro" required></div>
                 </div>
+                <div class="form-group full">
+                    <label>Senha da subconta (login com o e-mail/CNPJ da academia)</label>
+                    <div class="input-wrap"><i class="ph ph-lock"></i><input type="password" name="senha" placeholder="Mín. 6 caracteres" minlength="6" required></div>
+                </div>
                 <div class="form-group">
                     <label>CEP</label>
                     <div class="input-wrap"><i class="ph ph-envelope"></i><input type="text" name="cep" placeholder="00000-000" maxlength="9" oninput="mascaraCep(this)" required></div>
                 </div>
                 <div class="form-group">
                     <label>Telefone (opcional)</label>
-                    <div class="input-wrap"><i class="ph ph-phone"></i><input type="text" name="telefone" placeholder="(00) 00000-0000" maxlength="20"></div>
+                    <div class="input-wrap"><i class="ph ph-phone"></i><input type="text" name="telefone" placeholder="(00) 00000-0000" maxlength="15" oninput="mascaraTelefone(this)"></div>
                 </div>
                 <div class="form-group full">
                     <label>Rua</label>
@@ -282,13 +293,17 @@
                     <label>Nome da Filial</label>
                     <div class="input-wrap"><i class="ph ph-building"></i><input type="text" id="e_nome" name="nome" required></div>
                 </div>
+                <div class="form-group full">
+                    <label>Nova senha da subconta (deixe em branco para manter)</label>
+                    <div class="input-wrap"><i class="ph ph-lock"></i><input type="password" id="e_senha" name="senha" placeholder="Mín. 6 caracteres" minlength="6"></div>
+                </div>
                 <div class="form-group">
                     <label>CEP</label>
                     <div class="input-wrap"><i class="ph ph-envelope"></i><input type="text" id="e_cep" name="cep" maxlength="9" oninput="mascaraCep(this)" required></div>
                 </div>
                 <div class="form-group">
                     <label>Telefone (opcional)</label>
-                    <div class="input-wrap"><i class="ph ph-phone"></i><input type="text" id="e_telefone" name="telefone" maxlength="20"></div>
+                    <div class="input-wrap"><i class="ph ph-phone"></i><input type="text" id="e_telefone" name="telefone" placeholder="(00) 00000-0000" maxlength="15" oninput="mascaraTelefone(this)"></div>
                 </div>
                 <div class="form-group full">
                     <label>Rua</label>
@@ -325,16 +340,26 @@
     function abrirEditar(id, nome, cep, rua, bairro, cidade, estado, complemento, telefone, lat, lng) {
         document.getElementById('formEditarFilial').action = `/academia/filiais/${id}`;
         document.getElementById('e_nome').value        = nome;
+        document.getElementById('e_senha').value       = '';
         document.getElementById('e_cep').value         = cep;
         document.getElementById('e_rua').value         = rua;
         document.getElementById('e_bairro').value      = bairro;
         document.getElementById('e_cidade').value      = cidade;
         document.getElementById('e_estado').value      = estado;
         document.getElementById('e_complemento').value = complemento;
-        document.getElementById('e_telefone').value    = telefone;
+        document.getElementById('e_telefone').value    = telefone || '';
+        mascaraTelefone(document.getElementById('e_telefone'));
         document.getElementById('e_latitude').value    = lat || '';
         document.getElementById('e_longitude').value   = lng || '';
         document.getElementById('modalEditarFilial').classList.add('active');
+    }
+
+    function mascaraTelefone(input) {
+        input.value = input.value
+            .replace(/\D/g, '')
+            .replace(/(\d{2})(\d)/, '($1) $2')
+            .replace(/(\d{4,5})(\d{4})/, '$1-$2')
+            .replace(/(-\d{4})\d+?$/, '$1');
     }
 
     async function mascaraCep(input) {

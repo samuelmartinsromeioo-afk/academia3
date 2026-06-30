@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Cadastro;
 
+use App\Http\Controllers\Concerns\EscopoAcademia;
 use App\Http\Controllers\Controller;
 use App\Models\Agenda;
 use App\Models\Cadastro\Cliente;
@@ -10,11 +11,15 @@ use App\Models\Cadastro\FichaTreino;
 use App\Models\Cadastro\Personal;
 use App\Models\Cadastro\RegistroExercicio;
 use App\Models\Cadastro\TreinoConcluido;
+use App\Services\Celebracoes;
+use App\Services\EstatisticasTreino;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 
 class FichaTreinoController extends Controller
 {
+    use EscopoAcademia;
+
     // Regra de validação do vídeo demonstrativo (limite de 15s é validado no navegador).
     private array $videoRules = [
         'video' => 'nullable|file|mimetypes:video/mp4,video/quicktime,video/webm,video/3gpp,video/x-msvideo|max:51200',
@@ -286,9 +291,10 @@ class FichaTreinoController extends Controller
             return redirect()->route('login.index');
         }
 
-        $cliente = Cliente::where('id', $clienteId)
-            ->where('academia_id', $academiaId)
-            ->firstOrFail();
+        $cliente = $this->clienteAcessivel($clienteId);
+        if (! $cliente) {
+            return redirect()->route('academia.alunos')->with('error', 'Aluno não encontrado.');
+        }
 
         $fichas = FichaTreino::with('exercicios')
             ->where('academia_id', $academiaId)
@@ -319,10 +325,10 @@ class FichaTreinoController extends Controller
             'divisao' => 'nullable|string|max:100',
         ]);
 
-        // O aluno precisa pertencer a esta academia.
-        Cliente::where('id', $request->cliente_id)
-            ->where('academia_id', $academiaId)
-            ->firstOrFail();
+        // O aluno precisa pertencer a esta academia (e à filial, se for subconta).
+        if (! $this->clienteAcessivel($request->cliente_id)) {
+            return redirect()->route('academia.alunos')->with('error', 'Aluno não encontrado.');
+        }
 
         $jaExiste = FichaTreino::where('academia_id', $academiaId)
             ->where('cliente_id', $request->cliente_id)
@@ -359,7 +365,7 @@ class FichaTreinoController extends Controller
         }
 
         $ficha = FichaTreino::findOrFail($fichaId);
-        if ($ficha->academia_id != $academiaId) {
+        if ($ficha->academia_id != $academiaId || ! $this->clienteAcessivel($ficha->cliente_id)) {
             return redirect()->back()->with('error', 'Acesso negado!');
         }
 
@@ -399,7 +405,7 @@ class FichaTreinoController extends Controller
         $exercicio = ExercicioFicha::findOrFail($exercicioId);
         $ficha = $exercicio->ficha;
 
-        if (! $ficha || $ficha->academia_id != $academiaId) {
+        if (! $ficha || $ficha->academia_id != $academiaId || ! $this->clienteAcessivel($ficha->cliente_id)) {
             return redirect()->back()->with('error', 'Acesso negado!');
         }
 
@@ -446,7 +452,7 @@ class FichaTreinoController extends Controller
         $exercicio = ExercicioFicha::findOrFail($exercicioId);
         $ficha = $exercicio->ficha;
 
-        if (! $ficha || $ficha->academia_id != $academiaId) {
+        if (! $ficha || $ficha->academia_id != $academiaId || ! $this->clienteAcessivel($ficha->cliente_id)) {
             return redirect()->back()->with('error', 'Acesso negado!');
         }
 
@@ -466,7 +472,7 @@ class FichaTreinoController extends Controller
         }
 
         $ficha = FichaTreino::findOrFail($fichaId);
-        if ($ficha->academia_id != $academiaId) {
+        if ($ficha->academia_id != $academiaId || ! $this->clienteAcessivel($ficha->cliente_id)) {
             return redirect()->back()->with('error', 'Acesso negado!');
         }
 
@@ -588,6 +594,7 @@ class FichaTreinoController extends Controller
         // ✅ FEATURE 1: histórico de carga executada por exercício (+ detecção de recordes)
         $registros = $request->input('registros', []);
         $recordes = [];
+        $topCarga = null; // maior aumento de carga deste treino (p/ celebração)
         foreach ($ficha->exercicios as $exercicio) {
             $dados = $registros[$exercicio->id] ?? [];
 
@@ -608,6 +615,11 @@ class FichaTreinoController extends Controller
                 if ($maxAnterior !== null && $pesoFinal > (float) $maxAnterior) {
                     $recordes[] = $exercicio->nome_exercicio . ' — '
                         . rtrim(rtrim(number_format($pesoFinal, 2, ',', '.'), '0'), ',') . ' kg';
+
+                    $aumento = round($pesoFinal - (float) $maxAnterior, 1);
+                    if ($aumento > 0 && ($topCarga === null || $aumento > $topCarga['aumento'])) {
+                        $topCarga = ['exercicio' => $exercicio->nome_exercicio, 'aumento' => $aumento, 'nova' => $pesoFinal];
+                    }
                 }
             }
 
@@ -626,6 +638,21 @@ class FichaTreinoController extends Controller
                 ]
             );
         }
+
+        // 🎉 Celebração: progressão de carga (maior aumento do treino).
+        if ($topCarga !== null) {
+            Celebracoes::push('cliente', (int) $clienteId,
+                Celebracoes::progressaoCarga($topCarga['exercicio'], $topCarga['aumento'], $topCarga['nova']));
+        }
+
+        // 🎉 Celebração: bateu um marco de sequência (3/7/14/30/60/100 dias)?
+        $datasStreak = TreinoConcluido::where('cliente_id', $clienteId)
+            ->where('concluido', true)
+            ->pluck('data_treino')
+            ->map(fn ($d) => \Carbon\Carbon::parse($d)->toDateString())
+            ->toArray();
+        $streak = EstatisticasTreino::streak($datasStreak);
+        Celebracoes::push('cliente', (int) $clienteId, Celebracoes::sequenciaDias($streak['atual']));
 
         return redirect()->route('fichas-treino.minhas')
             ->with('success', 'Treino marcado como concluído!')

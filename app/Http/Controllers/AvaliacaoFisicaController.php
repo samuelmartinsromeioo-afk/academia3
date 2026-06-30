@@ -2,17 +2,21 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Concerns\EscopoAcademia;
 use App\Models\Agenda;
 use App\Models\AvaliacaoFisica;
 use App\Models\Cadastro\Personal;
 use App\Models\PacoteAvaliacao;
 use App\Models\SolicitacaoAvaliacao;
+use App\Services\Celebracoes;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 
 class AvaliacaoFisicaController extends Controller
 {
+    use EscopoAcademia;
+
     private function clienteIdsPermitidos(int $personalId): array
     {
         $pacote = Agenda::where('personal_id', $personalId)
@@ -234,7 +238,7 @@ class AvaliacaoFisicaController extends Controller
         $tipo = $request->query('tipo');
         $mes  = $request->query('mes'); // formato Y-m
 
-        $query = AvaliacaoFisica::with('personal:id,nome')
+        $query = AvaliacaoFisica::with('personal:id,nome', 'academia:id,nome')
             ->where('cliente_id', $clienteId);
 
         if ($tipo && $tipo !== 'resumo' && in_array($tipo, AvaliacaoFisica::TIPOS)) {
@@ -449,6 +453,16 @@ class AvaliacaoFisicaController extends Controller
             abort(403);
         }
 
+        return $this->salvarRegistro($request, $clienteId, ['personal_id' => (int) $personalId]);
+    }
+
+    /**
+     * Valida e persiste um registro de avaliação física (calcula IMC e % de
+     * gordura por Pollock quando aplicável). Compartilhado entre personal e
+     * academia: $owner traz ['personal_id' => x] OU ['academia_id' => y].
+     */
+    private function salvarRegistro(Request $request, $clienteId, array $owner)
+    {
         $dados = $request->validate([
             'tipo'               => 'required|in:' . implode(',', AvaliacaoFisica::TIPOS),
             'data_avaliacao'     => 'required|date',
@@ -645,8 +659,15 @@ class AvaliacaoFisicaController extends Controller
             }
         }
 
-        AvaliacaoFisica::create([
-            'personal_id'        => $personalId,
+        // Peso da avaliação anterior (para detectar perda e celebrar com o cliente).
+        $pesoNovo = isset($dados['peso']) ? (float) $dados['peso'] : null;
+        $pesoAnterior = $pesoNovo === null ? null : AvaliacaoFisica::where('cliente_id', $clienteId)
+            ->whereNotNull('peso')
+            ->orderByDesc('data_avaliacao')
+            ->orderByDesc('id')
+            ->value('peso');
+
+        AvaliacaoFisica::create(array_merge($owner, [
             'cliente_id'         => $clienteId,
             'tipo'               => $dados['tipo'],
             'data_avaliacao'     => $dados['data_avaliacao'],
@@ -733,7 +754,12 @@ class AvaliacaoFisicaController extends Controller
             'dor_joelho'   => $dados['dor_joelho'] ?? null,
             'dor_quadril'  => $dados['dor_quadril'] ?? null,
             'dor_cervical' => $dados['dor_cervical'] ?? null,
-        ]);
+        ]));
+
+        // 🎉 Celebração de perda de peso (vista pelo cliente no próximo acesso).
+        if ($pesoNovo !== null && $pesoAnterior !== null && $pesoNovo < (float) $pesoAnterior) {
+            Celebracoes::push('cliente', (int) $clienteId, Celebracoes::perdaPeso((float) $pesoAnterior - $pesoNovo));
+        }
 
         return back()->with('success', 'Registro de avaliação salvo com sucesso!');
     }
@@ -752,6 +778,130 @@ class AvaliacaoFisicaController extends Controller
             Storage::disk('public')->delete($registro->arquivo);
         }
         // Fotos posturais
+        foreach (['foto_anterior', 'foto_posterior', 'foto_lateral_direita', 'foto_lateral_esquerda'] as $campo) {
+            if ($registro->$campo) {
+                Storage::disk('public')->delete($registro->$campo);
+            }
+        }
+
+        $registro->delete();
+
+        return back()->with('success', 'Registro removido.');
+    }
+
+    // ==========================================
+    // ACADEMIA: avaliações físicas dos seus alunos
+    // ==========================================
+
+    private function alunoDaAcademia($clienteId): ?\App\Models\Cadastro\Cliente
+    {
+        // Respeita o escopo de filial: subconta só acessa alunos da sua filial.
+        return $this->clienteAcessivel($clienteId);
+    }
+
+    public function indexAcademia()
+    {
+        $academiaId = session('academia_id');
+        if (!$academiaId) return redirect()->route('login.index');
+
+        $academia = \App\Models\Cadastro\Academia::findOrFail($academiaId);
+
+        $clientes = $this->clientesVisiveis()
+            ->with('filial:id,nome')
+            ->orderBy('nome')
+            ->get();
+
+        $totaisRegistros = AvaliacaoFisica::where('academia_id', $academiaId)
+            ->selectRaw('cliente_id, COUNT(*) as total, MAX(data_avaliacao) as ultima')
+            ->groupBy('cliente_id')
+            ->get()
+            ->keyBy('cliente_id');
+
+        return view('academia.avaliacao_fisica', [
+            'academia'        => $academia,
+            'clientes'        => $clientes,
+            'totaisRegistros' => $totaisRegistros,
+        ]);
+    }
+
+    public function showAcademia(Request $request, $clienteId)
+    {
+        $academiaId = session('academia_id');
+        if (!$academiaId) return redirect()->route('login.index');
+
+        $cliente = $this->alunoDaAcademia($clienteId);
+        if (!$cliente) {
+            return redirect()->route('academia.avaliacao-fisica')->with('error', 'Aluno não encontrado.');
+        }
+
+        $academia = \App\Models\Cadastro\Academia::findOrFail($academiaId);
+
+        $tipo = $request->query('tipo');
+        $mes  = $request->query('mes'); // formato Y-m
+
+        $query = AvaliacaoFisica::where('academia_id', $academiaId)
+            ->where('cliente_id', $clienteId);
+
+        if ($tipo && $tipo !== 'resumo' && in_array($tipo, AvaliacaoFisica::TIPOS)) {
+            $query->where('tipo', $tipo);
+        }
+        if ($mes && preg_match('/^\d{4}-\d{2}$/', $mes)) {
+            $query->whereYear('data_avaliacao', substr($mes, 0, 4))
+                  ->whereMonth('data_avaliacao', substr($mes, 5, 2));
+        }
+
+        $registros = $query->orderByDesc('data_avaliacao')->orderByDesc('id')->get();
+
+        $mesesDisponiveis = AvaliacaoFisica::where('academia_id', $academiaId)
+            ->where('cliente_id', $clienteId)
+            ->selectRaw("DATE_FORMAT(data_avaliacao, '%Y-%m') as mes")
+            ->distinct()
+            ->orderByDesc('mes')
+            ->pluck('mes');
+
+        $resumo = $tipo === 'resumo' ? $this->montarResumo($registros) : null;
+
+        $clienteIdade = $cliente->data_nascimento
+            ? Carbon::parse($cliente->data_nascimento)->age
+            : null;
+
+        return view('academia.avaliacao_fisica_aluno', [
+            'academia'         => $academia,
+            'cliente'          => $cliente,
+            'clienteIdade'     => $clienteIdade,
+            'registros'        => $registros,
+            'tipoFiltro'       => $tipo,
+            'mesFiltro'        => $mes,
+            'mesesDisponiveis' => $mesesDisponiveis,
+            'resumo'           => $resumo,
+        ]);
+    }
+
+    public function storeAcademia(Request $request, $clienteId)
+    {
+        $academiaId = session('academia_id');
+        if (!$academiaId) return redirect()->route('login.index');
+
+        if (!$this->alunoDaAcademia($clienteId)) {
+            abort(403);
+        }
+
+        return $this->salvarRegistro($request, $clienteId, ['academia_id' => (int) $academiaId]);
+    }
+
+    public function destroyAcademia($id)
+    {
+        $academiaId = session('academia_id');
+        if (!$academiaId) return redirect()->route('login.index');
+
+        $registro = AvaliacaoFisica::where('academia_id', $academiaId)->findOrFail($id);
+
+        if ($registro->foto) {
+            Storage::disk('public')->delete($registro->foto);
+        }
+        if ($registro->arquivo) {
+            Storage::disk('public')->delete($registro->arquivo);
+        }
         foreach (['foto_anterior', 'foto_posterior', 'foto_lateral_direita', 'foto_lateral_esquerda'] as $campo) {
             if ($registro->$campo) {
                 Storage::disk('public')->delete($registro->$campo);

@@ -55,6 +55,7 @@ class AvaliacaoFisica extends Model
 
     protected $fillable = [
         'personal_id',
+        'academia_id',
         'cliente_id',
         'tipo',
         'data_avaliacao',
@@ -151,6 +152,11 @@ class AvaliacaoFisica extends Model
     public function personal()
     {
         return $this->belongsTo(\App\Models\Cadastro\Personal::class, 'personal_id');
+    }
+
+    public function academia()
+    {
+        return $this->belongsTo(\App\Models\Cadastro\Academia::class, 'academia_id');
     }
 
     public function cliente()

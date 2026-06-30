@@ -931,6 +931,7 @@
         </div>
     </div>
 
+@include('partials.celebracao-modal')
 </body>
 
 </html>

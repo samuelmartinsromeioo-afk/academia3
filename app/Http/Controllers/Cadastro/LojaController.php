@@ -68,18 +68,13 @@ class LojaController extends Controller
             return back()->withErrors(['cnpj' => 'Este CNPJ já está em uso na plataforma.'])->withInput();
         }
 
-        $dados['senha']          = Hash::make($dados['senha']);
-        $dados['status']         = 'aprovado';
-        $dados['data_aprovacao'] = now();
+        $dados['senha']  = Hash::make($dados['senha']);
+        $dados['status'] = 'pendente'; // precisa de aprovação do administrador
 
-        $loja = Loja::create($dados);
+        Loja::create($dados);
 
-        // Acesso imediato: já entra logada no painel.
-        session(['loja_id' => $loja->id]);
-        session()->save();
-
-        return redirect()->route('loja.dashboard')
-            ->with('success', 'Loja cadastrada com sucesso! Comece adicionando seus produtos.');
+        return redirect()->route('login.index')
+            ->with('sucesso', 'Cadastro enviado com sucesso! Sua loja será analisada pelo administrador e você poderá acessar após a aprovação.');
     }
 
     // ==========================================

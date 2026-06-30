@@ -200,6 +200,8 @@
                 </div>
                 @if($r->personal)
                     <span class="personal-tag"><i class="ph ph-user-list"></i> {{ $r->personal?->nome }}</span>
+                @elseif($r->academia)
+                    <span class="personal-tag"><i class="ph ph-barbell"></i> {{ $r->academia?->nome }}</span>
                 @endif
             </div>
 

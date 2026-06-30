@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Cadastro;
 
+use App\Http\Controllers\Concerns\EscopoAcademia;
 use App\Http\Controllers\Controller;
 use App\Models\Agenda;
 use App\Models\Cadastro\Cliente;
@@ -23,6 +24,8 @@ use Illuminate\Support\Facades\Log;
  */
 class MesocicloController extends Controller
 {
+    use EscopoAcademia;
+
     private const LETRAS = ['A', 'B', 'C', 'D', 'E', 'F'];
 
     // ===================== PERSONAL =====================
@@ -232,6 +235,141 @@ class MesocicloController extends Controller
         return redirect()->back()->with('success', 'Mesociclo renovado! A validade recomeçou a partir de hoje.');
     }
 
+    // ===================== ACADEMIA =====================
+
+    private function alunoDaAcademia($clienteId): ?Cliente
+    {
+        // Respeita o escopo de filial: subconta só acessa alunos da sua filial.
+        return $this->clienteAcessivel($clienteId);
+    }
+
+    // Gerenciar os mesociclos de um aluno (academia).
+    public function doAlunoAcademia($clienteId)
+    {
+        if (! session('academia_id')) {
+            return redirect()->route('login.index');
+        }
+
+        $cliente = $this->alunoDaAcademia($clienteId);
+        if (! $cliente) {
+            return redirect()->route('academia.alunos')->with('error', 'Aluno não encontrado.');
+        }
+
+        $mesociclos = Mesociclo::with(['treinos.exercicios'])
+            ->where('academia_id', session('academia_id'))
+            ->where('cliente_id', $clienteId)
+            ->orderByDesc('ativo')
+            ->orderByDesc('created_at')
+            ->get();
+
+        return view('academia.PeriodizacaoAluno', compact('cliente', 'mesociclos'));
+    }
+
+    // Criar mesociclo (academia) com N treinos vazios (A..N).
+    public function criarAcademia(Request $request, $clienteId)
+    {
+        $academiaId = session('academia_id');
+        if (! $academiaId) {
+            return redirect()->route('login.index');
+        }
+
+        $cliente = $this->alunoDaAcademia($clienteId);
+        if (! $cliente) {
+            return redirect()->route('academia.alunos')->with('error', 'Aluno não encontrado.');
+        }
+
+        $request->validate([
+            'nome'            => 'required|string|max:255',
+            'data_inicio'     => 'required|date',
+            'modo_validade'   => 'required|in:semanas,data',
+            'duracao_semanas' => 'required_if:modo_validade,semanas|nullable|integer|min:1|max:52',
+            'data_fim'        => 'required_if:modo_validade,data|nullable|date|after:data_inicio',
+            'qtd_treinos'     => 'required|integer|min:1|max:6',
+        ]);
+
+        $meso = Mesociclo::create([
+            'academia_id'     => $academiaId,
+            'cliente_id'      => $clienteId,
+            'nome'            => $request->nome,
+            'data_inicio'     => $request->data_inicio,
+            'duracao_semanas' => $request->modo_validade === 'semanas' ? $request->duracao_semanas : null,
+            'data_fim'        => $request->modo_validade === 'data' ? $request->data_fim : null,
+            'ativo'           => true,
+        ]);
+
+        // Só um mesociclo ativo por aluno (dentro desta academia).
+        Mesociclo::where('academia_id', $academiaId)
+            ->where('cliente_id', $clienteId)
+            ->where('id', '!=', $meso->id)
+            ->update(['ativo' => false]);
+
+        for ($i = 0; $i < (int) $request->qtd_treinos; $i++) {
+            MesocicloTreino::create([
+                'mesociclo_id' => $meso->id,
+                'letra'        => self::LETRAS[$i],
+                'nome_treino'  => 'Treino ' . self::LETRAS[$i],
+                'ordem'        => $i,
+            ]);
+        }
+
+        return redirect()->route('academia.periodizacao.aluno', $clienteId)
+            ->with('success', 'Mesociclo criado! Agora adicione os exercícios de cada treino.');
+    }
+
+    public function ativarAcademia($mesocicloId)
+    {
+        $academiaId = session('academia_id');
+        $meso = Mesociclo::findOrFail($mesocicloId);
+        if ($meso->academia_id != $academiaId) {
+            return redirect()->back()->with('error', 'Acesso negado!');
+        }
+
+        Mesociclo::where('academia_id', $academiaId)
+            ->where('cliente_id', $meso->cliente_id)
+            ->update(['ativo' => false]);
+        $meso->update(['ativo' => true, 'avisado_em' => null]);
+
+        return redirect()->back()->with('success', 'Mesociclo ativado!');
+    }
+
+    public function deletarAcademia($mesocicloId)
+    {
+        $academiaId = session('academia_id');
+        $meso = Mesociclo::findOrFail($mesocicloId);
+        if ($meso->academia_id != $academiaId) {
+            return redirect()->back()->with('error', 'Acesso negado!');
+        }
+        $clienteId = $meso->cliente_id;
+        $meso->delete();
+
+        return redirect()->route('academia.periodizacao.aluno', $clienteId)->with('success', 'Mesociclo excluído!');
+    }
+
+    public function renovarAcademia(Request $request, $mesocicloId)
+    {
+        $academiaId = session('academia_id');
+        $meso = Mesociclo::findOrFail($mesocicloId);
+        if ($meso->academia_id != $academiaId) {
+            return redirect()->back()->with('error', 'Acesso negado!');
+        }
+
+        $request->validate([
+            'modo_validade'   => 'required|in:semanas,data',
+            'duracao_semanas' => 'required_if:modo_validade,semanas|nullable|integer|min:1|max:52',
+            'data_fim'        => 'required_if:modo_validade,data|nullable|date|after:today',
+        ]);
+
+        $meso->update([
+            'data_inicio'     => now()->toDateString(),
+            'duracao_semanas' => $request->modo_validade === 'semanas' ? $request->duracao_semanas : null,
+            'data_fim'        => $request->modo_validade === 'data' ? $request->data_fim : null,
+            'ativo'           => true,
+            'avisado_em'      => null,
+        ]);
+
+        return redirect()->back()->with('success', 'Mesociclo renovado! A validade recomeçou a partir de hoje.');
+    }
+
     // ===================== ALUNO =====================
 
     public function treinoDoDia()
@@ -290,7 +428,22 @@ class MesocicloController extends Controller
 
     private function donoDoTreino(MesocicloTreino $treino): bool
     {
-        return $treino->mesociclo && $treino->mesociclo->personal_id == session('personal_id');
+        $meso = $treino->mesociclo;
+        if (! $meso) {
+            return false;
+        }
+
+        $personalId = session('personal_id');
+        if ($personalId && $meso->personal_id == $personalId) {
+            return true;
+        }
+
+        $academiaId = session('academia_id');
+        if ($academiaId && $meso->academia_id == $academiaId) {
+            return true;
+        }
+
+        return false;
     }
 
     // Marca vencidos como avisados e dispara notificação interna única ao personal.

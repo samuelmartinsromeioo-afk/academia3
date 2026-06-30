@@ -32,7 +32,7 @@ class ClienteController extends Controller
             ->orderBy('pioneiro_posicao')
             ->orderBy('id')
             ->get();
-        $academias = Academia::with(['fotos', 'planos' => fn($q) => $q->where('ativo', true)->orderBy('valor')])->get();
+        $academias = Academia::with(['fotos', 'planos' => fn($q) => $q->where('ativo', true)->orderBy('valor')])->where('status', 'aprovado')->get();
 
         $meusAgendamentos = Agenda::where('cliente_id', $id)
             ->with(['personal', 'academia'])
@@ -615,6 +615,7 @@ class ClienteController extends Controller
     {
         $cliente   = Cliente::find(session('cliente_id'));
         $academias = Academia::with(['fotos', 'planos' => fn($q) => $q->orderBy('valor')])
+            ->where('status', 'aprovado')
             ->orderBy('nome')
             ->get();
         return view('cliente.academias', compact('academias', 'cliente'));

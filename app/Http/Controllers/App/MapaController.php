@@ -24,6 +24,7 @@ class MapaController extends Controller
     {
         $academias = Academia::whereNotNull('latitude')
             ->whereNotNull('longitude')
+            ->where('status', 'aprovado')
             ->get(['id', 'nome', 'cidade', 'estado', 'endereco', 'valor_mensalidade', 'latitude', 'longitude'])
             ->map(fn($a) => [
                 'tipo'      => 'academia',

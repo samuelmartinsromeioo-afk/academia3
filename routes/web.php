@@ -60,9 +60,17 @@ Route::middleware('check.admin')->group(function () {
     Route::delete('/admin/studios/{id}', [AdminController::class, 'deletarStudio'])->name('admin.studios.deletar');
     Route::post('/admin/studios/{id}/criar-asaas', [AdminController::class, 'criarSubcontaAsaasStudio'])->name('admin.studios.criar-asaas');
 
+    // Gerenciar Academias
+    Route::get('/admin/academias', [AdminController::class, 'listarAcademias'])->name('admin.academias.lista');
+    Route::get('/admin/academias/{id}/detalhes', [AdminController::class, 'verDetalhesAcademia'])->name('admin.academias.detalhes');
+    Route::post('/admin/academias/{id}/aprovar', [AdminController::class, 'aprovarAcademia'])->name('admin.academias.aprovar');
+    Route::post('/admin/academias/{id}/rejeitar', [AdminController::class, 'rejeitarAcademia'])->name('admin.academias.rejeitar');
+
     // Gerenciar Lojas de Suplementos
     Route::get('/admin/lojas', [AdminController::class, 'listarLojas'])->name('admin.lojas.lista');
     Route::get('/admin/lojas/{id}/detalhes', [AdminController::class, 'verDetalhesLoja'])->name('admin.lojas.detalhes');
+    Route::post('/admin/lojas/{id}/aprovar', [AdminController::class, 'aprovarLoja'])->name('admin.lojas.aprovar');
+    Route::post('/admin/lojas/{id}/rejeitar', [AdminController::class, 'rejeitarLoja'])->name('admin.lojas.rejeitar');
     Route::post('/admin/lojas/{id}/bloquear', [AdminController::class, 'bloquearLoja'])->name('admin.lojas.bloquear');
     Route::post('/admin/lojas/{id}/reativar', [AdminController::class, 'reativarLoja'])->name('admin.lojas.reativar');
     Route::delete('/admin/lojas/{id}', [AdminController::class, 'deletarLoja'])->name('admin.lojas.deletar');
@@ -118,6 +126,9 @@ Route::post('/cadastro/cliente', [ClienteController::class, 'store'])->name('cli
 // Cadastro - Personal
 Route::get('/cadastro/personal', [PersonalController::class, 'create'])->name('form.personal');
 Route::post('/cadastro/personal', [PersonalController::class, 'store'])->name('personal.store');
+
+// Tela de conclusão de cadastro (agradecimento / aviso de análise)
+Route::get('/cadastro/sucesso', fn () => view('cadastro.sucesso'))->name('cadastro.sucesso');
 
 // Cadastro - Academia
 Route::get('/cadastro/academia', [AcademiaController::class, 'create'])->name('form.academia');
@@ -232,6 +243,12 @@ Route::middleware('check.login')->group(function () {
     Route::put('/academia/update/{id}', [AcademiaController::class, 'update'])->name('academia.update');
     Route::get('/academia/alunos', [AcademiaController::class, 'listarAlunos'])->name('academia.alunos');
 
+    // Cadastro de alunos pela própria academia (+ anamnese logo após)
+    Route::get('/academia/alunos/criar', [AcademiaController::class, 'criarAluno'])->name('academia.alunos.criar');
+    Route::post('/academia/alunos', [AcademiaController::class, 'storeAluno'])->name('academia.alunos.store');
+    Route::get('/academia/alunos/{clienteId}/anamnese', [AcademiaController::class, 'anamneseForm'])->name('academia.alunos.anamnese')->whereNumber('clienteId');
+    Route::post('/academia/alunos/{clienteId}/anamnese', [AcademiaController::class, 'salvarAnamnese'])->name('academia.alunos.anamnese.salvar')->whereNumber('clienteId');
+
     // Gestão de Planos da Academia
     Route::get('/academia/planos', [AcademiaController::class, 'listarPlanos'])->name('academia.planos');
     Route::post('/academia/planos', [AcademiaController::class, 'storePlano'])->name('academia.planos.store');
@@ -253,6 +270,21 @@ Route::middleware('check.login')->group(function () {
     Route::post('/academia/aulas', [AcademiaController::class, 'storeAula'])->name('academia.aulas.store');
     Route::put('/academia/aulas/{id}', [AcademiaController::class, 'updateAula'])->name('academia.aulas.update');
     Route::delete('/academia/aulas/{id}', [AcademiaController::class, 'destroyAula'])->name('academia.aulas.destroy');
+
+    // Avaliação física registrada pela academia
+    Route::get('/academia/avaliacao-fisica', [AvaliacaoFisicaController::class, 'indexAcademia'])->name('academia.avaliacao-fisica');
+    Route::delete('/academia/avaliacao-fisica/registro/{id}', [AvaliacaoFisicaController::class, 'destroyAcademia'])->name('academia.avaliacao-fisica.destroy')->whereNumber('id');
+    Route::get('/academia/avaliacao-fisica/{clienteId}', [AvaliacaoFisicaController::class, 'showAcademia'])->name('academia.avaliacao-fisica.aluno')->whereNumber('clienteId');
+    Route::post('/academia/avaliacao-fisica/{clienteId}', [AvaliacaoFisicaController::class, 'storeAcademia'])->name('academia.avaliacao-fisica.store')->whereNumber('clienteId');
+
+    // Periodização (mesociclos) criada pela academia
+    // Obs.: edição de treinos/exercícios reaproveita as rotas periodizacao.treino.atualizar
+    // e periodizacao.exercicio.add/del (a autorização é feita no controller por dono).
+    Route::get('/academia/periodizacao/{clienteId}', [MesocicloController::class, 'doAlunoAcademia'])->name('academia.periodizacao.aluno')->whereNumber('clienteId');
+    Route::post('/academia/periodizacao/{clienteId}', [MesocicloController::class, 'criarAcademia'])->name('academia.periodizacao.criar')->whereNumber('clienteId');
+    Route::post('/academia/periodizacao/{mesocicloId}/ativar', [MesocicloController::class, 'ativarAcademia'])->name('academia.periodizacao.ativar')->whereNumber('mesocicloId');
+    Route::post('/academia/periodizacao/{mesocicloId}/renovar', [MesocicloController::class, 'renovarAcademia'])->name('academia.periodizacao.renovar')->whereNumber('mesocicloId');
+    Route::delete('/academia/periodizacao/{mesocicloId}', [MesocicloController::class, 'deletarAcademia'])->name('academia.periodizacao.deletar')->whereNumber('mesocicloId');
 
     // Fichas de treino criadas pela academia
     Route::get('/academia/alunos/{clienteId}/fichas', [FichaTreinoController::class, 'fichasDoAlunoAcademia'])->name('academia.aluno-fichas');

@@ -8,8 +8,10 @@ use App\Models\Cadastro\Personal as ModelsPersonal;
 use App\Models\Cadastro\Studio as ModelsStudio;
 use App\Models\Cadastro\Loja as ModelsLoja;
 use App\Models\Admin;
+use App\Services\Celebracoes;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Schema;
 
 class loginController extends Controller
 {
@@ -56,6 +58,7 @@ class loginController extends Controller
             
             session(['personal_id' => $personal->id]);
             session()->save();
+            $this->marcarPrimeiroLogin($personal, 'personal');
             return redirect()->route('personal.dashboard');
         }
 
@@ -64,19 +67,45 @@ class loginController extends Controller
         if ($cliente && Hash::check($senha, $cliente->senha)) {
             session(['cliente_id' => $cliente->id]);
             session()->save();
+            $this->marcarPrimeiroLogin($cliente, 'cliente');
             return redirect()->route('cliente.index');
         }
 
-        // 3. Tentar ACADEMIA (busca por email OU cnpj)
+        // 3. Tentar ACADEMIA (busca por email OU cnpj) — conta principal OU subconta de filial.
+        // Principal e filiais compartilham o mesmo e-mail/CNPJ; o que diferencia é a senha.
         $academia = ModelsAcademia::where(function ($query) use ($loginInput) {
             $query->where('email', $loginInput)
                   ->orWhere('cnpj', $loginInput);
         })->first();
 
-        if ($academia && Hash::check($senha, $academia->senha)) {
-            session(['academia_id' => $academia->id]);
-            session()->save();
-            return redirect()->route('academia.dashboard');
+        if ($academia) {
+            $ehPrincipal = Hash::check($senha, $academia->senha);
+
+            $filial = null;
+            if (! $ehPrincipal) {
+                $filial = \App\Models\Cadastro\Filial::where('academia_id', $academia->id)
+                    ->whereNotNull('senha')
+                    ->get()
+                    ->first(fn ($f) => Hash::check($senha, $f->senha));
+            }
+
+            if ($ehPrincipal || $filial) {
+                if (($academia->status ?? 'aprovado') !== 'aprovado') {
+                    $msg = ($academia->status === 'rejeitado')
+                        ? '🚫 Seu cadastro foi recusado pelo administrador.'
+                        : '⏳ Seu cadastro está em análise. Você poderá acessar após a aprovação do administrador.';
+                    return back()->withErrors(['login' => $msg])->withInput();
+                }
+
+                session()->forget('filial_id');
+                session(['academia_id' => $academia->id]);
+                if ($filial) {
+                    session(['filial_id' => $filial->id]); // subconta: acesso restrito a esta filial
+                }
+                session()->save();
+                $this->marcarPrimeiroLogin($academia, 'academia');
+                return redirect()->route('academia.dashboard');
+            }
         }
 
         // 4. Tentar STUDIO (busca por email OU cnpj, com verificação de aprovação)
@@ -92,6 +121,7 @@ class loginController extends Controller
 
             session(['studio_id' => $studio->id]);
             session()->save();
+            $this->marcarPrimeiroLogin($studio, 'studio');
             return redirect()->route('studio.dashboard');
         }
 
@@ -102,12 +132,18 @@ class loginController extends Controller
         })->first();
 
         if ($loja && Hash::check($senha, $loja->senha)) {
-            if ($loja->status === 'rejeitado') {
-                return back()->withErrors(['login' => '🚫 O acesso desta loja foi bloqueado pelo administrador.'])->withInput();
+            if (($loja->status ?? 'aprovado') !== 'aprovado') {
+                $msg = match ($loja->status) {
+                    'rejeitado' => '🚫 Seu cadastro foi recusado pelo administrador.',
+                    'bloqueado' => '🚫 O acesso desta loja foi bloqueado pelo administrador.',
+                    default     => '⏳ Seu cadastro está em análise. Você poderá acessar após a aprovação do administrador.',
+                };
+                return back()->withErrors(['login' => $msg])->withInput();
             }
 
             session(['loja_id' => $loja->id]);
             session()->save();
+            $this->marcarPrimeiroLogin($loja, 'loja');
             return redirect()->route('loja.dashboard');
         }
 
@@ -115,10 +151,22 @@ class loginController extends Controller
         return back()->withErrors(['login' => 'E-mail, CNPJ ou senha incorretos.'])->withInput();
     }
     
+    /** Enfileira a celebração de boas-vindas no primeiro login e baixa a flag. */
+    private function marcarPrimeiroLogin($usuario, string $papel): void
+    {
+        if (! Schema::hasColumn($usuario->getTable(), 'primeiro_login') || ! $usuario->primeiro_login) {
+            return;
+        }
+
+        Celebracoes::push($papel, (int) $usuario->id, Celebracoes::primeiroLogin($usuario->nome ?? ''));
+        $usuario->primeiro_login = false;
+        $usuario->save();
+    }
+
     public function logout(Request $request)
     {
         // Limpa todas as possíveis sessões de login
-        session()->forget(['admin_id', 'admin_nome', 'personal_id', 'cliente_id', 'academia_id', 'studio_id', 'loja_id']);
+        session()->forget(['admin_id', 'admin_nome', 'personal_id', 'cliente_id', 'academia_id', 'filial_id', 'studio_id', 'loja_id']);
         return redirect()->route('login.index')->with('sucesso', 'Você saiu do sistema.');
     }
 }

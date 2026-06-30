@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Cadastro;
 
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\Concerns\EscopoAcademia;
+use App\Models\Anamnese;
 use App\Models\Cadastro\Academia;
 use App\Models\Cadastro\AcademiaAula;
 use App\Models\Cadastro\AcademiaProfessor;
@@ -15,6 +17,8 @@ use App\Models\Cadastro\Plano;
 
 class AcademiaController extends Controller
 {
+    use EscopoAcademia;
+
     public function index()
     {
         //
@@ -36,7 +40,7 @@ class AcademiaController extends Controller
             'estado' => 'required|string|max:200',
             'complemento' => 'nullable|string',
             'endereco' => 'required|string|max:255',
-            'valor_mensalidade' => 'required|numeric|min:0',
+            'quantidade_alunos' => 'required|integer|min:0|max:100000',
             'descricao' => 'nullable|string|max:255',
             'email' => 'required|email|unique:academias,email|max:255',
             'senha' => 'required|string|min:8|confirmed',
@@ -47,11 +51,12 @@ class AcademiaController extends Controller
             'longitude' => 'nullable|numeric',
         ]);
 
-        $dados['senha'] = Hash::make($dados['senha']);
+        $dados['senha']  = Hash::make($dados['senha']);
+        $dados['status'] = 'pendente'; // precisa de aprovação do administrador
 
         Academia::create($dados);
 
-        return redirect()->route('login.index')->with('sucesso', 'Academia cadastrada com sucesso!');
+        return redirect()->route('cadastro.sucesso')->with('cad_tipo', 'academia');
     }
 
     /**
@@ -71,34 +76,41 @@ class AcademiaController extends Controller
         $academia = Academia::find($academia_id);
 
         if (!$academia) {
-            session()->forget('academia_id');
+            session()->forget(['academia_id', 'filial_id']);
             return redirect()->route('login.index')->withErrors(['login' => 'Conta de academia não encontrada.']);
         }
 
-        // 3. Cálculos e Consultas para a View
+        $valorMensalidade = $academia->valor_mensalidade ?? 0;
 
-        // Total de alunos (Clientes vinculados a esta academia)
-        $totalAlunos = Cliente::where('academia_id', $academia_id)->count();
+        // 3. Métricas ESCOPADAS: subconta vê só a sua filial; principal vê tudo.
+        $totalAlunos  = $this->clientesVisiveis()->count();
+        $planosAtivos = $this->clientesVisiveis()->where('plano_ativo', true)->count();
+        $faturamento  = $totalAlunos * $valorMensalidade;
+        $personals    = Personal::where('academia_id', $academia_id)->count();
+        $alunos       = $this->clientesVisiveis()->latest()->take(5)->get();
+        $planos       = Plano::where('academia_id', $academia_id)->orderBy('valor')->get();
 
-        // Quantidade de personals vinculados
-        $personals = Personal::where('academia_id', $academia_id)->count();
+        // Contexto da filial logada (para o cabeçalho do painel).
+        $filialAtual = $this->ehSubcontaFilial() ? Filial::find($this->filialId()) : null;
 
-        // Faturamento (Multiplica alunos pelo valor da mensalidade da academia)
-        $faturamento = $totalAlunos * $academia->valor_mensalidade;
+        // Quebra por filial — só a conta principal vê, para comparar as unidades.
+        $porFilial = collect();
+        if ($this->ehAcademiaPrincipal()) {
+            $linha = function ($nome, $query) use ($valorMensalidade) {
+                $alunosCount = (clone $query)->count();
+                return [
+                    'nome'         => $nome,
+                    'alunos'       => $alunosCount,
+                    'planosAtivos' => (clone $query)->where('plano_ativo', true)->count(),
+                    'faturamento'  => $alunosCount * $valorMensalidade,
+                ];
+            };
 
-        // Planos Ativos (Filtra clientes com a flag plano_ativo)
-        // Nota: Garanta que essa coluna exista na sua tabela 'clientes'
-        $planosAtivos = Cliente::where('academia_id', $academia_id)
-            ->where('plano_ativo', true)
-            ->count();
-
-        // Busca os 5 últimos clientes cadastrados
-        $alunos = Cliente::where('academia_id', $academia_id)
-            ->latest()
-            ->take(5)
-            ->get();
-
-        $planos = Plano::where('academia_id', $academia_id)->orderBy('valor')->get();    
+            $porFilial->push($linha('Matriz (sem filial)', Cliente::where('academia_id', $academia_id)->whereNull('filial_id')));
+            foreach (Filial::where('academia_id', $academia_id)->orderBy('nome')->get() as $f) {
+                $porFilial->push($linha($f->nome, Cliente::where('academia_id', $academia_id)->where('filial_id', $f->id)));
+            }
+        }
 
         return view('academia.dashboard', compact(
             'academia',
@@ -108,6 +120,8 @@ class AcademiaController extends Controller
             'personals',
             'alunos',
             'planos',
+            'filialAtual',
+            'porFilial',
         ));
     }
    public function listarAlunos()
@@ -120,16 +134,167 @@ class AcademiaController extends Controller
 
         $academia = Academia::find($academia_id);
         if (!$academia) {
-            session()->forget('academia_id');
+            session()->forget(['academia_id', 'filial_id']);
             return redirect()->route('login.index')->withErrors(['login' => 'Conta de academia não encontrada.']);
         }
 
-        // Todos os alunos vinculados a esta academia
-        $alunos = Cliente::where('academia_id', $academia_id)
+        // Alunos visíveis para a sessão (subconta = só a filial; principal = todos).
+        $alunos = $this->clientesVisiveis()
+            ->with('filial:id,nome')
             ->orderBy('nome', 'asc')
             ->get();
 
-        return view('academia.alunos', compact('academia', 'alunos'));
+        $filialAtual = $this->ehSubcontaFilial() ? Filial::find($this->filialId()) : null;
+
+        // Conta principal: agrupa por filial (chave 0 = Matriz) para comparar unidades.
+        $alunosPorFilial = $this->ehAcademiaPrincipal()
+            ? $alunos->groupBy(fn ($a) => $a->filial_id ?? 0)
+            : collect();
+
+        return view('academia.alunos', compact('academia', 'alunos', 'filialAtual', 'alunosPorFilial'));
+    }
+
+    // ==========================================
+    // CADASTRO DE ALUNOS PELA ACADEMIA (+ anamnese)
+    // ==========================================
+
+    /** Senha padrão atribuída no cadastro feito pela academia. */
+    private const SENHA_PADRAO_ALUNO = '123456';
+
+    /** Formulário de cadastro de um novo aluno pela academia. */
+    public function criarAluno()
+    {
+        $academia = $this->academiaLogada();
+        if (!$academia) {
+            return redirect()->route('login.index');
+        }
+
+        $planos = Plano::where('academia_id', $academia->id)
+            ->where('ativo', true)
+            ->orderBy('nome')
+            ->get();
+
+        // Principal escolhe a filial do aluno; a subconta já tem a sua fixa.
+        $filiais = $this->ehAcademiaPrincipal()
+            ? Filial::where('academia_id', $academia->id)->orderBy('nome')->get()
+            : collect();
+        $filialAtual = $this->ehSubcontaFilial() ? Filial::find($this->filialId()) : null;
+
+        return view('academia.aluno-criar', compact('academia', 'planos', 'filiais', 'filialAtual'));
+    }
+
+    /** Cria o aluno vinculado à academia com senha padrão e segue para a anamnese. */
+    public function storeAluno(Request $request)
+    {
+        $academia = $this->academiaLogada();
+        if (!$academia) {
+            return redirect()->route('login.index');
+        }
+
+        $dados = $request->validate([
+            'nome'             => 'required|string|max:255',
+            'email'            => 'required|email|max:255|unique:clientes,email',
+            'whatsapp'         => 'nullable|string|max:20',
+            'idade'            => 'nullable|date|before:today',
+            'sexo'             => 'required|in:masculino,feminino,outro',
+            'altura'           => 'nullable|numeric|min:0|max:300',
+            'peso'             => 'nullable|numeric|min:0|max:600',
+            'plano'            => 'nullable|string|max:255',
+            'resumo_objetivo'  => 'nullable|string|max:1000',
+            'condicao_clinica' => 'nullable|string|max:1000',
+        ], [
+            'email.unique' => 'Já existe um aluno cadastrado com este e-mail.',
+        ]);
+
+        $dados['academia_id'] = $academia->id;
+        $dados['senha']       = Hash::make(self::SENHA_PADRAO_ALUNO);
+        $dados['plano_ativo'] = $request->filled('plano');
+
+        // Vínculo de filial: subconta usa a sua; principal escolhe (validando posse).
+        if ($this->ehSubcontaFilial()) {
+            $dados['filial_id'] = $this->filialId();
+        } else {
+            $filialId = $request->input('filial_id');
+            $dados['filial_id'] = ($filialId && Filial::where('id', $filialId)->where('academia_id', $academia->id)->exists())
+                ? (int) $filialId
+                : null;
+        }
+
+        $cliente = Cliente::create($dados);
+
+        return redirect()
+            ->route('academia.alunos.anamnese', $cliente->id)
+            ->with('success', 'Aluno cadastrado! Senha padrão: ' . self::SENHA_PADRAO_ALUNO . ' — o aluno troca no primeiro acesso. Agora preencha a anamnese.');
+    }
+
+    /** Formulário de anamnese do aluno, preenchido pela academia logo após o cadastro. */
+    public function anamneseForm($clienteId)
+    {
+        $academia = $this->academiaLogada();
+        if (!$academia) {
+            return redirect()->route('login.index');
+        }
+
+        $cliente = $this->clienteAcessivel($clienteId);
+        if (!$cliente) {
+            return redirect()->route('academia.alunos')->with('error', 'Aluno não encontrado.');
+        }
+        $anamnese = Anamnese::firstOrNew(['cliente_id' => $cliente->id]);
+
+        return view('academia.aluno-anamnese', compact('academia', 'cliente', 'anamnese'));
+    }
+
+    /** Salva (cria ou atualiza) a anamnese do aluno vinculado à academia. */
+    public function salvarAnamnese(Request $request, $clienteId)
+    {
+        $academia = $this->academiaLogada();
+        if (!$academia) {
+            return redirect()->route('login.index');
+        }
+
+        $cliente = $this->clienteAcessivel($clienteId);
+        if (!$cliente) {
+            return redirect()->route('academia.alunos')->with('error', 'Aluno não encontrado.');
+        }
+
+        $request->validate([
+            'objetivo_principal'    => 'nullable|string|max:255',
+            'nivel_atividade'       => 'nullable|in:sedentario,leve,moderado,intenso',
+            'historico_lesoes'      => 'nullable|string',
+            'restricoes_medicas'    => 'nullable|string',
+            'doencas_preexistentes' => 'nullable|string',
+            'medicamentos'          => 'nullable|string',
+            'cirurgias'             => 'nullable|string',
+            'parq_observacoes'      => 'nullable|string',
+            'observacoes'           => 'nullable|string',
+        ]);
+
+        Anamnese::updateOrCreate(
+            ['cliente_id' => $cliente->id],
+            [
+                'objetivo_principal'    => $request->objetivo_principal,
+                'nivel_atividade'       => $request->nivel_atividade,
+                'historico_lesoes'      => $request->historico_lesoes,
+                'restricoes_medicas'    => $request->restricoes_medicas,
+                'doencas_preexistentes' => $request->doencas_preexistentes,
+                'medicamentos'          => $request->medicamentos,
+                'cirurgias'             => $request->cirurgias,
+                'parq_1'                => $request->boolean('parq_1'),
+                'parq_2'                => $request->boolean('parq_2'),
+                'parq_3'                => $request->boolean('parq_3'),
+                'parq_4'                => $request->boolean('parq_4'),
+                'parq_5'                => $request->boolean('parq_5'),
+                'parq_6'                => $request->boolean('parq_6'),
+                'parq_7'                => $request->boolean('parq_7'),
+                'parq_observacoes'      => $request->parq_observacoes,
+                'observacoes'           => $request->observacoes,
+                'preenchida_em'         => now(),
+            ]
+        );
+
+        return redirect()
+            ->route('academia.alunos')
+            ->with('success', 'Anamnese de ' . $cliente->nome . ' salva com sucesso! 💪');
     }
 
     /**
@@ -221,9 +386,12 @@ class AcademiaController extends Controller
     {
         $academiaId = session('academia_id');
         if (!$academiaId) return redirect()->route('login.index');
+        if ($this->ehSubcontaFilial()) {
+            return redirect()->route('academia.dashboard')->with('error', 'Apenas a conta principal gerencia as filiais.');
+        }
 
         $academia = Academia::findOrFail($academiaId);
-        $filiais  = Filial::where('academia_id', $academiaId)->orderBy('nome')->get();
+        $filiais  = Filial::where('academia_id', $academiaId)->withCount('clientes')->orderBy('nome')->get();
 
         return view('academia.filiais', compact('academia', 'filiais'));
     }
@@ -232,9 +400,13 @@ class AcademiaController extends Controller
     {
         $academiaId = session('academia_id');
         if (!$academiaId) return redirect()->route('login.index');
+        if ($this->ehSubcontaFilial()) {
+            return redirect()->route('academia.dashboard')->with('error', 'Apenas a conta principal pode criar filiais.');
+        }
 
         $request->validate([
             'nome'        => 'required|string|max:255',
+            'senha'       => 'required|string|min:6|max:255',
             'cep'         => 'required|string|max:9',
             'rua'         => 'required|string|max:300',
             'bairro'      => 'required|string|max:200',
@@ -244,24 +416,32 @@ class AcademiaController extends Controller
             'telefone'    => 'nullable|string|max:20',
             'latitude'    => 'nullable|numeric',
             'longitude'   => 'nullable|numeric',
+        ], [
+            'senha.required' => 'Defina uma senha para a subconta desta filial.',
+            'senha.min'      => 'A senha da subconta deve ter ao menos 6 caracteres.',
         ]);
 
         Filial::create(array_merge(
-            ['academia_id' => $academiaId],
+            ['academia_id' => $academiaId, 'senha' => Hash::make($request->senha)],
             $request->only(['nome', 'cep', 'rua', 'bairro', 'cidade', 'estado', 'complemento', 'telefone', 'latitude', 'longitude'])
         ));
 
-        return redirect()->back()->with('success', 'Filial adicionada com sucesso!');
+        return redirect()->back()->with('success', 'Filial criada! A subconta loga com o mesmo e-mail/CNPJ da academia e a senha que você definiu.');
     }
 
     public function updateFilial(Request $request, $id)
     {
+        if ($this->ehSubcontaFilial()) {
+            return redirect()->route('academia.dashboard')->with('error', 'Apenas a conta principal pode editar filiais.');
+        }
+
         $filial = Filial::where('id', $id)
             ->where('academia_id', session('academia_id'))
             ->firstOrFail();
 
         $request->validate([
             'nome'        => 'required|string|max:255',
+            'senha'       => 'nullable|string|min:6|max:255',
             'cep'         => 'required|string|max:9',
             'rua'         => 'required|string|max:300',
             'bairro'      => 'required|string|max:200',
@@ -271,15 +451,26 @@ class AcademiaController extends Controller
             'telefone'    => 'nullable|string|max:20',
             'latitude'    => 'nullable|numeric',
             'longitude'   => 'nullable|numeric',
+        ], [
+            'senha.min' => 'A senha da subconta deve ter ao menos 6 caracteres.',
         ]);
 
-        $filial->update($request->only(['nome', 'cep', 'rua', 'bairro', 'cidade', 'estado', 'complemento', 'telefone', 'latitude', 'longitude']));
+        $dados = $request->only(['nome', 'cep', 'rua', 'bairro', 'cidade', 'estado', 'complemento', 'telefone', 'latitude', 'longitude']);
+        if ($request->filled('senha')) {
+            $dados['senha'] = Hash::make($request->senha); // redefine a senha da subconta
+        }
+
+        $filial->update($dados);
 
         return redirect()->back()->with('success', 'Filial atualizada com sucesso!');
     }
 
     public function destroyFilial($id)
     {
+        if ($this->ehSubcontaFilial()) {
+            return redirect()->route('academia.dashboard')->with('error', 'Apenas a conta principal pode remover filiais.');
+        }
+
         Filial::where('id', $id)
             ->where('academia_id', session('academia_id'))
             ->firstOrFail()

@@ -90,7 +90,10 @@
 
 <div class="top-bar">
     <div class="logo">SNR<span>FIT</span> <span style="font-family:'Inter'; font-size:0.65rem; color:var(--text-muted); letter-spacing:1px; text-transform:uppercase;">| Ficha de treino</span></div>
-    <a href="{{ route('academia.alunos') }}" class="btn-top"><i class="ph ph-arrow-left"></i> Voltar aos alunos</a>
+    <div style="display:flex; gap:10px;">
+        <a href="{{ route('academia.periodizacao.aluno', $cliente->id) }}" class="btn-top"><i class="ph ph-lightning"></i> Periodização</a>
+        <a href="{{ route('academia.alunos') }}" class="btn-top"><i class="ph ph-arrow-left"></i> Voltar aos alunos</a>
+    </div>
 </div>
 
 <div class="container">

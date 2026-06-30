@@ -19,6 +19,7 @@ class Cliente extends Model
         'id',
         'email',
         'academia_id',
+        'filial_id',
         'senha',
         'aceita_termos',
         'data_aceitacao_termos',
@@ -55,6 +56,10 @@ class Cliente extends Model
 
         public function studio() {
             return $this->belongsTo(\App\Models\Cadastro\Studio::class, 'studio_id');
+        }
+
+        public function filial() {
+            return $this->belongsTo(\App\Models\Cadastro\Filial::class, 'filial_id');
         }
 
         public function studioPlano() {

@@ -1745,6 +1745,7 @@
         }
     </script>
 @include('partials.push-notif')
+@include('partials.celebracao-modal')
 </body>
 
 </html>

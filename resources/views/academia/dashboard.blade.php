@@ -104,6 +104,17 @@
         .stat-card span { display: block; color: var(--text-muted); font-size: 0.7rem; text-transform: uppercase; font-weight: 800; }
         .stat-card h2 { margin: 5px 0 0; font-size: 1.6rem; font-weight: 900; }
 
+        .ctx-pill { display: flex; align-items: center; gap: 10px; background: rgba(212,255,0,0.07); border: 1px solid rgba(212,255,0,0.3); color: #cfe88a; border-radius: 12px; padding: 11px 16px; font-size: 0.82rem; margin-bottom: 22px; }
+        .ctx-pill i { color: var(--primary); font-size: 1.1rem; }
+        .filial-breakdown { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 14px; margin-bottom: 30px; }
+        .fb-card { background: var(--card-bg); border: 1px solid var(--border); border-left: 3px solid var(--primary); border-radius: 14px; padding: 16px 18px; }
+        .fb-name { font-weight: 900; font-size: 0.98rem; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+        .fb-stats { display: flex; flex-direction: column; gap: 8px; }
+        .fb-stats > div { display: flex; justify-content: space-between; align-items: baseline; border-top: 1px solid var(--border); padding-top: 7px; }
+        .fb-stats > div:first-child { border-top: none; padding-top: 0; }
+        .fb-stats span { color: var(--text-muted); font-size: 0.7rem; text-transform: uppercase; font-weight: 800; }
+        .fb-stats strong { font-size: 0.95rem; font-weight: 900; }
+
         .section-title {
             color: var(--primary);
             font-size: 0.8rem;
@@ -315,12 +326,20 @@
             <button type="button" onclick="window.location.href='{{ route('academia.alunos') }}'">
                 <i class="ph ph-users"></i> Alunos
             </button>
+            <button type="button" onclick="window.location.href='{{ route('academia.alunos.criar') }}'">
+                <i class="ph ph-user-plus" style="color: var(--primary);"></i> Cadastrar aluno
+            </button>
+            <button type="button" onclick="window.location.href='{{ route('academia.avaliacao-fisica') }}'">
+                <i class="ph ph-heartbeat" style="color: var(--primary);"></i> Avaliação física
+            </button>
             <button type="button" onclick="abrirCarteira(); toggleMenu();">
                 <i class="ph ph-piggy-bank" style="color: var(--primary);"></i> Minha Carteira
             </button>
+            @if(!$filialAtual)
             <button type="button" onclick="window.location.href='{{ route('academia.filiais') }}'">
-                <i class="ph ph-map-pin"></i> Filiais
+                <i class="ph ph-map-pin"></i> Filiais & Subcontas
             </button>
+            @endif
             <button type="button" onclick="window.location.href='{{ route('academia.gestao') }}'">
                 <i class="ph ph-user-list"></i> Profissionais & Aulas
             </button>
@@ -363,6 +382,14 @@
         @include('partials.brand-greeting-js')
     </header>
 
+    <div class="ctx-pill">
+        @if($filialAtual)
+            <i class="ph ph-git-branch"></i> Subconta da filial <strong>&nbsp;{{ $filialAtual->nome }}</strong>&nbsp;— você vê apenas os dados desta unidade.
+        @else
+            <i class="ph ph-buildings"></i> Conta principal — visão consolidada de todas as filiais.
+        @endif
+    </div>
+
     <div class="stats-grid">
         <div class="stat-card">
             <i class="ph ph-users"></i>
@@ -385,6 +412,25 @@
             <h2 style="font-size: 1.2rem;">R$ {{ number_format($faturamento, 0, ',', '.') }}</h2>
         </div>
     </div>
+
+    @if($porFilial->isNotEmpty())
+    <div class="section-title">
+        <i class="ph ph-chart-bar"></i> Desempenho por filial
+        <span style="font-size: 0.72rem; font-weight: 700; color: var(--text-muted); margin-left: 8px;">compare as unidades</span>
+    </div>
+    <div class="filial-breakdown">
+        @foreach($porFilial as $row)
+        <div class="fb-card">
+            <div class="fb-name"><i class="ph ph-git-branch" style="color:var(--primary);"></i> {{ $row['nome'] }}</div>
+            <div class="fb-stats">
+                <div><span>Alunos</span><strong>{{ $row['alunos'] }}</strong></div>
+                <div><span>Planos ativos</span><strong>{{ $row['planosAtivos'] }}</strong></div>
+                <div><span>Faturamento est.</span><strong>R$ {{ number_format($row['faturamento'], 0, ',', '.') }}</strong></div>
+            </div>
+        </div>
+        @endforeach
+    </div>
+    @endif
 
     <div class="section-title">
         <i class="ph ph-tag"></i> Meus Planos
@@ -792,5 +838,6 @@
         }
     }
 </script>
+@include('partials.celebracao-modal')
 </body>
 </html>

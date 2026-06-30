@@ -46,6 +46,8 @@
         .status-badge { display: inline-flex; align-items: center; gap: 6px; padding: 6px 14px; border-radius: 20px; font-size: 0.75rem; font-weight: 800; text-transform: uppercase; }
         .status-aprovado { background: rgba(40, 167, 69, 0.1); color: #28a745; border: 1px solid rgba(40, 167, 69, 0.2); }
         .status-rejeitado { background: rgba(255, 68, 68, 0.1); color: #ff4444; border: 1px solid rgba(255, 68, 68, 0.2); }
+        .status-pendente { background: rgba(255, 193, 7, 0.1); color: #ffc107; border: 1px solid rgba(255, 193, 7, 0.2); }
+        .status-bloqueado { background: rgba(255, 68, 68, 0.1); color: #ff4444; border: 1px solid rgba(255, 68, 68, 0.2); }
 
         table { width: 100%; border-collapse: collapse; }
         th { padding: 12px; text-align: left; font-weight: 800; font-size: 0.72rem; color: var(--primary); text-transform: uppercase; border-bottom: 2px solid var(--border); }
@@ -91,7 +93,7 @@
         <h3><i class="ph ph-info"></i> Dados da Loja</h3>
         <div class="info-grid">
             <div class="info-item"><label>Status</label>
-                <span class="status-badge status-{{ $loja->status }}">{{ $loja->status === 'rejeitado' ? 'Bloqueada' : 'Ativa' }}</span>
+                <span class="status-badge status-{{ $loja->status }}">{{ ['pendente'=>'Pendente','aprovado'=>'Ativa','rejeitado'=>'Rejeitada','bloqueado'=>'Bloqueada'][$loja->status] ?? ucfirst($loja->status) }}</span>
             </div>
             <div class="info-item"><label>CNPJ</label><span>{{ $loja->cnpj }}</span></div>
             <div class="info-item"><label>E-mail</label><span>{{ $loja->email }}</span></div>
@@ -135,7 +137,15 @@
     <div class="card">
         <h3><i class="ph ph-gear"></i> Ações</h3>
         <div class="actions">
-            @if($loja->status === 'rejeitado')
+            @if($loja->status === 'pendente')
+                <form method="POST" action="{{ route('admin.lojas.aprovar', $loja->id) }}" style="margin:0;">
+                    @csrf
+                    <button type="submit" class="btn btn-success"><i class="ph ph-check-circle"></i> Aprovar Loja</button>
+                </form>
+                <button type="button" class="btn btn-warning" onclick="document.getElementById('modalRejeitar').style.display='block'">
+                    <i class="ph ph-x-circle"></i> Rejeitar Cadastro
+                </button>
+            @elseif($loja->status === 'rejeitado' || $loja->status === 'bloqueado')
                 <form method="POST" action="{{ route('admin.lojas.reativar', $loja->id) }}" style="margin:0;">
                     @csrf
                     <button type="submit" class="btn btn-success"><i class="ph ph-check-circle"></i> Reativar Loja</button>
@@ -164,6 +174,20 @@
             @csrf
             <textarea name="motivo" rows="4" minlength="10" maxlength="500" placeholder="Ex: Produtos em desacordo com as políticas da plataforma..." required></textarea>
             <button type="submit" class="btn btn-warning" style="width:100%; justify-content:center;"><i class="ph ph-prohibit"></i> Confirmar Bloqueio</button>
+        </form>
+    </div>
+</div>
+
+{{-- MODAL REJEITAR (cadastro pendente) --}}
+<div id="modalRejeitar" class="modal-overlay">
+    <div class="modal-content">
+        <button type="button" class="modal-close" onclick="document.getElementById('modalRejeitar').style.display='none'">&times;</button>
+        <h2 style="color:#ff6b6b;"><i class="ph ph-x-circle"></i> Rejeitar Cadastro</h2>
+        <p style="color:var(--text-muted); font-size:0.88rem; margin-bottom:16px;">A loja não terá acesso. Informe o motivo da rejeição:</p>
+        <form method="POST" action="{{ route('admin.lojas.rejeitar', $loja->id) }}">
+            @csrf
+            <textarea name="motivo" rows="4" minlength="10" maxlength="500" placeholder="Ex: Dados incompletos ou em desacordo com as políticas da plataforma..." required></textarea>
+            <button type="submit" class="btn btn-danger" style="width:100%; justify-content:center;"><i class="ph ph-x-circle"></i> Confirmar Rejeição</button>
         </form>
     </div>
 </div>

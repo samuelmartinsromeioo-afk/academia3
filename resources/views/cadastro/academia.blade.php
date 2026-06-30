@@ -123,10 +123,10 @@
         </div>
 
         <div class="form-group">
-            <label>Valor Mensalidade (R$)</label>
+            <label>Quantidade de alunos</label>
             <div class="input-wrapper">
-                <i class="ph ph-currency-dollar"></i>
-                <input type="number" step="0.01" name="valor_mensalidade" value="{{ old('valor_mensalidade') }}" required>
+                <i class="ph ph-users"></i>
+                <input type="number" min="0" step="1" name="quantidade_alunos" value="{{ old('quantidade_alunos') }}" placeholder="Ex.: 150" required>
             </div>
         </div>
 

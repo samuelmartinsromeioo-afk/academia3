@@ -74,7 +74,7 @@ class PaymentController extends Controller
      *
      * O comportamento do PIX permanece inalterado (só o teste de mínimo).
      */
-    private function montarSplit(?string $walletId, float $gross, array $ctx = [], string $billingType = 'PIX'): ?array
+    private function montarSplit(?string $walletId, float $gross, array $ctx = [], string $billingType = 'PIX', float $rate = self::SPLIT_RATE): ?array
     {
         if (! $walletId) {
             Log::warning('Asaas: split não aplicado — recebedor sem walletId', $ctx);
@@ -82,7 +82,7 @@ class PaymentController extends Controller
             return null;
         }
 
-        $fixedValue = round($gross * self::SPLIT_RATE, 2);
+        $fixedValue = round($gross * $rate, 2);
         $usePercentual = $gross < self::MIN_SPLIT_VALUE;
 
         if ($billingType === 'CREDIT_CARD') {
@@ -92,8 +92,16 @@ class PaymentController extends Controller
             }
         }
 
+        // Repasse de 100% (sem comissão da plataforma): o fixedValue = bruto
+        // nunca cabe no líquido (sempre há taxa do Asaas), então deixamos a
+        // própria Asaas calcular o percentual sobre o líquido — o recebedor
+        // arca apenas com a taxa do cartão/PIX.
+        if ($rate >= 1.0) {
+            $usePercentual = true;
+        }
+
         if ($usePercentual) {
-            return [['walletId' => $walletId, 'percentualValue' => self::SPLIT_RATE * 100]];
+            return [['walletId' => $walletId, 'percentualValue' => round($rate * 100, 2)]];
         }
 
         return [['walletId' => $walletId, 'fixedValue' => $fixedValue]];
@@ -851,9 +859,9 @@ class PaymentController extends Controller
         ]);
     }
 
-    public function calculateSplit(float $amountTotal): array
+    public function calculateSplit(float $amountTotal, float $feeRate = 0.10): array
     {
-        $companyFee = round($amountTotal * 0.10, 2);
+        $companyFee = round($amountTotal * $feeRate, 2);
         $trainerAmount = round($amountTotal - $companyFee, 2);
 
         return [
@@ -961,10 +969,10 @@ class PaymentController extends Controller
     // ─────────────────────────────────────────────
     //
     // Fluxos COBRADOS COMO ASSINATURA MENSAL (cycle: MONTHLY), PIX e cartão,
-    // com split 90/10 replicado pelo Asaas em cada ciclo:
-    //   • Pacote do personal      → criarPagamento / criarPagamentoCartao (ramo 'pacote')
-    //   • Plano/mensalidade da academia → criarPagamentoAcademia / criarPagamentoCartaoAcademia
-    //   • Plano de studio         → criarPagamentoStudioPlano / criarPagamentoCartaoStudioPlano
+    // com split replicado pelo Asaas em cada ciclo:
+    //   • Pacote do personal      → criarPagamento / criarPagamentoCartao (ramo 'pacote')  — split 90/10
+    //   • Plano/mensalidade da academia → criarPagamentoAcademia / criarPagamentoCartaoAcademia  — 100% p/ academia (sem comissão; só taxa do cartão/PIX)
+    //   • Plano de studio         → criarPagamentoStudioPlano / criarPagamentoCartaoStudioPlano  — split 90/10
     // Todos passam por criarAssinaturaPix()/criarAssinaturaCartao(), gravam o
     // subscription_id na tabela `subscriptions` (registrarAssinatura) e têm os
     // ciclos seguintes processados pelo webhook (processarRenovacaoAssinatura).
@@ -979,7 +987,7 @@ class PaymentController extends Controller
      * Cria uma assinatura mensal via PIX. A cada mês o Asaas gera uma nova
      * cobrança PIX (o aluno paga manualmente cada uma).
      */
-    private function criarAssinaturaPix($cliente, float $amount, string $description, string $extRefPrefix, string $idemPrefix, ?array $split, array $subFields, array $bookingData)
+    private function criarAssinaturaPix($cliente, float $amount, string $description, string $extRefPrefix, string $idemPrefix, ?array $split, array $subFields, array $bookingData, float $companyFeeRate = 0.10)
     {
         try {
             $asaasCustomerId = $this->obterOuCriarClienteAsaas($cliente);
@@ -1026,7 +1034,7 @@ class PaymentController extends Controller
                 ->get($this->asaas()."/payments/{$asaasPaymentId}/pixQrCode");
             $qrData = $qrRes->json();
 
-            $valores = $this->calculateSplit($amount);
+            $valores = $this->calculateSplit($amount, $companyFeeRate);
             $this->registrarAssinatura($cliente->id, $subscriptionId, 'pix', $valores, $subFields, $bookingData, $subData['nextDueDate'] ?? null);
 
             $payment = Payment::create(array_merge([
@@ -1070,7 +1078,7 @@ class PaymentController extends Controller
      * Cria uma assinatura mensal no cartão de crédito. O Asaas debita
      * automaticamente todo mês usando o cartão tokenizado.
      */
-    private function criarAssinaturaCartao($cliente, float $amount, string $description, string $extRefPrefix, string $idemPrefix, ?array $split, array $subFields, array $bookingData, array $validated)
+    private function criarAssinaturaCartao($cliente, float $amount, string $description, string $extRefPrefix, string $idemPrefix, ?array $split, array $subFields, array $bookingData, array $validated, float $companyFeeRate = 0.10)
     {
         try {
             $asaasCustomerId = $this->obterOuCriarClienteAsaas($cliente);
@@ -1133,7 +1141,7 @@ class PaymentController extends Controller
             $status = 'PENDING';
 
             try {
-                $valores = $this->calculateSplit($amount);
+                $valores = $this->calculateSplit($amount, $companyFeeRate);
                 $this->registrarAssinatura($cliente->id, $subscriptionId, 'credit_card', $valores, $subFields, $bookingData, $subData['nextDueDate'] ?? null);
 
                 $firstPayment = $this->primeiraCobrancaAssinatura($subscriptionId);
@@ -1427,7 +1435,7 @@ class PaymentController extends Controller
             'academia_id' => $validated['academia_id'],
             'plano_id' => $planoId,
             'cliente_id' => $clienteId,
-        ]);
+        ], 0.0); // academia sem comissão de 10% — só a taxa do cartão/PIX
     }
 
     /**
@@ -1718,7 +1726,7 @@ class PaymentController extends Controller
             'academia_id' => $validated['academia_id'],
             'plano_id' => $planoId,
             'cliente_id' => $clienteId,
-        ], $validated);
+        ], $validated, 0.0); // academia sem comissão de 10% — só a taxa do cartão
     }
 
     // ─────────────────────────────────────────────
@@ -1757,7 +1765,8 @@ class PaymentController extends Controller
 
     private function splitAcademia(\App\Models\Cadastro\Academia $academia, float $amount, string $billingType = 'PIX'): ?array
     {
-        return $this->montarSplit($academia->asaas_wallet_id, $amount, ['academia_id' => $academia->id], $billingType);
+        // Academia recebe 100% (apenas a taxa do cartão/PIX é descontada) — sem comissão de 10% da plataforma.
+        return $this->montarSplit($academia->asaas_wallet_id, $amount, ['academia_id' => $academia->id], $billingType, 1.0);
     }
 
     // ─────────────────────────────────────────────
