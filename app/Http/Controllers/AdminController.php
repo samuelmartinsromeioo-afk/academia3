@@ -23,7 +23,7 @@ class AdminController extends Controller
     public function dashboard()
     {
         if (!session('admin_id')) {
-            return redirect()->route('admin.login');
+            return redirect()->route('login.index');
         }
 
         // Contar personals por status
@@ -59,7 +59,7 @@ class AdminController extends Controller
     public function listarPersonals(Request $request)
     {
         if (!session('admin_id')) {
-            return redirect()->route('admin.login');
+            return redirect()->route('login.index');
         }
 
         $filtro = $request->query('status', 'todos');
@@ -124,7 +124,7 @@ class AdminController extends Controller
     public function verDetalhes($id)
     {
         if (!session('admin_id')) {
-            return redirect()->route('admin.login');
+            return redirect()->route('login.index');
         }
 
         $personal = Personal::findOrFail($id);
@@ -169,7 +169,7 @@ class AdminController extends Controller
     
     if (!session('admin_id')) {
         Log::error("Sem sessão admin!");
-        return redirect()->route('admin.login');
+        return redirect()->route('login.index');
     }
  
     try {
@@ -214,7 +214,7 @@ class AdminController extends Controller
     public function rejeitar($id, Request $request)
     {
         if (!session('admin_id')) {
-            return redirect()->route('admin.login');
+            return redirect()->route('login.index');
         }
 
         $request->validate([
@@ -250,7 +250,7 @@ class AdminController extends Controller
     public function deletar($id)
     {
         if (!session('admin_id')) {
-            return redirect()->route('admin.login');
+            return redirect()->route('login.index');
         }
 
         $personal = Personal::findOrFail($id);
@@ -288,7 +288,7 @@ class AdminController extends Controller
     public function relatorioFinanceiro(Request $request)
     {
         if (!session('admin_id')) {
-            return redirect()->route('admin.login');
+            return redirect()->route('login.index');
         }
 
         $mes = $request->query('mes', now()->month);
@@ -337,7 +337,7 @@ class AdminController extends Controller
     public function criarSubcontaAsaas($id)
     {
         if (!session('admin_id')) {
-            return redirect()->route('admin.login');
+            return redirect()->route('login.index');
         }
 
         $personal = Personal::findOrFail($id);
@@ -439,7 +439,7 @@ class AdminController extends Controller
     public function gerarKeySubcontaExistente($personalId)
     {
         if (!session('admin_id')) {
-            return redirect()->route('admin.login');
+            return redirect()->route('login.index');
         }
 
         $personal = Personal::findOrFail($personalId);
@@ -497,7 +497,7 @@ class AdminController extends Controller
     public function listarStudios(Request $request)
     {
         if (!session('admin_id')) {
-            return redirect()->route('admin.login');
+            return redirect()->route('login.index');
         }
 
         $filtro = $request->query('status', 'todos');
@@ -529,7 +529,7 @@ class AdminController extends Controller
     public function verDetalhesStudio($id)
     {
         if (!session('admin_id')) {
-            return redirect()->route('admin.login');
+            return redirect()->route('login.index');
         }
 
         $studio = Studio::withCount('clientes')->findOrFail($id);
@@ -549,7 +549,7 @@ class AdminController extends Controller
     public function aprovarStudio($id)
     {
         if (!session('admin_id')) {
-            return redirect()->route('admin.login');
+            return redirect()->route('login.index');
         }
 
         $studio = Studio::findOrFail($id);
@@ -565,7 +565,7 @@ class AdminController extends Controller
     public function rejeitarStudio($id, Request $request)
     {
         if (!session('admin_id')) {
-            return redirect()->route('admin.login');
+            return redirect()->route('login.index');
         }
 
         $request->validate([
@@ -588,7 +588,7 @@ class AdminController extends Controller
     public function listarAcademias(Request $request)
     {
         if (!session('admin_id')) {
-            return redirect()->route('admin.login');
+            return redirect()->route('login.index');
         }
 
         $filtro = $request->query('status', 'todos');
@@ -618,7 +618,7 @@ class AdminController extends Controller
     public function verDetalhesAcademia($id)
     {
         if (!session('admin_id')) {
-            return redirect()->route('admin.login');
+            return redirect()->route('login.index');
         }
 
         $academia = Academia::findOrFail($id);
@@ -629,7 +629,7 @@ class AdminController extends Controller
     public function aprovarAcademia($id)
     {
         if (!session('admin_id')) {
-            return redirect()->route('admin.login');
+            return redirect()->route('login.index');
         }
 
         $academia = Academia::findOrFail($id);
@@ -645,7 +645,7 @@ class AdminController extends Controller
     public function rejeitarAcademia($id, Request $request)
     {
         if (!session('admin_id')) {
-            return redirect()->route('admin.login');
+            return redirect()->route('login.index');
         }
 
         $request->validate([
@@ -668,7 +668,7 @@ class AdminController extends Controller
     public function aprovarLoja($id)
     {
         if (!session('admin_id')) {
-            return redirect()->route('admin.login');
+            return redirect()->route('login.index');
         }
 
         $loja = Loja::findOrFail($id);
@@ -684,7 +684,7 @@ class AdminController extends Controller
     public function rejeitarLoja($id, Request $request)
     {
         if (!session('admin_id')) {
-            return redirect()->route('admin.login');
+            return redirect()->route('login.index');
         }
 
         $request->validate([
@@ -706,7 +706,7 @@ class AdminController extends Controller
     public function deletarStudio($id)
     {
         if (!session('admin_id')) {
-            return redirect()->route('admin.login');
+            return redirect()->route('login.index');
         }
 
         $studio = Studio::findOrFail($id);
@@ -731,7 +731,7 @@ class AdminController extends Controller
     public function criarSubcontaAsaasStudio($id)
     {
         if (!session('admin_id')) {
-            return redirect()->route('admin.login');
+            return redirect()->route('login.index');
         }
 
         $studio = Studio::findOrFail($id);
@@ -799,7 +799,7 @@ class AdminController extends Controller
     public function listarLojas(Request $request)
     {
         if (!session('admin_id')) {
-            return redirect()->route('admin.login');
+            return redirect()->route('login.index');
         }
 
         $filtro = $request->query('status', 'todos');
@@ -831,7 +831,7 @@ class AdminController extends Controller
     public function verDetalhesLoja($id)
     {
         if (!session('admin_id')) {
-            return redirect()->route('admin.login');
+            return redirect()->route('login.index');
         }
 
         $loja = Loja::with(['produtos' => fn($q) => $q->orderBy('nome')])->findOrFail($id);
@@ -844,7 +844,7 @@ class AdminController extends Controller
     public function bloquearLoja($id, Request $request)
     {
         if (!session('admin_id')) {
-            return redirect()->route('admin.login');
+            return redirect()->route('login.index');
         }
 
         $request->validate([
@@ -866,7 +866,7 @@ class AdminController extends Controller
     public function reativarLoja($id)
     {
         if (!session('admin_id')) {
-            return redirect()->route('admin.login');
+            return redirect()->route('login.index');
         }
 
         $loja = Loja::findOrFail($id);
@@ -882,7 +882,7 @@ class AdminController extends Controller
     public function deletarLoja($id)
     {
         if (!session('admin_id')) {
-            return redirect()->route('admin.login');
+            return redirect()->route('login.index');
         }
 
         $loja = Loja::findOrFail($id);
