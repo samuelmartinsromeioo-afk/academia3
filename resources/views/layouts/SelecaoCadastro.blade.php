@@ -12,6 +12,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Syncopate:wght@700&family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/regular/style.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/bold/style.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/fill/style.css">
     <link rel="stylesheet" href="{{ asset('css/snrfit-brand.css') }}">
 
@@ -32,9 +33,9 @@
 
         body {
             background-color: var(--bg-dark);
-            background-image: 
-                radial-gradient(circle at 10% 20%, rgba(212, 255, 0, 0.05) 0%, transparent 20%),
-                radial-gradient(circle at 90% 80%, rgba(212, 255, 0, 0.05) 0%, transparent 20%);
+            background-image:
+                radial-gradient(circle at 18% -6%, rgba(212, 255, 0, 0.05) 0%, transparent 30%),
+                radial-gradient(circle at 92% 106%, rgba(255, 255, 255, 0.025) 0%, transparent 38%);
             font-family: 'Inter', sans-serif;
             color: var(--text-main);
             display: flex;
@@ -56,151 +57,18 @@
             text-transform: uppercase;
         }
 
-        /* Container Principal */
+        /* Container Principal — expansivo, ocupa a largura toda */
         .selecao-container {
             flex: 1;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            padding: 20px;
-            max-width: 1200px;
-            margin: 0 auto;
-        }
-
-        .header-text {
-            text-align: center;
-            margin-bottom: 50px;
-        }
-
-        .header-text h2 {
-            font-size: clamp(1.8rem, 5vw, 2.8rem);
-            font-weight: 800;
-            text-transform: uppercase;
-            line-height: 1.1;
-        }
-
-        .header-text h2 span {
-            color: var(--primary);
-            display: block;
-        }
-
-        .header-text p {
-            color: var(--text-dim);
-            margin-top: 15px;
-            font-size: 1.1rem;
-        }
-
-        /* Grid de Cards */
-        .cards-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 25px;
             width: 100%;
-        }
-
-        .card-link {
-            text-decoration: none;
-            color: inherit;
-            transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-        }
-
-        .card-link:hover {
-            transform: scale(1.03);
-        }
-
-        .card {
-            background: var(--card-bg);
-            border: 1px solid rgba(255, 255, 255, 0.05);
-            border-radius: 24px;
-            padding: 40px;
-            height: 100%;
-            display: flex;
-            flex-direction: column;
-            align-items: flex-start;
-            position: relative;
-            overflow: hidden;
-            transition: all 0.3s ease;
-        }
-
-        .card:hover {
-            border-color: var(--primary);
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4), 0 0 20px rgba(212, 255, 0, 0.1);
-        }
-
-        /* Ícone e Estilo Visual do Card */
-        .icon-wrapper {
-            width: 60px;
-            height: 60px;
-            background: rgba(212, 255, 0, 0.1);
-            border-radius: 15px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin-bottom: 25px;
-            transition: 0.3s;
-        }
-
-        .card:hover .icon-wrapper {
-            background: var(--primary);
-        }
-
-        .icon-wrapper i {
-            font-size: 1.5rem;
-            color: var(--primary);
-            transition: 0.3s;
-        }
-
-        .card:hover .icon-wrapper i {
-            color: var(--bg-dark);
-        }
-
-        .card h3 {
-            font-size: 1.6rem;
-            font-weight: 700;
-            margin-bottom: 15px;
-        }
-
-        .card p {
-            color: var(--text-dim);
-            line-height: 1.6;
-            font-size: 0.95rem;
-        }
-
-        /* Seta indicativa */
-        .card-footer {
-            margin-top: auto;
-            padding-top: 30px;
-            width: 100%;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .go-btn {
-            font-weight: 600;
-            font-size: 0.8rem;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            color: var(--primary);
-            opacity: 0;
-            transform: translateX(-10px);
-            transition: 0.3s;
-        }
-
-        .card:hover .go-btn {
-            opacity: 1;
-            transform: translateX(0);
-        }
-
-        /* Responsividade */
-        @media (max-width: 768px) {
-            .cards-grid {
-                grid-template-columns: 1fr;
-            }
-            .header-text h2 { font-size: 2rem; }
+            padding: clamp(20px, 4vw, 56px);
         }
     </style>
+    @yield('estilos')
 </head>
 <body class="ed-page">
 
