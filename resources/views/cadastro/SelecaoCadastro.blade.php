@@ -1,35 +1,76 @@
-<main class="selecao-container">
-    @yield('conteudo')
-</main>
-
-{{-- Estende o layout principal --}}
 @extends('layouts.SelecaoCadastro')
 
 @section('conteudo')
     <div class="header-text">
-        <h2>Cadastro de <span>Personal</span></h2>
-        <p>Preencha os dados abaixo para começar a gerenciar seus alunos.</p>
+        <div class="ed-eyebrow" style="margin-bottom:16px;"><span class="ed-num">01</span> Comece agora</div>
+        <h2 class="ed-h">Escolha seu <span>Perfil de Acesso</span></h2>
+        <p>Seja qual for o seu lugar no fitness, sua história começa aqui.</p>
     </div>
 
-    <div class="card" style="width: 100%; max-width: 500px; margin: 0 auto; border-color: var(--primary);">
-        <form action="/salvar-personal" method="POST" style="width: 100%; display: flex; flex-direction: column; gap: 15px;">
-            @csrf
-            
-            <div style="display: flex; flex-direction: column; align-items: flex-start; gap: 8px;">
-                <label>Nome Completo</label>
-                <input type="text" name="nome" placeholder="Ex: João Silva" style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #333; background: #0a0b0d; color: white;">
+    <div class="cards-grid">
+        <a href="{{ route('cadastro.ir', ['tipo' => 'personal']) }}" class="card-link">
+            <div class="card">
+                <div class="icon-wrapper">
+                    <i class="ph ph-barbell"></i>
+                </div>
+                <h3>Personal Trainer</h3>
+                <p>Crie treinos personalizados, acompanhe a evolução de seus alunos e gerencie sua agenda de consultoria.</p>
+                <div class="card-footer">
+                    <span class="go-btn">Começar agora <i class="ph ph-arrow-right"></i></span>
+                </div>
             </div>
+        </a>
 
-            <div style="display: flex; flex-direction: column; align-items: flex-start; gap: 8px;">
-                <label>CREF (Registro)</label>
-                <input type="text" name="cref" placeholder="000000-G/SP" style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #333; background: #0a0b0d; color: white;">
+        <a href="{{ route('cadastro.ir', ['tipo' => 'cliente']) }}" class="card-link">
+            <div class="card">
+                <div class="icon-wrapper">
+                    <i class="ph ph-person-simple-run"></i>
+                </div>
+                <h3>Aluno / Atleta</h3>
+                <p>Visualize suas fichas de treino, registre suas cargas e acompanhe seu progresso físico detalhadamente.</p>
+                <div class="card-footer">
+                    <span class="go-btn">Acessar treinos <i class="ph ph-arrow-right"></i></span>
+                </div>
             </div>
+        </a>
 
-            <button type="submit" style="background: var(--primary); color: black; font-weight: bold; padding: 15px; border: none; border-radius: 8px; cursor: pointer; margin-top: 10px; text-transform: uppercase;">
-                Finalizar Cadastro
-            </button>
-            
-            <a href="{{ route('cadastro.ir', ['tipo' => 'selecao']) }}" style="color: var(--text-dim); text-align: center; text-decoration: none; font-size: 0.9rem;">Voltar</a>
-        </form>
+        <a href="{{ route('cadastro.ir', ['tipo' => 'academia']) }}" class="card-link">
+            <div class="card">
+                <div class="icon-wrapper">
+                    <i class="ph ph-buildings"></i>
+                </div>
+                <h3>Gestor Academia</h3>
+                <p>Controle financeiro, gestão de professores, check-in de alunos e relatórios administrativos completos.</p>
+                <div class="card-footer">
+                    <span class="go-btn">Painel Gestor <i class="ph ph-arrow-right"></i></span>
+                </div>
+            </div>
+        </a>
+
+        <a href="{{ route('cadastro.ir', ['tipo' => 'studio']) }}" class="card-link">
+            <div class="card">
+                <div class="icon-wrapper">
+                    <i class="ph ph-flower-lotus"></i>
+                </div>
+                <h3>Studio Fitness</h3>
+                <p>Gerencie planos, horários com vagas, alunos e receba pagamentos online direto na sua conta.</p>
+                <div class="card-footer">
+                    <span class="go-btn">Cadastrar studio <i class="ph ph-arrow-right"></i></span>
+                </div>
+            </div>
+        </a>
+
+        <a href="{{ route('cadastro.ir', ['tipo' => 'loja']) }}" class="card-link">
+            <div class="card">
+                <div class="icon-wrapper">
+                    <i class="ph ph-storefront"></i>
+                </div>
+                <h3>Loja de Suplementos</h3>
+                <p>Cadastre seus produtos fitness, defina preços, controle o estoque e venda direto para os alunos da plataforma.</p>
+                <div class="card-footer">
+                    <span class="go-btn">Cadastrar loja <i class="ph ph-arrow-right"></i></span>
+                </div>
+            </div>
+        </a>
     </div>
 @endsection
