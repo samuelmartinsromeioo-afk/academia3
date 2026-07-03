@@ -49,6 +49,20 @@
         .galeria-grid img { width: 100%; height: 130px; object-fit: cover; border-radius: 12px; border: 1px solid var(--border); cursor: pointer; transition: 0.2s; }
         .galeria-grid img:hover { transform: scale(1.03); border-color: var(--primary); }
 
+        /* PERSONAIS RELACIONADOS — destaque em amarelo #F4BE16 sobre fundo preto */
+        .pr-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 14px; }
+        .pr-card { background: #0a0b0d; border: 1px solid rgba(244,190,22,0.25); border-radius: 16px; padding: 20px 16px; text-align: center; transition: 0.2s; }
+        .pr-card:hover { border-color: #F4BE16; box-shadow: 0 0 16px rgba(244,190,22,0.12); transform: translateY(-3px); }
+        .pr-foto { width: 76px; height: 76px; border-radius: 50%; object-fit: cover; border: 2px solid #F4BE16; margin: 0 auto 12px; display: block; }
+        .pr-foto-ph { display: flex; align-items: center; justify-content: center; background: rgba(244,190,22,0.1); color: #F4BE16; font-size: 2rem; }
+        .pr-nome { font-weight: 800; font-size: 0.95rem; margin-bottom: 4px; }
+        .pr-esp { color: var(--text-muted); font-size: 0.75rem; margin-bottom: 8px; display: flex; align-items: center; justify-content: center; gap: 5px; }
+        .pr-esp i { color: #F4BE16; }
+        .pr-valor { color: #fff; font-weight: 900; font-size: 1rem; margin-bottom: 14px; }
+        .pr-valor small { color: var(--text-muted); font-weight: 400; font-size: 0.68rem; }
+        .pr-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; width: 100%; background: #F4BE16; color: #000; border: none; border-radius: 10px; padding: 11px; font-weight: 900; font-size: 0.8rem; text-decoration: none; transition: 0.2s; }
+        .pr-btn:hover { background: #ffcf3a; transform: translateY(-1px); }
+
         .prof-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; }
         .prof-card { background: var(--input-bg); border: 1px solid var(--border); border-radius: 14px; padding: 16px; display: flex; align-items: center; gap: 12px; }
         .prof-card .avatar { width: 44px; height: 44px; border-radius: 12px; background: rgba(212,255,0,0.12); color: var(--primary); display: flex; align-items: center; justify-content: center; font-size: 1.1rem; flex-shrink: 0; }
@@ -213,6 +227,38 @@
             </div>
         @endif
     </div>
+
+    {{-- PERSONAIS RELACIONADOS (vínculo aprovado) --}}
+    @if($academia->personaisAprovados->isNotEmpty())
+        <div class="section">
+            <div class="section-title" style="color:#F4BE16;"><i class="ph ph-lightning" style="color:#F4BE16;"></i> Personais Relacionados</div>
+            <p class="empty" style="margin:-6px 0 18px;">Personais parceiros desta academia. Feche um pacote direto com eles.</p>
+            <div class="pr-grid">
+                @foreach($academia->personaisAprovados as $p)
+                    <div class="pr-card">
+                        @if($p->foto)
+                            <img src="{{ asset('storage/' . $p->foto) }}" alt="{{ $p->nome }}" class="pr-foto">
+                        @elseif($p->fotos->isNotEmpty())
+                            <img src="{{ asset('storage/' . $p->fotos->first()->path) }}" alt="{{ $p->nome }}" class="pr-foto">
+                        @else
+                            <div class="pr-foto pr-foto-ph"><i class="ph ph-user"></i></div>
+                        @endif
+                        <div class="pr-nome">{{ $p->nome }}</div>
+                        <div class="pr-esp"><i class="ph ph-barbell"></i> Personal Trainer</div>
+                        @if($p->valor_secao)
+                            <div class="pr-valor">R$ {{ number_format($p->valor_secao, 2, ',', '.') }} <small>/ aula</small></div>
+                        @endif
+                        {{-- Reutiliza EXATAMENTE o mesmo fluxo de compra do perfil do personal:
+                             cliente.index?personal=ID abre o modal de "Contratar Pacote / Aula Avulsa"
+                             (mesmas rotas /api/criar-pagamento e /api/criar-pagamento-cartao, mesmo split Asaas). --}}
+                        <a href="{{ route('cliente.index', ['personal' => $p->id]) }}" class="pr-btn">
+                            <i class="ph ph-lightning"></i> Fechar pacote
+                        </a>
+                    </div>
+                @endforeach
+            </div>
+        </div>
+    @endif
 
     {{-- PROFISSIONAIS --}}
     <div class="section">

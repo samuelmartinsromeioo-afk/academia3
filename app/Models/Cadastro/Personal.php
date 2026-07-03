@@ -100,6 +100,62 @@ class Personal extends Model
         return $this->hasMany(Agenda::class);
     }
 
+    /**
+     * Academias às quais o personal se vinculou (vínculo real via aprovação).
+     *
+     * ATENÇÃO: NÃO nomear esta relação como `academias()`, pois `academias` já é
+     * uma COLUNA de texto livre desta tabela (as academias que o personal digita
+     * à mão). Um método `academias()` sobrescreveria o acessor `$personal->academias`
+     * e quebraria o campo existente. Por isso a relação chama-se `academiasVinculadas`.
+     */
+    public function academiasVinculadas()
+    {
+        return $this->belongsToMany(Academia::class, 'academia_personal', 'personal_id', 'academia_id')
+            ->withPivot('status', 'solicitado_em', 'respondido_em')
+            ->withTimestamps();
+    }
+
+    /** Apenas as academias que já aprovaram o vínculo deste personal. */
+    public function academiasAprovadas()
+    {
+        return $this->academiasVinculadas()->wherePivot('status', 'aprovado');
+    }
+
+    /**
+     * Cria uma solicitação de vínculo (pendente) para a academia informada.
+     * Bloqueia duplicidade: se já existe vínculo pendente ou aprovado com essa
+     * academia, lança RuntimeException com mensagem amigável (o controller trata).
+     */
+    public function solicitarVinculo(Academia $academia): void
+    {
+        $existente = $this->academiasVinculadas()
+            ->where('academias.id', $academia->id)
+            ->first();
+
+        if ($existente) {
+            $status = $existente->pivot->status;
+            if ($status === 'aprovado') {
+                throw new \RuntimeException('Você já está vinculado a esta academia.');
+            }
+            if ($status === 'pendente') {
+                throw new \RuntimeException('Você já tem uma solicitação pendente para esta academia.');
+            }
+            // Vínculo anteriormente rejeitado: permite solicitar de novo, reabrindo como pendente.
+            $this->academiasVinculadas()->updateExistingPivot($academia->id, [
+                'status'        => 'pendente',
+                'solicitado_em' => now(),
+                'respondido_em' => null,
+            ]);
+
+            return;
+        }
+
+        $this->academiasVinculadas()->attach($academia->id, [
+            'status'        => 'pendente',
+            'solicitado_em' => now(),
+        ]);
+    }
+
     public function solicitacoesFicha()
     {
         return $this->hasMany(\App\Models\SolicitacaoFicha::class, 'personal_id');

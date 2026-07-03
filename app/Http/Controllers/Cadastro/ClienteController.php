@@ -642,6 +642,8 @@ class ClienteController extends Controller
             'planos'      => fn ($q) => $q->orderBy('valor'),
             'professores' => fn ($q) => $q->where('ativo', true)->orderBy('nome'),
             'aulas'       => fn ($q) => $q->where('ativo', true)->with('professor')->orderBy('nome'),
+            // Personais com vínculo aprovado — exibidos em "Personais Relacionados"
+            'personaisAprovados' => fn ($q) => $q->where('personals.status', 'aprovado')->with('fotos')->orderBy('nome'),
         ])->findOrFail($id);
 
         return view('cliente.academia-detalhes', compact('academia', 'cliente'));

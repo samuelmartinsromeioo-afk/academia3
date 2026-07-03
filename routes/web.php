@@ -29,6 +29,8 @@ use App\Http\Controllers\AvaliacaoFisicaController;
 use App\Http\Controllers\AulaController;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\PaymentController;
+use App\Http\Controllers\PersonalAcademiaController;
+use App\Http\Controllers\AcademiaSolicitacaoController;
 
 /*
 |--------------------------------------------------------------------------
@@ -232,6 +234,12 @@ Route::middleware('check.login')->group(function () {
     Route::delete('/personal/avaliacao-fisica/registro/{id}', [AvaliacaoFisicaController::class, 'destroy'])->name('personal.avaliacao-fisica.destroy');
     Route::get('/personal/avaliacao-fisica/{clienteId}', [AvaliacaoFisicaController::class, 'show'])->name('personal.avaliacao-fisica.aluno');
     Route::post('/personal/avaliacao-fisica/{clienteId}', [AvaliacaoFisicaController::class, 'store'])->name('personal.avaliacao-fisica.store');
+
+    // Vínculo do personal com academias cadastradas (solicitação/aprovação)
+    Route::get('/personal/academias/buscar', [PersonalAcademiaController::class, 'buscarAcademias'])->name('personal.academias.buscar');
+    Route::get('/personal/academias/minhas-solicitacoes', [PersonalAcademiaController::class, 'minhasSolicitacoes'])->name('personal.academias.minhas-solicitacoes');
+    Route::post('/personal/academias/{academia}/solicitar', [PersonalAcademiaController::class, 'solicitar'])->name('personal.academias.solicitar')->whereNumber('academia');
+    Route::delete('/personal/academias/{academia}/cancelar', [PersonalAcademiaController::class, 'cancelar'])->name('personal.academias.cancelar')->whereNumber('academia');
 });
 
 
@@ -242,6 +250,11 @@ Route::middleware('check.login')->group(function () {
     Route::get('/academia/dashboard', [AcademiaController::class, 'dashboard'])->name('academia.dashboard');
     Route::put('/academia/update/{id}', [AcademiaController::class, 'update'])->name('academia.update');
     Route::get('/academia/alunos', [AcademiaController::class, 'listarAlunos'])->name('academia.alunos');
+
+    // Solicitações de vínculo de personais (aprovar/rejeitar)
+    Route::get('/academia/solicitacoes', [AcademiaSolicitacaoController::class, 'index'])->name('academia.solicitacoes');
+    Route::post('/academia/solicitacoes/{id}/aprovar', [AcademiaSolicitacaoController::class, 'aprovar'])->name('academia.solicitacoes.aprovar')->whereNumber('id');
+    Route::post('/academia/solicitacoes/{id}/rejeitar', [AcademiaSolicitacaoController::class, 'rejeitar'])->name('academia.solicitacoes.rejeitar')->whereNumber('id');
 
     // Cadastro de alunos pela própria academia (+ anamnese logo após)
     Route::get('/academia/alunos/criar', [AcademiaController::class, 'criarAluno'])->name('academia.alunos.criar');

@@ -73,6 +73,30 @@ class Academia extends Model
         return $this->hasMany(AcademiaProfessor::class, 'academia_id');
     }
 
+    /**
+     * Personais vinculados a esta academia (vínculo real via solicitação/aprovação).
+     * Diferente de `professores()`, que são profissionais cadastrados manualmente
+     * pela própria academia; aqui são personais com conta na plataforma.
+     */
+    public function personais()
+    {
+        return $this->belongsToMany(Personal::class, 'academia_personal', 'academia_id', 'personal_id')
+            ->withPivot('status', 'solicitado_em', 'respondido_em')
+            ->withTimestamps();
+    }
+
+    /** Solicitações de vínculo ainda aguardando resposta da academia. */
+    public function solicitacoesPendentes()
+    {
+        return $this->personais()->wherePivot('status', 'pendente');
+    }
+
+    /** Personais cujo vínculo já foi aprovado (aparecem na página pública). */
+    public function personaisAprovados()
+    {
+        return $this->personais()->wherePivot('status', 'aprovado');
+    }
+
     public function aulas(): HasMany
     {
         return $this->hasMany(AcademiaAula::class, 'academia_id');

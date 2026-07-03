@@ -988,6 +988,167 @@
                     <button type="submit" class="btn-save">Salvar Alterações</button>
                 </div>
             </form>
+
+            {{-- BLOCO SEPARADO: vínculo REAL com academia cadastrada (usa AJAX próprio, --}}
+            {{-- independente do formulário de perfil acima e do campo de texto livre "academias"). --}}
+            <div class="vinc-wrap">
+                <style>
+                    .vinc-wrap { margin-top: 26px; padding-top: 22px; border-top: 1px solid var(--border); }
+                    .vinc-title { color: var(--primary); font-size: 0.9rem; font-weight: 900; display: flex; align-items: center; gap: 8px; }
+                    .vinc-sub { color: var(--text-muted); font-size: 0.75rem; margin: 6px 0 14px; line-height: 1.5; }
+                    .vinc-search { position: relative; }
+                    .vinc-search .input-wrapper { display: flex; align-items: center; background: var(--input-bg, rgba(255,255,255,0.04)); border: 1px solid var(--border); border-radius: 10px; padding: 0 12px; }
+                    .vinc-search .input-wrapper i { color: var(--primary); }
+                    .vinc-search input { flex: 1; background: transparent; border: none; padding: 12px; color: #fff; outline: none; font-size: 0.9rem; font-family: inherit; }
+                    .vinc-results { position: absolute; left: 0; right: 0; top: calc(100% + 4px); background: #1c1f26; border: 1px solid var(--border); border-radius: 10px; z-index: 50; overflow: hidden; display: none; box-shadow: 0 12px 30px rgba(0,0,0,0.5); }
+                    .vinc-results.show { display: block; }
+                    .vinc-opt { padding: 11px 14px; cursor: pointer; font-size: 0.85rem; display: flex; justify-content: space-between; gap: 10px; }
+                    .vinc-opt:hover { background: rgba(212,255,0,0.08); }
+                    .vinc-opt small { color: var(--text-muted); }
+                    .vinc-opt.vazio { color: var(--text-muted); cursor: default; }
+                    .vinc-opt.vazio:hover { background: none; }
+                    .vinc-list { margin-top: 16px; display: flex; flex-direction: column; gap: 10px; }
+                    .vinc-item { display: flex; align-items: center; gap: 12px; background: var(--input-bg, rgba(255,255,255,0.04)); border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px; }
+                    .vinc-item .nome { font-weight: 700; font-size: 0.88rem; flex: 1; }
+                    .vinc-item .nome small { display: block; color: var(--text-muted); font-weight: 400; font-size: 0.72rem; }
+                    .vinc-badge { font-size: 0.66rem; font-weight: 800; text-transform: uppercase; padding: 5px 11px; border-radius: 20px; letter-spacing: 0.4px; white-space: nowrap; }
+                    .vinc-badge.pendente { background: rgba(244,190,22,0.15); color: #F4BE16; border: 1px solid rgba(244,190,22,0.45); }
+                    .vinc-badge.aprovado { background: rgba(0,200,120,0.12); color: #00e08a; border: 1px solid rgba(0,200,120,0.4); }
+                    .vinc-badge.rejeitado { background: rgba(160,160,160,0.12); color: #a0a0a0; border: 1px solid rgba(160,160,160,0.35); }
+                    .vinc-cancel { background: rgba(255,68,68,0.1); color: #ff6b6b; border: 1px solid rgba(255,68,68,0.3); border-radius: 8px; padding: 7px 12px; font-size: 0.72rem; font-weight: 700; cursor: pointer; white-space: nowrap; }
+                    .vinc-cancel:hover { background: #ff4444; color: #fff; }
+                    .vinc-empty { color: var(--text-muted); font-size: 0.82rem; }
+                    .vinc-msg { font-size: 0.8rem; margin-top: 10px; display: none; }
+                </style>
+
+                <div class="vinc-title"><i class="ph ph-lightning"></i> Vincular-se a uma academia cadastrada</div>
+                <p class="vinc-sub">
+                    Busque uma academia que já tem conta na plataforma e solicite vínculo. Quando ela aprovar,
+                    você passa a aparecer na página pública dela e os alunos podem fechar pacotes direto por lá.
+                </p>
+
+                <div class="vinc-search">
+                    <div class="input-wrapper">
+                        <i class="ph ph-magnifying-glass"></i>
+                        <input type="text" id="vincBusca" autocomplete="off" placeholder="Digite o nome da academia...">
+                    </div>
+                    <div class="vinc-results" id="vincResults"></div>
+                </div>
+
+                <p class="vinc-msg" id="vincMsg"></p>
+
+                <div class="vinc-list" id="vincList">
+                    <p class="vinc-empty">Carregando suas solicitações...</p>
+                </div>
+            </div>
+
+            <script>
+                (function () {
+                    const CSRF = '{{ csrf_token() }}';
+                    const inputBusca = document.getElementById('vincBusca');
+                    const boxResults = document.getElementById('vincResults');
+                    const boxList    = document.getElementById('vincList');
+                    const boxMsg     = document.getElementById('vincMsg');
+                    let debounce = null;
+
+                    const BADGE_LABEL = { pendente: 'Pendente', aprovado: 'Aprovado', rejeitado: 'Rejeitado' };
+
+                    function mostrarMsg(texto, ok) {
+                        boxMsg.textContent = texto;
+                        boxMsg.style.color = ok ? '#00e08a' : '#ff6b6b';
+                        boxMsg.style.display = 'block';
+                        setTimeout(() => { boxMsg.style.display = 'none'; }, 5000);
+                    }
+
+                    async function carregarLista() {
+                        try {
+                            const res  = await fetch('{{ route('personal.academias.minhas-solicitacoes') }}', { headers: { 'X-CSRF-TOKEN': CSRF } });
+                            const data = await res.json();
+                            if (!data.length) {
+                                boxList.innerHTML = '<p class="vinc-empty">Você ainda não solicitou vínculo com nenhuma academia.</p>';
+                                return;
+                            }
+                            boxList.innerHTML = data.map(item => {
+                                const cancelar = item.status === 'pendente'
+                                    ? `<button type="button" class="vinc-cancel" onclick="vincCancelar(${item.academia_id})"><i class="ph ph-x"></i> Cancelar</button>`
+                                    : '';
+                                const cidade = item.cidade ? `<small>${item.cidade}</small>` : '';
+                                return `<div class="vinc-item" id="vinc-item-${item.academia_id}">
+                                    <div class="nome">${item.nome}${cidade}</div>
+                                    <span class="vinc-badge ${item.status}">${BADGE_LABEL[item.status] || item.status}</span>
+                                    ${cancelar}
+                                </div>`;
+                            }).join('');
+                        } catch (e) {
+                            boxList.innerHTML = '<p class="vinc-empty">Não foi possível carregar suas solicitações.</p>';
+                        }
+                    }
+
+                    async function buscar(termo) {
+                        if (termo.trim().length < 2) { boxResults.classList.remove('show'); return; }
+                        try {
+                            const res  = await fetch('{{ route('personal.academias.buscar') }}?q=' + encodeURIComponent(termo), { headers: { 'X-CSRF-TOKEN': CSRF } });
+                            const data = await res.json();
+                            if (!data.length) {
+                                boxResults.innerHTML = '<div class="vinc-opt vazio">Nenhuma academia cadastrada com esse nome.</div>';
+                            } else {
+                                boxResults.innerHTML = data.map(a =>
+                                    `<div class="vinc-opt" onclick="vincSolicitar(${a.id}, ${JSON.stringify(a.nome).replace(/"/g, '&quot;')})">
+                                        <span>${a.nome}</span>${a.cidade ? `<small>${a.cidade}</small>` : ''}
+                                    </div>`
+                                ).join('');
+                            }
+                            boxResults.classList.add('show');
+                        } catch (e) {
+                            boxResults.classList.remove('show');
+                        }
+                    }
+
+                    inputBusca.addEventListener('input', () => {
+                        clearTimeout(debounce);
+                        debounce = setTimeout(() => buscar(inputBusca.value), 350);
+                    });
+
+                    document.addEventListener('click', (e) => {
+                        if (!e.target.closest('.vinc-search')) boxResults.classList.remove('show');
+                    });
+
+                    window.vincSolicitar = async function (academiaId, nome) {
+                        boxResults.classList.remove('show');
+                        inputBusca.value = '';
+                        try {
+                            const res  = await fetch('/personal/academias/' + academiaId + '/solicitar', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': CSRF },
+                            });
+                            const data = await res.json();
+                            if (!res.ok || !data.ok) throw new Error(data.error || 'Não foi possível solicitar.');
+                            mostrarMsg(data.message || 'Solicitação enviada!', true);
+                            carregarLista();
+                        } catch (err) {
+                            mostrarMsg(err.message, false);
+                        }
+                    };
+
+                    window.vincCancelar = async function (academiaId) {
+                        if (!confirm('Cancelar esta solicitação?')) return;
+                        try {
+                            const res  = await fetch('/personal/academias/' + academiaId + '/cancelar', {
+                                method: 'DELETE',
+                                headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': CSRF },
+                            });
+                            const data = await res.json();
+                            if (!res.ok || !data.ok) throw new Error(data.error || 'Não foi possível cancelar.');
+                            mostrarMsg(data.message || 'Solicitação cancelada.', true);
+                            carregarLista();
+                        } catch (err) {
+                            mostrarMsg(err.message, false);
+                        }
+                    };
+
+                    carregarLista();
+                })();
+            </script>
         </div>
     </div>
 

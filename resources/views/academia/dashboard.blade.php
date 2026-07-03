@@ -343,6 +343,9 @@
             <button type="button" onclick="window.location.href='{{ route('academia.gestao') }}'">
                 <i class="ph ph-user-list"></i> Profissionais & Aulas
             </button>
+            <button type="button" onclick="window.location.href='{{ route('academia.solicitacoes') }}'">
+                <i class="ph ph-lightning" style="color: var(--primary);"></i> Solicitações de personais
+            </button>
             <button type="button" onclick="document.getElementById('modalGaleriaAcademia').style.display='block'; toggleMenu();">
                 <i class="ph ph-images"></i> Galeria de Fotos
             </button>
