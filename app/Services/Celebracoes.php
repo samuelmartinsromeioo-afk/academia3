@@ -51,9 +51,10 @@ class Celebracoes
 
         return [
             'tipo'        => 'primeiro_login',
-            'titulo'      => 'Bem-vindo(a) à SnrFit, ' . ($primeiro ?: 'atleta') . '!',
-            'mensagem'    => 'Que bom ter você aqui. Esta é a sua casa de treino: '
-                           . 'organize tudo num lugar só e deixe cada conquista virar história. Bora pra cima!',
+            'titulo'      => 'Agora você é da família, ' . ($primeiro ?: 'guerreiro') . '!',
+            'mensagem'    => 'Seja muito bem-vindo(a) à SNR FIT. A partir de hoje você não treina '
+                           . 'mais sozinho(a): aqui a gente cresce junto, comemora cada vitória e não '
+                           . 'solta a mão de ninguém. Sua história começa agora — e a gente vai estar do seu lado em cada passo.',
             'icone'       => 'ph-hand-waving',
             'cor_medalha' => '#d4ff00',
             'dados_extras'=> ['nome' => $nome],
@@ -71,12 +72,12 @@ class Celebracoes
         }
 
         $msgs = [
-            3   => ['Sequência de 3 dias!',     'Começou com tudo! Três dias seguidos sem falhar — a consistência tá nascendo. Mantém o ritmo!'],
-            7   => ['Uma semana inteira!',      '7 dias seguidos! O hábito já pegou e seu corpo sente a diferença. Não para agora!'],
-            14  => ['Duas semanas firme!',      '14 dias seguidos! Você virou um guerreiro do treino — isso já é estilo de vida. Respeito!'],
-            30  => ['Um mês ÉPICO!',            '30 dias seguidos! Um mês inteiro de dedicação total. Você provou do que é capaz. Sensacional!'],
-            60  => ['Dois meses IMPARÁVEIS!',   '60 dias seguidos! Praticamente um herói da disciplina — pouquíssimos chegam aqui. Lenda viva!'],
-            100 => ['100 DIAS. VOCÊ É LENDA!',  'Cem dias seguidos de treino. Isso não é mais consistência: é grandeza. Você está no topo!'],
+            3   => ['3 dias e você não parou',      'Três dias seguidos! Você começou de verdade — e a gente tá aqui vendo cada passo. A família SNR treina junto com você. Segue firme!'],
+            7   => ['Uma semana como um dos nossos', '7 dias sem falhar! Isso é ritmo de quem veste a camisa. Orgulho de ter você no nosso time — bora manter essa chama acesa!'],
+            14  => ['Duas semanas, e agora é raiz',  '14 dias seguidos! Você já é parte da nossa história. Isso deixou de ser esforço e virou identidade. A gente caminha com você.'],
+            30  => ['Um mês de história com a gente', '30 dias juntos! Um mês inteiro de dedicação lado a lado. Você mostrou do que é feito e a família SNR tem muito orgulho de você. Que venham os próximos!'],
+            60  => ['60 dias — você é referência aqui', '60 dias seguidos! Pouquíssimos chegam até aqui. Você virou inspiração pra galera da SNR. Isso é grandeza — e a gente celebra com você!'],
+            100 => ['100 dias. Você é lenda da SNR',  'Cem dias seguidos! Você não é mais só constante: é lenda viva da nossa família. Sua jornada motiva todo mundo aqui. Obrigado por caminhar com a gente até aqui.'],
         ];
 
         [$titulo, $mensagem] = $msgs[$atual];
@@ -102,11 +103,11 @@ class Celebracoes
         $fmt = number_format($kg, 1, ',', '.') . ' kg';
 
         [$titulo, $mensagem] = match (true) {
-            $kg >= 10   => ['Mudança de vida!',            "{$fmt} a menos! Isso é uma transformação e tanto. Você é prova de que dá certo. Parabéns de verdade!"],
-            $kg >= 5    => ['Transformação em andamento!', "{$fmt} a menos! Que jornada incrível. Você está mudando de patamar — não desacelera!"],
-            $kg >= 3    => ['Evolução de verdade!',        "{$fmt} perdidos! Isso é trabalho sério. Seu corpo está respondendo. Orgulho do seu comprometimento!"],
-            $kg >= 1    => ['Tá funcionando!',             "{$fmt} a menos! Seu esforço já aparece na balança. Mantém a constância que os resultados vêm."],
-            default     => ['Cada grama conta!',           "{$fmt} a menos desde a última avaliação. É o começo de uma grande mudança. Continua firme!"],
+            $kg >= 10   => ['Uma transformação que é nossa', "{$fmt} a menos! Isso é mudança de vida — e a gente viveu cada etapa com você. Você é a prova viva de que na SNR dá certo. Que orgulho ser parte dessa história!"],
+            $kg >= 5    => ['A gente comemora com você',     "{$fmt} a menos! Que jornada linda. Você está mudando de patamar e a família SNR celebra junto cada quilo dessa vitória. Segue com a gente!"],
+            $kg >= 3    => ['Seu resultado é orgulho nosso',  "{$fmt} perdidos! Isso é trabalho sério, e a gente tá aqui torcendo por você. Seu corpo tá respondendo — bora continuar juntos!"],
+            $kg >= 1    => ['Tá acontecendo, e a gente vê',   "{$fmt} a menos! Seu esforço já aparece na balança. A SNR caminha com você — mantém a constância que a gente segura essa jornada junto."],
+            default     => ['Cada grama conta pra gente',    "{$fmt} a menos desde a última avaliação. É o começo de algo grande, e você não está sozinho(a): a família SNR tá com você. Continua firme!"],
         };
 
         return [
@@ -127,10 +128,10 @@ class Celebracoes
         $fmtCarga  = self::kg($novaCarga);
 
         [$titulo, $mensagem] = match (true) {
-            $aumento >= 10  => ['Que máquina!',           "+{$fmtAum} no {$exercicio} (chegou a {$fmtCarga})! Salto absurdo de carga. Força de outro mundo — keep going!"],
-            $aumento >= 5   => ['Força em outro nível!',  "+{$fmtAum} no {$exercicio} (agora {$fmtCarga})! Que progressão monstra. Cada vez mais forte!"],
-            $aumento >= 2.5 => ['Evoluindo na carga!',    "+{$fmtAum} no {$exercicio} (agora {$fmtCarga})! Seu corpo está ficando mais forte. Continua com técnica!"],
-            default         => ['Mais forte!',            "+{$fmtAum} no {$exercicio} (agora {$fmtCarga})! Pequenos aumentos, grandes ganhos. Segue subindo!"],
+            $aumento >= 10  => ['Força de quem é da SNR',   "+{$fmtAum} no {$exercicio} (chegou a {$fmtCarga})! Salto absurdo de carga. Isso é força de outro mundo — e a família toda vibra com você. Bora pra cima juntos!"],
+            $aumento >= 5   => ['Cada vez mais forte, juntos', "+{$fmtAum} no {$exercicio} (agora {$fmtCarga})! Que progressão monstra. Você tá evoluindo e a gente tá aqui do seu lado a cada repetição!"],
+            $aumento >= 2.5 => ['A gente vê você evoluir',   "+{$fmtAum} no {$exercicio} (agora {$fmtCarga})! Seu corpo tá ficando mais forte. Continua com técnica que a família SNR segue com você!"],
+            default         => ['Mais forte a cada treino',  "+{$fmtAum} no {$exercicio} (agora {$fmtCarga})! Pequenos aumentos, grandes ganhos. Passo a passo, a gente cresce junto. Segue subindo!"],
         };
 
         return [
@@ -140,6 +141,25 @@ class Celebracoes
             'icone'       => 'ph-trend-up',
             'cor_medalha' => '#d4ff00',
             'dados_extras'=> ['exercicio' => $exercicio, 'aumento_kg' => $aumento, 'nova_carga' => $novaCarga],
+        ];
+    }
+
+    /** Recorde de carga: bateu a maior carga de todos os tempos num exercício. */
+    public static function recordeCarga(string $exercicio, float $novaCarga, ?float $recordeAnterior = null): array
+    {
+        $fmtCarga = self::kg($novaCarga);
+        $extra = ($recordeAnterior !== null && $recordeAnterior > 0)
+            ? ' — superou seu antigo recorde de ' . self::kg($recordeAnterior)
+            : '';
+
+        return [
+            'tipo'        => 'recorde_carga',
+            'titulo'      => 'NOVO RECORDE seu!',
+            'mensagem'    => "Você levantou {$fmtCarga} no {$exercicio}{$extra}. Nunca tinha ido tão longe — "
+                           . 'e a gente viu esse recorde nascer. Isso é força de quem é da família SNR. Guarda esse momento!',
+            'icone'       => 'ph-trophy',
+            'cor_medalha' => '#FFD700',
+            'dados_extras'=> ['exercicio' => $exercicio, 'nova_carga' => $novaCarga, 'recorde_anterior' => $recordeAnterior],
         ];
     }
 

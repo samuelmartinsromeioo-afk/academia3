@@ -95,7 +95,17 @@
         <h2><i class="ph ph-cookie"></i> 8. Cookies</h2>
         <p>Utilizamos apenas cookies essenciais de sessão, necessários para manter você autenticado. Não usamos cookies de rastreamento de terceiros.</p>
 
-        <h2><i class="ph ph-envelope"></i> 9. Contato (Encarregado/DPO)</h2>
+        <h2><i class="ph ph-device-mobile"></i> 9. Permissões e acessos no aplicativo</h2>
+        <p>O aplicativo SnrFit só solicita acesso a recursos do seu aparelho quando você usa a função correspondente, sempre por meio de um pedido explícito do sistema operacional que você pode recusar:</p>
+        <ul>
+            <li><strong>Câmera:</strong> para você tirar a foto de perfil ou registrar fotos de progresso do treino. Só é acionada quando você escolhe tirar uma foto.</li>
+            <li><strong>Fotos / galeria:</strong> para você selecionar uma imagem já existente (foto de perfil, produtos da loja ou progresso). Acessamos apenas a imagem que você escolher, não a sua biblioteca inteira.</li>
+        </ul>
+        <div class="box">
+            O aplicativo <strong>não utiliza</strong> localização/GPS, notificações push, microfone, contatos, nem inteligência artificial para tratar os seus dados. Caso alguma dessas funções passe a existir no futuro, esta política será atualizada e a permissão só será solicitada quando a função for realmente usada.
+        </div>
+
+        <h2><i class="ph ph-envelope"></i> 10. Contato (Encarregado/DPO)</h2>
         <p>Dúvidas ou solicitações sobre seus dados: <a href="mailto:privacidade@snrfit.com.br">privacidade@snrfit.com.br</a>.</p>
 
         <p class="muted" style="margin-top:30px;">Esta política pode ser atualizada. Avisaremos sobre mudanças relevantes.</p>

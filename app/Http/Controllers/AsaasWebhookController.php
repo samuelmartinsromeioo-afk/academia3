@@ -41,8 +41,17 @@ class AsaasWebhookController extends Controller
         return response()->json(['status' => 'APPROVED', 'authorized' => true]);
     }
 
-    // Eventos de pagamento: valida o token quando ele estiver configurado.
-    if ($expectedToken && ! $tokenValido) {
+    // Eventos de pagamento também exigem token válido (fail-closed): confirmar
+    // um pagamento libera acesso/booking sem cobrança real, então NUNCA
+    // processamos um evento a partir de uma requisição não autenticada. Sem
+    // token configurado no ambiente OU header inválido, recusamos — o mesmo
+    // critério da autorização de saque acima. Configure ASAAS_WEBHOOK_TOKEN.
+    if (! $tokenValido) {
+        Log::warning('Asaas webhook: evento de pagamento REJEITADO — token ausente ou inválido', [
+            'event'        => $event,
+            'token_config' => (bool) $expectedToken,
+        ]);
+
         return response()->json(['error' => 'Unauthorized'], 401);
     }
 

@@ -3,13 +3,17 @@
 namespace App\Models\Cadastro;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Foundation\Auth\User as Authenticatable;
+use Laravel\Sanctum\HasApiTokens;
 use App\Models\Foto;
 use App\Models\Cadastro\Plano;
 use App\Models\Cadastro\Filial;
-class Academia extends Model
+// Extende Authenticatable + HasApiTokens para permitir login via API (Sanctum),
+// igual a Cliente/Personal. O login web por sessão continua funcionando.
+class Academia extends Authenticatable
 {
+    use HasApiTokens;
 
     // O nome da tabela deve bater com o banco
     protected $table = 'academias';

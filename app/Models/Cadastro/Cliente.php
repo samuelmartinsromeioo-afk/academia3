@@ -3,16 +3,33 @@
 namespace App\Models\Cadastro;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Model;
+use Illuminate\Foundation\Auth\User as Authenticatable;
+use Laravel\Sanctum\HasApiTokens;
 
-class Cliente extends Model
+// Estende Authenticatable (que estende Model) para o Sanctum poder emitir
+// tokens de API para o cliente. O login web por sessão não usa guards do
+// Laravel, então nada muda no fluxo Blade existente.
+class Cliente extends Authenticatable
 {
+    use HasApiTokens;
+
     protected $primaryKey = 'id';
     protected $table = 'clientes';
 
     public $incrementing = true;
     protected $keyType = 'int';
-    
+
+    /** Nunca expor a senha em JSON (API/resources). */
+    protected $hidden = [
+        'senha',
+    ];
+
+    /** A coluna de senha desta tabela chama-se `senha`, não `password`. */
+    public function getAuthPassword()
+    {
+        return $this->senha;
+    }
+
 
     protected $fillable = [
         'nome',

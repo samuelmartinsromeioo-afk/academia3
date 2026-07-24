@@ -17,6 +17,7 @@ use App\Models\Payment;
 use App\Models\PersonalSaque;
 use App\Models\Subscription;
 use App\Models\TrainerPayout;
+use App\Services\AsaasService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Http;
@@ -38,87 +39,25 @@ class PaymentController extends Controller
         ];
     }
 
-    /** Fração do valor bruto repassada ao recebedor do split (personal/academia/studio/loja). */
-    private const SPLIT_RATE = 0.90;
-
     /**
-     * Valor bruto mínimo de uma cobrança. Abaixo disso o split por fixedValue
-     * (90% do bruto) pode superar o líquido (bruto − taxa Asaas) e a Asaas
-     * recusaria a cobrança. Ver garantirValorMinimo() e montarSplit().
+     * A lógica de split, precificação e assinatura Asaas vive em AsaasService,
+     * compartilhado com a API mobile (App\Http\Controllers\Api). Os métodos
+     * privados abaixo são mantidos como delegações para não alterar nenhum
+     * ponto de chamada deste controller.
      */
-    private const MIN_SPLIT_VALUE = 10.0;
-
-    /**
-     * Taxa estimada (conservadora) do cartão de crédito no Asaas, usada apenas
-     * para decidir se o split por fixedValue (90% do bruto) ainda cabe no
-     * líquido. A taxa real é cobrada pelo Asaas; aqui só evitamos montar um
-     * split que a Asaas recusaria. O cartão tem taxa percentual ALTA + fixa,
-     * bem maior que a do PIX — por isso o fallback abaixo.
-     */
-    private const CARD_FEE_RATE = 0.0499;  // ≈4,99%
-
-    private const CARD_FEE_FIXED = 0.49;   // R$ 0,49 por transação
-
-    /**
-     * Monta o split do marketplace usando fixedValue: o recebedor fica com 90%
-     * do valor BRUTO da cobrança e a plataforma (conta principal, dona da
-     * cobrança) absorve a taxa Asaas e mantém o restante.
-     *
-     * Fallback de segurança para percentualValue (90% sobre o líquido, calculado
-     * pela própria Asaas):
-     *  - sempre que o bruto for menor que MIN_SPLIT_VALUE; e
-     *  - no CARTÃO, sempre que 90% do bruto (fixedValue) não couber no líquido
-     *    estimado após a taxa do cartão. Sem isso a Asaas recusaria o split do
-     *    cartão (taxa bem maior que a do PIX), enquanto a cobrança poderia já
-     *    ter sido criada — origem de erros 500 no fluxo de cartão.
-     *
-     * O comportamento do PIX permanece inalterado (só o teste de mínimo).
-     */
-    private function montarSplit(?string $walletId, float $gross, array $ctx = [], string $billingType = 'PIX', float $rate = self::SPLIT_RATE): ?array
+    private function asaasService(): AsaasService
     {
-        if (! $walletId) {
-            Log::warning('Asaas: split não aplicado — recebedor sem walletId', $ctx);
-
-            return null;
-        }
-
-        $fixedValue = round($gross * $rate, 2);
-        $usePercentual = $gross < self::MIN_SPLIT_VALUE;
-
-        if ($billingType === 'CREDIT_CARD') {
-            $estimatedNet = $gross - ($gross * self::CARD_FEE_RATE + self::CARD_FEE_FIXED);
-            if ($fixedValue > $estimatedNet) {
-                $usePercentual = true;
-            }
-        }
-
-        // Repasse de 100% (sem comissão da plataforma): o fixedValue = bruto
-        // nunca cabe no líquido (sempre há taxa do Asaas), então deixamos a
-        // própria Asaas calcular o percentual sobre o líquido — o recebedor
-        // arca apenas com a taxa do cartão/PIX.
-        if ($rate >= 1.0) {
-            $usePercentual = true;
-        }
-
-        if ($usePercentual) {
-            return [['walletId' => $walletId, 'percentualValue' => round($rate * 100, 2)]];
-        }
-
-        return [['walletId' => $walletId, 'fixedValue' => $fixedValue]];
+        return app(AsaasService::class);
     }
 
-    /**
-     * Barra cobranças abaixo do valor mínimo. Necessário porque o split por
-     * fixedValue (90% do bruto) só cabe no líquido quando o bruto é alto o
-     * suficiente para a plataforma absorver a taxa Asaas com os 10% restantes.
-     */
+    private function montarSplit(?string $walletId, float $gross, array $ctx = [], string $billingType = 'PIX', float $rate = AsaasService::SPLIT_RATE): ?array
+    {
+        return $this->asaasService()->montarSplit($walletId, $gross, $ctx, $billingType, $rate);
+    }
+
     private function garantirValorMinimo(float $value): void
     {
-        if ($value < self::MIN_SPLIT_VALUE) {
-            abort(response()->json([
-                'error' => 'O valor mínimo para pagamento é R$ '.number_format(self::MIN_SPLIT_VALUE, 2, ',', '.').'.',
-            ], 422));
-        }
+        $this->asaasService()->garantirValorMinimo($value);
     }
 
     // ─────────────────────────────────────────────
@@ -861,14 +800,7 @@ class PaymentController extends Controller
 
     public function calculateSplit(float $amountTotal, float $feeRate = 0.10): array
     {
-        $companyFee = round($amountTotal * $feeRate, 2);
-        $trainerAmount = round($amountTotal - $companyFee, 2);
-
-        return [
-            'amount_total' => $amountTotal,
-            'company_fee' => $companyFee,
-            'trainer_amount' => $trainerAmount,
-        ];
+        return $this->asaasService()->calculateSplit($amountTotal, $feeRate);
     }
 
     public function handleSuccessfulPayment(Payment $payment, $intent): void
@@ -948,20 +880,7 @@ class PaymentController extends Controller
 
     private function obterOuCriarClienteAsaas(\App\Models\Cadastro\Cliente $cliente): string
     {
-        $search = Http::withHeaders($this->asaasHeaders())
-            ->get($this->asaas().'/customers', ['email' => $cliente->email]);
-
-        if ($search->successful() && ! empty($search->json()['data'])) {
-            return $search->json()['data'][0]['id'];
-        }
-
-        $create = Http::withHeaders($this->asaasHeaders())
-            ->post($this->asaas().'/customers', [
-                'name' => $cliente->nome,
-                'email' => $cliente->email,
-            ]);
-
-        return $create->json()['id'];
+        return $this->asaasService()->obterOuCriarClienteAsaas($cliente);
     }
 
     // ─────────────────────────────────────────────
@@ -989,89 +908,9 @@ class PaymentController extends Controller
      */
     private function criarAssinaturaPix($cliente, float $amount, string $description, string $extRefPrefix, string $idemPrefix, ?array $split, array $subFields, array $bookingData, float $companyFeeRate = 0.10)
     {
-        try {
-            $asaasCustomerId = $this->obterOuCriarClienteAsaas($cliente);
-
-            $payload = [
-                'customer' => $asaasCustomerId,
-                'billingType' => 'PIX',
-                'value' => $amount,
-                'nextDueDate' => now()->format('Y-m-d'),
-                'cycle' => 'MONTHLY',
-                'description' => $description,
-                'externalReference' => $extRefPrefix.'_'.$cliente->id.'_'.time(),
-            ];
-            if ($split) {
-                $payload['split'] = $split;
-            }
-
-            $subRes = Http::withHeaders($this->asaasHeaders())->post($this->asaas().'/subscriptions', $payload);
-            $subData = $subRes->json();
-
-            if (! empty($subData['errors'])) {
-                $errMsg = $subData['errors'][0]['description'] ?? 'Falha ao criar assinatura.';
-                Log::error('Asaas assinatura PIX: falha', ['body' => $subData]);
-
-                return response()->json(['error' => $errMsg], 422);
-            }
-            if ($subRes->failed() || empty($subData['id'])) {
-                Log::error('Asaas assinatura PIX: http error', ['body' => $subData]);
-
-                return response()->json(['error' => 'Falha ao gerar assinatura. Tente novamente.'], 500);
-            }
-
-            $subscriptionId = $subData['id'];
-
-            $firstPayment = $this->primeiraCobrancaAssinatura($subscriptionId);
-            if (! $firstPayment || empty($firstPayment['id'])) {
-                Log::error('Asaas assinatura PIX: primeira cobrança indisponível', ['subscription_id' => $subscriptionId]);
-
-                return response()->json(['error' => 'Falha ao gerar a primeira cobrança. Tente novamente.'], 500);
-            }
-            $asaasPaymentId = $firstPayment['id'];
-
-            $qrRes = Http::withHeaders($this->asaasHeaders())
-                ->get($this->asaas()."/payments/{$asaasPaymentId}/pixQrCode");
-            $qrData = $qrRes->json();
-
-            $valores = $this->calculateSplit($amount, $companyFeeRate);
-            $this->registrarAssinatura($cliente->id, $subscriptionId, 'pix', $valores, $subFields, $bookingData, $subData['nextDueDate'] ?? null);
-
-            $payment = Payment::create(array_merge([
-                'user_id' => $cliente->id,
-                'amount_total' => $valores['amount_total'],
-                'company_fee' => $valores['company_fee'],
-                'trainer_amount' => $valores['trainer_amount'],
-                'stripe_payment_intent_id' => $asaasPaymentId,
-                'asaas_subscription_id' => $subscriptionId,
-                'status' => 'pending',
-                'payment_method' => 'pix',
-                'idempotency_key' => $idemPrefix.'_'.$asaasPaymentId,
-                'booking_data' => json_encode($bookingData),
-            ], $this->subFieldsToPayment($subFields)));
-
-            Log::info('Asaas assinatura PIX criada', [
-                'payment_id' => $payment->id,
-                'subscription_id' => $subscriptionId,
-                'asaas_payment_id' => $asaasPaymentId,
-                'cliente_id' => $cliente->id,
-            ]);
-
-            return response()->json([
-                'paymentId' => $payment->id,
-                'asaasPaymentId' => $asaasPaymentId,
-                'subscriptionId' => $subscriptionId,
-                'pixPayload' => $qrData['payload'] ?? '',
-                'pixQrCode' => $qrData['encodedImage'] ?? '',
-                'amount' => $amount,
-                'recorrente' => true,
-            ]);
-
-        } catch (\Exception $e) {
-            Log::error('Asaas assinatura PIX: exception', ['error' => $e->getMessage()]);
-
-            return response()->json(['error' => 'Erro interno. Tente novamente.'], 500);
-        }
+        return response()->json($this->asaasService()->criarAssinaturaPix(
+            $cliente, $amount, $description, $extRefPrefix, $idemPrefix, $split, $subFields, $bookingData, $companyFeeRate
+        ));
     }
 
     /**
@@ -1198,43 +1037,18 @@ class PaymentController extends Controller
      */
     private function primeiraCobrancaAssinatura(string $subscriptionId): ?array
     {
-        for ($i = 0; $i < 3; $i++) {
-            $res = Http::withHeaders($this->asaasHeaders())
-                ->get($this->asaas()."/subscriptions/{$subscriptionId}/payments");
-            $data = $res->json();
-
-            if (! empty($data['data'][0]['id'])) {
-                return $data['data'][0];
-            }
-            usleep(700000); // 0,7s
-        }
-
-        return null;
+        return $this->asaasService()->primeiraCobrancaAssinatura($subscriptionId);
     }
 
     private function registrarAssinatura(int $userId, string $subscriptionId, string $method, array $valores, array $subFields, array $bookingData, ?string $nextDueDate): Subscription
     {
-        return Subscription::updateOrCreate(
-            ['asaas_subscription_id' => $subscriptionId],
-            array_merge([
-                'user_id' => $userId,
-                'payment_method' => $method,
-                'amount_total' => $valores['amount_total'],
-                'company_fee' => $valores['company_fee'],
-                'trainer_amount' => $valores['trainer_amount'],
-                'status' => 'active',
-                'next_due_date' => $nextDueDate,
-                'booking_data' => json_encode($bookingData),
-            ], $subFields)
-        );
+        return $this->asaasService()->registrarAssinatura($userId, $subscriptionId, $method, $valores, $subFields, $bookingData, $nextDueDate);
     }
 
     /** Mapeia os vínculos da assinatura para as colunas da tabela payments. */
     private function subFieldsToPayment(array $subFields): array
     {
-        return collect($subFields)
-            ->only(['trainer_id', 'membership_id', 'academia_id', 'plano_id', 'studio_id', 'studio_plano_id'])
-            ->toArray();
+        return $this->asaasService()->subFieldsToPayment($subFields);
     }
 
     /**
@@ -1446,21 +1260,7 @@ class PaymentController extends Controller
      */
     private function resolverItemAcademia(\App\Models\Cadastro\Academia $academia, $planoId): array
     {
-        if (! empty($planoId)) {
-            $plano = \App\Models\Cadastro\Plano::findOrFail($planoId);
-            if ((int) $plano->academia_id !== (int) $academia->id) {
-                abort(response()->json(['error' => 'Plano inválido para esta academia.'], 422));
-            }
-
-            return [(float) $plano->valor, "Plano {$plano->nome} — {$academia->nome}", $plano->id];
-        }
-
-        $amount = (float) ($academia->valor_mensalidade ?? 0);
-        if ($amount <= 0) {
-            abort(response()->json(['error' => 'Esta academia ainda não definiu o valor da mensalidade.'], 422));
-        }
-
-        return [$amount, "Mensalidade — {$academia->nome}", null];
+        return $this->asaasService()->resolverItemAcademia($academia, $planoId);
     }
 
     // ─────────────────────────────────────────────
@@ -1745,17 +1545,7 @@ class PaymentController extends Controller
 
     private function validarStudioPlano(int $studioId, int $planoId): array
     {
-        $studio = Studio::where('id', $studioId)->where('status', 'aprovado')->first();
-        if (! $studio) {
-            abort(response()->json(['error' => 'Studio não encontrado.'], 404));
-        }
-
-        $plano = StudioPlano::find($planoId);
-        if (! $plano || (int) $plano->studio_id !== (int) $studioId || ! $plano->ativo) {
-            abort(response()->json(['error' => 'Plano inválido para este studio.'], 422));
-        }
-
-        return [$studio, $plano];
+        return $this->asaasService()->validarStudioPlano($studioId, $planoId);
     }
 
     private function splitStudio(Studio $studio, float $amount, string $billingType = 'PIX'): ?array

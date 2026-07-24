@@ -538,6 +538,9 @@
                                                 <tr>
                                                     <td data-label="Exercício">
                                                         <div class="ex-nome">{{ $exercicio->nome_exercicio }}</div>
+                                                        @if($exercicio->video)
+                                                            <button type="button" onclick="abrirVideo('{{ asset('storage/' . $exercicio->video) }}')" style="margin-top:4px; background:none; border:none; color:var(--primary); font-size:0.72rem; font-weight:700; cursor:pointer; padding:0; display:inline-flex; align-items:center; gap:5px;"><i class="ph ph-play-circle"></i> Ver vídeo</button>
+                                                        @endif
                                                         @if($exercicio->observacoes)
                                                             <div class="ex-obs">{{ $exercicio->observacoes }}</div>
                                                         @endif
@@ -585,7 +588,26 @@
         </div>
     </div>
 
+    <!-- MODAL VÍDEO -->
+    <div id="videoModal" onclick="if(event.target===this)fecharVideo()" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.9); z-index:99999; justify-content:center; align-items:center; padding:20px;">
+        <div style="position:relative; max-width:520px; width:100%;">
+            <button onclick="fecharVideo()" style="position:absolute; top:-38px; right:0; background:none; border:none; color:#fff; font-size:1.4rem; cursor:pointer;">✕</button>
+            <video id="videoPlayer" controls playsinline style="width:100%; border-radius:14px; background:#000;"></video>
+        </div>
+    </div>
+
     <script>
+        function abrirVideo(url) {
+            if (!url) return;
+            document.getElementById('videoPlayer').src = url;
+            document.getElementById('videoModal').style.display = 'flex';
+        }
+        function fecharVideo() {
+            const p = document.getElementById('videoPlayer');
+            p.pause(); p.src = '';
+            document.getElementById('videoModal').style.display = 'none';
+        }
+
         function marcarConcluido(fichaId) {
             const form = document.getElementById('formMarcarConcluido');
             form.action = `/cliente/fichas-treino/${fichaId}/concluido`;

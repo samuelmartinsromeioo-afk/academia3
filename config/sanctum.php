@@ -46,7 +46,9 @@ return [
     |
     */
 
-    'expiration' => null,
+    // Token do app expira em 90 dias (129600 min): limita a janela de uso de
+    // um token vazado. O app trata 401 encerrando a sessão e pedindo novo login.
+    'expiration' => (int) env('SANCTUM_EXPIRATION', 129600),
 
     /*
     |--------------------------------------------------------------------------

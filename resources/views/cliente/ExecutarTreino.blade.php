@@ -103,6 +103,10 @@
                         <div>
                             <div class="ex-nome">{{ $ex->nome_exercicio }}</div>
                             <div class="ex-alvo">Alvo: {{ $ex->series }}x{{ $ex->repeticoes }}{{ $ex->peso ? ' · '.$ex->peso.' kg' : '' }}</div>
+                            @php $videoEx = $ex->videoResolvido(); @endphp
+                            @if($videoEx)
+                                <button type="button" onclick="abrirVideo('{{ asset('storage/' . $videoEx) }}')" style="margin-top:6px; background:none; border:none; color:var(--primary); font-size:0.78rem; font-weight:700; cursor:pointer; padding:0; display:inline-flex; align-items:center; gap:6px;"><i class="ph ph-play-circle"></i> Ver execução</button>
+                            @endif
                         </div>
                     </div>
 
@@ -161,7 +165,28 @@
         </div>
     </div>
 
+    {{-- MODAL VÍDEO DEMONSTRATIVO --}}
+    <div id="videoModal" onclick="if(event.target===this)fecharVideo()" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.92); z-index:99999; justify-content:center; align-items:center; padding:20px;">
+        <div style="position:relative; max-width:520px; width:100%;">
+            <button type="button" onclick="fecharVideo()" style="position:absolute; top:-38px; right:0; background:none; border:none; color:#fff; font-size:1.4rem; cursor:pointer;">✕</button>
+            <video id="videoPlayer" controls playsinline autoplay style="width:100%; border-radius:14px; background:#000;"></video>
+        </div>
+    </div>
+
     <script>
+        function abrirVideo(url) {
+            if (!url) return;
+            const p = document.getElementById('videoPlayer');
+            p.src = url;
+            document.getElementById('videoModal').style.display = 'flex';
+            p.play().catch(() => {});
+        }
+        function fecharVideo() {
+            const p = document.getElementById('videoPlayer');
+            p.pause(); p.src = '';
+            document.getElementById('videoModal').style.display = 'none';
+        }
+
         const CIRC = 628; // 2*pi*100
         let restDefault = 60, restLeft = 0, restTotal = 60, restTimer = null;
 

@@ -269,7 +269,14 @@
                             <div class="grid g4" style="margin-bottom:12px;">
                                 <div>
                                     <label>Exercício</label>
-                                    <input type="text" name="nome_exercicio" list="catalogoExercicios" placeholder="Nome do exercício" required>
+                                    <input type="text" name="nome_exercicio" list="catalogoExercicios" placeholder="Nome do exercício" required oninput="onExercicioInput(this)">
+                                    <input type="hidden" name="video_catalogo" class="input-video-catalogo">
+                                    <div class="preview-video-catalogo" style="display:none; margin-top:8px;">
+                                        <video muted loop playsinline
+                                               onclick="abrirVideo(this.dataset.full)"
+                                               style="width:88px; height:88px; object-fit:cover; border-radius:10px; background:#000; cursor:pointer; border:1px solid var(--border);"
+                                               title="Vídeo demonstrativo — clique para ampliar"></video>
+                                    </div>
                                 </div>
                                 <div>
                                     <label>Séries</label>
@@ -311,6 +318,35 @@
 </div>
 
 <script>
+    // Mapa nome do exercício -> caminho do vídeo demonstrativo (biblioteca SNR).
+    const VIDEOS_EXERCICIOS = {!! json_encode(collect($exerciciosData)->filter(fn($e) => ! empty($e['video']))->pluck('video', 'nome'), JSON_UNESCAPED_UNICODE) !!};
+    const STORAGE_BASE = "{{ asset('storage') }}";
+
+    // Ao digitar/escolher um exercício do catálogo, casa o vídeo demonstrativo e mostra a prévia ao lado.
+    function onExercicioInput(input) {
+        const form    = input.closest('form');
+        const hidden  = form.querySelector('.input-video-catalogo');
+        const wrap    = form.querySelector('.preview-video-catalogo');
+        if (!hidden || !wrap) return;
+        const video   = wrap.querySelector('video');
+        const path    = VIDEOS_EXERCICIOS[input.value.trim()];
+        if (path) {
+            const url = STORAGE_BASE + '/' + path;
+            hidden.value = path;
+            video.src = url;
+            video.dataset.full = url;
+            video.load();
+            video.play().catch(() => {});
+            wrap.style.display = 'block';
+        } else {
+            hidden.value = '';
+            video.pause();
+            video.removeAttribute('src');
+            video.dataset.full = '';
+            wrap.style.display = 'none';
+        }
+    }
+
     const nivelSelect = document.getElementById('nivelSelect');
     const divisaoWrap = document.getElementById('divisaoWrap');
     function toggleDivisao() {

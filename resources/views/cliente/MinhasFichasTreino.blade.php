@@ -676,7 +676,7 @@
                                                 @foreach($ficha->exercicios as $exercicio)
                                                 <tr>
                                                     <td data-label="Exercício">
-                                                        <div class="ex-nome ex-click" onclick="abrirExercicio({!! htmlspecialchars(json_encode($exercicio->nome_exercicio), ENT_QUOTES) !!}, {!! htmlspecialchars(json_encode($exercicio->observacoes), ENT_QUOTES) !!}, {!! htmlspecialchars(json_encode($exercicio->video ? asset('storage/' . $exercicio->video) : ''), ENT_QUOTES) !!})">
+                                                        <div class="ex-nome ex-click" onclick="abrirExercicio({!! htmlspecialchars(json_encode($exercicio->nome_exercicio), ENT_QUOTES) !!}, {!! htmlspecialchars(json_encode($exercicio->observacoes), ENT_QUOTES) !!}, {!! htmlspecialchars(json_encode($exercicio->videoResolvido() ? asset('storage/' . $exercicio->videoResolvido()) : ''), ENT_QUOTES) !!})">
                                                             {{ $exercicio->nome_exercicio }}
                                                             <i class="ph ph-info ex-info"></i>
                                                         </div>
@@ -755,7 +755,7 @@
                                                     @foreach($ficha->exercicios as $exercicio)
                                                     <tr>
                                                         <td data-label="Exercício">
-                                                            <div class="ex-nome ex-click" onclick="abrirExercicio({!! htmlspecialchars(json_encode($exercicio->nome_exercicio), ENT_QUOTES) !!}, {!! htmlspecialchars(json_encode($exercicio->observacoes), ENT_QUOTES) !!}, {!! htmlspecialchars(json_encode($exercicio->video ? asset('storage/' . $exercicio->video) : ''), ENT_QUOTES) !!})">
+                                                            <div class="ex-nome ex-click" onclick="abrirExercicio({!! htmlspecialchars(json_encode($exercicio->nome_exercicio), ENT_QUOTES) !!}, {!! htmlspecialchars(json_encode($exercicio->observacoes), ENT_QUOTES) !!}, {!! htmlspecialchars(json_encode($exercicio->videoResolvido() ? asset('storage/' . $exercicio->videoResolvido()) : ''), ENT_QUOTES) !!})">
                                                                 {{ $exercicio->nome_exercicio }}
                                                                 <i class="ph ph-info ex-info"></i>
                                                             </div>

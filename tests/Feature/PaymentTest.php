@@ -213,4 +213,71 @@ class PaymentTest extends TestCase
         // (/api/asaas-webhook), cuja autenticidade é verificada por IP/token, não assinatura.
         $this->markTestSkipped('Webhook legado do Stripe substituído pela Asaas.');
     }
+
+    // ── Asaas webhook: confirmação de pagamento exige token (fail-closed) ──────
+
+    private function seedPendingPayment(string $asaasId): Payment
+    {
+        \DB::table('clientes')->insert([
+            'id' => 90, 'nome' => 'ClienteWH', 'email' => 'wh@test.com', 'senha' => bcrypt('pass'),
+        ]);
+
+        return Payment::create([
+            'user_id'                  => 90,
+            'amount_total'             => 200.00,
+            'company_fee'              => 20.00,
+            'trainer_amount'           => 180.00,
+            'stripe_payment_intent_id' => $asaasId,
+            'status'                   => 'pending',
+        ]);
+    }
+
+    /**
+     * Fraude: um atacante que criou uma cobrança PIX real (mas não pagou) tenta
+     * forjar o webhook PAYMENT_CONFIRMED para liberar o acesso sem pagar.
+     * Sem token válido, o webhook DEVE recusar e o pagamento continua pendente.
+     */
+    public function test_forged_payment_webhook_without_token_is_rejected(): void
+    {
+        config(['services.asaas.webhook_token' => 'segredo-do-ambiente']);
+        $payment = $this->seedPendingPayment('pay_forged_001');
+
+        $this->postJson('/api/asaas-webhook', [
+            'event'   => 'PAYMENT_CONFIRMED',
+            'payment' => ['id' => 'pay_forged_001'],
+        ])->assertStatus(401); // sem header asaas-access-token
+
+        $this->assertEquals('pending', $payment->fresh()->status);
+    }
+
+    public function test_forged_payment_webhook_with_wrong_token_is_rejected(): void
+    {
+        config(['services.asaas.webhook_token' => 'segredo-do-ambiente']);
+        $payment = $this->seedPendingPayment('pay_forged_002');
+
+        $this->withHeaders(['asaas-access-token' => 'token-errado'])
+            ->postJson('/api/asaas-webhook', [
+                'event'   => 'PAYMENT_CONFIRMED',
+                'payment' => ['id' => 'pay_forged_002'],
+            ])->assertStatus(401);
+
+        $this->assertEquals('pending', $payment->fresh()->status);
+    }
+
+    /**
+     * Regressão de fail-open: mesmo SEM token configurado no ambiente, o webhook
+     * não pode confirmar pagamento a partir de requisição não autenticada.
+     */
+    public function test_payment_webhook_without_configured_token_fails_closed(): void
+    {
+        config(['services.asaas.webhook_token' => null]);
+        $payment = $this->seedPendingPayment('pay_forged_003');
+
+        $this->postJson('/api/asaas-webhook', [
+            'event'   => 'PAYMENT_CONFIRMED',
+            'payment' => ['id' => 'pay_forged_003'],
+        ])->assertStatus(401);
+
+        $this->assertEquals('pending', $payment->fresh()->status);
+    }
 }

@@ -70,7 +70,9 @@ class MesocicloController extends Controller
             ->orderByDesc('created_at')
             ->get();
 
-        return view('personal.PeriodizacaoAluno', compact('cliente', 'mesociclos'));
+        $exerciciosData = \App\Support\CatalogoExercicios::todos();
+
+        return view('personal.PeriodizacaoAluno', compact('cliente', 'mesociclos', 'exerciciosData'));
     }
 
     // Criar mesociclo com N treinos vazios (A..N).
@@ -262,7 +264,9 @@ class MesocicloController extends Controller
             ->orderByDesc('created_at')
             ->get();
 
-        return view('academia.PeriodizacaoAluno', compact('cliente', 'mesociclos'));
+        $exerciciosData = \App\Support\CatalogoExercicios::todos();
+
+        return view('academia.PeriodizacaoAluno', compact('cliente', 'mesociclos', 'exerciciosData'));
     }
 
     // Criar mesociclo (academia) com N treinos vazios (A..N).

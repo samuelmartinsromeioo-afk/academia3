@@ -5,13 +5,25 @@ namespace App\Models\Cadastro;
 use App\Models\Agenda;
 use App\Models\Avaliacao;
 use App\Models\Foto;
-use Illuminate\Database\Eloquent\Model;
+use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Contracts\Encryption\DecryptException;
 use Illuminate\Support\Facades\Crypt;
+use Laravel\Sanctum\HasApiTokens;
 
-class Personal extends Model
+// Estende Authenticatable (que estende Model) para o Sanctum poder emitir
+// tokens de API para o personal. O login web por sessão não usa guards do
+// Laravel, então nada muda no fluxo Blade existente.
+class Personal extends Authenticatable
 {
+    use HasApiTokens;
+
     protected $table = 'personals';
+
+    /** A coluna de senha desta tabela chama-se `senha`, não `password`. */
+    public function getAuthPassword()
+    {
+        return $this->senha;
+    }
 
     public $timestamps = false;
 

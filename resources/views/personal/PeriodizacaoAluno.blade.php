@@ -247,7 +247,13 @@
                                 <form method="POST" action="{{ route('periodizacao.exercicio.add', $treino->id) }}">
                                     @csrf
                                     <div class="row">
-                                        <div class="fg" style="flex:2;"><label>Exercício</label><input type="text" name="nome_exercicio" required></div>
+                                        <div class="fg" style="flex:2;">
+                                            <label>Exercício</label>
+                                            <input type="text" name="nome_exercicio" list="catalogoExercicios" required oninput="onExercicioInput(this)">
+                                            <div class="preview-video-catalogo" style="display:none; margin-top:6px;">
+                                                <video muted loop playsinline onclick="abrirVideo(this.dataset.full)" style="width:80px; height:80px; object-fit:cover; border-radius:8px; background:#000; cursor:pointer; border:1px solid var(--border);" title="Vídeo demonstrativo — clique para ampliar"></video>
+                                            </div>
+                                        </div>
                                         <div class="fg"><label>Séries</label><input type="number" name="series" min="1" value="3" required></div>
                                         <div class="fg"><label>Reps</label><input type="number" name="repeticoes" min="1" value="10" required></div>
                                         <div class="fg"><label>Peso (kg)</label><input type="number" step="0.5" min="0" name="peso"></div>
@@ -265,7 +271,61 @@
         @endif
     </div>
 
+    {{-- CATÁLOGO DE EXERCÍCIOS (para o datalist do input) --}}
+    <datalist id="catalogoExercicios">
+        @foreach($exerciciosData as $ex)
+            <option value="{{ $ex['nome'] }}">{{ $ex['grupo'] }}</option>
+        @endforeach
+    </datalist>
+
+    {{-- MODAL VÍDEO DEMONSTRATIVO --}}
+    <div id="videoModal" onclick="if(event.target===this)fecharVideo()" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.92); z-index:99999; justify-content:center; align-items:center; padding:20px;">
+        <div style="position:relative; max-width:520px; width:100%;">
+            <button type="button" onclick="fecharVideo()" style="position:absolute; top:-38px; right:0; background:none; border:none; color:#fff; font-size:1.4rem; cursor:pointer;">✕</button>
+            <video id="videoPlayer" controls playsinline autoplay style="width:100%; border-radius:14px; background:#000;"></video>
+        </div>
+    </div>
+
     <script>
+        // Mapa nome do exercício -> caminho do vídeo demonstrativo (biblioteca SNR).
+        const VIDEOS_EXERCICIOS = {!! json_encode(collect($exerciciosData)->filter(fn($e) => ! empty($e['video']))->pluck('video', 'nome'), JSON_UNESCAPED_UNICODE) !!};
+        const STORAGE_BASE = "{{ asset('storage') }}";
+
+        // Ao escolher um exercício do catálogo, mostra a prévia do vídeo demonstrativo ao lado.
+        function onExercicioInput(input) {
+            const form = input.closest('form');
+            const wrap = form ? form.querySelector('.preview-video-catalogo') : null;
+            if (!wrap) return;
+            const video = wrap.querySelector('video');
+            const path  = VIDEOS_EXERCICIOS[input.value.trim()];
+            if (path) {
+                const url = STORAGE_BASE + '/' + path;
+                video.src = url;
+                video.dataset.full = url;
+                video.load();
+                video.play().catch(() => {});
+                wrap.style.display = 'block';
+            } else {
+                video.pause();
+                video.removeAttribute('src');
+                video.dataset.full = '';
+                wrap.style.display = 'none';
+            }
+        }
+
+        function abrirVideo(url) {
+            if (!url) return;
+            const p = document.getElementById('videoPlayer');
+            p.src = url;
+            document.getElementById('videoModal').style.display = 'flex';
+            p.play().catch(() => {});
+        }
+        function fecharVideo() {
+            const p = document.getElementById('videoPlayer');
+            p.pause(); p.src = '';
+            document.getElementById('videoModal').style.display = 'none';
+        }
+
         function toggleValidade(form) {
             const modo = form.querySelector('input[name="modo_validade"]:checked').value;
             form.querySelectorAll('.js-semanas').forEach(e => e.style.display = modo === 'semanas' ? '' : 'none');

@@ -895,6 +895,7 @@
             <form id="formAdicionarExercicio" method="POST" enctype="multipart/form-data">
                 @csrf
                 <input type="hidden" name="nome_exercicio" id="hiddenNomeExercicio">
+                <input type="hidden" name="video_catalogo" id="hiddenVideoCatalogo">
 
                 <div class="form-group">
                     <label>Nome do Exercício</label>
@@ -917,6 +918,13 @@
                         <div style="flex:1">
                             <div class="exercicio-escolhido-nome" id="nomeExercicioEscolhido"></div>
                             <div class="exercicio-escolhido-grupo" id="grupoExercicioEscolhido"></div>
+                        </div>
+                        <!-- Vídeo demonstrativo da biblioteca, ao lado do exercício escolhido -->
+                        <div id="previewVideoCatalogo" style="display:none; flex-shrink:0;">
+                            <video id="videoPreviewEscolhido" muted loop playsinline
+                                   onclick="abrirVideo(this.dataset.full)"
+                                   style="width:96px; height:96px; object-fit:cover; border-radius:10px; background:#000; cursor:pointer; border:1px solid var(--border);"
+                                   title="Clique para ampliar"></video>
                         </div>
                         <button type="button" class="btn-trocar-exercicio" onclick="trocarExercicio()">
                             <i class="ph ph-arrows-left-right"></i> Trocar
@@ -1024,6 +1032,29 @@
     <script>
         // ─── DADOS DOS EXERCÍCIOS ───────────────────────────────────────────
         const TODOS_EXERCICIOS = {!! json_encode($exerciciosData, JSON_UNESCAPED_UNICODE) !!};
+        const STORAGE_BASE = "{{ asset('storage') }}";
+
+        // Aplica (ou limpa) o vídeo demonstrativo do catálogo ao lado do exercício escolhido.
+        function aplicarVideoCatalogo(videoPath) {
+            const hidden  = document.getElementById('hiddenVideoCatalogo');
+            const preview = document.getElementById('previewVideoCatalogo');
+            const video   = document.getElementById('videoPreviewEscolhido');
+            if (videoPath) {
+                const url = STORAGE_BASE + '/' + videoPath;
+                hidden.value = videoPath;
+                video.src = url;
+                video.dataset.full = url;
+                video.load();
+                video.play().catch(() => {}); // preview em loop mudo; ignora bloqueio de autoplay
+                preview.style.display = 'block';
+            } else {
+                hidden.value = '';
+                video.pause();
+                video.removeAttribute('src');
+                video.dataset.full = '';
+                preview.style.display = 'none';
+            }
+        }
 
         const DIVISOES_NOMES = {
             'costas_biceps':       'Costas e Bíceps',
@@ -1237,6 +1268,8 @@
             document.getElementById('nomeExercicioEscolhido').textContent  = exercicio.nome;
             document.getElementById('grupoExercicioEscolhido').textContent = exercicio.grupo;
 
+            aplicarVideoCatalogo(exercicio.video || null);
+
             if (!obsEditadaManualmente) {
                 document.getElementById('obsExercicio').value = exercicio.observacao;
             }
@@ -1255,6 +1288,8 @@
             document.getElementById('nomeExercicioEscolhido').textContent  = nome;
             document.getElementById('grupoExercicioEscolhido').textContent = 'Personalizado';
 
+            aplicarVideoCatalogo(null);
+
             document.getElementById('exercicioPicker').style.display   = 'none';
             document.getElementById('exercicioEscolhido').style.display = 'flex';
 
@@ -1268,6 +1303,8 @@
             document.getElementById('hiddenNomeExercicio').value           = '';
             document.getElementById('nomeExercicioEscolhido').textContent  = '';
             document.getElementById('grupoExercicioEscolhido').textContent = '';
+
+            aplicarVideoCatalogo(null);
 
             document.getElementById('exercicioPicker').style.display   = 'block';
             document.getElementById('exercicioEscolhido').style.display = 'none';
