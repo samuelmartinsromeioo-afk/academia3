@@ -2434,6 +2434,7 @@
         </div>
 
         <p id="pixStatusMsg" style="display:none; font-weight:700; font-size:0.9rem; margin:0;"></p>
+        @include('partials.asaas-pagamento')
     </div>
 </div>
 <style>
@@ -2471,6 +2472,7 @@
             Aguardando confirmação do pagamento...
         </div>
         <p id="pixAcademiaStatus" style="display:none; font-weight:700; font-size:0.9rem; margin:0;"></p>
+        @include('partials.asaas-pagamento')
     </div>
 </div>
 
@@ -2670,6 +2672,7 @@
                 style="width:100%; background:var(--primary); color:#000; border:none; border-radius:12px; padding:14px; font-weight:900; font-size:0.95rem; cursor:pointer;">
                 <i class="ph ph-lock"></i> Pagar com Segurança
             </button>
+            @include('partials.asaas-pagamento')
         </form>
     </div>
 </div>

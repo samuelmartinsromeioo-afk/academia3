@@ -596,6 +596,7 @@
         </div>
         <p style="color: var(--text-muted); font-size: 0.75rem; text-align: center;">Escaneie o QR Code ou use o copia e cola. A confirmação é automática.</p>
         <p class="pix-status" id="pixStatus"></p>
+        @include('partials.asaas-pagamento')
     </div>
 </div>
 
@@ -653,6 +654,7 @@
             <p class="ok-msg" id="cartaoSucesso">✅ Pagamento aprovado! Atualizando...</p>
 
             <button type="submit" class="btn-confirmar" id="btnSubmeterCartao"><i class="ph ph-lock"></i> Pagar com Segurança</button>
+            @include('partials.asaas-pagamento')
         </form>
     </div>
 </div>
