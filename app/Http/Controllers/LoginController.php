@@ -17,12 +17,25 @@ class loginController extends Controller
 {
     public function index()
     {
-        return view('login.index');
+        return $this->viewLogin();
     }
 
     public function create()
     {
-        return view('login.index');
+        return $this->viewLogin();
+    }
+
+    /**
+     * Renderiza o login sem permitir cache do navegador.
+     * Evita que a página seja servida do cache (bfcache) com um token CSRF
+     * antigo, o que causaria erro 419 (Page Expired) ao enviar o formulário.
+     */
+    private function viewLogin()
+    {
+        return response()
+            ->view('login.index')
+            ->header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0')
+            ->header('Pragma', 'no-cache');
     }
 
     public function store(Request $request)
