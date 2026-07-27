@@ -579,13 +579,7 @@ class TreinosGestaoController extends Controller
     // Monta a URL absoluta de streaming (com suporte a HTTP Range) do vídeo.
     private function videoStreamUrl(?string $path): ?string
     {
-        if (! $path) {
-            return null;
-        }
-        if (str_starts_with($path, 'http')) {
-            return $path;
-        }
-        return url('/api/v1/media/exercicio-video/' . ltrim($path, '/'));
+        return \App\Support\Media::videoUrl($path);
     }
 
     /** Retorna [tipo, model] do dono autenticado: personal ou academia. */

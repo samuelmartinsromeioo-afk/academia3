@@ -1,3 +1,5 @@
 .env
 .phpunit.result.cache
 /public/storage
+/serve.log
+/serve.err.log

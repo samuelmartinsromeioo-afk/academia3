@@ -8,6 +8,7 @@ use App\Models\Agenda;
 use App\Models\Cadastro\FichaTreino;
 use App\Models\Cadastro\RegistroExercicio;
 use App\Models\Cadastro\TreinoConcluido;
+use App\Models\Meta;
 use App\Services\Celebracoes;
 use App\Services\EstatisticasTreino;
 use Carbon\Carbon;
@@ -163,12 +164,47 @@ class FichaTreinoController extends Controller
         $streak = EstatisticasTreino::streak($datasStreak);
         Celebracoes::push('cliente', (int) $cliente->id, Celebracoes::sequenciaDias($streak['atual']));
 
+        // Reavalia as metas do aluno com os dados recém-registrados (carga/treinos).
+        $metasBatidas = $this->avaliarMetas($cliente, $ficha->exercicios->pluck('nome_exercicio')->all());
+
         return response()->json([
             'success' => true,
             'message' => 'Treino marcado como concluído!',
             'recordes' => $recordes,
+            'metas_batidas' => $metasBatidas,
             'streak' => $streak['atual'],
         ]);
+    }
+
+    /**
+     * Reavalia as metas do aluno após concluir um treino. Para o tipo "carga",
+     * só reavalia as metas cujo exercício foi treinado agora — analisa se houve
+     * aumento de peso que atinja o alvo. Metas atingidas são marcadas como
+     * concluídas e geram uma celebração. Retorna os títulos batidos para o app.
+     */
+    private function avaliarMetas($cliente, array $exerciciosDoTreino): array
+    {
+        $batidas = [];
+        $metas = Meta::where('cliente_id', $cliente->id)->where('concluida', false)->get();
+
+        foreach ($metas as $meta) {
+            // "livre" não tem como ser computada automaticamente.
+            if ($meta->tipo === 'livre') {
+                continue;
+            }
+            // "carga": só reavalia se o exercício da meta foi treinado agora.
+            if ($meta->tipo === 'carga' && ! in_array($meta->exercicio, $exerciciosDoTreino, true)) {
+                continue;
+            }
+
+            if ($meta->calcularProgresso()['atingida']) {
+                $meta->update(['concluida' => true]);
+                $batidas[] = $meta->titulo;
+                Celebracoes::push('cliente', (int) $cliente->id, Celebracoes::metaAtingida($meta->titulo));
+            }
+        }
+
+        return $batidas;
     }
 
     // POST /api/v1/fichas/{id}/desmarcar — desfaz a conclusão de hoje
@@ -419,12 +455,6 @@ class FichaTreinoController extends Controller
      */
     private function videoStreamUrl(?string $path): ?string
     {
-        if (! $path) {
-            return null;
-        }
-        if (str_starts_with($path, 'http')) {
-            return $path;
-        }
-        return url('/api/v1/media/exercicio-video/' . ltrim($path, '/'));
+        return \App\Support\Media::videoUrl($path);
     }
 }

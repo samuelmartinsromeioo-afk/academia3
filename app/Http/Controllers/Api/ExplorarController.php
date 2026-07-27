@@ -29,32 +29,84 @@ class ExplorarController extends Controller
 
     // ===================== LISTAGENS =====================
 
+    /**
+     * Aplica busca (q em nome/cidade/bairro), filtros (cidade, uf) e paginação
+     * (limit/offset) a uma query de listagem. Retorna os metadados de paginação.
+     */
+    private function aplicarBuscaPaginacao($query, Request $request): array
+    {
+        $q = trim((string) $request->query('q', ''));
+        $cidade = trim((string) $request->query('cidade', ''));
+        $uf = trim((string) $request->query('uf', ''));
+
+        if ($q !== '') {
+            $query->where(function ($sub) use ($q) {
+                $sub->where('nome', 'like', "%{$q}%")
+                    ->orWhere('cidade', 'like', "%{$q}%")
+                    ->orWhere('bairro', 'like', "%{$q}%");
+            });
+        }
+        if ($cidade !== '') {
+            $query->where('cidade', $cidade);
+        }
+        if ($uf !== '') {
+            $query->where('estado', $uf);
+        }
+
+        $total = (clone $query)->count();
+        $limit = min(50, max(1, (int) $request->query('limit', 20)));
+        $offset = max(0, (int) $request->query('offset', 0));
+        $query->offset($offset)->limit($limit);
+
+        return ['total' => $total, 'limit' => $limit, 'offset' => $offset, 'has_more' => ($offset + $limit) < $total];
+    }
+
+    /** Cidades distintas (para os chips de filtro) de um tipo aprovado. */
+    private function cidadesDe(string $modelClass)
+    {
+        return $modelClass::where('status', 'aprovado')
+            ->whereNotNull('cidade')->where('cidade', '!=', '')
+            ->distinct()->orderBy('cidade')->pluck('cidade');
+    }
+
+    /** Monta a resposta paginada; inclui as cidades só na 1ª página (offset 0). */
+    private function respostaLista(Request $request, string $chave, $items, array $meta, string $modelClass)
+    {
+        $payload = [$chave => $items, 'total' => $meta['total'], 'has_more' => $meta['has_more']];
+        if ($meta['offset'] === 0) {
+            $payload['cidades'] = $this->cidadesDe($modelClass);
+        }
+        return response()->json($payload);
+    }
+
     // GET /api/v1/explorar/personais
     public function personais(Request $request)
     {
         $this->clienteAutenticado($request);
 
-        $personais = Personal::where('status', 'aprovado')
+        $query = Personal::where('status', 'aprovado')
             ->with('avaliacoes')
             ->orderByRaw('pioneiro_posicao IS NULL')
             ->orderBy('pioneiro_posicao')
-            ->orderBy('nome')
-            ->get()
-            ->map(fn ($p) => [
-                'id' => $p->id,
-                'nome' => $p->nome,
-                'foto' => $this->urlPublica($p->foto),
-                'bairro' => $p->bairro,
-                'cidade' => $p->cidade,
-                'estado' => $p->estado,
-                'cref' => $p->cref,
-                'valor_secao' => $p->valor_secao !== null ? (float) $p->valor_secao : null,
-                'media_avaliacao' => $p->media_avaliacao,
-                'total_avaliacoes' => $p->avaliacoes->count(),
-                'pioneiro' => $p->eh_pioneiro,
-            ]);
+            ->orderBy('nome');
 
-        return response()->json(['personais' => $personais]);
+        $meta = $this->aplicarBuscaPaginacao($query, $request);
+
+        $personais = $query->get()->map(fn ($p) => [
+            'id' => $p->id,
+            'nome' => $p->nome,
+            'foto' => $this->urlPublica($p->foto),
+            'bairro' => $p->bairro,
+            'cidade' => $p->cidade,
+            'estado' => $p->estado,
+            'cref' => $p->cref,
+            'valor_secao' => $p->valor_secao !== null ? (float) $p->valor_secao : null,
+            'media_avaliacao' => $p->media_avaliacao,
+            'total_avaliacoes' => $p->avaliacoes->count(),
+            'pioneiro' => $p->eh_pioneiro,
+        ]);
+
+        return $this->respostaLista($request, 'personais', $personais, $meta, Personal::class);
     }
 
     // GET /api/v1/explorar/academias
@@ -62,25 +114,27 @@ class ExplorarController extends Controller
     {
         $this->clienteAutenticado($request);
 
-        $academias = Academia::with(['fotos', 'planos' => fn ($q) => $q->orderBy('valor')])
+        $query = Academia::with(['fotos', 'planos' => fn ($q) => $q->orderBy('valor')])
             ->where('status', 'aprovado')
-            ->orderBy('nome')
-            ->get()
-            ->map(fn ($a) => [
-                'id' => $a->id,
-                'nome' => $a->nome,
-                'bairro' => $a->bairro,
-                'cidade' => $a->cidade,
-                'estado' => $a->estado,
-                'endereco' => $a->endereco,
-                'descricao' => $a->descricao,
-                'tipos_aulas' => $a->tipos_aulas,
-                'fotos' => $a->fotos->map(fn ($f) => $this->urlPublica($f->path))->filter()->values(),
-                'plano_minimo' => $a->planos->first()?->valor !== null ? (float) $a->planos->first()->valor : null,
-                'total_planos' => $a->planos->count(),
-            ]);
+            ->orderBy('nome');
 
-        return response()->json(['academias' => $academias]);
+        $meta = $this->aplicarBuscaPaginacao($query, $request);
+
+        $academias = $query->get()->map(fn ($a) => [
+            'id' => $a->id,
+            'nome' => $a->nome,
+            'bairro' => $a->bairro,
+            'cidade' => $a->cidade,
+            'estado' => $a->estado,
+            'endereco' => $a->endereco,
+            'descricao' => $a->descricao,
+            'tipos_aulas' => $a->tipos_aulas,
+            'fotos' => $a->fotos->map(fn ($f) => $this->urlPublica($f->path))->filter()->values(),
+            'plano_minimo' => $a->planos->first()?->valor !== null ? (float) $a->planos->first()->valor : null,
+            'total_planos' => $a->planos->count(),
+        ]);
+
+        return $this->respostaLista($request, 'academias', $academias, $meta, Academia::class);
     }
 
     // GET /api/v1/explorar/academias/{id}
@@ -131,25 +185,28 @@ class ExplorarController extends Controller
     {
         $this->clienteAutenticado($request);
 
-        $studios = Studio::where('status', 'aprovado')
+        $query = Studio::where('status', 'aprovado')
             ->with(['fotos', 'planos' => fn ($q) => $q->where('ativo', true)->orderBy('valor'), 'avaliacoes'])
-            ->get()
-            ->map(fn ($s) => [
-                'id' => $s->id,
-                'nome' => $s->nome,
-                'tipo' => $s->tipo,
-                'modalidades' => $s->modalidades,
-                'bairro' => $s->bairro,
-                'cidade' => $s->cidade,
-                'estado' => $s->estado,
-                'descricao' => $s->descricao,
-                'valor_aula' => $s->valor_aula !== null ? (float) $s->valor_aula : null,
-                'fotos' => $s->fotos->map(fn ($f) => $this->urlPublica($f->path))->filter()->values(),
-                'plano_minimo' => $s->planos->first()?->valor !== null ? (float) $s->planos->first()->valor : null,
-                'media_avaliacao' => $s->avaliacoes->avg('nota') ? round($s->avaliacoes->avg('nota'), 1) : null,
-            ]);
+            ->orderBy('nome');
 
-        return response()->json(['studios' => $studios]);
+        $meta = $this->aplicarBuscaPaginacao($query, $request);
+
+        $studios = $query->get()->map(fn ($s) => [
+            'id' => $s->id,
+            'nome' => $s->nome,
+            'tipo' => $s->tipo,
+            'modalidades' => $s->modalidades,
+            'bairro' => $s->bairro,
+            'cidade' => $s->cidade,
+            'estado' => $s->estado,
+            'descricao' => $s->descricao,
+            'valor_aula' => $s->valor_aula !== null ? (float) $s->valor_aula : null,
+            'fotos' => $s->fotos->map(fn ($f) => $this->urlPublica($f->path))->filter()->values(),
+            'plano_minimo' => $s->planos->first()?->valor !== null ? (float) $s->planos->first()->valor : null,
+            'media_avaliacao' => $s->avaliacoes->avg('nota') ? round($s->avaliacoes->avg('nota'), 1) : null,
+        ]);
+
+        return $this->respostaLista($request, 'studios', $studios, $meta, Studio::class);
     }
 
     // GET /api/v1/explorar/studios/{id}
@@ -201,22 +258,24 @@ class ExplorarController extends Controller
     {
         $this->clienteAutenticado($request);
 
-        $lojas = Loja::where('status', 'aprovado')
+        $query = Loja::where('status', 'aprovado')
             ->withCount(['produtos' => fn ($q) => $q->where('ativo', true)])
-            ->orderBy('nome')
-            ->get()
-            ->map(fn ($l) => [
-                'id' => $l->id,
-                'nome' => $l->nome,
-                'descricao' => $l->descricao,
-                'logo' => $this->urlPublica($l->logo),
-                'bairro' => $l->bairro,
-                'cidade' => $l->cidade,
-                'estado' => $l->estado,
-                'total_produtos' => $l->produtos_count,
-            ]);
+            ->orderBy('nome');
 
-        return response()->json(['lojas' => $lojas]);
+        $meta = $this->aplicarBuscaPaginacao($query, $request);
+
+        $lojas = $query->get()->map(fn ($l) => [
+            'id' => $l->id,
+            'nome' => $l->nome,
+            'descricao' => $l->descricao,
+            'logo' => $this->urlPublica($l->logo),
+            'bairro' => $l->bairro,
+            'cidade' => $l->cidade,
+            'estado' => $l->estado,
+            'total_produtos' => $l->produtos_count,
+        ]);
+
+        return $this->respostaLista($request, 'lojas', $lojas, $meta, Loja::class);
     }
 
     // GET /api/v1/explorar/lojas/{id}

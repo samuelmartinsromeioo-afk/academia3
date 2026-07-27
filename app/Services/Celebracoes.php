@@ -163,6 +163,18 @@ class Celebracoes
         ];
     }
 
+    public static function metaAtingida(string $titulo): array
+    {
+        return [
+            'tipo'        => 'meta_atingida',
+            'titulo'      => 'META BATIDA!',
+            'mensagem'    => "Você concluiu a meta \"{$titulo}\". Isso é foco e consistência de quem é da família SNR. Bora pra próxima!",
+            'icone'       => 'ph-target',
+            'cor_medalha' => '#D4FF00',
+            'dados_extras'=> ['meta' => $titulo],
+        ];
+    }
+
     private static function kg(float $v): string
     {
         return rtrim(rtrim(number_format($v, 2, ',', '.'), '0'), ',') . ' kg';

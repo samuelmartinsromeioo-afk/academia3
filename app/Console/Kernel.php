@@ -18,6 +18,10 @@ class Kernel extends ConsoleKernel
         // Suspende diariamente o acesso de assinaturas canceladas/em atraso cujo
         // período pago (30 dias a partir do pagamento) já terminou.
         $schedule->command('assinaturas:expirar')->dailyAt('03:00');
+
+        // Retrospectivas de evolução do aluno (bimestral/semestral) — enfileira
+        // para quem está "vencido"; o app exibe no próximo acesso.
+        $schedule->command('celebracoes:retrospectivas')->dailyAt('08:00');
     }
 
     /**

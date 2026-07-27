@@ -105,12 +105,6 @@ class MesocicloController extends Controller
      */
     private function videoStreamUrl(?string $path): ?string
     {
-        if (! $path) {
-            return null;
-        }
-        if (str_starts_with($path, 'http')) {
-            return $path;
-        }
-        return url('/api/v1/media/exercicio-video/' . ltrim($path, '/'));
+        return \App\Support\Media::videoUrl($path);
     }
 }

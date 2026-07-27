@@ -63,7 +63,9 @@ class TesteSnrFitSeeder extends Seeder
                 ['Agachamento', 4, 10, 80], ['Leg press', 4, 12, 150], ['Cadeira extensora', 3, 15, 45],
             ]),
         ];
-        // Histórico: Seg/Qua/Sex nas últimas 10 semanas + últimos 5 dias seguidos (streak).
+        // Histórico: Seg/Qua/Sex nas últimas 10 semanas + streak contínuo de 110
+        // dias terminando hoje. O recorde de 110 dias libera TODAS as medalhas
+        // (até "100 dias") e o nível máximo "Lendário" na gamificação (Feature 3).
         $datas = collect();
         for ($d = 0; $d <= 70; $d++) {
             $data = $hoje->copy()->subDays($d);
@@ -71,7 +73,7 @@ class TesteSnrFitSeeder extends Seeder
                 $datas->push($data->toDateString());
             }
         }
-        for ($d = 0; $d < 8; $d++) {
+        for ($d = 0; $d < 110; $d++) {
             $datas->push($hoje->copy()->subDays($d)->toDateString());
         }
         $i = 0;
