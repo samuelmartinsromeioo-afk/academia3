@@ -181,9 +181,9 @@
     <script>
         @if($medidas->count() > 0)
         const dadosMedidas = {
-            labels: {!! json_encode($medidas->map(fn($m) => $m->data->format('d/m/y'))->values()) !!},
-            campos: {!! json_encode(collect(\App\Models\MedidaCorporal::CAMPOS)->mapWithKeys(fn($label,$campo) => [$campo => $medidas->map(fn($m) => $m->$campo !== null ? (float)$m->$campo : null)->values()])) !!},
-            rotulos: {!! json_encode(\App\Models\MedidaCorporal::CAMPOS) !!}
+            labels: {!! json_encode($medidas->map(fn($m) => $m->data->format('d/m/y'))->values(), JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP) !!},
+            campos: {!! json_encode(collect(\App\Models\MedidaCorporal::CAMPOS)->mapWithKeys(fn($label,$campo) => [$campo => $medidas->map(fn($m) => $m->$campo !== null ? (float)$m->$campo : null)->values()]), JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP) !!},
+            rotulos: {!! json_encode(\App\Models\MedidaCorporal::CAMPOS, JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP) !!}
         };
         let chart;
         function renderChart() {

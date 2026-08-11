@@ -24,10 +24,11 @@ class AsaasWebhookController extends Controller
     // válido, a autorização é negada (fail-closed).
     if ($request->has('transfer') || in_array($event, ['TRANSFER_REQUEST', 'TRANSFER_CREATED', 'TRANSFER'])) {
         if (! $tokenValido) {
-            Log::warning('Asaas: autorização de saque NEGADA — token ausente ou inválido', [
+            Log::channel('security')->warning('Asaas: autorização de saque NEGADA — token ausente ou inválido', [
                 'event'        => $event,
                 'has_transfer' => $request->has('transfer'),
                 'token_config' => (bool) $expectedToken,
+                'ip'           => $request->ip(),
             ]);
 
             return response()->json(['error' => 'Unauthorized'], 401);
@@ -47,9 +48,10 @@ class AsaasWebhookController extends Controller
     // token configurado no ambiente OU header inválido, recusamos — o mesmo
     // critério da autorização de saque acima. Configure ASAAS_WEBHOOK_TOKEN.
     if (! $tokenValido) {
-        Log::warning('Asaas webhook: evento de pagamento REJEITADO — token ausente ou inválido', [
+        Log::channel('security')->warning('Asaas webhook: evento de pagamento REJEITADO — token ausente ou inválido', [
             'event'        => $event,
             'token_config' => (bool) $expectedToken,
+            'ip'           => $request->ip(),
         ]);
 
         return response()->json(['error' => 'Unauthorized'], 401);

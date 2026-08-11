@@ -319,7 +319,7 @@
 
 <script>
     // Mapa nome do exercício -> caminho do vídeo demonstrativo (biblioteca SNR).
-    const VIDEOS_EXERCICIOS = {!! json_encode(collect($exerciciosData)->filter(fn($e) => ! empty($e['video']))->pluck('video', 'nome'), JSON_UNESCAPED_UNICODE) !!};
+    const VIDEOS_EXERCICIOS = {!! json_encode(collect($exerciciosData)->filter(fn($e) => ! empty($e['video']))->pluck('video', 'nome'), (JSON_UNESCAPED_UNICODE)|JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP) !!};
     const STORAGE_BASE = "{{ asset('storage') }}";
 
     // Ao digitar/escolher um exercício do catálogo, casa o vídeo demonstrativo e mostra a prévia ao lado.

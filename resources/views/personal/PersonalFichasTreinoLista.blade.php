@@ -1031,7 +1031,7 @@
 
     <script>
         // ─── DADOS DOS EXERCÍCIOS ───────────────────────────────────────────
-        const TODOS_EXERCICIOS = {!! json_encode($exerciciosData, JSON_UNESCAPED_UNICODE) !!};
+        const TODOS_EXERCICIOS = {!! json_encode($exerciciosData, (JSON_UNESCAPED_UNICODE)|JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP) !!};
         const STORAGE_BASE = "{{ asset('storage') }}";
 
         // Aplica (ou limpa) o vídeo demonstrativo do catálogo ao lado do exercício escolhido.

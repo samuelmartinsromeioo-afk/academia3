@@ -19,7 +19,15 @@ return [
 
     'allowed_methods' => ['*'],
 
-    'allowed_origins' => ['*'],
+    // Origens permitidas. O app mobile (React Native) NÃO envia cabeçalho Origin
+    // e não é afetado por CORS; o site é same-origin. Portanto, em produção,
+    // defina CORS_ALLOWED_ORIGINS com o(s) domínio(s) do site (separados por
+    // vírgula) para restringir chamadas cross-origin no navegador. Sem a env,
+    // mantém '*' (compatível com o comportamento atual em dev).
+    'allowed_origins' => array_values(array_filter(array_map(
+        'trim',
+        explode(',', env('CORS_ALLOWED_ORIGINS', '*'))
+    ))),
 
     'allowed_origins_patterns' => [],
 

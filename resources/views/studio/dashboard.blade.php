@@ -521,7 +521,7 @@
                 </div>
                 <div class="plano-valor">R$ {{ number_format($plano->valor, 2, ',', '.') }}/mês</div>
                 <div class="plano-actions">
-                    <button type="button" class="btn-sm outline" onclick="abrirEditarPlano({{ $plano->id }}, {!! json_encode($plano->nome) !!}, {{ $plano->valor }}, {{ $plano->duracao_meses }}, {!! json_encode($plano->descricao ?? '') !!}, {{ $plano->ativo ? 'true' : 'false' }})">
+                    <button type="button" class="btn-sm outline" onclick="abrirEditarPlano({{ $plano->id }}, {!! htmlspecialchars(json_encode($plano->nome), ENT_QUOTES) !!}, {{ $plano->valor }}, {{ $plano->duracao_meses }}, {!! htmlspecialchars(json_encode($plano->descricao ?? ''), ENT_QUOTES) !!}, {{ $plano->ativo ? 'true' : 'false' }})">
                         <i class="ph ph-pen"></i> Editar
                     </button>
                     <form method="POST" action="{{ route('studio.planos.destroy', $plano->id) }}" onsubmit="return confirm('Excluir este plano?');" style="margin:0;">

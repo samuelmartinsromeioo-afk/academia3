@@ -1178,8 +1178,8 @@
 
 <script>
     // ============ META DOS TIPOS DE AVALIAÇÃO ============
-    window.avaliacaoTipos = {!! json_encode(\App\Models\AvaliacaoFisica::TIPOS) !!};
-    window.avaliacaoMeta  = {!! json_encode(\App\Models\AvaliacaoFisica::META) !!};
+    window.avaliacaoTipos = {!! json_encode(\App\Models\AvaliacaoFisica::TIPOS, JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP) !!};
+    window.avaliacaoMeta  = {!! json_encode(\App\Models\AvaliacaoFisica::META, JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP) !!};
 
     // ============ DADOS DAS ACADEMIAS (p/ deep-link de "Explorar Academias") ============
     window.academiasData = {
@@ -1187,7 +1187,7 @@
         {{ $a->id }}: {
             id: {{ $a->id }},
             nome: '{{ addslashes($a->nome) }}',
-            planos: {!! json_encode($a->planos->map(fn($p) => ['id'=>$p->id,'nome'=>$p->nome,'valor'=>$p->valor,'duracao'=>$p->duracao_meses,'descricao'=>$p->descricao])) !!}
+            planos: {!! json_encode($a->planos->map(fn($p) => ['id'=>$p->id,'nome'=>$p->nome,'valor'=>$p->valor,'duracao'=>$p->duracao_meses,'descricao'=>$p->descricao]), JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP) !!}
         },
         @endforeach
     };
@@ -1216,9 +1216,9 @@
             valor_secao: {{ $p->valor_secao ?? 0 }},
             valor_ficha: {{ $p->valor_ficha ?? 0 }},
             valor_avaliacao: {{ $p->valor_avaliacao ?? 0 }},
-            precos_avaliacao: {!! json_encode($p->precos_avaliacao ?: (object)[]) !!},
-            pacotes_avaliacao: {!! json_encode($p->pacotesAvaliacao->map(fn($pa) => ['id' => $pa->id, 'nome' => $pa->nome, 'valor' => (float) $pa->valor, 'tipos' => $pa->tipos])) !!},
-            academias: {!! json_encode($p->academias ?? '') !!},
+            precos_avaliacao: {!! json_encode($p->precos_avaliacao ?: (object)[], JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP) !!},
+            pacotes_avaliacao: {!! json_encode($p->pacotesAvaliacao->map(fn($pa) => ['id' => $pa->id, 'nome' => $pa->nome, 'valor' => (float) $pa->valor, 'tipos' => $pa->tipos]), JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP) !!},
+            academias: {!! json_encode($p->academias ?? '', JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP) !!},
             fotos: [
                 @foreach($p->fotos ?? [] as $foto)
                 { url: '{{ asset("storage/" . $foto->path) }}', legenda: '{{ addslashes($foto->legenda ?? "") }}' },
@@ -1243,7 +1243,7 @@
             $horariosGrouped[$pid][$date][] = ['horario_inicio' => $hi, 'horario_fim' => $hf];
         }
     @endphp
-    window.horariosDisponiveisData = {!! json_encode($horariosGrouped) !!};
+    window.horariosDisponiveisData = {!! json_encode($horariosGrouped, JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP) !!};
 
     let personalSelecionadoId = null;
 
@@ -1448,7 +1448,7 @@
         document.getElementById('cartaoDescricao').textContent = 'Ficha Personalizada — ' + (personal?.nome || 'Personal');
         document.getElementById('cartaoValor').textContent = 'R$ ' + valor.toFixed(2).replace('.', ',');
         resetarFormCartao();
-        document.getElementById('cartaoTelefone').value = {!! json_encode($cliente->whatsapp ?? '') !!};
+        document.getElementById('cartaoTelefone').value = {!! json_encode($cliente->whatsapp ?? '', JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP) !!};
         document.getElementById('cartaoCEP').value = '{{ $cliente->cep ?? '' }}';
         document.getElementById('modalCartao').style.display = 'flex';
         fecharFichaModal();
@@ -1621,7 +1621,7 @@
         document.getElementById('cartaoDescricao').textContent = (avFisicaSelecao.label || 'Avaliação Física') + ' — ' + (personal?.nome || 'Personal');
         document.getElementById('cartaoValor').textContent = moneyBR(valor);
         resetarFormCartao();
-        document.getElementById('cartaoTelefone').value = {!! json_encode($cliente->whatsapp ?? '') !!};
+        document.getElementById('cartaoTelefone').value = {!! json_encode($cliente->whatsapp ?? '', JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP) !!};
         document.getElementById('cartaoCEP').value = '{{ $cliente->cep ?? '' }}';
         document.getElementById('modalCartao').style.display = 'flex';
         fecharAvFisicaModal();
@@ -1636,7 +1636,7 @@
             'hora_inicio' => \Carbon\Carbon::parse($t->hora_inicio)->format('H:i'),
             'hora_fim' => \Carbon\Carbon::parse($t->hora_fim)->format('H:i')
         ];
-    })) !!};
+    }), JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP) !!};
 
     function abrirHistoricoModal() {
         const container = document.getElementById('listaHistoricoCompleto');
@@ -2700,7 +2700,7 @@
         document.getElementById('cartaoDescricao').textContent = 'Pacote com personal';
         document.getElementById('cartaoValor').textContent = 'R$ ' + valorNum.toFixed(2).replace('.', ',');
         resetarFormCartao();
-        document.getElementById('cartaoTelefone').value = {!! json_encode($cliente->whatsapp ?? '') !!};
+        document.getElementById('cartaoTelefone').value = {!! json_encode($cliente->whatsapp ?? '', JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP) !!};
         document.getElementById('cartaoCEP').value = '{{ $cliente->cep ?? '' }}';
         document.getElementById('modalCartao').style.display = 'flex';
     }
@@ -2714,7 +2714,7 @@
         document.getElementById('cartaoDescricao').textContent = `Plano ${planoNome} — ${academiaNome}`;
         document.getElementById('cartaoValor').textContent = 'R$ ' + parseFloat(valor).toFixed(2).replace('.', ',');
         resetarFormCartao();
-        document.getElementById('cartaoTelefone').value = {!! json_encode($cliente->whatsapp ?? '') !!};
+        document.getElementById('cartaoTelefone').value = {!! json_encode($cliente->whatsapp ?? '', JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP) !!};
         document.getElementById('cartaoCEP').value = '{{ $cliente->cep ?? '' }}';
         fecharPlanosAcademia();
         document.getElementById('modalCartao').style.display = 'flex';
@@ -2906,7 +2906,7 @@
         document.getElementById('cartaoDescricao').textContent = 'Aula Avulsa — ' + personalNome;
         document.getElementById('cartaoValor').textContent = 'R$ ' + parseFloat(valorSecao).toFixed(2).replace('.', ',');
         resetarFormCartao();
-        document.getElementById('cartaoTelefone').value = {!! json_encode($cliente->whatsapp ?? '') !!};
+        document.getElementById('cartaoTelefone').value = {!! json_encode($cliente->whatsapp ?? '', JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP) !!};
         document.getElementById('cartaoCEP').value = '{{ $cliente->cep ?? '' }}';
         document.getElementById('modalCartao').style.display = 'flex';
     }

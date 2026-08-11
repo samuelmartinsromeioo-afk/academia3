@@ -832,7 +832,7 @@
 
     <script>
         // Exercícios de cada ficha, para pré-preencher os campos de carga.
-        const fichasExercicios = {!! json_encode($fichasExerciciosJs) !!};
+        const fichasExercicios = {!! json_encode($fichasExerciciosJs, JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP) !!};
 
         function escapeHtml(str) {
             return String(str ?? '').replace(/[&<>"']/g, s => ({

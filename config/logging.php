@@ -73,6 +73,17 @@ return [
             'replace_placeholders' => true,
         ],
 
+        // A09 — canal de segurança separado (login, acessos negados, webhooks
+        // rejeitados). Arquivo dedicado facilita retenção maior e envio a um
+        // SIEM/alerta. Mantém 90 dias por padrão.
+        'security' => [
+            'driver' => 'daily',
+            'path' => storage_path('logs/security.log'),
+            'level' => env('SECURITY_LOG_LEVEL', 'info'),
+            'days' => env('SECURITY_LOG_DAYS', 90),
+            'replace_placeholders' => true,
+        ],
+
         'slack' => [
             'driver' => 'slack',
             'url' => env('LOG_SLACK_WEBHOOK_URL'),

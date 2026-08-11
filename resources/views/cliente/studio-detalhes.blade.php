@@ -482,8 +482,8 @@
                             <p class="desc"></p>
                         @endif
                         <div class="botoes-pagamento">
-                            <button class="btn-pix" onclick="pagarPlanoPix({{ $plano->id }}, {!! json_encode($plano->nome) !!}, {{ $plano->valor }})"><i class="ph ph-qr-code"></i> PIX</button>
-                            <button class="btn-cartao" onclick="pagarPlanoCartao({{ $plano->id }}, {!! json_encode($plano->nome) !!}, {{ $plano->valor }})"><i class="ph ph-credit-card"></i> Cartão</button>
+                            <button class="btn-pix" onclick="pagarPlanoPix({{ $plano->id }}, {!! htmlspecialchars(json_encode($plano->nome), ENT_QUOTES) !!}, {{ $plano->valor }})"><i class="ph ph-qr-code"></i> PIX</button>
+                            <button class="btn-cartao" onclick="pagarPlanoCartao({{ $plano->id }}, {!! htmlspecialchars(json_encode($plano->nome), ENT_QUOTES) !!}, {{ $plano->valor }})"><i class="ph ph-credit-card"></i> Cartão</button>
                         </div>
                     </div>
                 @endforeach
@@ -660,12 +660,12 @@
 </div>
 
 <script>
-    const STUDIO_ID    = {!! json_encode($studio->id) !!};
-    const VALOR_AULA   = {!! json_encode((float) ($studio->valor_aula ?? 0)) !!};
-    const STUDIO_NOME  = {!! json_encode($studio->nome) !!};
+    const STUDIO_ID    = {!! json_encode($studio->id, JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP) !!};
+    const VALOR_AULA   = {!! json_encode((float) ($studio->valor_aula ?? 0), JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP) !!};
+    const STUDIO_NOME  = {!! json_encode($studio->nome, JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP) !!};
     const CSRF         = '{{ csrf_token() }}';
-    const CLIENTE_TEL  = {!! json_encode($cliente->whatsapp ?? '') !!};
-    const CLIENTE_CEP  = {!! json_encode($cliente->cep ?? '') !!};
+    const CLIENTE_TEL  = {!! json_encode($cliente->whatsapp ?? '', JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP) !!};
+    const CLIENTE_CEP  = {!! json_encode($cliente->cep ?? '', JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP) !!};
 
     // ============ SLOTS DE AULA AVULSA ============
     let slotSelecionado = null;

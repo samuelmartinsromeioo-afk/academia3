@@ -116,6 +116,15 @@ class AuthController extends Controller
             return $this->tokenResponse($loja, 'loja', $device);
         }
 
+        // A07/A09 — registra a falha de login (identificador tentado + IP) para
+        // detectar força bruta/credential stuffing. Mensagem ao cliente segue
+        // genérica (não revela se o e-mail/CNPJ existe).
+        \Illuminate\Support\Facades\Log::channel('security')->warning('login_falhou', [
+            'login' => substr($loginInput, 0, 120),
+            'ip'    => $request->ip(),
+            'agent' => substr((string) $request->userAgent(), 0, 180),
+        ]);
+
         return response()->json(['error' => 'E-mail, CNPJ ou senha inválidos.'], 401);
     }
 

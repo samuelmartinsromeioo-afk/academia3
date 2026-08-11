@@ -25,6 +25,14 @@ class SecurityHeaders
         $response->headers->set('X-XSS-Protection', '0');                    // recomendação moderna
         $response->headers->set('Permissions-Policy', 'geolocation=(self), microphone=(), camera=()');
 
+        // HSTS (A02): força HTTPS por 1 ano, incluindo subdomínios. Só é enviado
+        // em conexões seguras — sobre HTTP o navegador ignoraria e poderia
+        // atrapalhar o dev local. Em produção atrás de proxy/HTTPS, ative também
+        // TrustProxies para que $request->secure() reflita o esquema real.
+        if ($request->secure()) {
+            $response->headers->set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
+        }
+
         return $response;
     }
 }

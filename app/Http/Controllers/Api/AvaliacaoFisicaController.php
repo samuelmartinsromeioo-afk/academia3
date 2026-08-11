@@ -59,9 +59,13 @@ class AvaliacaoFisicaController extends Controller
             if ($request->filled('cliente_id')) {
                 $query->where('cliente_id', (int) $request->query('cliente_id'));
             }
-        } else {
+        } elseif ($user instanceof Cliente) {
             // Cliente: sempre e somente as próprias avaliações.
             $query->where('cliente_id', $user->id);
+        } else {
+            // Academia/Studio/Loja não têm avaliação física — nega (fail-closed)
+            // para nunca cair numa query sem filtro de posse.
+            return response()->json(['error' => 'Acesso negado.'], 403);
         }
 
         if ($request->filled('tipo')) {
@@ -316,6 +320,10 @@ class AvaliacaoFisicaController extends Controller
             $query->where('personal_id', $user->id);
         } elseif ($user instanceof Cliente) {
             $query->where('cliente_id', $user->id);
+        } else {
+            // Academia/Studio/Loja: sem vínculo com avaliação física — nega
+            // (fail-closed) para não devolver um registro de outro dono por id.
+            return response()->json(['error' => 'Acesso negado.'], 403);
         }
 
         $avaliacao = $query->find($id);

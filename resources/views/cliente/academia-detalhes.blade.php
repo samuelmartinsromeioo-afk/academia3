@@ -219,8 +219,8 @@
                             <p class="desc"></p>
                         @endif
                         <div class="botoes-pagamento">
-                            <button class="btn-pix" onclick="pagarPlanoPix({{ $plano->id }}, {!! json_encode($plano->nome) !!}, {{ $plano->valor }})"><i class="ph ph-qr-code"></i> PIX</button>
-                            <button class="btn-cartao" onclick="pagarPlanoCartao({{ $plano->id }}, {!! json_encode($plano->nome) !!}, {{ $plano->valor }})"><i class="ph ph-credit-card"></i> Cartão</button>
+                            <button class="btn-pix" onclick="pagarPlanoPix({{ $plano->id }}, {!! htmlspecialchars(json_encode($plano->nome), ENT_QUOTES) !!}, {{ $plano->valor }})"><i class="ph ph-qr-code"></i> PIX</button>
+                            <button class="btn-cartao" onclick="pagarPlanoCartao({{ $plano->id }}, {!! htmlspecialchars(json_encode($plano->nome), ENT_QUOTES) !!}, {{ $plano->valor }})"><i class="ph ph-credit-card"></i> Cartão</button>
                         </div>
                     </div>
                 @endforeach
@@ -269,7 +269,7 @@
             <div class="prof-grid">
                 @foreach($academia->professores as $prof)
                     <div class="prof-card {{ $prof->resumo ? 'clickable' : '' }}"
-                         @if($prof->resumo) onclick="verProfissional({!! json_encode($prof->nome) !!}, {!! json_encode($prof->resumo) !!})" @endif>
+                         @if($prof->resumo) onclick="verProfissional({!! htmlspecialchars(json_encode($prof->nome), ENT_QUOTES) !!}, {!! htmlspecialchars(json_encode($prof->resumo), ENT_QUOTES) !!})" @endif>
                         <div class="avatar"><i class="ph ph-user"></i></div>
                         <div>
                             <div class="nome">{{ $prof->nome }}</div>
@@ -296,7 +296,7 @@
                                 @if(!is_null($aula->dia_semana))<span><i class="ph ph-calendar-dot"></i> {{ $diasSemana[$aula->dia_semana] ?? '' }}</span>@endif
                                 @if($aula->hora_inicio)<span>· {{ \Illuminate\Support\Str::substr($aula->hora_inicio, 0, 5) }}@if($aula->duracao_min) ({{ $aula->duracao_min }}min)@endif</span>@endif
                                 @if($aula->professor)
-                                    <span>· @if($aula->professor?->resumo)<a class="prof-link" onclick="verProfissional({!! json_encode($aula->professor?->nome) !!}, {!! json_encode($aula->professor?->resumo) !!})">{{ $aula->professor?->nome }}</a>@else{{ $aula->professor?->nome }}@endif</span>
+                                    <span>· @if($aula->professor?->resumo)<a class="prof-link" onclick="verProfissional({!! htmlspecialchars(json_encode($aula->professor?->nome), ENT_QUOTES) !!}, {!! htmlspecialchars(json_encode($aula->professor?->resumo), ENT_QUOTES) !!})">{{ $aula->professor?->nome }}</a>@else{{ $aula->professor?->nome }}@endif</span>
                                 @endif
                             </div>
                         @endif
@@ -408,12 +408,12 @@
 </div>
 
 <script>
-    const ACADEMIA_ID       = {!! json_encode($academia->id) !!};
-    const ACADEMIA_NOME     = {!! json_encode($academia->nome) !!};
-    const VALOR_MENSALIDADE = {!! json_encode((float) ($academia->valor_mensalidade ?? 0)) !!};
+    const ACADEMIA_ID       = {!! json_encode($academia->id, JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP) !!};
+    const ACADEMIA_NOME     = {!! json_encode($academia->nome, JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP) !!};
+    const VALOR_MENSALIDADE = {!! json_encode((float) ($academia->valor_mensalidade ?? 0), JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP) !!};
     const CSRF          = '{{ csrf_token() }}';
-    const CLIENTE_TEL   = {!! json_encode($cliente->whatsapp ?? '') !!};
-    const CLIENTE_CEP   = {!! json_encode($cliente->cep ?? '') !!};
+    const CLIENTE_TEL   = {!! json_encode($cliente->whatsapp ?? '', JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP) !!};
+    const CLIENTE_CEP   = {!! json_encode($cliente->cep ?? '', JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP) !!};
 
     function verProfissional(nome, resumo) {
         document.getElementById('profModalNome').textContent = nome || 'Profissional';

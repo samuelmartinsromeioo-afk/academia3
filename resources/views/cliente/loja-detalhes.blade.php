@@ -393,12 +393,12 @@
 </div>
 
 <script>
-    const LOJA_ID     = {!! json_encode($loja->id) !!};
-    const LOJA_NOME   = {!! json_encode($loja->nome) !!};
+    const LOJA_ID     = {!! json_encode($loja->id, JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP) !!};
+    const LOJA_NOME   = {!! json_encode($loja->nome, JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP) !!};
     const CSRF        = '{{ csrf_token() }}';
-    const CLIENTE_TEL = {!! json_encode($cliente->whatsapp ?? '') !!};
-    const CLIENTE_CEP = {!! json_encode($cliente->cep ?? '') !!};
-    const EH_CLIENTE  = {!! json_encode((bool) $cliente) !!};
+    const CLIENTE_TEL = {!! json_encode($cliente->whatsapp ?? '', JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP) !!};
+    const CLIENTE_CEP = {!! json_encode($cliente->cep ?? '', JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP) !!};
+    const EH_CLIENTE  = {!! json_encode((bool) $cliente, JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP) !!};
 
     let cart = [];          // { id, nome, preco, estoque, qtd }
     let entregaTipo = 'retirada';

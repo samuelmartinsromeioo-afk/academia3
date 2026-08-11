@@ -287,9 +287,18 @@ class PaymentController extends Controller
     // ─────────────────────────────────────────────
     public function processarPagamentoConfirmado(Payment $payment): void
     {
-        if ($payment->status === 'succeeded') {
+        // Reivindicação ATÔMICA do processamento: um único UPDATE condicional
+        // decide quem processa. Entregas duplicadas do webhook (o Asaas reenvia)
+        // e chamadas concorrentes veem 0 linhas afetadas e saem sem reprocessar
+        // — evita baixa de estoque, agendamento e repasse ao personal em dobro.
+        // (Antes o guard era um read-check não atômico, sujeito à corrida.)
+        $claimed = Payment::whereKey($payment->id)
+            ->whereNotIn('status', ['succeeded', 'processing'])
+            ->update(['status' => 'processing']);
+        if ($claimed === 0) {
             return;
         }
+        $payment->status = 'processing';
 
         if (! empty($payment->booking_data)) {
             $booking = json_decode($payment->booking_data, true);
@@ -2598,12 +2607,23 @@ class PaymentController extends Controller
                 'subtotal' => $item['subtotal'] ?? 0,
             ]);
 
-            // Baixa de estoque (nunca abaixo de zero).
-            if (! empty($item['produto_id'])) {
-                $produto = Produto::find($item['produto_id']);
-                if ($produto) {
-                    $produto->estoque = max(0, $produto->estoque - (int) ($item['quantidade'] ?? 0));
-                    $produto->save();
+            // Baixa de estoque ATÔMICA: um único UPDATE condicional decrementa
+            // apenas se ainda houver saldo suficiente (WHERE estoque >= qtd),
+            // sem read-modify-write. Evita a corrida entre pedidos concorrentes
+            // que, lendo o mesmo estoque, venderia além do disponível/zeraria.
+            $qtd = (int) ($item['quantidade'] ?? 0);
+            if (! empty($item['produto_id']) && $qtd > 0) {
+                $baixou = Produto::whereKey($item['produto_id'])
+                    ->where('estoque', '>=', $qtd)
+                    ->decrement('estoque', $qtd);
+                if ($baixou === 0) {
+                    // Estoque acabou entre o checkout e a confirmação: registra
+                    // para conferência manual (o pagamento já foi confirmado).
+                    Log::warning('fulfillLojaPedido: estoque insuficiente na baixa', [
+                        'payment_id' => $payment->id,
+                        'produto_id' => $item['produto_id'],
+                        'quantidade' => $qtd,
+                    ]);
                 }
             }
         }
