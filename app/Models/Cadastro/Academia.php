@@ -106,5 +106,18 @@ class Academia extends Authenticatable
         return $this->hasMany(AcademiaAula::class, 'academia_id');
     }
 
+    /** Avaliações (nota + comentário) feitas pelos alunos desta academia. */
+    public function avaliacoes(): HasMany
+    {
+        return $this->hasMany(\App\Models\Avaliacao::class, 'academia_id');
+    }
+
+    /** Média das notas (1 casa) — '0.0' quando ainda não há avaliações. */
+    public function getMediaAvaliacaoAttribute()
+    {
+        $media = $this->avaliacoes()->avg('nota');
+        return $media ? number_format($media, 1, '.', '') : '0.0';
+    }
+
     use HasFactory;
 }

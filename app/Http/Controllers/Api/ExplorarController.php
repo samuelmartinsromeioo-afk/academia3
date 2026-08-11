@@ -2,11 +2,13 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Http\Controllers\Api\Concerns\AvaliaServicos;
 use App\Http\Controllers\Api\Concerns\ResolvesApiUser;
 use App\Http\Controllers\Cadastro\ClienteController as WebClienteController;
 use App\Http\Controllers\Controller;
 use App\Models\Agenda;
 use App\Models\Cadastro\Academia;
+use App\Models\Cadastro\FichaTreino;
 use App\Models\Cadastro\Loja;
 use App\Models\Cadastro\Pacote;
 use App\Models\Cadastro\Personal;
@@ -26,6 +28,7 @@ use Illuminate\Support\Facades\Storage;
 class ExplorarController extends Controller
 {
     use ResolvesApiUser;
+    use AvaliaServicos;
 
     // ===================== LISTAGENS =====================
 
@@ -115,6 +118,8 @@ class ExplorarController extends Controller
         $this->clienteAutenticado($request);
 
         $query = Academia::with(['fotos', 'planos' => fn ($q) => $q->orderBy('valor')])
+            ->withAvg('avaliacoes as nota_media', 'nota')
+            ->withCount('avaliacoes')
             ->where('status', 'aprovado')
             ->orderBy('nome');
 
@@ -132,6 +137,8 @@ class ExplorarController extends Controller
             'fotos' => $a->fotos->map(fn ($f) => $this->urlPublica($f->path))->filter()->values(),
             'plano_minimo' => $a->planos->first()?->valor !== null ? (float) $a->planos->first()->valor : null,
             'total_planos' => $a->planos->count(),
+            'media_avaliacao' => $a->nota_media ? round((float) $a->nota_media, 1) : null,
+            'total_avaliacoes' => (int) $a->avaliacoes_count,
         ]);
 
         return $this->respostaLista($request, 'academias', $academias, $meta, Academia::class);
@@ -141,16 +148,74 @@ class ExplorarController extends Controller
     public function academiaDetalhe(Request $request, $id)
     {
         $cliente = $this->clienteAutenticado($request);
+        $a = $this->carregarAcademia($id);
 
-        $a = Academia::with([
+        return response()->json(['academia' => $this->montarAcademiaDetalhe($a, $cliente)]);
+    }
+
+    // GET /api/v1/minha-academia — a academia contratada pelo aluno (ou null),
+    // com fichas criadas pela academia, aulas/horários, professores e planos.
+    public function minhaAcademia(Request $request)
+    {
+        $cliente = $this->clienteAutenticado($request);
+
+        if (! $cliente->academia_id) {
+            return response()->json(['academia' => null]);
+        }
+
+        $a = Academia::where('status', 'aprovado')
+            ->with([
+                'fotos',
+                'planos' => fn ($q) => $q->orderBy('valor'),
+                'professores' => fn ($q) => $q->where('ativo', true)->orderBy('nome'),
+                'aulas' => fn ($q) => $q->where('ativo', true)->with('professor')->orderBy('nome'),
+                'personaisAprovados' => fn ($q) => $q->where('personals.status', 'aprovado')->orderBy('nome'),
+            ])
+            ->find($cliente->academia_id);
+
+        // Academia removida/reprovada depois da contratação: trata como sem vínculo.
+        if (! $a) {
+            return response()->json(['academia' => null]);
+        }
+
+        $fichas = FichaTreino::withCount('exercicios')
+            ->where('cliente_id', $cliente->id)
+            ->where('academia_id', $a->id)
+            ->where('ativo', true)
+            ->orderBy('dia_semana')
+            ->get()
+            ->map(fn ($f) => [
+                'id' => $f->id,
+                'nome_treino' => $f->nome_treino,
+                'dia_semana' => $f->dia_semana,
+                'dia_semana_nome' => $f->getDiaSemanaNome(),
+                'divisao' => $f->divisao,
+                'total_exercicios' => (int) $f->exercicios_count,
+                'concluido_hoje' => $f->foi_concluido_hoje(),
+            ]);
+
+        $detalhe = $this->montarAcademiaDetalhe($a, $cliente);
+        $detalhe['fichas'] = $fichas;
+
+        return response()->json(['academia' => $detalhe]);
+    }
+
+    /** Carrega a academia com as relações usadas na tela de detalhe. */
+    private function carregarAcademia($id): Academia
+    {
+        return Academia::with([
             'fotos',
             'planos' => fn ($q) => $q->orderBy('valor'),
             'professores' => fn ($q) => $q->where('ativo', true)->orderBy('nome'),
             'aulas' => fn ($q) => $q->where('ativo', true)->with('professor')->orderBy('nome'),
             'personaisAprovados' => fn ($q) => $q->where('personals.status', 'aprovado')->orderBy('nome'),
         ])->findOrFail($id);
+    }
 
-        return response()->json(['academia' => [
+    /** Monta o payload de detalhe da academia (compartilhado com minha-academia). */
+    private function montarAcademiaDetalhe(Academia $a, $cliente): array
+    {
+        return array_merge([
             'id' => $a->id,
             'nome' => $a->nome,
             'descricao' => $a->descricao,
@@ -177,7 +242,7 @@ class ExplorarController extends Controller
                 'valor_secao' => $p->valor_secao !== null ? (float) $p->valor_secao : null,
             ]),
             'ja_contratada' => $cliente->academia_id == $a->id,
-        ]]);
+        ], $this->blocoAvaliacoes('academia', $a, $cliente));
     }
 
     // GET /api/v1/explorar/studios
@@ -212,18 +277,17 @@ class ExplorarController extends Controller
     // GET /api/v1/explorar/studios/{id}
     public function studioDetalhe(Request $request, $id)
     {
-        $this->clienteAutenticado($request);
+        $cliente = $this->clienteAutenticado($request);
 
         $s = Studio::where('status', 'aprovado')
             ->with([
                 'fotos',
                 'planos' => fn ($q) => $q->where('ativo', true)->orderBy('valor'),
                 'horarios' => fn ($q) => $q->where('ativo', true)->orderBy('dia_semana'),
-                'avaliacoes' => fn ($q) => $q->with('cliente:id,nome')->latest()->limit(20),
             ])
             ->findOrFail($id);
 
-        return response()->json(['studio' => [
+        return response()->json(['studio' => array_merge([
             'id' => $s->id,
             'nome' => $s->nome,
             'tipo' => $s->tipo,
@@ -246,11 +310,7 @@ class ExplorarController extends Controller
                 'hora_abertura' => $h->hora_abertura ?? null,
                 'hora_fechamento' => $h->hora_fechamento ?? null,
             ]),
-            'avaliacoes' => $s->avaliacoes->map(fn ($av) => [
-                'nota' => $av->nota, 'comentario' => $av->comentario ?? null,
-                'cliente' => $av->cliente?->nome,
-            ]),
-        ]]);
+        ], $this->blocoAvaliacoes('studio', $s, $cliente))]);
     }
 
     // GET /api/v1/explorar/lojas
@@ -260,6 +320,8 @@ class ExplorarController extends Controller
 
         $query = Loja::where('status', 'aprovado')
             ->withCount(['produtos' => fn ($q) => $q->where('ativo', true)])
+            ->withAvg('avaliacoes as nota_media', 'nota')
+            ->withCount('avaliacoes')
             ->orderBy('nome');
 
         $meta = $this->aplicarBuscaPaginacao($query, $request);
@@ -273,6 +335,8 @@ class ExplorarController extends Controller
             'cidade' => $l->cidade,
             'estado' => $l->estado,
             'total_produtos' => $l->produtos_count,
+            'media_avaliacao' => $l->nota_media ? round((float) $l->nota_media, 1) : null,
+            'total_avaliacoes' => (int) $l->avaliacoes_count,
         ]);
 
         return $this->respostaLista($request, 'lojas', $lojas, $meta, Loja::class);
@@ -281,13 +345,13 @@ class ExplorarController extends Controller
     // GET /api/v1/explorar/lojas/{id}
     public function lojaDetalhe(Request $request, $id)
     {
-        $this->clienteAutenticado($request);
+        $cliente = $this->clienteAutenticado($request);
 
         $l = Loja::where('status', 'aprovado')
             ->with(['produtos' => fn ($q) => $q->where('ativo', true)->orderBy('nome')])
             ->findOrFail($id);
 
-        return response()->json(['loja' => [
+        return response()->json(['loja' => array_merge([
             'id' => $l->id,
             'nome' => $l->nome,
             'descricao' => $l->descricao,
@@ -304,7 +368,7 @@ class ExplorarController extends Controller
                 'estoque' => $p->estoque,
                 'imagem' => $this->urlPublica($p->imagem),
             ]),
-        ]]);
+        ], $this->blocoAvaliacoes('loja', $l, $cliente))]);
     }
 
     // ===================== PACOTES E HORÁRIOS =====================
@@ -312,18 +376,18 @@ class ExplorarController extends Controller
     // GET /api/v1/personais/{id}/pacotes
     public function pacotesDoPersonal(Request $request, $id)
     {
-        $this->clienteAutenticado($request);
+        $cliente = $this->clienteAutenticado($request);
 
         $personal = Personal::where('status', 'aprovado')->findOrFail($id);
         $pacotes = Pacote::where('personal_id', $personal->id)->orderBy('frequencia')->get();
 
         return response()->json([
-            'personal' => [
+            'personal' => array_merge([
                 'id' => $personal->id,
                 'nome' => $personal->nome,
                 'foto' => $this->urlPublica($personal->foto),
                 'valor_secao' => $personal->valor_secao !== null ? (float) $personal->valor_secao : null,
-            ],
+            ], $this->blocoAvaliacoes('personal', $personal, $cliente)),
             'pacotes' => $pacotes->map(fn ($p) => [
                 'id' => $p->id,
                 'frequencia' => (int) $p->frequencia,

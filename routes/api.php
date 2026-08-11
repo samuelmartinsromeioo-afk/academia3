@@ -255,6 +255,11 @@ Route::prefix('v1')->group(function () {
         Route::post('/pacotes/contratar', [\App\Http\Controllers\Api\ExplorarController::class, 'contratarPacote']);
         Route::post('/academias/contratar', [\App\Http\Controllers\Api\ExplorarController::class, 'contratarAcademia']);
 
+        // Minha academia (aluno contratado) e avaliação de serviços
+        Route::get('/minha-academia', [\App\Http\Controllers\Api\ExplorarController::class, 'minhaAcademia']);
+        // Rate limit extra (A04/A07): evita spam de avaliações além do limite global.
+        Route::post('/avaliar', [\App\Http\Controllers\Api\AvaliacaoServicoController::class, 'store'])->middleware('throttle:20,1');
+
         // Avaliação física
         Route::prefix('avaliacoes')->group(function () {
             Route::get('/', [ApiAvaliacaoFisicaController::class, 'index']);
@@ -265,7 +270,8 @@ Route::prefix('v1')->group(function () {
         // Pagamentos (Asaas)
         Route::prefix('payments')->group(function () {
             Route::get('/', [ApiPaymentController::class, 'index']);
-            Route::post('/', [ApiPaymentController::class, 'store']);
+            // Rate limit extra (A04): criação de cobrança é operação sensível.
+            Route::post('/', [ApiPaymentController::class, 'store'])->middleware('throttle:20,1');
             Route::get('/{id}', [ApiPaymentController::class, 'show'])->whereNumber('id');
             Route::get('/{id}/pix', [ApiPaymentController::class, 'pix'])->whereNumber('id');
             Route::get('/{id}/status', [ApiPaymentController::class, 'status'])->whereNumber('id');

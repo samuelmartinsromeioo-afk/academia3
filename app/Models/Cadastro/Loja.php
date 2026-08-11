@@ -58,4 +58,17 @@ class Loja extends Authenticatable
     {
         return $this->hasMany(Pedido::class, 'loja_id');
     }
+
+    /** Avaliações (nota + comentário) feitas pelos clientes desta loja. */
+    public function avaliacoes(): HasMany
+    {
+        return $this->hasMany(\App\Models\Avaliacao::class, 'loja_id');
+    }
+
+    /** Média das notas (1 casa) — '0.0' quando ainda não há avaliações. */
+    public function getMediaAvaliacaoAttribute()
+    {
+        $media = $this->avaliacoes()->avg('nota');
+        return $media ? number_format($media, 1, '.', '') : '0.0';
+    }
 }

@@ -23,6 +23,8 @@ class ClienteResource extends JsonResource
             'altura' => $this->altura,
             'peso' => $this->peso,
             'resumo_objetivo' => $this->resumo_objetivo,
+            // Academia contratada: o app usa isso para exibir a aba "Minha Academia".
+            'academia_id' => $this->academia_id,
             'plano_ativo' => (bool) $this->plano_ativo,
             'studio_plano_ativo' => (bool) $this->studio_plano_ativo,
         ];
