@@ -52,17 +52,6 @@
 
         .syncopate { font-family: 'Syncopate', sans-serif; }
 
-        /* ===== Navbar ===== */
-        .navbar {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 12px;
-            padding: 22px 5vw;
-        }
-
-        .logo { display: flex; align-items: center; gap: 12px; }
-
         .logo-badge {
             width: 38px;
             height: 38px;
@@ -87,17 +76,6 @@
 
         .logo-name span { color: var(--primary); }
 
-        .logo-tag {
-            font-size: 0.58rem;
-            font-weight: 600;
-            letter-spacing: 2px;
-            color: var(--text-dim);
-            text-transform: uppercase;
-            margin-top: 3px;
-        }
-
-        .nav-actions { display: flex; align-items: center; gap: 12px; }
-
         .btn {
             font-family: inherit;
             font-size: 0.9rem;
@@ -112,14 +90,6 @@
             gap: 8px;
         }
 
-        .btn-ghost {
-            background: transparent;
-            border: 1px solid rgba(255, 255, 255, 0.15);
-            color: var(--text-main);
-        }
-
-        .btn-ghost:hover { border-color: var(--primary); color: var(--primary); }
-
         .btn-solid {
             background: var(--primary);
             border: 1px solid var(--primary);
@@ -132,33 +102,6 @@
         }
 
         .btn-lg { padding: 15px 30px; font-size: 1rem; font-weight: 700; gap: 10px; }
-
-        /* ===== Hero ===== */
-        .hero {
-            display: grid;
-            grid-template-columns: 1.08fr 0.92fr;
-            gap: 48px;
-            align-items: center;
-            padding: 32px 5vw 72px;
-            position: relative;
-            max-width: 1440px;
-            margin: 0 auto;
-        }
-
-        .hero-side {
-            position: absolute;
-            left: 14px;
-            top: 56%;
-            transform: rotate(-90deg);
-            transform-origin: left center;
-            font-family: 'Syncopate', sans-serif;
-            font-size: 0.62rem;
-            letter-spacing: 4px;
-            color: rgba(255, 255, 255, 0.28);
-            white-space: nowrap;
-        }
-
-        .hero-copy { padding-left: 26px; animation: snrFadeUp 0.6s ease both; }
 
         .eyebrow {
             display: inline-flex;
@@ -181,16 +124,6 @@
             letter-spacing: 1px;
         }
 
-        .hero h1 {
-            font-family: 'Syncopate', sans-serif;
-            font-weight: 700;
-            font-size: clamp(2.1rem, 4.2vw, 3.4rem);
-            line-height: 1.04;
-            letter-spacing: -0.01em;
-            text-transform: uppercase;
-            margin-bottom: 24px;
-        }
-
         .mark {
             background: var(--primary);
             color: var(--bg-dark);
@@ -198,102 +131,6 @@
             -webkit-box-decoration-break: clone;
             box-decoration-break: clone;
         }
-
-        .hero-lead {
-            color: var(--text-dim);
-            font-size: clamp(1rem, 1.4vw, 1.08rem);
-            line-height: 1.65;
-            max-width: 520px;
-        }
-
-        .hero-cta {
-            display: flex;
-            gap: 14px;
-            flex-wrap: wrap;
-            margin: 36px 0 44px;
-        }
-
-        .hero-index {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 1px;
-            background: rgba(255, 255, 255, 0.07);
-            border: 1px solid rgba(255, 255, 255, 0.07);
-        }
-
-        .hero-index .item {
-            background: var(--bg-dark);
-            padding: 16px 18px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            transition: 0.25s;
-        }
-
-        .hero-index .item:hover { background: rgba(212, 255, 0, 0.04); }
-
-        .hero-index .i-num {
-            font-family: 'Syncopate', sans-serif;
-            font-size: 0.78rem;
-            color: var(--primary);
-        }
-
-        .hero-index .i-txt { font-size: 0.82rem; color: #c7ccd4; }
-
-        /* ===== Hero — vídeo ===== */
-        .hero-media {
-            position: relative;
-            height: 560px;
-            border-radius: 22px;
-            overflow: hidden;
-            border: 1px solid rgba(212, 255, 0, 0.22);
-            animation: snrFadeUp 0.6s ease 0.15s both;
-        }
-
-        .hero-media video {
-            position: absolute;
-            inset: 0;
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-
-        .hero-media .shade {
-            position: absolute;
-            inset: 0;
-            background: linear-gradient(180deg, rgba(10,11,13,0.15) 0%, rgba(10,11,13,0.1) 55%, rgba(10,11,13,0.8) 100%);
-        }
-
-        .hero-media .caption {
-            position: absolute;
-            left: 22px;
-            bottom: 22px;
-            right: 22px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 16px;
-        }
-
-        .hero-media .caption-txt {
-            font-family: 'Syncopate', sans-serif;
-            font-size: 0.72rem;
-            letter-spacing: 2px;
-            text-transform: uppercase;
-        }
-
-        .hero-media .caption-txt span { color: var(--primary); }
-
-        .hero-stats { display: flex; gap: 20px; }
-
-        .hero-stats .value {
-            font-family: 'Syncopate', sans-serif;
-            font-weight: 700;
-            font-size: 1.15rem;
-            color: var(--primary);
-        }
-
-        .hero-stats .label { font-size: 0.7rem; color: var(--text-dim); margin-top: 2px; }
 
         /* ===== Seções ===== */
         .lp-sec {
@@ -763,98 +600,28 @@
 
         /* ===== Responsivo ===== */
         @media (max-width: 1024px) {
-            .hero { grid-template-columns: 1fr; gap: 40px; }
-            .hero-media { height: 420px; }
             .lp-split { grid-template-columns: 1fr; gap: 36px; }
             .lp-ladder { grid-template-columns: 1fr 1fr; }
-            .hero-side { display: none; }
-            .hero-copy { padding-left: 0; }
         }
 
         @media (max-width: 768px) {
             .lp-saca { grid-template-columns: 1fr; }
-            .hero-index { grid-template-columns: 1fr 1fr; }
             .lp-aluno-card { min-height: 440px; }
         }
 
         @media (max-width: 560px) {
-            .navbar { padding: 18px 5vw; }
-            .nav-actions .btn { padding: 9px 16px; font-size: 0.84rem; }
             .logo-name { font-size: 0.95rem; letter-spacing: 2px; }
             .logo-badge { width: 32px; height: 32px; font-size: 13px; }
-            .hero-cta .btn { width: 100%; justify-content: center; }
-            .hero-index { grid-template-columns: 1fr; }
             .lp-ladder { grid-template-columns: 1fr; }
             .lp-sec { padding: 60px 5vw; }
-            .hero-media { height: 340px; }
             .login-body { padding: 24px 26px 32px; }
         }
     </style>
 </head>
 <body>
 
-{{-- ===== Navbar ===== --}}
-<nav class="navbar">
-    <div class="logo">
-        <div class="logo-badge">S</div>
-        <div>
-            <div class="logo-name">SNR<span>FIT</span></div>
-            <div class="logo-tag">Treino que vira história</div>
-        </div>
-    </div>
-
-    <div class="nav-actions">
-        <button type="button" class="btn btn-ghost" onclick="openModal()">
-            <i class="ph ph-sign-in"></i> Entrar
-        </button>
-        <a href="{{ route('cadastro.SelecaoCadastro') }}" class="btn btn-solid">Cadastrar-se</a>
-    </div>
-</nav>
-
-{{-- ===== Hero (split editorial + vídeo) ===== --}}
-<main class="hero">
-    <div class="hero-side">SNR·FIT — EST. 2026</div>
-
-    <div class="hero-copy">
-        <div class="eyebrow"><span class="num">01</span> A plataforma completa do mundo fitness</div>
-        <h1>Treino<br>que <span class="mark">vira</span><br>história<span style="color:var(--primary)">.</span></h1>
-        <p class="hero-lead">
-            Agenda, alunos, financeiro, fichas e divulgação num só painel — pro profissional.
-            Personais, academias, studios e planos reunidos num só lugar — pra quem treina.
-            Chega de espalhar sua rotina por mil apps.
-        </p>
-
-        <div class="hero-cta">
-            <a href="{{ route('cadastro.SelecaoCadastro') }}" class="btn btn-solid btn-lg">
-                Quero expandir meu negócio <i class="ph ph-arrow-right"></i>
-            </a>
-            <button type="button" class="btn btn-ghost btn-lg" onclick="openModal()">Já tenho conta</button>
-        </div>
-
-        <div class="hero-index">
-            <div class="item"><span class="i-num">01</span><span class="i-txt">Agenda sob controle</span></div>
-            <div class="item"><span class="i-num">02</span><span class="i-txt">Gestão de alunos</span></div>
-            <div class="item"><span class="i-num">03</span><span class="i-txt">Financeiro em tempo real</span></div>
-            <div class="item"><span class="i-num">04</span><span class="i-txt">Divulgação do perfil</span></div>
-            <div class="item"><span class="i-num">05</span><span class="i-txt">Fichas de treino pro</span></div>
-            <div class="item"><span class="i-num">06</span><span class="i-txt">Pagamentos online</span></div>
-        </div>
-    </div>
-
-    <div class="hero-media">
-        <video src="{{ asset('videos/landing/hero.mp4') }}"
-               poster="{{ asset('images/landing/hero-poster.jpg') }}"
-               autoplay muted loop playsinline></video>
-        <div class="shade"></div>
-        <div class="caption">
-            <div class="caption-txt">Sua evolução,<br><span>em um só lugar.</span></div>
-            <div class="hero-stats">
-                <div><div class="value">+1.2k</div><div class="label">alunos ativos</div></div>
-                <div><div class="value">24h</div><div class="label">todos os dias</div></div>
-            </div>
-        </div>
-    </div>
-</main>
+{{-- ===== Hero Cinemática (nova hero, 6 cenas) ===== --}}
+@include('partials.hero-cinematica')
 
 {{-- ===== 02 · Cresça com a gente ===== --}}
 <section class="lp-sec">
