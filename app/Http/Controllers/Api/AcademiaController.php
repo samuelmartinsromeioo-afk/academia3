@@ -57,6 +57,9 @@ class AcademiaController extends Controller
             }
         }
 
+        // Avaliações recebidas dos alunos (nota + comentário) para o dono ver.
+        $avaliacoes = $academia->avaliacoes()->with('cliente:id,nome')->latest()->get();
+
         return response()->json([
             'academia' => [
                 'id' => $academia->id,
@@ -71,6 +74,14 @@ class AcademiaController extends Controller
             'faturamento' => $totalAlunos * $valorMensalidade,
             'personals' => Personal::where('academia_id', $academia->id)->count(),
             'por_filial' => $porFilial,
+            'media_avaliacao' => $avaliacoes->avg('nota') ? round($avaliacoes->avg('nota'), 1) : null,
+            'total_avaliacoes' => $avaliacoes->count(),
+            'avaliacoes_recentes' => $avaliacoes->take(10)->map(fn ($a) => [
+                'nota' => (int) $a->nota,
+                'comentario' => $a->comentario,
+                'cliente' => $a->cliente?->nome,
+                'data' => $a->created_at?->toDateString(),
+            ])->values(),
         ]);
     }
 

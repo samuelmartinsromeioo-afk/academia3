@@ -43,6 +43,9 @@ class StudioController extends Controller
             ->where('tipo_aula', '!=', 'bloqueio')
             ->count();
 
+        // Avaliações recebidas dos alunos (nota + comentário) para o dono ver.
+        $avaliacoes = $studio->avaliacoes()->with('cliente:id,nome')->latest()->get();
+
         return response()->json([
             'studio' => [
                 'id' => $studio->id,
@@ -55,6 +58,14 @@ class StudioController extends Controller
             'planos_ativos' => $planosAtivos,
             'faturamento_mes' => (float) $faturamentoMes,
             'aulas_hoje' => $aulasHoje,
+            'media_avaliacao' => $avaliacoes->avg('nota') ? round($avaliacoes->avg('nota'), 1) : null,
+            'total_avaliacoes' => $avaliacoes->count(),
+            'avaliacoes_recentes' => $avaliacoes->take(10)->map(fn ($a) => [
+                'nota' => (int) $a->nota,
+                'comentario' => $a->comentario,
+                'cliente' => $a->cliente?->nome,
+                'data' => $a->created_at?->toDateString(),
+            ])->values(),
         ]);
     }
 
