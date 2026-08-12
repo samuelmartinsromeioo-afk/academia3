@@ -44,7 +44,7 @@ class FichaTreinoController extends Controller
             ->orderBy('dia_semana')
             ->get();
 
-        $fichasAcademia = FichaTreino::with('exercicios', 'academia:id,nome')
+        $fichasAcademia = FichaTreino::with('exercicios', 'academia:id,nome', 'professorAcademia:id,nome,resumo')
             ->where('cliente_id', $cliente->id)
             ->whereNotNull('academia_id')
             ->where('ativo', true)
@@ -62,7 +62,7 @@ class FichaTreinoController extends Controller
     {
         $cliente = $this->clienteAutenticado($request);
 
-        $ficha = FichaTreino::with('exercicios', 'personal:id,nome', 'academia:id,nome')->findOrFail($id);
+        $ficha = FichaTreino::with('exercicios', 'personal:id,nome', 'academia:id,nome', 'professorAcademia:id,nome,resumo')->findOrFail($id);
         if ($ficha->cliente_id != $cliente->id) {
             return response()->json(['error' => 'Acesso negado.'], 403);
         }
@@ -357,6 +357,9 @@ class FichaTreinoController extends Controller
                 : null,
             'academia' => $ficha->relationLoaded('academia') && $ficha->academia
                 ? ['id' => $ficha->academia->id, 'nome' => $ficha->academia->nome]
+                : null,
+            'professor_criador' => $ficha->relationLoaded('professorAcademia') && $ficha->professorAcademia
+                ? ['nome' => $ficha->professorAcademia->nome, 'resumo' => $ficha->professorAcademia->resumo]
                 : null,
             'exercicios' => $ficha->exercicios->map(fn ($e) => [
                 'id' => $e->id,

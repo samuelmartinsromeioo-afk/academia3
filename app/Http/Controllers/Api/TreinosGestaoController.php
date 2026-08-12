@@ -172,6 +172,7 @@ class TreinosGestaoController extends Controller
             'observacoes' => 'nullable|string',
             'nivel' => 'required|in:iniciante,avancado',
             'divisao' => 'nullable|string|max:100',
+            'academia_professor_id' => 'nullable|integer|exists:academia_professores,id',
         ]);
 
         if (! $this->alunoAcessivel($request, $tipo, $dono, $request->cliente_id)) {
@@ -179,6 +180,13 @@ class TreinosGestaoController extends Controller
         }
 
         $coluna = $tipo === 'personal' ? 'personal_id' : 'academia_id';
+
+        // Professor autor (só para fichas da academia e se o professor for dela).
+        $professorId = null;
+        if ($tipo === 'academia' && $request->filled('academia_professor_id')) {
+            $professorId = \App\Models\Cadastro\AcademiaProfessor::where('id', $request->academia_professor_id)
+                ->where('academia_id', $dono->id)->value('id');
+        }
 
         $jaExiste = FichaTreino::where($coluna, $dono->id)
             ->where('cliente_id', $request->cliente_id)
@@ -192,6 +200,7 @@ class TreinosGestaoController extends Controller
 
         $ficha = FichaTreino::create([
             $coluna => $dono->id,
+            'academia_professor_id' => $professorId,
             'cliente_id' => $request->cliente_id,
             'dia_semana' => $request->dia_semana,
             'nome_treino' => $request->nome_treino,

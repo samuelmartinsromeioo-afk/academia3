@@ -168,7 +168,7 @@ class ExplorarController extends Controller
                 'fotos',
                 'planos' => fn ($q) => $q->orderBy('valor'),
                 'professores' => fn ($q) => $q->where('ativo', true)->orderBy('nome'),
-                'aulas' => fn ($q) => $q->where('ativo', true)->with('professor')->orderBy('nome'),
+                'aulas' => fn ($q) => $q->where('ativo', true)->with('professor')->orderBy('dia_semana')->orderBy('hora_inicio'),
                 'personaisAprovados' => fn ($q) => $q->where('personals.status', 'aprovado')->orderBy('nome'),
             ])
             ->find($cliente->academia_id);
@@ -179,6 +179,7 @@ class ExplorarController extends Controller
         }
 
         $fichas = FichaTreino::withCount('exercicios')
+            ->with('professorAcademia:id,nome,resumo')
             ->where('cliente_id', $cliente->id)
             ->where('academia_id', $a->id)
             ->where('ativo', true)
@@ -192,6 +193,8 @@ class ExplorarController extends Controller
                 'divisao' => $f->divisao,
                 'total_exercicios' => (int) $f->exercicios_count,
                 'concluido_hoje' => $f->foi_concluido_hoje(),
+                'professor_criador' => $f->professorAcademia?->nome,
+                'professor_resumo' => $f->professorAcademia?->resumo,
             ]);
 
         $detalhe = $this->montarAcademiaDetalhe($a, $cliente);
@@ -207,7 +210,7 @@ class ExplorarController extends Controller
             'fotos',
             'planos' => fn ($q) => $q->orderBy('valor'),
             'professores' => fn ($q) => $q->where('ativo', true)->orderBy('nome'),
-            'aulas' => fn ($q) => $q->where('ativo', true)->with('professor')->orderBy('nome'),
+            'aulas' => fn ($q) => $q->where('ativo', true)->with('professor')->orderBy('dia_semana')->orderBy('hora_inicio'),
             'personaisAprovados' => fn ($q) => $q->where('personals.status', 'aprovado')->orderBy('nome'),
         ])->findOrFail($id);
     }
@@ -230,12 +233,17 @@ class ExplorarController extends Controller
                 'valor' => $p->valor !== null ? (float) $p->valor : null,
                 'descricao' => $p->descricao ?? null,
             ]),
-            'professores' => $a->professores->map(fn ($p) => ['id' => $p->id, 'nome' => $p->nome, 'especialidade' => $p->especialidade ?? null]),
+            'professores' => $a->professores->map(fn ($p) => [
+                'id' => $p->id, 'nome' => $p->nome, 'resumo' => $p->resumo,
+            ]),
             'aulas' => $a->aulas->map(fn ($au) => [
                 'id' => $au->id, 'nome' => $au->nome,
+                'resumo' => $au->resumo,
                 'professor' => $au->professor?->nome,
-                'dia_semana' => $au->dia_semana ?? null,
-                'horario' => $au->horario ?? null,
+                'professor_resumo' => $au->professor?->resumo,
+                'dia_semana' => $au->dia_semana,
+                'horario' => $au->hora_inicio ? substr((string) $au->hora_inicio, 0, 5) : null,
+                'duracao_min' => $au->duracao_min,
             ]),
             'personais' => $a->personaisAprovados->map(fn ($p) => [
                 'id' => $p->id, 'nome' => $p->nome, 'foto' => $this->urlPublica($p->foto),

@@ -11,6 +11,7 @@ class FichaTreino extends Model
     protected $fillable = [
         'personal_id',
         'academia_id',
+        'academia_professor_id',
         'cliente_id',
         'dia_semana',
         'nome_treino',
@@ -29,6 +30,12 @@ class FichaTreino extends Model
     public function academia()
     {
         return $this->belongsTo(Academia::class, 'academia_id');
+    }
+
+    /** Professor da academia que criou a ficha (fichas da academia). */
+    public function professorAcademia()
+    {
+        return $this->belongsTo(AcademiaProfessor::class, 'academia_professor_id');
     }
 
     public function cliente()
