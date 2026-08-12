@@ -255,7 +255,7 @@
                             @else
                                 @php $media = (float) $personal->media_avaliacao; @endphp
                                 @for ($i = 1; $i <= 5; $i++)
-                                    <i class="ph-star {{ $i <= round($media) ? 'ph' : 'ph' }}"></i>
+                                    <i class="ph-star {{ $i <= round($media) ? 'ph-fill' : 'ph' }}"></i>
                                 @endfor
                                 <span class="num">{{ $personal->media_avaliacao }} ({{ $personal->avaliacoes->count() }})</span>
                             @endif

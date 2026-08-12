@@ -83,6 +83,8 @@
         .card-body { padding: 20px; flex: 1; display: flex; flex-direction: column; }
         .card-body h3 { font-size: 1.05rem; font-weight: 800; margin-bottom: 6px; }
         .card-meta { color: var(--text-muted); font-size: 0.78rem; margin-bottom: 4px; display: flex; align-items: center; gap: 7px; }
+        .rating { color: #ffc107; font-size: 0.8rem; margin: 8px 0 12px; }
+        .rating .num { color: var(--text-muted); }
         .card-meta i { color: var(--loja-color); width: 14px; text-align: center; }
 
         .card-footer {
@@ -146,6 +148,18 @@
                             <div class="card-meta"><i class="ph ph-info"></i> {{ \Illuminate\Support\Str::limit($loja->descricao, 60) }}</div>
                         @endif
                         <div class="card-meta"><i class="ph ph-map-pin"></i> {{ $loja->cidade }}{{ $loja->estado ? ' - ' . $loja->estado : '' }}</div>
+
+                        <div class="rating">
+                            @php $totalAv = $loja->avaliacoes->count(); $media = (float) $loja->media_avaliacao; @endphp
+                            @if ($totalAv > 0)
+                                @for ($i = 1; $i <= 5; $i++)
+                                    <i class="ph-star {{ $i <= round($media) ? 'ph-fill' : 'ph' }}"></i>
+                                @endfor
+                                <span class="num">{{ $loja->media_avaliacao }} ({{ $totalAv }})</span>
+                            @else
+                                <i class="ph ph-star"></i> <span class="num">Sem avaliações</span>
+                            @endif
+                        </div>
 
                         <div class="card-footer">
                             <div class="prod-count"><strong>{{ $loja->produtos_count }}</strong> produto{{ $loja->produtos_count == 1 ? '' : 's' }}</div>

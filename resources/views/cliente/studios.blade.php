@@ -241,7 +241,7 @@
                         <div class="rating">
                             @php $media = (float) $studio->media_avaliacao; @endphp
                             @for ($i = 1; $i <= 5; $i++)
-                                <i class="ph-star {{ $i <= round($media) ? 'ph' : 'ph' }}"></i>
+                                <i class="ph-star {{ $i <= round($media) ? 'ph-fill' : 'ph' }}"></i>
                             @endfor
                             <span class="num">{{ $studio->media_avaliacao }} ({{ $studio->avaliacoes->count() }})</span>
                         </div>

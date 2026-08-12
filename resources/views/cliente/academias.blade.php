@@ -146,6 +146,8 @@
         .card-body h3 { font-size: 1.05rem; font-weight: 800; margin-bottom: 6px; }
 
         .card-meta { color: var(--text-muted); font-size: 0.78rem; margin-bottom: 4px; display: flex; align-items: center; gap: 7px; }
+        .rating { color: #ffc107; font-size: 0.8rem; margin: 8px 0 12px; }
+        .rating .num { color: var(--text-muted); }
         .card-meta i { color: var(--accent); width: 14px; text-align: center; }
 
         .card-footer {
@@ -235,6 +237,18 @@
                         @if ($academia->planos->isNotEmpty())
                             <div class="card-meta"><i class="ph ph-identification-card"></i> Planos a partir de R$ {{ number_format($academia->planos->first()?->valor, 2, ',', '.') }}/mês</div>
                         @endif
+
+                        <div class="rating">
+                            @php $totalAv = $academia->avaliacoes->count(); $media = (float) $academia->media_avaliacao; @endphp
+                            @if ($totalAv > 0)
+                                @for ($i = 1; $i <= 5; $i++)
+                                    <i class="ph-star {{ $i <= round($media) ? 'ph-fill' : 'ph' }}"></i>
+                                @endfor
+                                <span class="num">{{ $academia->media_avaliacao }} ({{ $totalAv }})</span>
+                            @else
+                                <i class="ph ph-star"></i> <span class="num">Sem avaliações</span>
+                            @endif
+                        </div>
 
                         <div class="card-footer">
                             <div class="preco">R$ {{ number_format($academia->valor_mensalidade ?? 0, 2, ',', '.') }} <small>/mês</small></div>
