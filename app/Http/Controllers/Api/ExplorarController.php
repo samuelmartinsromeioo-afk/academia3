@@ -104,7 +104,7 @@ class ExplorarController extends Controller
             'estado' => $p->estado,
             'cref' => $p->cref,
             'valor_secao' => $p->valor_secao !== null ? (float) $p->valor_secao : null,
-            'media_avaliacao' => $p->media_avaliacao,
+            'media_avaliacao' => $p->avaliacoes->avg('nota') ? round($p->avaliacoes->avg('nota'), 1) : null,
             'total_avaliacoes' => $p->avaliacoes->count(),
             'pioneiro' => $p->eh_pioneiro,
         ]);
@@ -269,6 +269,7 @@ class ExplorarController extends Controller
             'fotos' => $s->fotos->map(fn ($f) => $this->urlPublica($f->path))->filter()->values(),
             'plano_minimo' => $s->planos->first()?->valor !== null ? (float) $s->planos->first()->valor : null,
             'media_avaliacao' => $s->avaliacoes->avg('nota') ? round($s->avaliacoes->avg('nota'), 1) : null,
+            'total_avaliacoes' => $s->avaliacoes->count(),
         ]);
 
         return $this->respostaLista($request, 'studios', $studios, $meta, Studio::class);
