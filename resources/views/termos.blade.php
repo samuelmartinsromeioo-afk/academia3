@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Termos de Uso - FitConnect</title>
+    <title>Termos de Uso — SNR FIT</title>
     <link rel="icon" type="image/png" href="{{ asset('SnrFit.png') }}">
     @include('partials.pwa')
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -275,7 +275,7 @@
 
     <div class="top-bar">
         <a href="/" class="logo">
-            <i class="ph ph-barbell"></i> SNR
+            <i class="ph ph-barbell"></i> SNR FIT
         </a>
         <div style="display: flex; gap: 10px; align-items: center;">
             <button class="print-btn" onclick="window.print()">
@@ -307,7 +307,7 @@
                     <li><a href="#secao-4">4. Elegibilidade e Cadastro</a></li>
                     <li><a href="#secao-5">5. Direitos e Responsabilidades</a></li>
                     <li><a href="#secao-6">6. Saúde e Segurança</a></li>
-                    <li><a href="#secao-7">7. Pagamento e Preços</a></li>
+                    <li><a href="#secao-7">7. Pagamentos, Assinaturas e Loja</a></li>
                     <li><a href="#secao-8">8. Avaliações e Feedback</a></li>
                     <li><a href="#secao-9">9. Rescisão e Suspensão</a></li>
                     <li><a href="#secao-10">10. Limitação de Responsabilidade</a></li>
@@ -318,46 +318,56 @@
             </div>
 
             <h2 id="secao-1">1. APRESENTAÇÃO E ACEITAÇÃO DOS TERMOS</h2>
-            <p>Bem-vindo ao <strong>SNR</strong>. Estes Termos de Uso ("Termos") regem o acesso e o uso da Plataforma e de todos os serviços, conteúdos e funcionalidades oferecidos por nossa empresa ("Nós", "Nossa", "Nossos" ou "Plataforma").</p>
+            <p>Bem-vindo ao <strong>SNR FIT</strong>. Estes Termos de Uso ("Termos") regem o acesso e o uso da Plataforma e de todos os serviços, conteúdos e funcionalidades oferecidos por nossa empresa ("Nós", "Nossa", "Nossos" ou "Plataforma").</p>
             <p>Ao acessar, cadastrar-se, usar a Plataforma ou aceitar estes Termos, você ("Usuário" ou "Você") concorda integralmente com todas as disposições aqui contidas. Se você não concordar com qualquer parte destes Termos, não deve utilizar a Plataforma.</p>
 
             <h2 id="secao-2">2. DESCRIÇÃO DA PLATAFORMA</h2>
-            <p>Nossa Plataforma funciona como um marketplace que conecta usuários que buscam serviços de personal training com profissionais credenciados ("Personals" ou "Prestadores de Serviço").</p>
+            <p>O <strong>SNR FIT</strong> é uma plataforma (aplicativo e site) que conecta <strong>alunos</strong> a <strong>personal trainers</strong>, <strong>academias</strong> e <strong>studios</strong>, e disponibiliza uma <strong>loja</strong> para venda de produtos e planos. A Plataforma oferece ferramentas de montagem e acompanhamento de treinos, gestão de alunos e comunicação entre as partes.</p>
             <h3>Funcionalidades Principais</h3>
             <ul>
-                <li>Localização de personals trainers próximos</li>
-                <li>Agendamento de sessões de treino</li>
-                <li>Comunicação entre usuários e personals</li>
-                <li>Histórico de sessões e avaliações</li>
-                <li>Pagamento integrado de serviços</li>
+                <li>Busca de personal trainers, academias, studios e lojas por nome, avaliação e, opcionalmente, por proximidade (com a sua permissão de localização)</li>
+                <li>Montagem e acompanhamento de fichas de treino, metas e evolução</li>
+                <li>Registro de anamnese e medidas corporais para orientar o treino</li>
+                <li>Agenda de aulas/sessões e horários, quando oferecidos pelo profissional, academia ou studio</li>
+                <li>Chat entre aluno e personal/academia</li>
+                <li>Loja para compra de produtos e planos, com pagamento integrado</li>
                 <li>Sistema de avaliações e reputação</li>
             </ul>
+            <p>A Plataforma atua como <strong>intermediária</strong> entre alunos e profissionais/estabelecimentos. A execução dos serviços de treino é de responsabilidade do respectivo personal, academia ou studio; a Plataforma não presta diretamente serviços de educação física.</p>
 
             <h2 id="secao-3">3. CATEGORIAS DE USUÁRIOS</h2>
-            <h3>Usuários Finais (Clientes)</h3>
-            <p>Pessoas que utilizam a Plataforma para encontrar, contratar e pagar por serviços de personal training.</p>
-            <h3>Prestadores de Serviço (Personals)</h3>
-            <p>Profissionais credenciados e qualificados que oferecem serviços de treinamento pessoal através da Plataforma.</p>
+            <h3>Alunos (Usuários Finais)</h3>
+            <p>Pessoas que utilizam a Plataforma para encontrar e contratar serviços de treino, acompanhar sua evolução, comprar planos ou produtos e se comunicar com profissionais.</p>
+            <h3>Personal Trainers</h3>
+            <p>Profissionais de educação física que oferecem serviços de treinamento por meio da Plataforma, montam fichas e acompanham alunos.</p>
+            <h3>Academias e Studios</h3>
+            <p>Estabelecimentos que gerenciam alunos, planos, aulas e profissionais vinculados. Ao tratar dados dos seus próprios alunos, atuam como controladores desses dados, nos termos da LGPD.</p>
+            <h3>Lojas</h3>
+            <p>Estabelecimentos que oferecem produtos à venda na loja da Plataforma, responsáveis pelas informações, disponibilidade, qualidade e entrega dos produtos que anunciam.</p>
 
             <h2 id="secao-4">4. ELEGIBILIDADE E CADASTRO</h2>
-            <h3>Requisitos Gerais</h3>
+            <h3>Requisitos Gerais (Alunos)</h3>
             <ul>
-                <li>Ter no mínimo 18 anos de idade</li>
+                <li>Ter no mínimo <strong>14 anos</strong> de idade para usar a Plataforma como aluno</li>
+                <li>Menores de 18 anos devem ter o <strong>consentimento e a assistência dos pais ou responsáveis legais</strong>, inclusive para a coleta de dados de saúde (anamnese) e para qualquer contratação ou pagamento</li>
                 <li>Ser residente no Brasil</li>
                 <li>Concordar com estes Termos de Uso</li>
                 <li>Fornecer informações verdadeiras, precisas e completas</li>
                 <li>Manter seus dados cadastrais atualizados</li>
             </ul>
-            <h3>Cadastro de Personals Trainers</h3>
-            <p>Além dos requisitos acima, personals trainers devem:</p>
+            <h3>Cadastro de Personal Trainers</h3>
+            <p>Além dos requisitos acima, para se cadastrar como personal trainer é necessário:</p>
             <ul>
+                <li>Ter no mínimo <strong>18 anos</strong> de idade</li>
                 <li>Possuir CPF ou CNPJ válido</li>
-                <li>Apresentar comprovante de qualificação profissional reconhecida (certificado de formação em educação física ou similar)</li>
-                <li>Apresentar documentos de identificação válidos</li>
-                <li>Ter comprovante de endereço</li>
-                <li>Passar por verificação de antecedentes conforme legislação aplicável</li>
+                <li>Declarar e, quando solicitado, comprovar qualificação profissional (ex.: formação em educação física e registro no CREF, quando aplicável)</li>
+                <li>Fornecer documentos de identificação válidos</li>
+                <li>Responsabilizar-se pela veracidade das informações e habilitações declaradas</li>
                 <li>Aceitar o Código de Conduta para Prestadores de Serviço</li>
             </ul>
+            <div class="highlighted">
+                <strong>Sobre a qualificação dos profissionais:</strong> as informações de qualificação são <strong>declaradas pelos próprios profissionais</strong>. A Plataforma pode solicitar comprovação, mas não garante nem se responsabiliza pela habilitação, competência ou conduta de personais, academias ou studios, cabendo ao aluno avaliar o profissional antes de contratá-lo.
+            </div>
 
             <h2 id="secao-5">5. DIREITOS E RESPONSABILIDADES DOS USUÁRIOS</h2>
             <h3>Sua Responsabilidade</h3>
@@ -397,27 +407,30 @@
                 <strong>⚠️ Aviso Importante:</strong> Personal trainers não estão autorizados a fornecer orientações médicas, diagnósticos ou tratamento. Qualquer questão de saúde deve ser direcionada a profissionais médicos qualificados.
             </div>
 
-            <h2 id="secao-7">7. PAGAMENTO E PREÇOS</h2>
-            <h3>Estrutura de Preços</h3>
+            <h2 id="secao-7">7. PAGAMENTOS, ASSINATURAS E COMPRAS NA LOJA</h2>
+            <h3>Planos, Assinaturas e Preços</h3>
             <ul>
-                <li>Personal trainers definem seus próprios preços e condições de serviço</li>
-                <li>Preços e promoções são informados na Plataforma antes da confirmação do agendamento</li>
-                <li>Cobranças incluem a taxa de operação da Plataforma</li>
+                <li>Personais, academias e studios definem seus próprios preços, planos e condições de serviço</li>
+                <li>Os valores, planos e eventuais promoções são informados na Plataforma antes da confirmação da contratação</li>
+                <li>Assinaturas e planos recorrentes são renovados conforme a periodicidade contratada, até que sejam cancelados</li>
+                <li>As cobranças podem incluir a taxa de operação da Plataforma</li>
             </ul>
-            <h3>Métodos de Pagamento</h3>
+            <h3>Processamento de Pagamentos</h3>
+            <p>Os pagamentos são processados pelo nosso parceiro <strong>Asaas</strong>, que pode oferecer cartão de crédito, PIX e boleto. A Plataforma <strong>não armazena os dados completos do seu cartão</strong>. O pagamento também está sujeito aos termos do processador.</p>
+            <h3>Compras na Loja (Produtos)</h3>
             <ul>
-                <li>Cartão de crédito e débito</li>
-                <li>Carteiras digitais</li>
-                <li>PIX</li>
-                <li>Outros métodos integrados à Plataforma</li>
-                <li>Todos os pagamentos são processados por processadores de pagamento certificados</li>
+                <li>Os produtos anunciados na loja são de responsabilidade do respectivo lojista/estabelecimento quanto a descrição, disponibilidade, qualidade e entrega</li>
+                <li>Prazos e custos de entrega, quando aplicáveis, são informados antes da finalização da compra</li>
+                <li>Trocas e devoluções por defeito ou vício do produto seguem o Código de Defesa do Consumidor (CDC)</li>
             </ul>
-            <h3>Reembolsos e Cancelamentos</h3>
+            <div class="highlighted">
+                <strong>Direito de arrependimento (CDC, art. 49):</strong> nas compras realizadas pela loja da Plataforma, você pode desistir da compra em até <strong>7 (sete) dias corridos</strong> a contar do recebimento do produto ou da contratação do serviço, com devolução integral dos valores pagos. Para exercer esse direito, use os canais indicados na seção 13.
+            </div>
+            <h3>Cancelamentos e Reembolsos</h3>
             <ul>
-                <li>Cancelamentos pelo cliente: sujeito à política de cancelamento do personal trainer</li>
-                <li>Cancelamentos pelo personal: cliente tem direito a reembolso ou reagendamento</li>
-                <li>Cancelamentos com menos de 24h de antecedência podem resultar em multa</li>
-                <li>Reembolsos são processados dentro de 5 a 10 dias úteis</li>
+                <li>O cancelamento de planos e assinaturas segue as condições informadas no momento da contratação</li>
+                <li>Sessões ou aulas agendadas podem estar sujeitas à política de cancelamento do profissional, academia ou studio, inclusive quanto a prazos mínimos de antecedência</li>
+                <li>Reembolsos devidos são processados pelos meios de pagamento originais, dentro dos prazos operacionais do processador (em geral, de 5 a 10 dias úteis)</li>
             </ul>
 
             <h2 id="secao-8">8. AVALIAÇÕES E FEEDBACK</h2>
@@ -482,9 +495,9 @@
             <h3>Contato e Suporte</h3>
             <p>Para questões sobre estes Termos, entre em contato conosco:</p>
             <ul>
-                <li><strong>Email:</strong> suporte@snrfittech.com</li>
-                <li><strong>Telefone:</strong> +5531989542169</li>
-                
+                <li><strong>Email:</strong> suporte@snrfit.com.br</li>
+                <li><strong>Encarregado de Dados (DPO):</strong> privacidade@snrfit.com.br</li>
+                <li><strong>Telefone/WhatsApp:</strong> +55 31 98954-2169</li>
             </ul>
 
             <div class="highlighted">
@@ -496,7 +509,7 @@
         <div class="footer">
             <p><strong>Última atualização:</strong> {{ date('d/m/Y') }}</p>
             <p><strong>Versão:</strong> 1.0</p>
-            <p style="margin-top: 20px;">© 2024 FitConnect. Todos os direitos reservados.</p>
+            <p style="margin-top: 20px;">© {{ date('Y') }} SNR FIT. Todos os direitos reservados.</p>
         </div>
 
     </div>

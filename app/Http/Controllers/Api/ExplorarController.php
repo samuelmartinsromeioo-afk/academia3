@@ -56,12 +56,53 @@ class ExplorarController extends Controller
             $query->where('estado', $uf);
         }
 
+        // Ordena por proximidade quando o app envia a posição do usuário (lat/lng).
+        $this->aplicarProximidade($query, $request);
+
         $total = (clone $query)->count();
         $limit = min(50, max(1, (int) $request->query('limit', 20)));
         $offset = max(0, (int) $request->query('offset', 0));
         $query->offset($offset)->limit($limit);
 
         return ['total' => $total, 'limit' => $limit, 'offset' => $offset, 'has_more' => ($offset + $limit) < $total];
+    }
+
+    /**
+     * Ordena a listagem por proximidade quando o app envia a posição do usuário
+     * (query params lat/lng). Calcula a distância em km (fórmula de Haversine)
+     * de cada registro e ordena do mais próximo ao mais distante; registros sem
+     * coordenadas cadastradas vão para o fim. Expõe o alias distancia_km.
+     * Retorna true se a proximidade foi aplicada.
+     */
+    private function aplicarProximidade($query, Request $request): bool
+    {
+        $lat = $request->query('lat');
+        $lng = $request->query('lng');
+        if (! is_numeric($lat) || ! is_numeric($lng)) {
+            return false;
+        }
+        $lat = (float) $lat;
+        $lng = (float) $lng;
+        $table = $query->getModel()->getTable();
+
+        $haversine = "(6371 * acos("
+            . "cos(radians(?)) * cos(radians({$table}.latitude)) * "
+            . "cos(radians({$table}.longitude) - radians(?)) + "
+            . "sin(radians(?)) * sin(radians({$table}.latitude))"
+            . "))";
+
+        // Preserva as colunas do próprio modelo no SELECT (as listagens com
+        // withAvg/withCount já definem colunas; personais/studios ainda não).
+        if (is_null($query->getQuery()->columns)) {
+            $query->addSelect("{$table}.*");
+        }
+
+        $query->selectRaw("{$haversine} AS distancia_km", [$lat, $lng, $lat])
+            ->reorder()
+            ->orderByRaw('distancia_km IS NULL') // sem coordenada => por último
+            ->orderBy('distancia_km');
+
+        return true;
     }
 
     /** Cidades distintas (para os chips de filtro) de um tipo aprovado. */
@@ -107,6 +148,7 @@ class ExplorarController extends Controller
             'media_avaliacao' => $p->avaliacoes->avg('nota') ? round($p->avaliacoes->avg('nota'), 1) : null,
             'total_avaliacoes' => $p->avaliacoes->count(),
             'pioneiro' => $p->eh_pioneiro,
+            'distancia_km' => $p->distancia_km !== null ? round((float) $p->distancia_km, 1) : null,
         ]);
 
         return $this->respostaLista($request, 'personais', $personais, $meta, Personal::class);
@@ -139,6 +181,7 @@ class ExplorarController extends Controller
             'total_planos' => $a->planos->count(),
             'media_avaliacao' => $a->nota_media ? round((float) $a->nota_media, 1) : null,
             'total_avaliacoes' => (int) $a->avaliacoes_count,
+            'distancia_km' => $a->distancia_km !== null ? round((float) $a->distancia_km, 1) : null,
         ]);
 
         return $this->respostaLista($request, 'academias', $academias, $meta, Academia::class);
@@ -278,6 +321,7 @@ class ExplorarController extends Controller
             'plano_minimo' => $s->planos->first()?->valor !== null ? (float) $s->planos->first()->valor : null,
             'media_avaliacao' => $s->avaliacoes->avg('nota') ? round($s->avaliacoes->avg('nota'), 1) : null,
             'total_avaliacoes' => $s->avaliacoes->count(),
+            'distancia_km' => $s->distancia_km !== null ? round((float) $s->distancia_km, 1) : null,
         ]);
 
         return $this->respostaLista($request, 'studios', $studios, $meta, Studio::class);
@@ -346,6 +390,7 @@ class ExplorarController extends Controller
             'total_produtos' => $l->produtos_count,
             'media_avaliacao' => $l->nota_media ? round((float) $l->nota_media, 1) : null,
             'total_avaliacoes' => (int) $l->avaliacoes_count,
+            'distancia_km' => $l->distancia_km !== null ? round((float) $l->distancia_km, 1) : null,
         ]);
 
         return $this->respostaLista($request, 'lojas', $lojas, $meta, Loja::class);

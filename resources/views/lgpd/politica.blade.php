@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Política de Privacidade — SnrFit</title>
+    <title>Política de Privacidade — SNR FIT</title>
     <link rel="icon" type="image/png" href="{{ asset('SnrFit.png') }}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/regular/style.css">
@@ -33,14 +33,14 @@
 <body class="ed-page">
     <div class="top">
         <a href="{{ url()->previous() }}" class="back"><i class="ph ph-arrow-left"></i></a>
-        <span class="logo">SnrFit</span>
+        <span class="logo">SNR FIT</span>
     </div>
 
     <div class="wrap">
         <h1>Política de Privacidade</h1>
         <p class="upd">Em conformidade com a Lei nº 13.709/2018 (LGPD) · Atualizada em {{ now()->format('d/m/Y') }}</p>
 
-        <p>Esta política explica como o <strong>SnrFit</strong> coleta, usa, compartilha e protege os seus dados pessoais, e quais são os seus direitos como titular.</p>
+        <p>Esta política explica como o <strong>SNR FIT</strong> coleta, usa, compartilha e protege os seus dados pessoais, e quais são os seus direitos como titular.</p>
 
         <h2><i class="ph ph-database"></i> 1. Dados que coletamos</h2>
         <ul>
@@ -49,6 +49,7 @@
             <li><strong>Medidas corporais e fotos de progresso</strong> (quando você as informa).</li>
             <li><strong>Dados de pagamento:</strong> processados pelo nosso parceiro <strong>Asaas</strong>; não armazenamos dados completos de cartão.</li>
             <li><strong>Mensagens</strong> trocadas no chat entre aluno e personal.</li>
+            <li><strong>Localização aproximada</strong> — somente quando você ativa "Perto de mim" na busca, para ordenar os resultados por proximidade. Não rastreamos sua localização em segundo plano.</li>
         </ul>
         <div class="box sens">
             <strong><i class="ph ph-heartbeat"></i> Dados sensíveis de saúde (art. 11 da LGPD):</strong>
@@ -58,7 +59,8 @@
         <h2><i class="ph ph-target"></i> 2. Para que usamos</h2>
         <ul>
             <li>Prestar o serviço: conectar alunos e personais, montar e acompanhar treinos.</li>
-            <li>Processar pagamentos e assinaturas.</li>
+            <li>Processar pagamentos, assinaturas e compras na loja, e viabilizar a entrega dos produtos.</li>
+            <li>Mostrar academias, personais, studios e lojas mais próximos, quando você ativa a localização na busca.</li>
             <li>Enviar comunicações do serviço (e-mail/WhatsApp e avisos no app).</li>
             <li>Segurança, prevenção a fraudes e cumprimento de obrigações legais.</li>
         </ul>
@@ -73,6 +75,9 @@
             <li>Autoridades, quando exigido por lei.</li>
         </ul>
         <p class="muted">Não vendemos seus dados pessoais.</p>
+        <div class="box">
+            <strong><i class="ph ph-globe"></i> Transferência internacional:</strong> alguns desses parceiros (por exemplo, provedores de e-mail e o WhatsApp/Meta) podem tratar dados em servidores fora do Brasil. Nesses casos, o compartilhamento ocorre apenas para a finalidade descrita e com as salvaguardas exigidas pela LGPD.
+        </div>
 
         <h2><i class="ph ph-clock"></i> 5. Por quanto tempo guardamos</h2>
         <p>Mantemos seus dados enquanto sua conta estiver ativa. Ao excluir a conta, anonimizamos seu perfil e apagamos os dados pessoais e sensíveis. Registros financeiros podem ser retidos pelo prazo exigido pela legislação fiscal.</p>
@@ -96,16 +101,20 @@
         <p>Utilizamos apenas cookies essenciais de sessão, necessários para manter você autenticado. Não usamos cookies de rastreamento de terceiros.</p>
 
         <h2><i class="ph ph-device-mobile"></i> 9. Permissões e acessos no aplicativo</h2>
-        <p>O aplicativo SnrFit só solicita acesso a recursos do seu aparelho quando você usa a função correspondente, sempre por meio de um pedido explícito do sistema operacional que você pode recusar:</p>
+        <p>O aplicativo SNR FIT só solicita acesso a recursos do seu aparelho quando você usa a função correspondente, sempre por meio de um pedido explícito do sistema operacional que você pode recusar:</p>
         <ul>
             <li><strong>Câmera:</strong> para você tirar a foto de perfil ou registrar fotos de progresso do treino. Só é acionada quando você escolhe tirar uma foto.</li>
             <li><strong>Fotos / galeria:</strong> para você selecionar uma imagem já existente (foto de perfil, produtos da loja ou progresso). Acessamos apenas a imagem que você escolher, não a sua biblioteca inteira.</li>
+            <li><strong>Localização (enquanto o app está em uso):</strong> usada apenas quando você toca em "Perto de mim" na busca, para ordenar academias, personais, studios e lojas do mais próximo ao mais distante. A posição é usada no momento da busca, não serve para rastrear você e você pode recusar, continuando a buscar por nome ou cidade.</li>
         </ul>
         <div class="box">
-            O aplicativo <strong>não utiliza</strong> localização/GPS, notificações push, microfone, contatos, nem inteligência artificial para tratar os seus dados. Caso alguma dessas funções passe a existir no futuro, esta política será atualizada e a permissão só será solicitada quando a função for realmente usada.
+            O aplicativo <strong>não utiliza</strong> notificações push, microfone, contatos, nem inteligência artificial para tratar os seus dados, e <strong>não</strong> rastreia sua localização em segundo plano. Caso alguma dessas funções passe a existir no futuro, esta política será atualizada e a permissão só será solicitada quando a função for realmente usada.
         </div>
 
-        <h2><i class="ph ph-envelope"></i> 10. Contato (Encarregado/DPO)</h2>
+        <h2><i class="ph ph-baby"></i> 10. Menores de idade</h2>
+        <p>O uso da Plataforma como aluno é permitido a partir dos <strong>14 anos</strong>. Menores de 18 anos devem ter o <strong>consentimento e a assistência dos pais ou responsáveis legais</strong> — em especial para a coleta de dados de saúde (anamnese), que só ocorre com o consentimento do responsável. O cadastro como personal trainer exige idade mínima de <strong>18 anos</strong>. Caso identifiquemos dados de menores tratados sem a devida autorização, adotaremos medidas para excluí-los.</p>
+
+        <h2><i class="ph ph-envelope"></i> 11. Contato (Encarregado/DPO)</h2>
         <p>Dúvidas ou solicitações sobre seus dados: <a href="mailto:privacidade@snrfit.com.br">privacidade@snrfit.com.br</a>.</p>
 
         <p class="muted" style="margin-top:30px;">Esta política pode ser atualizada. Avisaremos sobre mudanças relevantes.</p>

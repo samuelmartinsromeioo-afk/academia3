@@ -22,6 +22,9 @@ class Kernel extends ConsoleKernel
         // Retrospectivas de evolução do aluno (bimestral/semestral) — enfileira
         // para quem está "vencido"; o app exibe no próximo acesso.
         $schedule->command('celebracoes:retrospectivas')->dailyAt('08:00');
+
+        // Geocodifica cadastros novos (lat/lng) para a busca por proximidade.
+        $schedule->command('geo:preencher')->hourly()->withoutOverlapping();
     }
 
     /**
