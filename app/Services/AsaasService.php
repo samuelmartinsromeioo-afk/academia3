@@ -123,8 +123,8 @@ class AsaasService
 
     public function splitAcademia(Academia $academia, float $amount, string $billingType = 'PIX'): ?array
     {
-        // Academia recebe 100% (apenas a taxa do cartão/PIX é descontada) — sem comissão de 10% da plataforma.
-        return $this->montarSplit($academia->asaas_wallet_id, $amount, ['academia_id' => $academia->id], $billingType, 1.0);
+        // Academia entra no split padrão do marketplace: 90% para a academia, 10% de comissão da plataforma.
+        return $this->montarSplit($academia->asaas_wallet_id, $amount, ['academia_id' => $academia->id], $billingType);
     }
 
     /** Valores gravados localmente na tabela payments (bruto, comissão, repasse). */

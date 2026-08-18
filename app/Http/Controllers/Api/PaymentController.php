@@ -18,7 +18,7 @@ use Illuminate\Http\Request;
 /**
  * Pagamentos (Asaas) na API mobile. Usa o MESMO AsaasService do fluxo web:
  *  - Personal: split 90/10 (montarSplit — 90% do bruto p/ o personal);
- *  - Academia: assinatura mensal com repasse de 100% (sem comissão);
+ *  - Academia: assinatura mensal com split 90/10 (90% academia, 10% plataforma);
  *  - Studio (plano): assinatura mensal com split 90/10.
  * Pacote/planos = assinatura mensal recorrente; aula avulsa/ficha/avaliação =
  * cobrança única. v1 cobre PIX (cartão continua só no fluxo web).
@@ -179,8 +179,8 @@ class PaymentController extends Controller
 
     /**
      * Contexto ACADEMIA — mesmo padrão do web (criarPagamentoAcademia):
-     * assinatura mensal recorrente com repasse de 100% para a academia
-     * (companyFeeRate 0.0 — sem comissão da plataforma, só a taxa do PIX).
+     * assinatura mensal recorrente com split 90/10 (companyFeeRate 0.10 —
+     * 90% para a academia, 10% de comissão da plataforma).
      */
     private function criarPagamentoAcademia(Request $request, Cliente $cliente, string $billingType = 'PIX')
     {
@@ -206,7 +206,7 @@ class PaymentController extends Controller
             'academia_id' => $validated['academia_id'],
             'plano_id' => $planoId,
             'cliente_id' => $cliente->id,
-        ], 0.0, $billingType); // academia sem comissão de 10% — só a taxa do PIX
+        ], 0.10, $billingType); // academia entra no split 90/10 do marketplace
 
         return response()->json($result, 201);
     }

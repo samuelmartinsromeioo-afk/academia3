@@ -899,7 +899,7 @@ class PaymentController extends Controller
     // Fluxos COBRADOS COMO ASSINATURA MENSAL (cycle: MONTHLY), PIX e cartão,
     // com split replicado pelo Asaas em cada ciclo:
     //   • Pacote do personal      → criarPagamento / criarPagamentoCartao (ramo 'pacote')  — split 90/10
-    //   • Plano/mensalidade da academia → criarPagamentoAcademia / criarPagamentoCartaoAcademia  — 100% p/ academia (sem comissão; só taxa do cartão/PIX)
+    //   • Plano/mensalidade da academia → criarPagamentoAcademia / criarPagamentoCartaoAcademia  — split 90/10
     //   • Plano de studio         → criarPagamentoStudioPlano / criarPagamentoCartaoStudioPlano  — split 90/10
     // Todos passam por criarAssinaturaPix()/criarAssinaturaCartao(), gravam o
     // subscription_id na tabela `subscriptions` (registrarAssinatura) e têm os
@@ -1258,7 +1258,7 @@ class PaymentController extends Controller
             'academia_id' => $validated['academia_id'],
             'plano_id' => $planoId,
             'cliente_id' => $clienteId,
-        ], 0.0); // academia sem comissão de 10% — só a taxa do cartão/PIX
+        ], 0.10); // academia entra no split 90/10 do marketplace
     }
 
     /**
@@ -1535,7 +1535,7 @@ class PaymentController extends Controller
             'academia_id' => $validated['academia_id'],
             'plano_id' => $planoId,
             'cliente_id' => $clienteId,
-        ], $validated, 0.0); // academia sem comissão de 10% — só a taxa do cartão
+        ], $validated, 0.10); // academia entra no split 90/10 do marketplace
     }
 
     // ─────────────────────────────────────────────
@@ -1564,8 +1564,8 @@ class PaymentController extends Controller
 
     private function splitAcademia(\App\Models\Cadastro\Academia $academia, float $amount, string $billingType = 'PIX'): ?array
     {
-        // Academia recebe 100% (apenas a taxa do cartão/PIX é descontada) — sem comissão de 10% da plataforma.
-        return $this->montarSplit($academia->asaas_wallet_id, $amount, ['academia_id' => $academia->id], $billingType, 1.0);
+        // Academia entra no split padrão do marketplace: 90% para a academia, 10% de comissão da plataforma.
+        return $this->montarSplit($academia->asaas_wallet_id, $amount, ['academia_id' => $academia->id], $billingType);
     }
 
     // ─────────────────────────────────────────────
