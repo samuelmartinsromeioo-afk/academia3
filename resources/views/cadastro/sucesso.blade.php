@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Cadastro recebido — SnrFit</title>
     <link rel="icon" type="image/png" href="{{ asset('SnrFit.png') }}">
+    @include('partials.meta-pixel')
     @include('partials.brand-head')
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }

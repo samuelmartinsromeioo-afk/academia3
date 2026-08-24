@@ -70,7 +70,9 @@ class StudioController extends Controller
 
         Studio::create($dados);
 
-        return redirect()->route('login.index')->with('sucesso', 'Cadastro enviado com sucesso! Seu studio será analisado pelo administrador e você poderá acessar após a aprovação.');
+        return redirect()->route('login.index')
+            ->with('sucesso', 'Cadastro enviado com sucesso! Seu studio será analisado pelo administrador e você poderá acessar após a aprovação.')
+            ->with('fb_event', ['event' => 'CompleteRegistration', 'params' => ['content_name' => 'Studio', 'status' => 'pendente']]);
     }
 
     // ==========================================

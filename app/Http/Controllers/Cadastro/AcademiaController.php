@@ -56,7 +56,9 @@ class AcademiaController extends Controller
 
         Academia::create($dados);
 
-        return redirect()->route('cadastro.sucesso')->with('cad_tipo', 'academia');
+        return redirect()->route('cadastro.sucesso')
+            ->with('cad_tipo', 'academia')
+            ->with('fb_event', ['event' => 'CompleteRegistration', 'params' => ['content_name' => 'Academia', 'status' => 'pendente']]);
     }
 
     /**

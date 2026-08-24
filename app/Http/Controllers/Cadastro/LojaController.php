@@ -74,7 +74,8 @@ class LojaController extends Controller
         Loja::create($dados);
 
         return redirect()->route('login.index')
-            ->with('sucesso', 'Cadastro enviado com sucesso! Sua loja será analisada pelo administrador e você poderá acessar após a aprovação.');
+            ->with('sucesso', 'Cadastro enviado com sucesso! Sua loja será analisada pelo administrador e você poderá acessar após a aprovação.')
+            ->with('fb_event', ['event' => 'CompleteRegistration', 'params' => ['content_name' => 'Loja', 'status' => 'pendente']]);
     }
 
     // ==========================================

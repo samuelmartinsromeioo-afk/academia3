@@ -278,8 +278,19 @@ class PaymentController extends Controller
             return redirect()->route('login.index');
         }
 
+        $pagamento = Payment::where('user_id', $clienteId)
+            ->where('status', 'succeeded')
+            ->latest('paid_at')
+            ->first();
+
         return redirect()->route('cliente.index')
-            ->with('success', 'Pagamento confirmado! Seu pacote foi contratado com sucesso.');
+            ->with('success', 'Pagamento confirmado! Seu pacote foi contratado com sucesso.')
+            ->with('fb_event', ['event' => 'Purchase', 'params' => [
+                'value'        => (float) ($pagamento->amount_total ?? 0),
+                'currency'     => 'BRL',
+                'content_name' => 'Pacote de treinos',
+                'content_type' => 'pacote',
+            ]]);
     }
 
     // ─────────────────────────────────────────────

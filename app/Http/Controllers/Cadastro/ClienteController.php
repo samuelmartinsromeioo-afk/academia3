@@ -197,7 +197,9 @@ class ClienteController extends Controller
         $validated['ip_aceitacao_termos'] = $request->ip();
 
         Cliente::create($validated);
-        return redirect()->route('login.index')->with('success', 'Cliente cadastrado com sucesso!');
+        return redirect()->route('login.index')
+            ->with('success', 'Cliente cadastrado com sucesso!')
+            ->with('fb_event', ['event' => 'CompleteRegistration', 'params' => ['content_name' => 'Cliente', 'status' => 'completo']]);
     }
 
     public function reservarHorario(Request $request)
@@ -261,7 +263,9 @@ class ClienteController extends Controller
             } catch (\Exception $e) {}
         }
 
-        return redirect()->back()->with('sucesso', 'Horário agendado com sucesso!');
+        return redirect()->back()
+            ->with('sucesso', 'Horário agendado com sucesso!')
+            ->with('fb_event', ['event' => 'Lead', 'params' => ['content_name' => 'Agendamento de horário', 'content_category' => 'aula_avulsa']]);
     }
 
     public function contratarAcademia(Request $request)
@@ -289,7 +293,9 @@ class ClienteController extends Controller
             } catch (\Exception $e) {}
         }
 
-        return redirect()->back()->with('sucesso', 'Academia contratada com sucesso!');
+        return redirect()->back()
+            ->with('sucesso', 'Academia contratada com sucesso!')
+            ->with('fb_event', ['event' => 'Lead', 'params' => ['content_name' => $academia->nome ?? 'Academia', 'content_category' => 'academia']]);
     }
 
     public function verPrecos($id)
@@ -409,7 +415,14 @@ class ClienteController extends Controller
             } catch (\Exception $e) {}
         }
 
-        return redirect()->back()->with('success', "Pacote contratado com sucesso! {$agendamentosCriados} treino(s) agendado(s).");
+        return redirect()->back()
+            ->with('success', "Pacote contratado com sucesso! {$agendamentosCriados} treino(s) agendado(s).")
+            ->with('fb_event', ['event' => 'Purchase', 'params' => [
+                'value'        => (float) ($request->valor_pacote ?? 0),
+                'currency'     => 'BRL',
+                'content_name' => 'Pacote de treinos',
+                'content_type' => 'pacote',
+            ]]);
     }
 
     public function agendarAulasInterno(array $booking): void

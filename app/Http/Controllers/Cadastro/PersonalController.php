@@ -71,7 +71,9 @@ class PersonalController extends Controller
 
         $this->criarSubcontaAsaas($personal);
 
-        return redirect()->route('login.index')->with('sucesso', 'Personal cadastrado com sucesso! Aguarde a aprovação do administrador.');
+        return redirect()->route('login.index')
+            ->with('sucesso', 'Personal cadastrado com sucesso! Aguarde a aprovação do administrador.')
+            ->with('fb_event', ['event' => 'CompleteRegistration', 'params' => ['content_name' => 'Personal', 'status' => 'pendente']]);
     }
 
     public function index(Request $request)
