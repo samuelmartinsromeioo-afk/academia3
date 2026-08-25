@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Cadastro;
 
 use App\Http\Controllers\Controller;
+use App\Services\MetaConversionsService;
 use App\Http\Controllers\Concerns\EscopoAcademia;
 use App\Models\Anamnese;
 use App\Models\Cadastro\Academia;
@@ -54,11 +55,16 @@ class AcademiaController extends Controller
         $dados['senha']  = Hash::make($dados['senha']);
         $dados['status'] = 'pendente'; // precisa de aprovação do administrador
 
-        Academia::create($dados);
+        $academia = Academia::create($dados);
 
+        $fb = app(MetaConversionsService::class);
         return redirect()->route('cadastro.sucesso')
             ->with('cad_tipo', 'academia')
-            ->with('fb_event', ['event' => 'CompleteRegistration', 'params' => ['content_name' => 'Academia', 'status' => 'pendente']]);
+            ->with('fb_event', $fb->track(
+                'CompleteRegistration',
+                ['content_name' => 'Academia', 'status' => 'pendente'],
+                $fb->userDataFromModel($academia)
+            ));
     }
 
     /**

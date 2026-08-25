@@ -14,6 +14,7 @@ use App\Models\Cadastro\Studio;
 use App\Models\Cadastro\StudioPlano;
 use App\Models\MembershipConfirmation;
 use App\Models\Payment;
+use App\Services\MetaConversionsService;
 use App\Models\PersonalSaque;
 use App\Models\Subscription;
 use App\Models\TrainerPayout;
@@ -283,14 +284,19 @@ class PaymentController extends Controller
             ->latest('paid_at')
             ->first();
 
+        $fb = app(MetaConversionsService::class);
         return redirect()->route('cliente.index')
             ->with('success', 'Pagamento confirmado! Seu pacote foi contratado com sucesso.')
-            ->with('fb_event', ['event' => 'Purchase', 'params' => [
-                'value'        => (float) ($pagamento->amount_total ?? 0),
-                'currency'     => 'BRL',
-                'content_name' => 'Pacote de treinos',
-                'content_type' => 'pacote',
-            ]]);
+            ->with('fb_event', $fb->track(
+                'Purchase',
+                [
+                    'value'        => (float) ($pagamento->amount_total ?? 0),
+                    'currency'     => 'BRL',
+                    'content_name' => 'Pacote de treinos',
+                    'content_type' => 'pacote',
+                ],
+                $fb->userDataFromModel(\App\Models\Cadastro\Cliente::find($clienteId))
+            ));
     }
 
     // ─────────────────────────────────────────────

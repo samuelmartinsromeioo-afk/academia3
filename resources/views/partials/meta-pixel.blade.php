@@ -21,7 +21,7 @@ s.parentNode.insertBefore(t,s)}(window, document,'script',
 fbq('init', '28125781433700453');
 fbq('track', 'PageView');
 @foreach($fbList as $ev)
-fbq('track', {!! json_encode($ev['event']) !!}, {!! json_encode($ev['params'] ?? (object) []) !!});
+fbq('track', {!! json_encode($ev['event']) !!}, {!! json_encode($ev['params'] ?? (object) []) !!}@if(!empty($ev['event_id'])), {eventID: {!! json_encode($ev['event_id']) !!}}@endif);
 @endforeach
 </script>
 <noscript><img height="1" width="1" style="display:none"

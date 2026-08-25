@@ -5,15 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ $academia->nome }} | SnrFit</title>
     <link rel="icon" type="image/png" href="{{ asset('SnrFit.png') }}">
-    @include('partials.meta-pixel', ['fbEvents' => [[
-        'event'  => 'ViewContent',
-        'params' => [
-            'content_type'     => 'academia',
-            'content_ids'      => [(string) $academia->id],
-            'content_name'     => $academia->nome,
-            'content_category' => 'Academia',
-        ],
-    ]]])
+    @include('partials.meta-pixel', ['fbEvents' => isset($fbEvent) ? [$fbEvent] : []])
     @include('partials.pwa')
     <link href="https://fonts.googleapis.com/css2?family=Syncopate:wght@700&family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">

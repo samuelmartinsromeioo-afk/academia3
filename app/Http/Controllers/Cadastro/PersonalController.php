@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Cadastro;
 
 use App\Http\Controllers\Controller;
+use App\Services\MetaConversionsService;
 use Illuminate\Http\Request;
 use App\Models\Cadastro\Personal;
 use App\Models\Agenda;
@@ -71,9 +72,14 @@ class PersonalController extends Controller
 
         $this->criarSubcontaAsaas($personal);
 
+        $fb = app(MetaConversionsService::class);
         return redirect()->route('login.index')
             ->with('sucesso', 'Personal cadastrado com sucesso! Aguarde a aprovação do administrador.')
-            ->with('fb_event', ['event' => 'CompleteRegistration', 'params' => ['content_name' => 'Personal', 'status' => 'pendente']]);
+            ->with('fb_event', $fb->track(
+                'CompleteRegistration',
+                ['content_name' => 'Personal', 'status' => 'pendente'],
+                $fb->userDataFromModel($personal)
+            ));
     }
 
     public function index(Request $request)

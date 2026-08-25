@@ -55,4 +55,13 @@ return [
         'webhook_token'  => env('ASAAS_WEBHOOK_TOKEN'),
     ],
 
+    // Meta (Facebook) Pixel + API de Conversões (server-side).
+    'meta' => [
+        'pixel_id'        => env('META_PIXEL_ID', '28125781433700453'),
+        'capi_token'      => env('META_CAPI_TOKEN'),
+        'api_version'     => env('META_API_VERSION', 'v21.0'),
+        // Preencha com o código do "Testar eventos" para depurar; deixe vazio em produção.
+        'test_event_code' => env('META_CAPI_TEST_CODE'),
+    ],
+
 ];

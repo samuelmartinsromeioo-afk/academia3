@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Cadastro;
 
 use App\Http\Controllers\Controller;
+use App\Services\MetaConversionsService;
 use App\Models\Cadastro\Cliente;
 use App\Models\Cadastro\Personal;
 use App\Models\Cadastro\Academia as Academia;
@@ -196,10 +197,15 @@ class ClienteController extends Controller
         $validated['data_aceitacao_termos'] = now();
         $validated['ip_aceitacao_termos'] = $request->ip();
 
-        Cliente::create($validated);
+        $cliente = Cliente::create($validated);
+        $fb = app(MetaConversionsService::class);
         return redirect()->route('login.index')
             ->with('success', 'Cliente cadastrado com sucesso!')
-            ->with('fb_event', ['event' => 'CompleteRegistration', 'params' => ['content_name' => 'Cliente', 'status' => 'completo']]);
+            ->with('fb_event', $fb->track(
+                'CompleteRegistration',
+                ['content_name' => 'Cliente', 'status' => 'completo'],
+                $fb->userDataFromModel($cliente)
+            ));
     }
 
     public function reservarHorario(Request $request)
@@ -263,9 +269,14 @@ class ClienteController extends Controller
             } catch (\Exception $e) {}
         }
 
+        $fb = app(MetaConversionsService::class);
         return redirect()->back()
             ->with('sucesso', 'Horário agendado com sucesso!')
-            ->with('fb_event', ['event' => 'Lead', 'params' => ['content_name' => 'Agendamento de horário', 'content_category' => 'aula_avulsa']]);
+            ->with('fb_event', $fb->track(
+                'Lead',
+                ['content_name' => 'Agendamento de horário', 'content_category' => 'aula_avulsa'],
+                $fb->userDataFromModel(Cliente::find($clienteId))
+            ));
     }
 
     public function contratarAcademia(Request $request)
@@ -293,9 +304,14 @@ class ClienteController extends Controller
             } catch (\Exception $e) {}
         }
 
+        $fb = app(MetaConversionsService::class);
         return redirect()->back()
             ->with('sucesso', 'Academia contratada com sucesso!')
-            ->with('fb_event', ['event' => 'Lead', 'params' => ['content_name' => $academia->nome ?? 'Academia', 'content_category' => 'academia']]);
+            ->with('fb_event', $fb->track(
+                'Lead',
+                ['content_name' => $academia->nome ?? 'Academia', 'content_category' => 'academia'],
+                $fb->userDataFromModel($cliente)
+            ));
     }
 
     public function verPrecos($id)
@@ -415,14 +431,19 @@ class ClienteController extends Controller
             } catch (\Exception $e) {}
         }
 
+        $fb = app(MetaConversionsService::class);
         return redirect()->back()
             ->with('success', "Pacote contratado com sucesso! {$agendamentosCriados} treino(s) agendado(s).")
-            ->with('fb_event', ['event' => 'Purchase', 'params' => [
-                'value'        => (float) ($request->valor_pacote ?? 0),
-                'currency'     => 'BRL',
-                'content_name' => 'Pacote de treinos',
-                'content_type' => 'pacote',
-            ]]);
+            ->with('fb_event', $fb->track(
+                'Purchase',
+                [
+                    'value'        => (float) ($request->valor_pacote ?? 0),
+                    'currency'     => 'BRL',
+                    'content_name' => 'Pacote de treinos',
+                    'content_type' => 'pacote',
+                ],
+                $fb->userDataFromModel($cliente)
+            ));
     }
 
     public function agendarAulasInterno(array $booking): void
@@ -659,7 +680,15 @@ class ClienteController extends Controller
             'personaisAprovados' => fn ($q) => $q->where('personals.status', 'aprovado')->with('fotos')->orderBy('nome'),
         ])->findOrFail($id);
 
-        return view('cliente.academia-detalhes', compact('academia', 'cliente'));
+        $fb = app(MetaConversionsService::class);
+        $fbEvent = $fb->track('ViewContent', [
+            'content_type'     => 'academia',
+            'content_ids'      => [(string) $academia->id],
+            'content_name'     => $academia->nome,
+            'content_category' => 'Academia',
+        ], $fb->userDataFromModel($cliente));
+
+        return view('cliente.academia-detalhes', compact('academia', 'cliente', 'fbEvent'));
     }
 
     public function listarStudios()
@@ -684,7 +713,15 @@ class ClienteController extends Controller
             ])
             ->findOrFail($id);
 
-        return view('cliente.studio-detalhes', compact('studio', 'cliente'));
+        $fb = app(MetaConversionsService::class);
+        $fbEvent = $fb->track('ViewContent', [
+            'content_type'     => 'studio',
+            'content_ids'      => [(string) $studio->id],
+            'content_name'     => $studio->nome,
+            'content_category' => 'Studio',
+        ], $fb->userDataFromModel($cliente));
+
+        return view('cliente.studio-detalhes', compact('studio', 'cliente', 'fbEvent'));
     }
 
     public function listarLojas()
@@ -705,7 +742,15 @@ class ClienteController extends Controller
             ->with(['produtos' => fn($q) => $q->where('ativo', true)->orderBy('nome')])
             ->findOrFail($id);
 
-        return view('cliente.loja-detalhes', compact('loja', 'cliente'));
+        $fb = app(MetaConversionsService::class);
+        $fbEvent = $fb->track('ViewContent', [
+            'content_type'     => 'loja',
+            'content_ids'      => [(string) $loja->id],
+            'content_name'     => $loja->nome,
+            'content_category' => 'Loja',
+        ], $fb->userDataFromModel($cliente));
+
+        return view('cliente.loja-detalhes', compact('loja', 'cliente', 'fbEvent'));
     }
 
     private function notificarPersonalWhatsApp($clienteId, $personalId, $tipo, $agenda = null, $frequencia = null, $diasTotal = null)

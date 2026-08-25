@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Cadastro;
 
 use App\Http\Controllers\Controller;
+use App\Services\MetaConversionsService;
 use App\Models\Agenda;
 use App\Models\Cadastro\Academia;
 use App\Models\Cadastro\Cliente;
@@ -68,11 +69,16 @@ class StudioController extends Controller
         $dados['senha'] = Hash::make($dados['senha']);
         $dados['status'] = 'pendente';
 
-        Studio::create($dados);
+        $studio = Studio::create($dados);
 
+        $fb = app(MetaConversionsService::class);
         return redirect()->route('login.index')
             ->with('sucesso', 'Cadastro enviado com sucesso! Seu studio será analisado pelo administrador e você poderá acessar após a aprovação.')
-            ->with('fb_event', ['event' => 'CompleteRegistration', 'params' => ['content_name' => 'Studio', 'status' => 'pendente']]);
+            ->with('fb_event', $fb->track(
+                'CompleteRegistration',
+                ['content_name' => 'Studio', 'status' => 'pendente'],
+                $fb->userDataFromModel($studio)
+            ));
     }
 
     // ==========================================
