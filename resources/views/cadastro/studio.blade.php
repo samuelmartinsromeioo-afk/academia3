@@ -207,6 +207,13 @@
         <input type="hidden" name="latitude" id="latitude" value="{{ old('latitude') }}">
         <input type="hidden" name="longitude" id="longitude" value="{{ old('longitude') }}">
 
+        <label class="full-width" style="display:flex; align-items:flex-start; gap:10px; color:#cfd3da; font-size:0.88rem; margin:6px 0 4px; line-height:1.5;">
+            <input type="checkbox" name="aceita_termos" value="1" required style="margin-top:3px;">
+            <span>Declaro ter poderes para representar o studio e li e concordo com os
+                <a href="{{ route('termos.studio') }}" target="_blank" style="color:#d4ff00;">Termos de Uso do Studio</a>
+                e a <a href="{{ route('lgpd.politica') }}" target="_blank" style="color:#d4ff00;">Política de Privacidade</a>.</span>
+        </label>
+
         <button type="submit" class="btn-submit full-width">
             FINALIZAR CADASTRO <i class="ph ph-paper-plane-tilt" style="margin-left: 10px;"></i>
         </button>

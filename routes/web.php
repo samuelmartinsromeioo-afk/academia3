@@ -98,13 +98,17 @@ Route::post('/logout', [LoginController::class, 'logout'])->name('login.logout')
 // ==========================================
 // PÁGINAS PÚBLICAS - TERMOS E PRIVACIDADE
 // ==========================================
-Route::get('/termos', function () {
-    return view('termos');
-})->name('termos');
+// Termos gerais (visão geral) + termos específicos por perfil.
+Route::get('/termos', fn () => view('legal.termos-index'))->name('termos');
+Route::get('/termos/aluno', fn () => view('legal.termos-aluno'))->name('termos.aluno');
+Route::get('/termos/personal', fn () => view('legal.termos-personal'))->name('termos.personal');
+Route::get('/termos/academia', fn () => view('legal.termos-academia'))->name('termos.academia');
+Route::get('/termos/studio', fn () => view('legal.termos-studio'))->name('termos.studio');
+Route::get('/termos/loja', fn () => view('legal.termos-loja'))->name('termos.loja');
 
-Route::get('/privacidade', function () {
-    return view('privacidade');
-})->name('privacidade');
+// Privacidade: uma única fonte canônica (política LGPD). Mantém a rota antiga
+// funcionando via redirect para não quebrar links já publicados.
+Route::get('/privacidade', fn () => redirect()->route('lgpd.politica'))->name('privacidade');
 
 // ==========================================
 // RECUPERAÇÃO DE SENHA

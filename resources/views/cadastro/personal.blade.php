@@ -431,9 +431,9 @@
                 <input type="checkbox" id="termsCheckbox" name="aceita_termos" value="1" required>
                 <label for="termsCheckbox">
                     Li e concordo com os
-                    <a href="{{ route('termos') }}" target="_blank">Termos de Uso</a>
+                    <a href="{{ route('termos.personal') }}" target="_blank">Termos de Uso do Personal</a>
                     e a
-                    <a href="{{ route('privacidade') }}" target="_blank">Política de Privacidade</a>
+                    <a href="{{ route('lgpd.politica') }}" target="_blank">Política de Privacidade</a>
                 </label>
             </div>
 

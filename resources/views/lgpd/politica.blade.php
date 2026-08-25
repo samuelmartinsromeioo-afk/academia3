@@ -62,6 +62,7 @@
             <li>Processar pagamentos, assinaturas e compras na loja, e viabilizar a entrega dos produtos.</li>
             <li>Mostrar academias, personais, studios e lojas mais próximos, quando você ativa a localização na busca.</li>
             <li>Enviar comunicações do serviço (e-mail/WhatsApp e avisos no app).</li>
+            <li>Medir e melhorar campanhas de marketing (Meta Pixel/API de Conversões) — <strong>somente com o seu consentimento</strong> (ver seção 8).</li>
             <li>Segurança, prevenção a fraudes e cumprimento de obrigações legais.</li>
         </ul>
 
@@ -72,6 +73,7 @@
         <ul>
             <li><strong>Seu personal/academia:</strong> vê os dados necessários para te atender (treinos, evolução e anamnese).</li>
             <li><strong>Asaas</strong> (processamento de pagamentos), <strong>provedores de e-mail e WhatsApp</strong> (envio de notificações).</li>
+            <li><strong>Meta</strong> (Facebook/Instagram) — apenas <strong>com o seu consentimento</strong>, para medição de anúncios via Pixel e API de Conversões (ver seção 8).</li>
             <li>Autoridades, quando exigido por lei.</li>
         </ul>
         <p class="muted">Não vendemos seus dados pessoais.</p>
@@ -97,8 +99,13 @@
         <h2><i class="ph ph-lock"></i> 7. Segurança</h2>
         <p>Senhas são armazenadas com hash (bcrypt); o acesso é protegido por sessão, limite de tentativas de login e cabeçalhos de segurança. Recomendamos uso sob conexão HTTPS.</p>
 
-        <h2><i class="ph ph-cookie"></i> 8. Cookies</h2>
-        <p>Utilizamos apenas cookies essenciais de sessão, necessários para manter você autenticado. Não usamos cookies de rastreamento de terceiros.</p>
+        <h2><i class="ph ph-cookie"></i> 8. Cookies e tecnologias de medição</h2>
+        <p><strong>Cookies essenciais:</strong> usados para manter você autenticado e garantir o funcionamento e a segurança da plataforma. São indispensáveis e por isso não dependem de consentimento.</p>
+        <p><strong>Cookies e ferramentas de marketing/medição:</strong> utilizamos o <strong>Meta Pixel</strong> e a <strong>API de Conversões da Meta</strong> (Facebook/Instagram) para medir o desempenho de anúncios e melhorar nossas campanhas. Essas ferramentas podem gravar cookies (por exemplo, <code>_fbp</code> e <code>_fbc</code>) e enviar à Meta eventos de navegação e de conversão (como cadastro, agendamento e compra), incluindo identificadores <strong>pseudonimizados com criptografia (hash SHA-256)</strong> e seu endereço IP.</p>
+        <div class="box">
+            <strong><i class="ph ph-check-circle"></i> Você no controle:</strong> essas ferramentas de marketing <strong>só são ativadas após o seu consentimento</strong> no banner de cookies. Enquanto você não aceitar, nada é enviado à Meta. Você pode recusar e continuar usando a plataforma normalmente, e pode rever sua escolha limpando os cookies do navegador.
+        </div>
+        <p class="muted">Não vendemos seus dados. O tratamento pela Meta segue as políticas do próprio parceiro.</p>
 
         <h2><i class="ph ph-device-mobile"></i> 9. Permissões e acessos no aplicativo</h2>
         <p>O aplicativo SNR FIT só solicita acesso a recursos do seu aparelho quando você usa a função correspondente, sempre por meio de um pedido explícito do sistema operacional que você pode recusar:</p>
@@ -106,16 +113,17 @@
             <li><strong>Câmera:</strong> para você tirar a foto de perfil ou registrar fotos de progresso do treino. Só é acionada quando você escolhe tirar uma foto.</li>
             <li><strong>Fotos / galeria:</strong> para você selecionar uma imagem já existente (foto de perfil, produtos da loja ou progresso). Acessamos apenas a imagem que você escolher, não a sua biblioteca inteira.</li>
             <li><strong>Localização (enquanto o app está em uso):</strong> usada apenas quando você toca em "Perto de mim" na busca, para ordenar academias, personais, studios e lojas do mais próximo ao mais distante. A posição é usada no momento da busca, não serve para rastrear você e você pode recusar, continuando a buscar por nome ou cidade.</li>
+            <li><strong>Notificações:</strong> com a sua permissão, exibimos avisos do navegador (ex.: nova mensagem no chat, aula agendada, lembretes). Você pode recusar ou desativar nas configurações do navegador/dispositivo a qualquer momento, sem afetar o uso da plataforma.</li>
         </ul>
         <div class="box">
-            O aplicativo <strong>não utiliza</strong> notificações push, microfone, contatos, nem inteligência artificial para tratar os seus dados, e <strong>não</strong> rastreia sua localização em segundo plano. Caso alguma dessas funções passe a existir no futuro, esta política será atualizada e a permissão só será solicitada quando a função for realmente usada.
+            O aplicativo <strong>não utiliza</strong> microfone, contatos, nem inteligência artificial para tratar os seus dados, e <strong>não</strong> rastreia sua localização em segundo plano. Caso alguma nova função passe a existir no futuro, esta política será atualizada e a permissão só será solicitada quando a função for realmente usada.
         </div>
 
         <h2><i class="ph ph-baby"></i> 10. Menores de idade</h2>
         <p>O uso da Plataforma como aluno é permitido a partir dos <strong>14 anos</strong>. Menores de 18 anos devem ter o <strong>consentimento e a assistência dos pais ou responsáveis legais</strong> — em especial para a coleta de dados de saúde (anamnese), que só ocorre com o consentimento do responsável. O cadastro como personal trainer exige idade mínima de <strong>18 anos</strong>. Caso identifiquemos dados de menores tratados sem a devida autorização, adotaremos medidas para excluí-los.</p>
 
         <h2><i class="ph ph-envelope"></i> 11. Contato (Encarregado/DPO)</h2>
-        <p>Dúvidas ou solicitações sobre seus dados: <a href="mailto:privacidade@snrfit.com.br">privacidade@snrfit.com.br</a>.</p>
+        <p>Dúvidas ou solicitações sobre seus dados: <a href="mailto:suporte@snrfittech.com">suporte@snrfittech.com</a>.</p>
 
         <p class="muted" style="margin-top:30px;">Esta política pode ser atualizada. Avisaremos sobre mudanças relevantes.</p>
     </div>
