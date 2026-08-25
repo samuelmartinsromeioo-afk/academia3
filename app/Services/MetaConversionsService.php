@@ -42,14 +42,17 @@ class MetaConversionsService
      * Envia o evento server-side e devolve o payload pronto para o browser
      * (event, params e event_id para deduplicação).
      *
-     * @param  string  $eventName   Ex.: 'Purchase', 'Lead', 'CompleteRegistration'
-     * @param  array   $customData  Parâmetros do evento (value, currency, content_ids...)
-     * @param  array   $userData    ['email','phone','first_name','city','external_id']
+     * @param  string       $eventName   Ex.: 'Purchase', 'Lead', 'CompleteRegistration'
+     * @param  array        $customData  Parâmetros do evento (value, currency, content_ids...)
+     * @param  array        $userData    ['email','phone','first_name','city','external_id']
+     * @param  string|null  $eventId     ID determinístico para deduplicação (ex.: "purchase_{id}").
+     *                                    Passe um id estável quando a página puder ser recarregada,
+     *                                    para a Meta deduplicar disparos repetidos do mesmo evento.
      */
-    public function track(string $eventName, array $customData = [], array $userData = [], ?Request $request = null, ?string $eventSourceUrl = null): array
+    public function track(string $eventName, array $customData = [], array $userData = [], ?string $eventId = null, ?Request $request = null, ?string $eventSourceUrl = null): array
     {
         $request = $request ?: request();
-        $eventId = (string) Str::uuid();
+        $eventId = $eventId ?: (string) Str::uuid();
 
         $this->send($eventName, $customData, $userData, $request, $eventId, $eventSourceUrl);
 

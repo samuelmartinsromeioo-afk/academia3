@@ -285,6 +285,10 @@ class PaymentController extends Controller
             ->first();
 
         $fb = app(MetaConversionsService::class);
+        // event_id determinístico: se o cliente recarregar /pagamento/sucesso, o
+        // mesmo id é reenviado e a Meta deduplica (evita inflar compras/receita).
+        $eventId = $pagamento ? 'purchase_' . $pagamento->id : null;
+
         return redirect()->route('cliente.index')
             ->with('success', 'Pagamento confirmado! Seu pacote foi contratado com sucesso.')
             ->with('fb_event', $fb->track(
@@ -292,10 +296,11 @@ class PaymentController extends Controller
                 [
                     'value'        => (float) ($pagamento->amount_total ?? 0),
                     'currency'     => 'BRL',
-                    'content_name' => 'Pacote de treinos',
+                    'content_name' => 'Pagamento SnrFit',
                     'content_type' => 'pacote',
                 ],
-                $fb->userDataFromModel(\App\Models\Cadastro\Cliente::find($clienteId))
+                $fb->userDataFromModel(\App\Models\Cadastro\Cliente::find($clienteId)),
+                $eventId
             ));
     }
 
