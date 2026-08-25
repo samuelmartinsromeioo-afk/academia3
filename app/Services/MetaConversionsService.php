@@ -64,24 +64,59 @@ class MetaConversionsService
     }
 
     /**
-     * Dispara a requisição para o Graph API. Falhas nunca quebram o fluxo do
-     * usuário — são apenas logadas.
+     * Evento server-to-server, para contextos SEM browser (ex.: webhooks de
+     * renovação de assinatura). Não exige consentimento de cookie — o usuário
+     * já consentiu na compra original — e não envia IP/user-agent (que seriam
+     * os do servidor de origem do webhook, não do cliente).
+     *
+     * Retorna o event_id usado.
+     */
+    public function trackServer(string $eventName, array $customData, array $userData, ?string $eventId = null, ?string $eventSourceUrl = null): string
+    {
+        $eventId = $eventId ?: (string) Str::uuid();
+
+        if ($this->enabled()) {
+            $this->dispatch($eventName, $customData, $this->buildUserData($userData, null), $eventId, $eventSourceUrl);
+        }
+
+        return $eventId;
+    }
+
+    /**
+     * Envio a partir de uma requisição do browser. Respeita o consentimento
+     * de cookies (LGPD): sem consentimento, nada é enviado.
      */
     public function send(string $eventName, array $customData, array $userData, Request $request, string $eventId, ?string $eventSourceUrl = null): void
     {
-        if (! $this->enabled()) {
+        if (! $this->enabled() || ! $this->hasConsent($request)) {
             return;
         }
 
+        $this->dispatch(
+            $eventName,
+            $customData,
+            $this->buildUserData($userData, $request),
+            $eventId,
+            $eventSourceUrl ?: $request->fullUrl()
+        );
+    }
+
+    /**
+     * Faz o POST para o Graph API. Falhas nunca quebram o fluxo — só logam.
+     */
+    protected function dispatch(string $eventName, array $customData, array $userData, string $eventId, ?string $eventSourceUrl): void
+    {
         $payload = [
-            'event_name'       => $eventName,
-            'event_time'       => time(),
-            'event_id'         => $eventId,
-            'action_source'    => 'website',
-            'event_source_url' => $eventSourceUrl ?: $request->fullUrl(),
-            'user_data'        => $this->buildUserData($userData, $request),
-            'custom_data'      => (object) $customData,
+            'event_name'    => $eventName,
+            'event_time'    => time(),
+            'event_id'      => $eventId,
+            'action_source' => 'website',
+            'user_data'     => $userData,
+            'custom_data'   => (object) $customData,
         ];
+        if ($eventSourceUrl) {
+            $payload['event_source_url'] = $eventSourceUrl;
+        }
 
         $body = ['data' => [$payload]];
         if (! empty($this->testCode)) {
@@ -110,10 +145,27 @@ class MetaConversionsService
     }
 
     /**
-     * Monta o user_data. Campos de identificação vão com SHA-256 (exigência da
-     * Meta); IP, user agent e cookies fbp/fbc vão em texto puro.
+     * Consentimento de cookies (LGPD). Enquanto o cookie de consentimento não
+     * for "granted", nenhum evento é enviado. Pode ser desativado por config
+     * (META_REQUIRE_CONSENT=false) caso o consentimento seja tratado de outra forma.
      */
-    protected function buildUserData(array $u, Request $request): array
+    public function hasConsent(Request $request): bool
+    {
+        if (! config('services.meta.require_consent', true)) {
+            return true;
+        }
+
+        $cookie = config('services.meta.consent_cookie', 'snrfit_consent');
+
+        return $request->cookie($cookie) === 'granted';
+    }
+
+    /**
+     * Monta o user_data. Campos de identificação vão com SHA-256 (exigência da
+     * Meta); IP, user agent e cookies fbp/fbc vão em texto puro. Quando não há
+     * request (contexto server-to-server), os dados de navegador são omitidos.
+     */
+    protected function buildUserData(array $u, ?Request $request): array
     {
         $out = [];
 
@@ -139,18 +191,20 @@ class MetaConversionsService
             $out['external_id'] = [$this->hash((string) $u['external_id'])];
         }
 
-        // Não-hasheados
-        $out['client_ip_address'] = $request->ip();
-        $out['client_user_agent'] = $request->userAgent();
+        // Dados de navegador — só existem quando há uma requisição do browser.
+        if ($request) {
+            $out['client_ip_address'] = $request->ip();
+            $out['client_user_agent'] = $request->userAgent();
 
-        if ($fbp = $request->cookie('_fbp')) {
-            $out['fbp'] = $fbp;
-        }
-        if ($fbc = $request->cookie('_fbc')) {
-            $out['fbc'] = $fbc;
-        } elseif ($fbclid = $request->query('fbclid')) {
-            // Monta o fbc a partir do clique quando o cookie ainda não existe.
-            $out['fbc'] = 'fb.1.' . time() . '.' . $fbclid;
+            if ($fbp = $request->cookie('_fbp')) {
+                $out['fbp'] = $fbp;
+            }
+            if ($fbc = $request->cookie('_fbc')) {
+                $out['fbc'] = $fbc;
+            } elseif ($fbclid = $request->query('fbclid')) {
+                // Monta o fbc a partir do clique quando o cookie ainda não existe.
+                $out['fbc'] = 'fb.1.' . time() . '.' . $fbclid;
+            }
         }
 
         return $out;

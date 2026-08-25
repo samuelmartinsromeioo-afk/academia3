@@ -78,7 +78,10 @@ class PersonalController extends Controller
             ->with('fb_event', $fb->track(
                 'CompleteRegistration',
                 ['content_name' => 'Personal', 'status' => 'pendente'],
-                $fb->userDataFromModel($personal)
+                $fb->userDataFromModel($personal),
+                null,
+                null,
+                route('login.index')
             ));
     }
 

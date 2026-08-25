@@ -62,6 +62,10 @@ return [
         'api_version'     => env('META_API_VERSION', 'v21.0'),
         // Preencha com o código do "Testar eventos" para depurar; deixe vazio em produção.
         'test_event_code' => env('META_CAPI_TEST_CODE'),
+        // Consentimento de cookies (LGPD): quando true, Pixel e CAPI só disparam
+        // após o visitante aceitar no banner. Cookie usado para registrar o aceite.
+        'require_consent' => env('META_REQUIRE_CONSENT', true),
+        'consent_cookie'  => 'snrfit_consent',
     ],
 
 ];

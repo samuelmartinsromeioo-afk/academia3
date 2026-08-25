@@ -63,7 +63,10 @@ class AcademiaController extends Controller
             ->with('fb_event', $fb->track(
                 'CompleteRegistration',
                 ['content_name' => 'Academia', 'status' => 'pendente'],
-                $fb->userDataFromModel($academia)
+                $fb->userDataFromModel($academia),
+                null,
+                null,
+                route('cadastro.sucesso')
             ));
     }
 

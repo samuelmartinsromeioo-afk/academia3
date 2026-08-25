@@ -204,7 +204,10 @@ class ClienteController extends Controller
             ->with('fb_event', $fb->track(
                 'CompleteRegistration',
                 ['content_name' => 'Cliente', 'status' => 'completo'],
-                $fb->userDataFromModel($cliente)
+                $fb->userDataFromModel($cliente),
+                null,
+                null,
+                route('login.index')
             ));
     }
 
@@ -275,7 +278,10 @@ class ClienteController extends Controller
             ->with('fb_event', $fb->track(
                 'Lead',
                 ['content_name' => 'Agendamento de horário', 'content_category' => 'aula_avulsa'],
-                $fb->userDataFromModel(Cliente::find($clienteId))
+                $fb->userDataFromModel(Cliente::find($clienteId)),
+                null,
+                null,
+                url()->previous()
             ));
     }
 
@@ -310,7 +316,10 @@ class ClienteController extends Controller
             ->with('fb_event', $fb->track(
                 'Lead',
                 ['content_name' => $academia->nome ?? 'Academia', 'content_category' => 'academia'],
-                $fb->userDataFromModel($cliente)
+                $fb->userDataFromModel($cliente),
+                null,
+                null,
+                url()->previous()
             ));
     }
 
@@ -442,7 +451,10 @@ class ClienteController extends Controller
                     'content_name' => 'Pacote de treinos',
                     'content_type' => 'pacote',
                 ],
-                $fb->userDataFromModel($cliente)
+                $fb->userDataFromModel($cliente),
+                null,
+                null,
+                url()->previous()
             ));
     }
 

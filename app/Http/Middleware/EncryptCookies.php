@@ -16,5 +16,7 @@ class EncryptCookies extends Middleware
         // Precisam ficar de fora para a API de Conversões ler fbp/fbc (match quality).
         '_fbp',
         '_fbc',
+        // Consentimento de cookies (LGPD) — gravado via JS, lido no PHP.
+        'snrfit_consent',
     ];
 }

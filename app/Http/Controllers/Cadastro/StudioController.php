@@ -77,7 +77,10 @@ class StudioController extends Controller
             ->with('fb_event', $fb->track(
                 'CompleteRegistration',
                 ['content_name' => 'Studio', 'status' => 'pendente'],
-                $fb->userDataFromModel($studio)
+                $fb->userDataFromModel($studio),
+                null,
+                null,
+                route('login.index')
             ));
     }
 

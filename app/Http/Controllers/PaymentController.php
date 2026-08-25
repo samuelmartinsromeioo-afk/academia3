@@ -300,7 +300,9 @@ class PaymentController extends Controller
                     'content_type' => 'pacote',
                 ],
                 $fb->userDataFromModel(\App\Models\Cadastro\Cliente::find($clienteId)),
-                $eventId
+                $eventId,
+                null,
+                route('cliente.index')
             ));
     }
 
@@ -1126,6 +1128,21 @@ class PaymentController extends Controller
 
         // Reaplica os efeitos do ciclo (re-agenda aulas do pacote, mantém acesso, repasse).
         $this->processarPagamentoConfirmado($payment);
+
+        // Rastreia a renovação como Purchase — server-to-server (webhook, sem browser).
+        // event_id determinístico (purchase_{id}) dedup contra reentregas do webhook.
+        $fb = app(MetaConversionsService::class);
+        $fb->trackServer(
+            'Purchase',
+            [
+                'value'        => (float) ($payment->amount_total ?? 0),
+                'currency'     => 'BRL',
+                'content_name' => 'Renovação de assinatura SnrFit',
+                'content_type' => 'subscription',
+            ],
+            $fb->userDataFromModel(\App\Models\Cadastro\Cliente::find($sub->user_id)),
+            'purchase_' . $payment->id
+        );
 
         Log::info('Assinatura renovada e processada', [
             'subscription_id' => $asaasSubscriptionId,

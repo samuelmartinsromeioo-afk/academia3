@@ -80,7 +80,10 @@ class LojaController extends Controller
             ->with('fb_event', $fb->track(
                 'CompleteRegistration',
                 ['content_name' => 'Loja', 'status' => 'pendente'],
-                $fb->userDataFromModel($loja)
+                $fb->userDataFromModel($loja),
+                null,
+                null,
+                route('login.index')
             ));
     }
 
