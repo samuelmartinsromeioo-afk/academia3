@@ -61,7 +61,7 @@
             <li>Prestar o serviço: conectar alunos e personais, montar e acompanhar treinos.</li>
             <li>Processar pagamentos, assinaturas e compras na loja, e viabilizar a entrega dos produtos.</li>
             <li>Mostrar academias, personais, studios e lojas mais próximos, quando você ativa a localização na busca.</li>
-            <li>Enviar comunicações do serviço (e-mail/WhatsApp e avisos no app).</li>
+            <li>Enviar comunicações do serviço (e-mail/WhatsApp, notificações push e avisos no app).</li>
             <li>Medir e melhorar campanhas de marketing (Meta Pixel/API de Conversões) — <strong>somente com o seu consentimento</strong> (ver seção 8).</li>
             <li>Segurança, prevenção a fraudes e cumprimento de obrigações legais.</li>
         </ul>
@@ -72,7 +72,7 @@
         <h2><i class="ph ph-share-network"></i> 4. Com quem compartilhamos</h2>
         <ul>
             <li><strong>Seu personal/academia:</strong> vê os dados necessários para te atender (treinos, evolução e anamnese).</li>
-            <li><strong>Asaas</strong> (processamento de pagamentos), <strong>provedores de e-mail e WhatsApp</strong> (envio de notificações).</li>
+            <li><strong>Asaas</strong> (processamento de pagamentos), <strong>provedores de e-mail e WhatsApp</strong> e <strong>serviços de push notification</strong> (Expo e as plataformas Apple/APNs e Google/FCM) — usados apenas para entregar os avisos ao seu aparelho.</li>
             <li><strong>Meta</strong> (Facebook/Instagram) — apenas <strong>com o seu consentimento</strong>, para medição de anúncios via Pixel e API de Conversões (ver seção 8).</li>
             <li>Autoridades, quando exigido por lei.</li>
         </ul>
@@ -113,7 +113,7 @@
             <li><strong>Câmera:</strong> para você tirar a foto de perfil ou registrar fotos de progresso do treino. Só é acionada quando você escolhe tirar uma foto.</li>
             <li><strong>Fotos / galeria:</strong> para você selecionar uma imagem já existente (foto de perfil, produtos da loja ou progresso). Acessamos apenas a imagem que você escolher, não a sua biblioteca inteira.</li>
             <li><strong>Localização (enquanto o app está em uso):</strong> usada apenas quando você toca em "Perto de mim" na busca, para ordenar academias, personais, studios e lojas do mais próximo ao mais distante. A posição é usada no momento da busca, não serve para rastrear você e você pode recusar, continuando a buscar por nome ou cidade.</li>
-            <li><strong>Notificações:</strong> com a sua permissão, exibimos avisos do navegador (ex.: nova mensagem no chat, aula agendada, lembretes). Você pode recusar ou desativar nas configurações do navegador/dispositivo a qualquer momento, sem afetar o uso da plataforma.</li>
+            <li><strong>Notificações (push):</strong> com a sua permissão, enviamos notificações ao seu aparelho para mantê-lo ciente de eventos da sua conta (ex.: nova mensagem no chat, pacote/plano contratado, ficha de treino disponível, pedido na loja, aula agendada e lembretes). No aplicativo, a entrega usa o serviço de push da Expo e as plataformas Apple (APNs) e Google (FCM); no site, avisos do navegador. Você pode recusar no pedido do sistema ou desativar nas configurações do dispositivo/navegador a qualquer momento, sem afetar o uso da plataforma.</li>
         </ul>
         <div class="box">
             O aplicativo <strong>não utiliza</strong> microfone, contatos, nem inteligência artificial para tratar os seus dados, e <strong>não</strong> rastreia sua localização em segundo plano. Caso alguma nova função passe a existir no futuro, esta política será atualizada e a permissão só será solicitada quando a função for realmente usada.

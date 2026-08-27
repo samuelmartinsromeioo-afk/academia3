@@ -49,6 +49,11 @@ Route::prefix('v1')->group(function () {
         // Exclusão da própria conta (requisito da App Store — qualquer papel).
         Route::delete('/conta', [\App\Http\Controllers\Api\ContaController::class, 'destroy']);
 
+        // Push notifications (Expo): o app registra o token do aparelho ao logar
+        // e remove ao sair. Qualquer papel — detecta pelo token Sanctum.
+        Route::post('/push-token', [\App\Http\Controllers\Api\PushTokenController::class, 'store']);
+        Route::delete('/push-token', [\App\Http\Controllers\Api\PushTokenController::class, 'destroy']);
+
         // Celebrações / gamificação (qualquer papel — detecta pelo token)
         Route::get('/celebracoes', [\App\Http\Controllers\Api\CelebracaoController::class, 'index']);
         Route::post('/celebracoes/marcar-vistas', [\App\Http\Controllers\Api\CelebracaoController::class, 'marcarVistas']);
