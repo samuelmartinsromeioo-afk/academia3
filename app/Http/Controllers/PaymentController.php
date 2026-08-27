@@ -402,6 +402,7 @@ class PaymentController extends Controller
                         'frequencia_pacote' => $booking['frequencia_pacote'],
                         'valor_pacote' => $booking['valor_pacote'],
                         'dias_selecionados' => $booking['dias_selecionados'],
+                        'dias_horarios' => $booking['dias_horarios'] ?? null,
                         'hora_inicio' => $booking['hora_inicio'],
                         'hora_fim' => $booking['hora_fim'],
                         'academia_nome' => $booking['academia_nome'] ?? null,

@@ -463,24 +463,54 @@ class ClienteController extends Controller
         $clienteId        = $booking['cliente_id'];
         $personalId       = $booking['personal_id'];
         $frequencia       = $booking['frequencia_pacote'];
-        $horaInicio       = $booking['hora_inicio'];
-        $horaFim          = $booking['hora_fim'];
-        $diasSelecionados = json_decode($booking['dias_selecionados'], true);
+        $horaInicio       = $booking['hora_inicio'] ?? null;
+        $horaFim          = $booking['hora_fim'] ?? null;
+        $diasSelecionados = json_decode($booking['dias_selecionados'] ?? '[]', true) ?: [];
+        $diasHorarios     = !empty($booking['dias_horarios']) ? json_decode($booking['dias_horarios'], true) : null;
         $academiaNome     = $booking['academia_nome'] ?? null;
         $valorPacote      = $booking['valor_pacote'] ?? 0;
 
         $cliente  = Cliente::find($clienteId);
         $personal = Personal::find($personalId);
 
-        if (!$cliente || !$personal || empty($diasSelecionados)) {
+        // Normaliza para itens {dia (do mês), hora_inicio, hora_fim}. Se vier
+        // `dias_horarios` (horário por dia — app novo), usa o horário de cada dia;
+        // senão cai no horário único (compatível com o fluxo antigo e o web).
+        $itens = [];
+        if (is_array($diasHorarios) && count($diasHorarios) > 0) {
+            foreach ($diasHorarios as $dh) {
+                $dia = (int) ($dh['dia'] ?? 0);
+                if ($dia < 1 || $dia > 31) continue;
+                $itens[] = [
+                    'dia'         => $dia,
+                    'hora_inicio' => $dh['hora_inicio'] ?? $horaInicio,
+                    'hora_fim'    => $dh['hora_fim'] ?? $horaFim,
+                ];
+            }
+        } else {
+            foreach ($diasSelecionados as $dia) {
+                $itens[] = ['dia' => (int) $dia, 'hora_inicio' => $horaInicio, 'hora_fim' => $horaFim];
+            }
+        }
+
+        if (!$cliente || !$personal || empty($itens)) {
             Log::error('agendarAulasInterno: dados inválidos', $booking);
             return;
         }
 
+        // Horário de referência p/ o e-mail (um só): o do primeiro dia.
+        $horaInicio = $horaInicio ?? $itens[0]['hora_inicio'];
+        $horaFim    = $horaFim ?? $itens[0]['hora_fim'];
+
         $agendamentosCriados = 0;
 
-        foreach ($diasSelecionados as $dia) {
-            $dataPrimeira = Carbon::create(now()->year, now()->month, (int)$dia);
+        foreach ($itens as $item) {
+            $dia     = $item['dia'];
+            $hInicio = $item['hora_inicio'];
+            $hFim    = $item['hora_fim'];
+            if (!$hInicio || !$hFim) continue;
+
+            $dataPrimeira = Carbon::create(now()->year, now()->month, $dia);
             if ($dataPrimeira < now()->startOfDay()) $dataPrimeira = $dataPrimeira->addMonth();
 
             $diaDaSemana      = $dataPrimeira->dayOfWeek;
@@ -507,8 +537,8 @@ class ClienteController extends Controller
                 $temConflito = Agenda::where('personal_id', $personalId)
                     ->where('data', $data->format('Y-m-d'))
                     ->where('cancelado', false)
-                    ->where(function ($q) use ($horaInicio, $horaFim) {
-                        $q->whereRaw("hora_inicio < ? AND hora_fim > ?", [$horaFim, $horaInicio]);
+                    ->where(function ($q) use ($hInicio, $hFim) {
+                        $q->whereRaw("hora_inicio < ? AND hora_fim > ?", [$hFim, $hInicio]);
                     })->exists();
 
                 if (!$temConflito) {
@@ -518,8 +548,8 @@ class ClienteController extends Controller
                         'academia_id'        => $cliente->academia_id ?? null,
                         'academia_nome'      => $academiaNome,
                         'data'               => $data->format('Y-m-d'),
-                        'hora_inicio'        => $horaInicio,
-                        'hora_fim'           => $horaFim,
+                        'hora_inicio'        => $hInicio,
+                        'hora_fim'           => $hFim,
                         'cancelado'          => false,
                         'descricao'          => "Aula agendada - {$cliente->nome}",
                         'frequencia_pacote'  => $frequencia,
