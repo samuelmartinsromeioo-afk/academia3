@@ -25,7 +25,12 @@ class PersonalController extends Controller
 
     public function store(Request $request)
     {
-        $dados = $request->validate([
+        // Passo 1 define os campos condicionais (CREF x CRN, especialidades).
+        $tipo = \App\Enums\ProfessionalType::tryFromDefault($request->input('professional_type'));
+        $ehNutri = $tipo === \App\Enums\ProfessionalType::NUTRITIONIST;
+
+        $regras = [
+            'professional_type' => ['required', 'in:' . implode(',', \App\Enums\ProfessionalType::values())],
             'nome'          => 'required|string|max:255',
             'cep'           => 'required|string|max:9',
             'rua'           => 'required|string|max:300',
@@ -39,7 +44,6 @@ class PersonalController extends Controller
                 }
             }],
             'email'         => 'required|email|unique:personals,email',
-            'cref'          => 'required|string|max:30',
             'foto'          => 'required|file|mimes:jpeg,jpg,png,gif,webp,heic,heif|max:10240',
             'valor_secao'   => 'required|numeric',
             'senha'         => 'required|string|min:8|confirmed',
@@ -48,8 +52,26 @@ class PersonalController extends Controller
             'avaliacao'     => 'nullable|string',
             'latitude'      => 'nullable|numeric',
             'longitude'     => 'nullable|numeric',
-            'academias' => 'nullable|string|max:1000',
-        ]);
+            'academias'     => 'nullable|string|max:1000',
+            'especialidades'   => 'nullable|array',
+            'especialidades.*' => 'string|max:80',
+            'modalidade'    => 'nullable|string|in:Presencial,Online,Híbrido',
+            'bio'           => 'nullable|string|max:2000',
+        ];
+
+        if ($ehNutri) {
+            // Nutricionista: CRN obrigatório (formato + região 1–11), CREF ausente.
+            $regras['crn'] = ['required', 'string', 'max:40', function ($attribute, $value, $fail) {
+                if (! \App\Support\CadastroHelper::validarCRN($value)) {
+                    $fail(config('textos.profissional.crn_erro'));
+                }
+            }];
+        } else {
+            // Personal trainer: mantém o comportamento existente (CREF obrigatório).
+            $regras['cref'] = 'required|string|max:30';
+        }
+
+        $dados = $request->validate($regras);
 
         if ($request->hasFile('foto')) {
             $path = $request->file('foto')->store('personals', 'public');
@@ -74,10 +96,10 @@ class PersonalController extends Controller
 
         $fb = app(MetaConversionsService::class);
         return redirect()->route('login.index')
-            ->with('sucesso', 'Personal cadastrado com sucesso! Aguarde a aprovação do administrador.')
+            ->with('sucesso', $tipo->label() . ' cadastrado(a) com sucesso! Aguarde a aprovação do administrador.')
             ->with('fb_event', $fb->track(
                 'CompleteRegistration',
-                ['content_name' => 'Personal', 'status' => 'pendente'],
+                ['content_name' => $tipo->label(), 'status' => 'pendente'],
                 $fb->userDataFromModel($personal),
                 null,
                 null,

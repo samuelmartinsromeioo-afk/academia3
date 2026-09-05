@@ -276,6 +276,62 @@
             .terms-section { flex-direction: column; }
             .textarea-wrapper { flex-direction: column; }
         }
+
+        /* --- PASSO 1: SELETOR DE TIPO DE PROFISSIONAL --- */
+        .type-step { grid-column: span 2; margin-bottom: 10px; }
+        .type-step-title {
+            font-size: 0.75rem; color: var(--primary); font-weight: 800;
+            text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px;
+        }
+        .type-step-help { font-size: 0.72rem; color: var(--text-dim); margin-bottom: 14px; }
+        .type-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+        .type-card {
+            background: var(--input-bg);
+            border: 1.5px solid rgba(255,255,255,0.1);
+            border-radius: 16px; padding: 18px; cursor: pointer;
+            display: flex; gap: 14px; align-items: flex-start; transition: 0.25s;
+        }
+        .type-card:hover { border-color: rgba(212,255,0,0.4); }
+        .type-card.active {
+            border-color: var(--primary);
+            background: rgba(212,255,0,0.06);
+            box-shadow: 0 0 0 1px var(--primary) inset;
+        }
+        .type-card i { font-size: 1.7rem; color: var(--primary); }
+        .type-card h4 { font-size: 0.92rem; margin: 0 0 4px; }
+        .type-card p { font-size: 0.72rem; color: var(--text-dim); line-height: 1.4; margin: 0; }
+
+        /* --- CHIPS DE ESPECIALIDADE --- */
+        .chips-section { grid-column: span 2; }
+        .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+        .chip {
+            display: inline-flex; align-items: center; gap: 6px;
+            font-size: 0.75rem; padding: 8px 14px; border-radius: 20px;
+            background: var(--input-bg); border: 1px solid rgba(255,255,255,0.1);
+            color: var(--text-dim); cursor: pointer; user-select: none; transition: 0.2s;
+        }
+        .chip.active { background: var(--primary); color: #000; border-color: var(--primary); font-weight: 700; }
+
+        /* --- SELECT ESTILIZADO --- */
+        .select-wrapper select {
+            flex: 1; background: transparent; border: none; color: #fff;
+            font-size: 0.9rem; outline: none; padding: 12px 0;
+        }
+        .select-wrapper select option { background: var(--card-bg); color: #fff; }
+
+        /* --- BANNER DE DIFERENCIAIS (nutricionista) --- */
+        .diferenciais {
+            grid-column: span 2; display: none; gap: 10px;
+            grid-template-columns: 1fr 1fr; margin-top: 6px;
+        }
+        .diferenciais.show { display: grid; }
+        .dif-item {
+            background: rgba(212,255,0,0.04); border: 1px solid rgba(212,255,0,0.18);
+            border-radius: 12px; padding: 12px 14px; font-size: 0.74rem;
+            color: var(--text-main); line-height: 1.45; display: flex; gap: 10px;
+        }
+        .dif-item i { color: var(--primary); font-size: 1rem; flex-shrink: 0; margin-top: 2px; }
+        @media (max-width: 600px) { .type-grid, .diferenciais { grid-template-columns: 1fr; } }
     </style>
 </head>
 <body class="ed-page">
@@ -283,7 +339,7 @@
 <main class="auth-container">
     <div class="auth-header">
         <span class="logo"> SNR</span>
-        <p style="color:var(--text-dim); margin-top:5px; font-size: 0.8rem;">CADASTRO DE PERSONAL TRAINER</p>
+        <p style="color:var(--text-dim); margin-top:5px; font-size: 0.8rem;">CADASTRO DE PROFISSIONAL DA EDUCAÇÃO FÍSICA</p>
     </div>
 
     <div class="auth-card">
@@ -299,6 +355,39 @@
 
         <form action="{{ route('personal.store') }}" method="POST" enctype="multipart/form-data" class="form-grid">
             @csrf
+
+            @php
+                $tipos = config('textos.profissional.tipos');
+                $tipoSel = old('professional_type', 'PERSONAL_TRAINER');
+            @endphp
+
+            <input type="hidden" name="professional_type" id="professional_type" value="{{ $tipoSel }}">
+
+            <!-- PASSO 1: TIPO DE PROFISSIONAL -->
+            <div class="type-step">
+                <div class="type-step-title">{{ config('textos.profissional.seletor_titulo') }}</div>
+                <div class="type-step-help">{{ config('textos.profissional.seletor_ajuda') }}</div>
+                <div class="type-grid">
+                    <div class="type-card" data-tipo="PERSONAL_TRAINER" onclick="selecionarTipo('PERSONAL_TRAINER')">
+                        <i class="ph ph-barbell"></i>
+                        <div>
+                            <h4>{{ $tipos['PERSONAL_TRAINER']['label'] }}</h4>
+                            <p>{{ $tipos['PERSONAL_TRAINER']['descricao'] }}</p>
+                        </div>
+                    </div>
+                    <div class="type-card" data-tipo="NUTRITIONIST" onclick="selecionarTipo('NUTRITIONIST')">
+                        <i class="ph ph-carrot"></i>
+                        <div>
+                            <h4>{{ $tipos['NUTRITIONIST']['label'] }}</h4>
+                            <p>{{ $tipos['NUTRITIONIST']['descricao'] }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="full-width" style="border-top:1px solid rgba(255,255,255,0.06); padding-top:6px;">
+                <div class="type-step-title" id="formTitulo">{{ $tipos[$tipoSel]['form_titulo'] }}</div>
+            </div>
 
             <div class="form-group full-width">
                 <label>Nome Completo</label>
@@ -389,18 +478,28 @@
             </div>
 
             <div class="form-group">
-                <label>Valor por Sessão (R$)</label>
+                <label><span id="valorLabel">Valor por Sessão</span> (R$)</label>
                 <div class="input-wrapper">
                     <i class="ph ph-currency-dollar"></i>
                     <input type="number" step="0.01" name="valor_secao" value="{{ old('valor_secao') }}" required>
                 </div>
             </div>
 
-            <div class="form-group">
+            <!-- CREF (Personal Trainer) -->
+            <div class="form-group" data-tipo-only="PERSONAL_TRAINER" id="grupoCref">
                 <label>CREF</label>
                 <div class="input-wrapper">
                     <i class="ph ph-identification-badge"></i>
-                    <input type="text" name="cref" value="{{ old('cref') }}" placeholder="Ex: 123456-G/SP" required>
+                    <input type="text" name="cref" value="{{ old('cref') }}" placeholder="{{ $tipos['PERSONAL_TRAINER']['conselho_placeholder'] }}">
+                </div>
+            </div>
+
+            <!-- CRN (Nutricionista) -->
+            <div class="form-group" data-tipo-only="NUTRITIONIST" id="grupoCrn" style="display:none;">
+                <label>CRN <span style="color:var(--text-dim); font-weight:400; text-transform:none;">(com a região)</span></label>
+                <div class="input-wrapper">
+                    <i class="ph ph-identification-badge"></i>
+                    <input type="text" name="crn" value="{{ old('crn') }}" placeholder="{{ $tipos['NUTRITIONIST']['conselho_placeholder'] }}">
                 </div>
             </div>
 
@@ -412,8 +511,50 @@
                 </div>
             </div>
 
+            <!-- MODALIDADE DE ATENDIMENTO -->
+            <div class="form-group full-width">
+                <label>Modalidade de Atendimento</label>
+                <div class="input-wrapper select-wrapper">
+                    <i class="ph ph-devices"></i>
+                    <select name="modalidade">
+                        <option value="">Selecione...</option>
+                        @foreach (config('textos.profissional.modalidades') as $mod)
+                            <option value="{{ $mod }}" @selected(old('modalidade') === $mod)>{{ $mod }}</option>
+                        @endforeach
+                    </select>
+                </div>
+            </div>
+
+            <!-- ESPECIALIDADES (multi-seleção via chips) -->
+            @php
+                $espPersonal = config('textos.profissional.especialidades.PERSONAL_TRAINER');
+                $espNutri    = config('textos.profissional.especialidades.NUTRITIONIST');
+                $espSel      = collect(old('especialidades', []));
+            @endphp
+            <div class="chips-section form-group">
+                <label>Especialidades</label>
+                <div class="chips" id="chipsEspecialidades"></div>
+            </div>
+
+            <!-- BIO / APRESENTAÇÃO -->
+            <div class="form-group full-width">
+                <label>Bio / Apresentação Profissional</label>
+                <div class="textarea-wrapper">
+                    <i class="ph ph-user-focus"></i>
+                    <textarea name="bio" maxlength="2000" placeholder="Fale um pouco sobre a sua experiência e a forma como você atende.">{{ old('bio') }}</textarea>
+                </div>
+            </div>
+
+            <!-- DIFERENCIAIS (nutricionista) -->
+            <div class="diferenciais" id="diferenciais">
+                <div class="dif-item"><i class="ph ph-shield-check"></i><span>{{ config('textos.profissional.diferenciais.confiabilidade') }}</span></div>
+                <div class="dif-item"><i class="ph ph-export"></i><span>{{ config('textos.profissional.diferenciais.portabilidade') }}</span></div>
+                <div class="dif-item"><i class="ph ph-megaphone"></i><span>{{ config('textos.profissional.diferenciais.escuta') }}</span></div>
+                <div class="dif-item"><i class="ph ph-handshake"></i><span>{{ config('textos.profissional.diferenciais.transparencia') }}</span></div>
+            </div>
+
             <!-- ✅ SEÇÃO DE ACADEMIAS -->
-            <div class="academias-section">
+            <div class="academias-section" id="academiasSection" data-tipo-only="PERSONAL_TRAINER">
                 <div class="academias-title">
                     <i class="ph ph-building"></i> Academias onde você atua
                 </div>
@@ -573,11 +714,79 @@
         },
         cep: function(value) {
             return value
-                .replace(/\D/g, '') 
+                .replace(/\D/g, '')
                 .replace(/(\d{5})(\d)/, '$1-$2')
                 .replace(/(-\d{3})\d+?$/, '$1');
         }
     }
+</script>
+
+<script>
+    // Dados vindos do config/textos.php (memory: usar json_encode em <script>).
+    const ESPECIALIDADES = {!! json_encode([
+        'PERSONAL_TRAINER' => $espPersonal,
+        'NUTRITIONIST'     => $espNutri,
+    ]) !!};
+    const TIPOS = {!! json_encode($tipos) !!};
+    const ESP_SELECIONADAS = new Set({!! json_encode($espSel->values()) !!});
+
+    function renderChips(tipo) {
+        const box = document.getElementById('chipsEspecialidades');
+        box.innerHTML = '';
+        (ESPECIALIDADES[tipo] || []).forEach(function (nome) {
+            const chip = document.createElement('div');
+            chip.className = 'chip' + (ESP_SELECIONADAS.has(nome) ? ' active' : '');
+            chip.innerHTML = '<i class="ph ph-check"></i>' + nome;
+            const input = document.createElement('input');
+            input.type = 'checkbox';
+            input.name = 'especialidades[]';
+            input.value = nome;
+            input.style.display = 'none';
+            input.checked = ESP_SELECIONADAS.has(nome);
+            chip.appendChild(input);
+            chip.addEventListener('click', function () {
+                input.checked = !input.checked;
+                chip.classList.toggle('active', input.checked);
+                if (input.checked) ESP_SELECIONADAS.add(nome); else ESP_SELECIONADAS.delete(nome);
+            });
+            box.appendChild(chip);
+        });
+    }
+
+    function selecionarTipo(tipo) {
+        document.getElementById('professional_type').value = tipo;
+
+        document.querySelectorAll('.type-card').forEach(function (c) {
+            c.classList.toggle('active', c.dataset.tipo === tipo);
+        });
+
+        // Mostra/esconde blocos condicionais e ajusta o "required".
+        document.querySelectorAll('[data-tipo-only]').forEach(function (el) {
+            const mostra = el.dataset.tipoOnly === tipo;
+            el.style.display = mostra ? '' : 'none';
+            el.querySelectorAll('input, select, textarea').forEach(function (f) {
+                f.disabled = !mostra; // desabilita não envia (evita CREF vazio p/ nutri)
+            });
+        });
+
+        // Conselho obrigatório conforme o tipo.
+        const cref = document.querySelector('#grupoCref input');
+        const crn  = document.querySelector('#grupoCrn input');
+        if (cref) cref.required = (tipo === 'PERSONAL_TRAINER');
+        if (crn)  crn.required  = (tipo === 'NUTRITIONIST');
+
+        document.getElementById('formTitulo').textContent = TIPOS[tipo].form_titulo;
+        document.getElementById('valorLabel').textContent =
+            (tipo === 'NUTRITIONIST') ? 'Valor por Consulta' : 'Valor por Sessão';
+        document.getElementById('diferenciais').classList.toggle('show', tipo === 'NUTRITIONIST');
+
+        renderChips(tipo);
+    }
+
+    // Estado inicial (respeita old() após erro de validação).
+    document.addEventListener('DOMContentLoaded', function () {
+        selecionarTipo(document.getElementById('professional_type').value || 'PERSONAL_TRAINER');
+    });
 </script>
 
 </body>

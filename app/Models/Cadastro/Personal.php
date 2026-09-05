@@ -28,6 +28,7 @@ class Personal extends Authenticatable
     public $timestamps = false;
 
     protected $fillable = [
+        'professional_type',
         'nome',
         'cpf',
         'cep',
@@ -41,6 +42,10 @@ class Personal extends Authenticatable
         'email',
         'certificado',
         'cref',
+        'crn',
+        'especialidades',
+        'modalidade',
+        'bio',
         'resultados',
         'avaliacao',
         'valor_secao',
@@ -69,8 +74,47 @@ class Personal extends Authenticatable
 
     protected $casts = [
         'precos_avaliacao' => 'array',
+        'especialidades'   => 'array',
         'pioneiro_posicao' => 'integer',
     ];
+
+    /** Tipo de profissional (enum), com fallback para personal trainer. */
+    public function tipoProfissional(): \App\Enums\ProfessionalType
+    {
+        return \App\Enums\ProfessionalType::tryFromDefault($this->professional_type);
+    }
+
+    public function isNutricionista(): bool
+    {
+        return $this->tipoProfissional() === \App\Enums\ProfessionalType::NUTRITIONIST;
+    }
+
+    public function isPersonalTrainer(): bool
+    {
+        return $this->tipoProfissional() === \App\Enums\ProfessionalType::PERSONAL_TRAINER;
+    }
+
+    /** Número de registro do conselho conforme o tipo (CREF ou CRN). */
+    public function registroConselho(): ?string
+    {
+        return $this->isNutricionista() ? $this->crn : $this->cref;
+    }
+
+    // ── Relações do módulo de nutrição ───────────────────────────────
+    public function pacientes()
+    {
+        return $this->hasMany(\App\Models\Nutri\Paciente::class, 'personal_id');
+    }
+
+    public function planosAlimentares()
+    {
+        return $this->hasMany(\App\Models\Nutri\PlanoAlimentar::class, 'personal_id');
+    }
+
+    public function modelosAnamnese()
+    {
+        return $this->hasMany(\App\Models\Nutri\AnamneseModelo::class, 'personal_id');
+    }
 
     /** Quantidade de personais por estado que recebem o selo de pioneiro. */
     public const LIMITE_PIONEIROS_POR_ESTADO = 100;

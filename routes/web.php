@@ -489,3 +489,95 @@ Route::middleware('check.login')->group(function () {
     Route::post('/aulas/{id}/fechar', [AulaController::class, 'fecharAula'])->name('aulas.fechar');
     Route::post('/aulas/{id}/concluir', [AulaController::class, 'concluirAula'])->name('aulas.api.concluir');
 });
+
+// ==========================================
+// MÓDULO DE NUTRIÇÃO (nutricionista)
+// ==========================================
+Route::middleware(['check.login', 'check.nutri'])->prefix('nutri')->name('nutri.')->group(function () {
+    // Painel
+    Route::get('/', [\App\Http\Controllers\Nutri\PainelController::class, 'index'])->name('painel');
+
+    // Pacientes
+    Route::get('/pacientes', [\App\Http\Controllers\Nutri\PacienteController::class, 'index'])->name('pacientes');
+    Route::get('/pacientes/novo', [\App\Http\Controllers\Nutri\PacienteController::class, 'create'])->name('pacientes.create');
+    Route::post('/pacientes', [\App\Http\Controllers\Nutri\PacienteController::class, 'store'])->name('pacientes.store');
+    Route::get('/pacientes/{id}', [\App\Http\Controllers\Nutri\PacienteController::class, 'show'])->whereNumber('id')->name('pacientes.show');
+    Route::get('/pacientes/{id}/editar', [\App\Http\Controllers\Nutri\PacienteController::class, 'edit'])->whereNumber('id')->name('pacientes.edit');
+    Route::put('/pacientes/{id}', [\App\Http\Controllers\Nutri\PacienteController::class, 'update'])->whereNumber('id')->name('pacientes.update');
+    Route::delete('/pacientes/{id}', [\App\Http\Controllers\Nutri\PacienteController::class, 'destroy'])->whereNumber('id')->name('pacientes.destroy');
+
+    // Anamnese (modelos customizáveis + preenchimento)
+    Route::get('/anamnese/modelos', [\App\Http\Controllers\Nutri\AnamneseController::class, 'modelos'])->name('anamnese.modelos');
+    Route::post('/anamnese/modelos', [\App\Http\Controllers\Nutri\AnamneseController::class, 'salvarModelo'])->name('anamnese.modelos.salvar');
+    Route::delete('/anamnese/modelos/{id}', [\App\Http\Controllers\Nutri\AnamneseController::class, 'deletarModelo'])->whereNumber('id')->name('anamnese.modelos.deletar');
+    Route::get('/pacientes/{pid}/anamnese', [\App\Http\Controllers\Nutri\AnamneseController::class, 'form'])->whereNumber('pid')->name('anamnese.form');
+    Route::post('/pacientes/{pid}/anamnese', [\App\Http\Controllers\Nutri\AnamneseController::class, 'salvar'])->whereNumber('pid')->name('anamnese.salvar');
+
+    // Antropometria
+    Route::get('/pacientes/{pid}/antropometria', [\App\Http\Controllers\Nutri\AntropometriaController::class, 'index'])->whereNumber('pid')->name('antropometria.index');
+    Route::post('/pacientes/{pid}/antropometria', [\App\Http\Controllers\Nutri\AntropometriaController::class, 'store'])->whereNumber('pid')->name('antropometria.store');
+    Route::get('/pacientes/{pid}/antropometria/dados', [\App\Http\Controllers\Nutri\AntropometriaController::class, 'dados'])->whereNumber('pid')->name('antropometria.dados');
+    Route::delete('/antropometria/{id}', [\App\Http\Controllers\Nutri\AntropometriaController::class, 'destroy'])->whereNumber('id')->name('antropometria.destroy');
+
+    // Alimentos (base + próprios)
+    Route::get('/alimentos', [\App\Http\Controllers\Nutri\AlimentoController::class, 'index'])->name('alimentos.index');
+    Route::get('/alimentos/buscar', [\App\Http\Controllers\Nutri\AlimentoController::class, 'buscar'])->name('alimentos.buscar');
+    Route::post('/alimentos', [\App\Http\Controllers\Nutri\AlimentoController::class, 'store'])->name('alimentos.store');
+    Route::delete('/alimentos/{id}', [\App\Http\Controllers\Nutri\AlimentoController::class, 'destroy'])->whereNumber('id')->name('alimentos.destroy');
+
+    // Planos alimentares
+    Route::get('/planos', [\App\Http\Controllers\Nutri\PlanoAlimentarController::class, 'index'])->name('planos');
+    Route::post('/planos', [\App\Http\Controllers\Nutri\PlanoAlimentarController::class, 'store'])->name('planos.store');
+    Route::get('/planos/{id}/editar', [\App\Http\Controllers\Nutri\PlanoAlimentarController::class, 'editor'])->whereNumber('id')->name('planos.editor');
+    Route::post('/planos/{id}/salvar', [\App\Http\Controllers\Nutri\PlanoAlimentarController::class, 'salvar'])->whereNumber('id')->name('planos.salvar');
+    Route::post('/planos/{id}/ativar', [\App\Http\Controllers\Nutri\PlanoAlimentarController::class, 'ativar'])->whereNumber('id')->name('planos.ativar');
+    Route::post('/planos/{id}/modelo', [\App\Http\Controllers\Nutri\PlanoAlimentarController::class, 'salvarComoModelo'])->whereNumber('id')->name('planos.modelo');
+    Route::post('/planos/{id}/ia', [\App\Http\Controllers\Nutri\PlanoAlimentarController::class, 'gerarIA'])->whereNumber('id')->name('planos.ia');
+    Route::post('/planos/{id}/versao/{versaoId}/restaurar', [\App\Http\Controllers\Nutri\PlanoAlimentarController::class, 'restaurar'])->whereNumber('id')->whereNumber('versaoId')->name('planos.restaurar');
+    Route::get('/planos/{id}/pdf', [\App\Http\Controllers\Nutri\PlanoAlimentarController::class, 'pdf'])->whereNumber('id')->name('planos.pdf');
+    Route::delete('/planos/{id}', [\App\Http\Controllers\Nutri\PlanoAlimentarController::class, 'destroy'])->whereNumber('id')->name('planos.destroy');
+
+    // Agenda / consultas
+    Route::get('/agenda', [\App\Http\Controllers\Nutri\ConsultaController::class, 'index'])->name('agenda');
+    Route::post('/consultas', [\App\Http\Controllers\Nutri\ConsultaController::class, 'store'])->name('consultas.store');
+    Route::put('/consultas/{id}', [\App\Http\Controllers\Nutri\ConsultaController::class, 'update'])->whereNumber('id')->name('consultas.update');
+    Route::delete('/consultas/{id}', [\App\Http\Controllers\Nutri\ConsultaController::class, 'destroy'])->whereNumber('id')->name('consultas.destroy');
+    Route::get('/consultas/{id}/ics', [\App\Http\Controllers\Nutri\ConsultaController::class, 'ics'])->whereNumber('id')->name('consultas.ics');
+
+    // Financeiro / cobranças
+    Route::get('/financeiro', [\App\Http\Controllers\Nutri\CobrancaController::class, 'index'])->name('financeiro');
+    Route::post('/cobrancas', [\App\Http\Controllers\Nutri\CobrancaController::class, 'store'])->name('cobrancas.store');
+    Route::put('/cobrancas/{id}/pago', [\App\Http\Controllers\Nutri\CobrancaController::class, 'marcarPago'])->whereNumber('id')->name('cobrancas.pago');
+    Route::delete('/cobrancas/{id}', [\App\Http\Controllers\Nutri\CobrancaController::class, 'destroy'])->whereNumber('id')->name('cobrancas.destroy');
+
+    // Relatórios e portabilidade (LGPD / anti-lock-in)
+    Route::get('/pacientes/{id}/relatorio', [\App\Http\Controllers\Nutri\RelatorioController::class, 'paciente'])->whereNumber('id')->name('relatorios.paciente');
+    Route::get('/exportar/pacientes', [\App\Http\Controllers\Nutri\RelatorioController::class, 'exportarPacientes'])->name('exportar.pacientes');
+    Route::get('/exportar/planos', [\App\Http\Controllers\Nutri\RelatorioController::class, 'exportarPlanos'])->name('exportar.planos');
+
+    // Chat com o paciente
+    Route::get('/pacientes/{pid}/chat', [\App\Http\Controllers\Nutri\ChatController::class, 'conversa'])->whereNumber('pid')->name('chat.conversa');
+    Route::post('/pacientes/{pid}/chat', [\App\Http\Controllers\Nutri\ChatController::class, 'enviar'])->whereNumber('pid')->name('chat.enviar');
+    Route::get('/pacientes/{pid}/chat/msgs', [\App\Http\Controllers\Nutri\ChatController::class, 'mensagens'])->whereNumber('pid')->name('chat.msgs');
+
+    // Roadmap / canal de escuta
+    Route::get('/roadmap', [\App\Http\Controllers\Nutri\SugestaoController::class, 'index'])->name('roadmap');
+    Route::post('/roadmap', [\App\Http\Controllers\Nutri\SugestaoController::class, 'store'])->name('roadmap.store');
+    Route::post('/roadmap/{id}/votar', [\App\Http\Controllers\Nutri\SugestaoController::class, 'votar'])->whereNumber('id')->name('roadmap.votar');
+});
+
+// ==========================================
+// PORTAL DO PACIENTE (link seguro com token, sem login)
+// ==========================================
+Route::prefix('p/{token}')->name('portal.')->group(function () {
+    Route::get('/', [\App\Http\Controllers\Nutri\PortalController::class, 'home'])->name('home');
+    Route::get('/plano', [\App\Http\Controllers\Nutri\PortalController::class, 'plano'])->name('plano');
+    Route::get('/lista-compras', [\App\Http\Controllers\Nutri\PortalController::class, 'listaCompras'])->name('lista-compras');
+    Route::get('/diario', [\App\Http\Controllers\Nutri\PortalController::class, 'diario'])->name('diario');
+    Route::post('/diario', [\App\Http\Controllers\Nutri\PortalController::class, 'salvarDiario'])->name('diario.salvar');
+    Route::post('/checkin', [\App\Http\Controllers\Nutri\PortalController::class, 'salvarCheckin'])->name('checkin');
+    Route::get('/chat', [\App\Http\Controllers\Nutri\PortalController::class, 'chat'])->name('chat');
+    Route::post('/chat', [\App\Http\Controllers\Nutri\PortalController::class, 'enviarChat'])->name('chat.enviar');
+    Route::get('/anamnese', [\App\Http\Controllers\Nutri\PortalController::class, 'anamnese'])->name('anamnese');
+    Route::post('/anamnese', [\App\Http\Controllers\Nutri\PortalController::class, 'salvarAnamnese'])->name('anamnese.salvar');
+});
