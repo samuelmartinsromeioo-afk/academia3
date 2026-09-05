@@ -45,11 +45,17 @@ class PlanoAlimentarController extends Controller
             'objetivo' => 'nullable|string|max:120',
             'kcal_meta' => 'nullable|numeric|min:0',
             'modelo_id' => 'nullable|integer', // aplicar a partir de um modelo
+            'dias_semana' => 'nullable|array', // ficha específica de dia(s) da semana
+            'dias_semana.*' => 'integer|min:0|max:6',
         ]);
 
         if (! empty($dados['paciente_id'])) {
             $this->pacienteDoNutri($dados['paciente_id']); // valida posse
         }
+
+        $dias = ! empty($dados['dias_semana'])
+            ? array_values(array_unique(array_map('intval', $dados['dias_semana'])))
+            : null;
 
         $plano = PlanoAlimentar::create([
             'personal_id' => $nutri->id,
@@ -58,6 +64,7 @@ class PlanoAlimentarController extends Controller
             'is_modelo' => (bool) ($dados['is_modelo'] ?? false),
             'objetivo' => $dados['objetivo'] ?? null,
             'kcal_meta' => $dados['kcal_meta'] ?? null,
+            'dias_semana' => $dias,
             'ativo' => true,
             'versao' => 0,
         ]);
@@ -87,6 +94,9 @@ class PlanoAlimentarController extends Controller
         // UF de referência p/ custo (paciente > profissional) e índice regional.
         $ufPlano = $plano->paciente->uf ?? $nutri->estado ?? null;
 
+        // Fichas irmãs do mesmo paciente (para folhear com as setas no editor).
+        [$irmas, $indiceAtual] = $this->fichasIrmas($plano);
+
         return view('nutri.planos.editor', [
             'nutri' => $nutri,
             'plano' => $plano,
@@ -97,6 +107,8 @@ class PlanoAlimentarController extends Controller
             'ufPlano' => $ufPlano,
             'ufIndice' => \App\Support\PrecoRegional::indice($ufPlano),
             'ufs' => \App\Support\PrecoRegional::ufs(),
+            'irmas' => $irmas,
+            'indiceAtual' => $indiceAtual,
         ]);
     }
 
@@ -244,6 +256,9 @@ class PlanoAlimentarController extends Controller
             'restricoes.*' => 'string|in:sem_lactose,sem_gluten,sem_oleaginosas',
             'uf' => 'nullable|string|size:2',
             'orcamento_mensal' => 'nullable|numeric|min:0',
+            'por_dia' => 'nullable|boolean',            // gerar uma ficha por dia da semana
+            'dias_semana' => 'nullable|array',
+            'dias_semana.*' => 'integer|min:0|max:6',
         ]);
 
         $kcalMeta = (float) $dados['kcal_meta'];
@@ -255,6 +270,15 @@ class PlanoAlimentarController extends Controller
         $ufIndice = \App\Support\PrecoRegional::indice($uf);
         $orcamento = isset($dados['orcamento_mensal']) ? (float) $dados['orcamento_mensal'] : null;
 
+        // Modo "uma ficha por dia": o orçamento informado é DIVIDIDO entre os dias
+        // selecionados (ex.: R$ 1400 e 7 dias = R$ 200/dia).
+        $porDia = $request->boolean('por_dia') && $plano->paciente_id;
+        $diasSel = $porDia
+            ? array_values(array_unique(array_map('intval', (array) ($dados['dias_semana'] ?? []))))
+            : [];
+        $orcamentoDia = ($porDia && $diasSel && $orcamento) ? $orcamento / count($diasSel) : null;
+        $orcamentoEfetivo = $porDia ? $orcamentoDia : $orcamento;
+
         $pool = Alimento::where(fn ($w) => $w->whereNull('personal_id')->orWhere('personal_id', $nutri->id))->get();
         if ($pool->isEmpty()) {
             return back()->with('error', 'Cadastre alimentos ou importe a base para usar a geração assistida.');
@@ -264,8 +288,8 @@ class PlanoAlimentarController extends Controller
 
         // Com orçamento apertado, prioriza os alimentos mais baratos de cada papel
         // (mantém variedade usando a metade/porção mais econômica da lista).
-        $economico = function ($lista) use ($orcamento) {
-            if (! $orcamento) {
+        $economico = function ($lista) use ($orcamentoEfetivo) {
+            if (! $orcamentoEfetivo) {
                 return $lista;
             }
             $ordenada = $lista->sortBy(fn ($a) => $a->precoKgRef())->values();
@@ -289,45 +313,105 @@ class PlanoAlimentarController extends Controller
             $proteinaPrincipal = $pool->firstWhere('id', (int) $dados['proteina_id']);
         }
 
-        $refeicoes = [];
-        foreach ($this->templateRefeicoes($numRef, $preferencia) as $i => $ref) {
-            $kcalRef = $kcalMeta * $ref['frac'];
-            $split = $ref['split'];
-            $itens = [];
+        // Monta as refeições de UMA ficha. `$seed` desloca a rotação para variar
+        // as escolhas entre dias diferentes (0 = comportamento padrão).
+        $montar = function (int $seed) use ($kcalMeta, $numRef, $preferencia, $protPrinc, $protLeve, $carbos, $vegetais, $frutas, $gorduras, $proteinaPrincipal) {
+            $refeicoes = [];
+            foreach ($this->templateRefeicoes($numRef, $preferencia) as $i => $ref) {
+                $kcalRef = $kcalMeta * $ref['frac'];
+                $split = $ref['split'];
+                $itens = [];
+                $b = $i + $seed; // deslocamento por dia
 
-            // Proteína: usa a principal escolhida nas refeições principais; nas
-            // demais, e como fallback, rotaciona a lista para dar variedade.
-            if (isset($split['proteina'])) {
-                $al = ($ref['tipo'] === 'principal' && $proteinaPrincipal)
-                    ? $proteinaPrincipal
-                    : $this->rotaciona($ref['tipo'] === 'principal' ? $protPrinc : $protLeve, $i);
-                $this->pushItem($itens, $al, $kcalRef * $split['proteina']);
-            }
-            if (isset($split['carbo'])) {
-                $this->pushItem($itens, $this->rotaciona($carbos, $i + 1), $kcalRef * $split['carbo']);
-            }
-            if (isset($split['vegetal'])) {
-                $this->pushItem($itens, $this->rotaciona($vegetais, $i + 2), $kcalRef * $split['vegetal']);
-            }
-            if (isset($split['fruta'])) {
-                $this->pushItem($itens, $this->rotaciona($frutas, $i + 1), $kcalRef * $split['fruta']);
-            }
-            if (isset($split['gordura'])) {
-                $this->pushItem($itens, $this->rotaciona($gorduras, $i + 3), $kcalRef * $split['gordura']);
+                // Proteína: usa a principal escolhida nas refeições principais; nas
+                // demais, e como fallback, rotaciona a lista para dar variedade.
+                // O pool do papel é passado p/ gerar substituições equivalentes.
+                if (isset($split['proteina'])) {
+                    $poolProt = $ref['tipo'] === 'principal' ? $protPrinc : $protLeve;
+                    $al = ($ref['tipo'] === 'principal' && $proteinaPrincipal)
+                        ? $proteinaPrincipal
+                        : $this->rotaciona($poolProt, $b);
+                    $this->pushItem($itens, $al, $kcalRef * $split['proteina'], $poolProt, $b);
+                }
+                if (isset($split['carbo'])) {
+                    $this->pushItem($itens, $this->rotaciona($carbos, $b + 1), $kcalRef * $split['carbo'], $carbos, $b);
+                }
+                if (isset($split['vegetal'])) {
+                    $this->pushItem($itens, $this->rotaciona($vegetais, $b + 2), $kcalRef * $split['vegetal'], $vegetais, $b);
+                }
+                if (isset($split['fruta'])) {
+                    $this->pushItem($itens, $this->rotaciona($frutas, $b + 1), $kcalRef * $split['fruta'], $frutas, $b);
+                }
+                if (isset($split['gordura'])) {
+                    $this->pushItem($itens, $this->rotaciona($gorduras, $b + 3), $kcalRef * $split['gordura'], $gorduras, $b);
+                }
+
+                $refeicoes[] = [
+                    'nome' => $ref['nome'],
+                    'horario' => $ref['horario'],
+                    'itens' => array_values(array_filter($itens)),
+                ];
             }
 
-            $refeicoes[] = [
-                'nome' => $ref['nome'],
-                'horario' => $ref['horario'],
-                'itens' => array_values(array_filter($itens)),
-            ];
+            return $refeicoes;
+        };
+
+        // MODO "UMA FICHA POR DIA": gera/atualiza uma ficha para cada dia marcado,
+        // variando o cardápio entre os dias. Só faz sentido para plano de paciente.
+        if ($porDia && $diasSel) {
+            $pid = $plano->paciente_id;
+            $linhas = [];
+            foreach ($diasSel as $dia) {
+                $ativas = PlanoAlimentar::where('paciente_id', $pid)
+                    ->where('is_modelo', false)->where('ativo', true)->get();
+                // Reaproveita a ficha específica daquele dia, se já existir.
+                $ficha = $ativas->first(fn ($p) => ! empty($p->dias_semana)
+                    && in_array($dia, array_map('intval', $p->dias_semana), true));
+                if (! $ficha) {
+                    $ficha = PlanoAlimentar::create([
+                        'personal_id' => $nutri->id,
+                        'paciente_id' => $pid,
+                        'nome' => (PlanoAlimentar::DIAS_SEMANA[$dia] ?? 'Ficha').' — '.($plano->paciente->nome ?? ''),
+                        'is_modelo' => false,
+                        'objetivo' => $plano->objetivo,
+                        'kcal_meta' => $kcalMeta,
+                        'dias_semana' => [$dia],
+                        'ativo' => true,
+                        'versao' => 0,
+                    ]);
+                }
+                $ficha = $this->service->salvar($ficha, [
+                    'nome' => $ficha->nome,
+                    'objetivo' => $ficha->objetivo,
+                    'kcal_meta' => $kcalMeta,
+                    'dias_semana' => $ficha->dias_semana ?: [$dia],
+                    'refeicoes' => $montar($dia + 1),
+                ], 'manual');
+                $linhas[] = (PlanoAlimentar::DIAS_SEMANA[$dia] ?? '?').' ≈ R$ '.number_format($ficha->custoDiario($ufIndice), 2, ',', '.');
+            }
+
+            // Se a ficha de origem ficou vazia (só serviu de ponto de partida),
+            // remove-a para não sobrar uma ficha "todos os dias" em branco.
+            if (! $plano->is_modelo && $plano->refeicoes()->doesntExist()) {
+                $plano->versoes()->delete();
+                $plano->delete();
+            }
+
+            $msg = count($diasSel).' ficha(s) geradas — uma por dia da semana.';
+            if ($orcamentoDia) {
+                $msg .= ' Orçamento R$ '.number_format($orcamento, 2, ',', '.').' ÷ '.count($diasSel)
+                    .' dias = R$ '.number_format($orcamentoDia, 2, ',', '.').'/dia.';
+            }
+            $msg .= ' Custo estimado por dia: '.implode(' · ', $linhas).'. Revise cada dia antes de entregar.';
+
+            return redirect()->route('nutri.pacientes.show', $pid)->with('success', $msg);
         }
 
         $plano = $this->service->salvar($plano, [
             'nome' => $plano->nome,
             'objetivo' => $plano->objetivo,
             'kcal_meta' => $kcalMeta,
-            'refeicoes' => $refeicoes,
+            'refeicoes' => $montar(0),
         ], 'manual');
 
         // Custo estimado do plano gerado, ajustado pela UF (o "mínimo para manter").
@@ -377,20 +461,82 @@ class PlanoAlimentarController extends Controller
         return $n ? $lista[$i % $n] : null;
     }
 
-    /** Adiciona um item calculando os gramas que aproximam a kcal alvo. */
-    private function pushItem(array &$itens, ?Alimento $al, float $kcalAlvo): void
+    /** Gramas que aproximam a kcal alvo para um alimento (múltiplo de 5g, 15–400g). */
+    private function gramasParaKcal(Alimento $al, float $kcalAlvo): float
+    {
+        $gramas = round(($kcalAlvo / $al->kcal) * 100 / 5) * 5;
+
+        return max(15, min($gramas, 400));
+    }
+
+    /**
+     * Adiciona um item calculando os gramas que aproximam a kcal alvo. Quando um
+     * pool do mesmo papel é informado, já anexa opções de substituição equivalentes
+     * (mesma faixa calórica) para o paciente poder trocar.
+     */
+    private function pushItem(array &$itens, ?Alimento $al, float $kcalAlvo, $poolSub = null, int $seedSub = 0): void
     {
         if (! $al || $al->kcal <= 0 || $kcalAlvo <= 0) {
             return;
         }
-        $gramas = round(($kcalAlvo / $al->kcal) * 100 / 5) * 5; // arredonda p/ múltiplo de 5g
-        $gramas = max(15, min($gramas, 400));
-        $itens[] = [
+        $gramas = $this->gramasParaKcal($al, $kcalAlvo);
+        $item = [
             'alimento_id' => $al->id,
             'descricao' => $al->nome,
             'quantidade_g' => $gramas,
             'medida' => $gramas.' g',
         ];
+        if ($poolSub) {
+            $subs = $this->montarSubs($poolSub, $al, $kcalAlvo, 2, $seedSub);
+            if ($subs) {
+                $item['substituicoes'] = $subs;
+            }
+        }
+        $itens[] = $item;
+    }
+
+    /**
+     * Monta até $n opções de substituição equivalentes a um alimento, escolhidas do
+     * mesmo pool (papel) e ajustadas para a MESMA kcal alvo. Varia por $seed.
+     */
+    private function montarSubs($pool, ?Alimento $escolhido, float $kcalAlvo, int $n = 2, int $seed = 0): array
+    {
+        if (! $pool || $pool->isEmpty() || $kcalAlvo <= 0) {
+            return [];
+        }
+
+        $subs = [];
+        $cnt = $pool->count();
+        // Começa logo após a posição do alimento escolhido (mais o seed), p/ variar.
+        $start = 0;
+        if ($escolhido) {
+            $pos = $pool->search(fn ($a) => $a->id === $escolhido->id);
+            if ($pos !== false) {
+                $start = $pos + 1;
+            }
+        }
+
+        for ($t = 0; $t < $cnt && count($subs) < $n; $t++) {
+            $al = $pool[($start + $seed + $t) % $cnt];
+            if (! $al || $al->kcal <= 0) {
+                continue;
+            }
+            if ($escolhido && $al->id === $escolhido->id) {
+                continue;
+            }
+            if (array_filter($subs, fn ($s) => $s['alimento_id'] === $al->id)) {
+                continue;
+            }
+            $gramas = $this->gramasParaKcal($al, $kcalAlvo);
+            $subs[] = [
+                'alimento_id' => $al->id,
+                'descricao' => $al->nome,
+                'quantidade_g' => $gramas,
+                'medida' => $gramas.' g',
+            ];
+        }
+
+        return $subs;
     }
 
     /**
@@ -433,6 +579,35 @@ class PlanoAlimentarController extends Controller
         }
 
         return $refs;
+    }
+
+    /**
+     * Fichas ativas do mesmo paciente, ordenadas pelo dia da semana, com o índice
+     * da ficha atual — para o navegador de setas do editor. Retorna [coleção, índice].
+     */
+    private function fichasIrmas(PlanoAlimentar $plano): array
+    {
+        if (! $plano->paciente_id) {
+            return [collect(), 0];
+        }
+
+        $irmas = PlanoAlimentar::where('paciente_id', $plano->paciente_id)
+            ->where('is_modelo', false)
+            ->where('ativo', true)
+            ->get();
+
+        if (! $irmas->contains('id', $plano->id)) {
+            $irmas->push($plano); // inclui a atual mesmo que ainda inativa
+        }
+
+        // Ordena: ficha "todos os dias" primeiro, depois pelo menor dia atribuído.
+        $irmas = $irmas->sortBy(fn ($p) => empty($p->dias_semana)
+            ? -1
+            : min(array_map('intval', $p->dias_semana)))->values();
+
+        $indice = $irmas->search(fn ($p) => $p->id === $plano->id) ?: 0;
+
+        return [$irmas, $indice];
     }
 
     /** Converte um plano existente no payload aceito pelo service. */

@@ -21,8 +21,14 @@
     .item-wrap { border-bottom:1px solid var(--border); }
     .item-wrap .item-row { border:none; padding:6px 0; }
     .row-acts { display:flex; gap:6px; align-items:center; justify-content:flex-end; }
-    .sub-toggle.has { border-color:var(--primary); color:var(--primary); }
-    .subs-block { background:var(--card-2); border-radius:10px; padding:10px 12px; margin:2px 0 10px; }
+    .sub-line { display:flex; align-items:center; gap:10px; cursor:pointer; padding:6px 10px; margin:2px 0 6px; border-radius:8px; border:1px dashed var(--border); background:rgba(255,255,255,.02); font-size:.76rem; user-select:none; }
+    .sub-line:hover { border-color:var(--primary); background:rgba(212,255,0,.05); }
+    .sub-line-lbl { color:var(--primary); font-weight:700; white-space:nowrap; }
+    .sub-line-hint { color:var(--text-dim); flex:1; }
+    .sub-line-caret { color:var(--text-dim); }
+    .sub-line.has { border-style:solid; border-color:rgba(212,255,0,.35); }
+    .sub-line.open { border-style:solid; border-bottom-left-radius:0; border-bottom-right-radius:0; margin-bottom:0; }
+    .subs-block { background:var(--card-2); border-radius:0 0 10px 10px; padding:10px 12px; margin:0 0 10px; border:1px solid rgba(212,255,0,.35); border-top:none; }
     .subs-title { font-size:.72rem; color:var(--text-dim); margin-bottom:8px; }
     .subs-list { display:flex; flex-direction:column; gap:6px; }
     .sub-chip { display:grid; grid-template-columns:1fr 80px 1fr auto auto; gap:8px; align-items:center; font-size:.8rem; }
@@ -34,6 +40,11 @@
     .dia-pill input { display:none; }
     .dia-pill span { display:inline-block; padding:7px 12px; border:1px solid var(--border); border-radius:20px; font-size:.78rem; color:var(--text-dim); transition:.15s; }
     .dia-pill input:checked + span { background:var(--primary); color:#000; border-color:var(--primary); font-weight:700; }
+    .ficha-nav { display:flex; align-items:center; gap:10px; padding:10px 14px; margin-bottom:14px; }
+    .ficha-chips { display:flex; gap:6px; overflow-x:auto; flex:1; padding-bottom:2px; }
+    .ficha-chip { flex:0 0 auto; padding:6px 12px; border:1px solid var(--border); border-radius:20px; font-size:.76rem; color:var(--text-dim); white-space:nowrap; }
+    .ficha-chip:hover { color:#fff; border-color:var(--text-dim); }
+    .ficha-chip.atual { background:var(--primary); color:#000; border-color:var(--primary); font-weight:700; }
     @media(max-width:760px){ .item-row{ grid-template-columns:1fr 1fr; } .item-head{display:none;} .sub-chip{ grid-template-columns:1fr 1fr; } }
 </style>
 @endsection
@@ -60,6 +71,26 @@
             @endif
         </div>
     </div>
+
+    {{-- Navegador de fichas do paciente (folhear com as setas) --}}
+    @if (isset($irmas) && $irmas->count() > 1)
+        @php
+            $prev = $irmas[$indiceAtual - 1] ?? $irmas->last();
+            $next = $irmas[$indiceAtual + 1] ?? $irmas->first();
+        @endphp
+        <div class="card ficha-nav">
+            <a href="{{ route('nutri.planos.editor',$prev->id) }}" class="btn btn-ghost btn-sm" title="Ficha anterior"><i class="ph ph-caret-left"></i></a>
+            <div class="ficha-chips">
+                @foreach ($irmas as $i => $f)
+                    <a href="{{ route('nutri.planos.editor',$f->id) }}" class="ficha-chip {{ $i === $indiceAtual ? 'atual' : '' }}" title="{{ $f->nome }}">
+                        {{ empty($f->dias_semana) ? 'Geral' : $f->diasSemanaLabels() }}
+                    </a>
+                @endforeach
+            </div>
+            <span class="muted" style="font-size:.75rem; white-space:nowrap;">Ficha {{ $indiceAtual + 1 }}/{{ $irmas->count() }}</span>
+            <a href="{{ route('nutri.planos.editor',$next->id) }}" class="btn btn-ghost btn-sm" title="Próxima ficha"><i class="ph ph-caret-right"></i></a>
+        </div>
+    @endif
 
     <div class="grid" style="grid-template-columns:1fr 300px; align-items:start;">
         <div>
@@ -88,7 +119,7 @@
                             </label>
                         @endforeach
                     </div>
-                    <span class="muted" style="font-size:.68rem;">Deixe todos desmarcados para valer <strong>todos os dias</strong>. Marque dias específicos quando o paciente tem uma ficha diferente por dia — o portal mostra a do dia automaticamente.</span>
+                    <span class="muted" style="font-size:.68rem;">Dias em que <strong>esta</strong> ficha vale (vazio = todos os dias). Para montar uma ficha <strong>diferente por dia</strong>, use o painel “Fichas por dia da semana” na página do paciente — cada dia vira uma ficha própria.</span>
                 </div>
                 @endunless
             </div>
@@ -170,7 +201,24 @@
                         <label style="display:flex; gap:8px; align-items:center; text-transform:none; color:#fff; font-weight:400; margin:0;"><input type="checkbox" name="restricoes[]" value="sem_oleaginosas" style="width:auto;"> Sem oleaginosas</label>
                     </div>
 
-                    <button class="btn btn-sm" style="margin-top:12px; width:100%;" onclick="return confirm('Isto substitui as refeições atuais por um novo rascunho. A versão atual fica salva no histórico. Continuar?')"><i class="ph ph-sparkle"></i> Gerar rascunho</button>
+                    @if (!$plano->is_modelo && $plano->paciente_id)
+                    <div style="margin-top:12px; padding-top:12px; border-top:1px solid var(--border);">
+                        <label style="display:flex; gap:8px; align-items:center; text-transform:none; color:#fff; font-weight:400; margin:0;">
+                            <input type="checkbox" id="ia_por_dia" name="por_dia" value="1" style="width:auto;" onchange="document.getElementById('ia_dias').style.display=this.checked?'block':'none'">
+                            Gerar uma ficha <strong>diferente para cada dia</strong> da semana
+                        </label>
+                        <div id="ia_dias" style="display:none; margin-top:10px;">
+                            <span class="muted" style="font-size:.68rem;">Marque os dias que quer gerar (cada um vira uma ficha própria, com cardápio variado). O <strong>orçamento é dividido entre os dias</strong> — ex.: R$ 1400 ÷ 7 = R$ 200/dia.</span>
+                            <div class="dias-semana" style="margin-top:6px;">
+                                @foreach (\App\Models\Nutri\PlanoAlimentar::DIAS_SEMANA as $num => $lbl)
+                                    <label class="dia-pill"><input type="checkbox" name="dias_semana[]" value="{{ $num }}" checked><span>{{ $lbl }}</span></label>
+                                @endforeach
+                            </div>
+                        </div>
+                    </div>
+                    @endif
+
+                    <button class="btn btn-sm" style="margin-top:12px; width:100%;" onclick="return confirmarGeracao()"><i class="ph ph-sparkle"></i> Gerar rascunho</button>
                 </form>
             </div>
 
@@ -296,12 +344,23 @@
                     <span class="mac">${m.kcal.toFixed(0)}</span><span class="mac">${m.carbo_g.toFixed(1)}</span>
                     <span class="mac">${m.proteina_g.toFixed(1)}</span><span class="mac">${m.gordura_g.toFixed(1)}</span>
                     <span class="row-acts">
-                        <button class="btn btn-ghost btn-sm sub-toggle ${nSub?'has':''}" title="Opções de substituição" onclick="toggleSubs(${ri},${ii})"><i class="ph ph-swap"></i>${nSub?' '+nSub:''}</button>
-                        <button class="btn btn-danger btn-sm" onclick="delItem(${ri},${ii})"><i class="ph ph-x"></i></button>
+                        <button class="btn btn-danger btn-sm" title="Remover alimento" onclick="delItem(${ri},${ii})"><i class="ph ph-x"></i></button>
                     </span>`;
                 wrap.appendChild(row);
 
-                if (it._showSubs || nSub) {
+                // Faixa sempre visível para abrir/ver as substituições deste alimento.
+                // Abre por padrão quando já há opções; depois respeita o clique do nutri.
+                const opened = (it._showSubs === undefined) ? (nSub > 0) : it._showSubs;
+                const line = document.createElement('div');
+                line.className = 'sub-line' + (nSub ? ' has' : '') + (opened ? ' open' : '');
+                line.onclick = ()=>toggleSubs(ri,ii);
+                line.innerHTML = `
+                    <span class="sub-line-lbl">↔ Substituições${nSub?` (${nSub})`:''}</span>
+                    <span class="sub-line-hint">${nSub ? 'toque para ver/editar' : 'adicionar opções de troca p/ o paciente'}</span>
+                    <span class="sub-line-caret">${opened ? '▾' : '▸'}</span>`;
+                wrap.appendChild(line);
+
+                if (opened) {
                     const sb = document.createElement('div'); sb.className='subs-block';
                     let chips = '';
                     it.substituicoes.forEach((s, si)=>{
@@ -380,8 +439,18 @@
         marcarSujo(); render();
     }
 
+    function confirmarGeracao(){
+        const porDia = document.getElementById('ia_por_dia');
+        if (porDia && porDia.checked) {
+            const n = document.querySelectorAll('#ia_dias input[name="dias_semana[]"]:checked').length;
+            if (!n) { alert('Marque pelo menos um dia da semana para gerar.'); return false; }
+            return confirm('Isto vai gerar/atualizar '+n+' ficha(s) — uma por dia marcado — para este paciente. Continuar?');
+        }
+        return confirm('Isto substitui as refeições atuais por um novo rascunho. A versão atual fica salva no histórico. Continuar?');
+    }
+
     // ---- Substituições (tabela separada) ----
-    function toggleSubs(ri,ii){ const it=state.refeicoes[ri].itens[ii]; it._showSubs=!it._showSubs; render(); }
+    function toggleSubs(ri,ii){ const it=state.refeicoes[ri].itens[ii]; const cur=(it._showSubs===undefined)?((it.substituicoes||[]).length>0):it._showSubs; it._showSubs=!cur; render(); }
     function updSub(ri,ii,si,k,v){ state.refeicoes[ri].itens[ii].substituicoes[si][k]=v; marcarSujo(); render(); }
     function delSub(ri,ii,si){ state.refeicoes[ri].itens[ii].substituicoes.splice(si,1); marcarSujo(); render(); }
     function addSubLivre(ri,ii,texto){ if(!texto.trim())return; const it=state.refeicoes[ri].itens[ii]; it._showSubs=true; it.substituicoes.push({alimento_id:null,descricao:texto.trim(),quantidade_g:0,medida:'',kcal:0,carbo_g:0,proteina_g:0,gordura_g:0,base:null}); marcarSujo(); render(); }
