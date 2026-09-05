@@ -11,7 +11,7 @@ class PlanoAlimentar extends Model
 
     protected $fillable = [
         'personal_id', 'paciente_id', 'nome', 'is_modelo', 'objetivo',
-        'kcal_meta', 'observacoes', 'ativo', 'versao',
+        'kcal_meta', 'observacoes', 'dias_semana', 'ativo', 'versao',
     ];
 
     protected $casts = [
@@ -19,6 +19,12 @@ class PlanoAlimentar extends Model
         'ativo' => 'boolean',
         'kcal_meta' => 'float',
         'versao' => 'integer',
+        'dias_semana' => 'array',
+    ];
+
+    /** Dias da semana (índice compatível com Carbon::dayOfWeek). */
+    public const DIAS_SEMANA = [
+        0 => 'Dom', 1 => 'Seg', 2 => 'Ter', 3 => 'Qua', 4 => 'Qui', 5 => 'Sex', 6 => 'Sáb',
     ];
 
     public function personal()
@@ -39,6 +45,27 @@ class PlanoAlimentar extends Model
     public function versoes()
     {
         return $this->hasMany(PlanoVersao::class, 'plano_id')->orderByDesc('versao');
+    }
+
+    /** Esta ficha vale para o dia informado? (sem dias definidos = todos os dias). */
+    public function aplicaNoDia(int $dia): bool
+    {
+        $dias = $this->dias_semana ?? [];
+
+        return empty($dias) || in_array($dia, array_map('intval', $dias), true);
+    }
+
+    /** Rótulos legíveis dos dias desta ficha (ex.: "Seg, Qua, Sex"). */
+    public function diasSemanaLabels(): string
+    {
+        $dias = $this->dias_semana ?? [];
+        if (empty($dias)) {
+            return 'Todos os dias';
+        }
+
+        sort($dias);
+
+        return implode(', ', array_map(fn ($d) => self::DIAS_SEMANA[(int) $d] ?? '', $dias));
     }
 
     /** Totais do dia (soma de todas as refeições/itens). */

@@ -2,11 +2,33 @@
 @section('titulo','Meu plano')
 
 @section('conteudo')
+    @php $temVariasFichas = ($ativos ?? collect())->contains(fn($p) => !empty($p->dias_semana)); @endphp
+
+    @if ($temVariasFichas)
+        {{-- Seletor de dia: cada dia mostra a ficha correspondente --}}
+        <div class="card" style="padding:12px;">
+            <div class="muted" style="font-size:.72rem; margin-bottom:8px;">Sua ficha muda conforme o dia. Toque no dia:</div>
+            <div style="display:flex; gap:6px; overflow-x:auto; padding-bottom:4px;">
+                @foreach (\App\Models\Nutri\PlanoAlimentar::DIAS_SEMANA as $num => $lbl)
+                    @php $temFicha = \App\Models\Nutri\Paciente::escolherPlanoDoDia($ativos, $num) !== null; @endphp
+                    <a href="{{ route('portal.plano', $token) }}?dia={{ $num }}"
+                       style="flex:0 0 auto; padding:8px 12px; border-radius:20px; font-size:.8rem; font-weight:700; text-align:center;
+                              {{ $num === $dia ? 'background:var(--primary); color:#000;' : ($temFicha ? 'background:rgba(255,255,255,.06); color:#fff;' : 'background:transparent; color:var(--text-dim);') }}">
+                        {{ $lbl }}
+                    </a>
+                @endforeach
+            </div>
+        </div>
+    @endif
+
     @if (!$plano)
-        <div class="card"><div class="muted" style="text-align:center; padding:20px;">Nenhum plano ativo no momento.</div></div>
+        <div class="card"><div class="muted" style="text-align:center; padding:20px;">Nenhum plano ativo para este dia.</div></div>
     @else
         @php $t = $plano->totais(); @endphp
         <div class="card">
+            @if ($temVariasFichas)
+                <div class="muted" style="font-size:.72rem;"><i class="ph ph-calendar-dots"></i> {{ $plano->diasSemanaLabels() }}</div>
+            @endif
             <strong style="font-size:1.1rem;">{{ $plano->nome }}</strong>
             @if($plano->observacoes)<div class="muted" style="font-size:.85rem; margin-top:6px;">{{ $plano->observacoes }}</div>@endif
             <div style="display:flex; gap:16px; margin-top:12px; flex-wrap:wrap;">

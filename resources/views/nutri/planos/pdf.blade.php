@@ -32,6 +32,7 @@
         <div>
             <h1>Plano Alimentar</h1>
             <div>{{ $plano->paciente->nome ?? 'Modelo' }} @if($plano->objetivo)· {{ $plano->objetivo }}@endif</div>
+            @unless($plano->is_modelo)<div style="font-size:.85rem; color:#444;">Dias: {{ $plano->diasSemanaLabels() }}</div>@endunless
         </div>
         <div class="nutri">
             <strong>{{ $nutri->nome }}</strong><br>

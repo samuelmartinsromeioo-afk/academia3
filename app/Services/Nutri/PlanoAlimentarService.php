@@ -41,6 +41,10 @@ class PlanoAlimentarService
                 'kcal_meta' => $payload['kcal_meta'] ?? $plano->kcal_meta,
                 'observacoes' => $payload['observacoes'] ?? $plano->observacoes,
             ]);
+            if (array_key_exists('dias_semana', $payload)) {
+                $dias = array_values(array_unique(array_map('intval', (array) ($payload['dias_semana'] ?? []))));
+                $plano->dias_semana = $dias ?: null;
+            }
             $plano->versao = ($plano->versao ?? 0) + 1;
             $plano->save();
 

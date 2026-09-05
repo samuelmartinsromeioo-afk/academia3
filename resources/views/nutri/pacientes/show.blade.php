@@ -88,14 +88,21 @@
 
         <!-- Planos -->
         <div class="card">
-            <div style="display:flex; justify-content:space-between; margin-bottom:14px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
                 <h3>Planos alimentares</h3>
+                <a href="#" onclick="document.getElementById('formNovoPlano').submit(); return false;" class="btn btn-ghost btn-sm"><i class="ph ph-plus"></i> Nova ficha</a>
             </div>
+            <p class="muted" style="font-size:.72rem; margin:-6px 0 8px;">Você pode manter várias fichas ativas — ex.: uma por dia da semana. O paciente vê a ficha do dia automaticamente.</p>
             @forelse ($paciente->planos as $plano)
                 <div style="display:flex; justify-content:space-between; align-items:center; padding:10px 0; border-bottom:1px solid var(--border);">
                     <div>
                         <a href="{{ route('nutri.planos.editor',$plano->id) }}"><strong>{{ $plano->nome }}</strong></a>
-                        @if($plano->ativo)<span class="badge badge-ok" style="margin-left:6px;">Ativo</span>@endif
+                        @if($plano->ativo)
+                            <span class="badge badge-ok" style="margin-left:6px;">Ativa</span>
+                            <span class="badge badge-dim" style="margin-left:4px;"><i class="ph ph-calendar-dots"></i> {{ $plano->diasSemanaLabels() }}</span>
+                        @else
+                            <span class="badge badge-dim" style="margin-left:6px;">Inativa</span>
+                        @endif
                         <div class="muted" style="font-size:.72rem;">v{{ $plano->versao }} · atualizado {{ $plano->updated_at?->diffForHumans() }}</div>
                     </div>
                     <a href="{{ route('nutri.planos.editor',$plano->id) }}" class="btn btn-ghost btn-sm">Abrir</a>

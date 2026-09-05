@@ -29,7 +29,7 @@
             <tbody>
             @foreach ($planos as $p)
                 <tr>
-                    <td><a href="{{ route('nutri.planos.editor',$p->id) }}"><strong>{{ $p->nome }}</strong></a> @if($p->ativo)<span class="badge badge-ok">Ativo</span>@endif</td>
+                    <td><a href="{{ route('nutri.planos.editor',$p->id) }}"><strong>{{ $p->nome }}</strong></a> @if($p->ativo)<span class="badge badge-ok">Ativa</span> <span class="badge badge-dim">{{ $p->diasSemanaLabels() }}</span>@endif</td>
                     <td class="muted">{{ $p->paciente->nome ?? '—' }}</td>
                     <td>v{{ $p->versao }}</td>
                     <td class="muted">{{ $p->updated_at?->diffForHumans() }}</td>

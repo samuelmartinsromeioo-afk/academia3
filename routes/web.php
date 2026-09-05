@@ -531,6 +531,7 @@ Route::middleware(['check.login', 'check.nutri'])->prefix('nutri')->name('nutri.
     Route::get('/planos/{id}/editar', [\App\Http\Controllers\Nutri\PlanoAlimentarController::class, 'editor'])->whereNumber('id')->name('planos.editor');
     Route::post('/planos/{id}/salvar', [\App\Http\Controllers\Nutri\PlanoAlimentarController::class, 'salvar'])->whereNumber('id')->name('planos.salvar');
     Route::post('/planos/{id}/ativar', [\App\Http\Controllers\Nutri\PlanoAlimentarController::class, 'ativar'])->whereNumber('id')->name('planos.ativar');
+    Route::post('/planos/{id}/desativar', [\App\Http\Controllers\Nutri\PlanoAlimentarController::class, 'desativar'])->whereNumber('id')->name('planos.desativar');
     Route::post('/planos/{id}/modelo', [\App\Http\Controllers\Nutri\PlanoAlimentarController::class, 'salvarComoModelo'])->whereNumber('id')->name('planos.modelo');
     Route::post('/planos/{id}/ia', [\App\Http\Controllers\Nutri\PlanoAlimentarController::class, 'gerarIA'])->whereNumber('id')->name('planos.ia');
     Route::post('/planos/{id}/versao/{versaoId}/restaurar', [\App\Http\Controllers\Nutri\PlanoAlimentarController::class, 'restaurar'])->whereNumber('id')->whereNumber('versaoId')->name('planos.restaurar');

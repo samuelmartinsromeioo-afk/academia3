@@ -31,15 +31,21 @@ class PortalController extends Controller
         return view('nutri.portal.home', compact('paciente', 'plano', 'token', 'ultimoCheckin'));
     }
 
-    public function plano(string $token)
+    public function plano(string $token, Request $request)
     {
         $paciente = $this->paciente($token);
-        $plano = $paciente->planoAtivo();
-        if ($plano) {
-            $plano->load('refeicoes.itens.opcoes');
-        }
 
-        return view('nutri.portal.plano', compact('paciente', 'plano', 'token'));
+        // Fichas ativas (pode haver mais de uma — ex.: uma por dia da semana).
+        $ativos = $paciente->planosAtivos()
+            ->with('refeicoes.itens.opcoes')
+            ->get();
+
+        // Dia selecionado (padrão: hoje). Mostra a ficha correspondente ao dia.
+        $dia = $request->filled('dia') ? (int) $request->query('dia') : now()->dayOfWeek;
+        $dia = max(0, min(6, $dia));
+        $plano = Paciente::escolherPlanoDoDia($ativos, $dia) ?? $ativos->first();
+
+        return view('nutri.portal.plano', compact('paciente', 'plano', 'ativos', 'dia', 'token'));
     }
 
     /** Lista de compras agregada a partir do plano ativo. */
@@ -48,20 +54,24 @@ class PortalController extends Controller
         $paciente = $this->paciente($token);
         $plano = $paciente->planoAtivo();
 
+        // Agrega todas as fichas ativas do paciente (cobre a semana inteira,
+        // quando há uma ficha por dia).
+        $ativos = $paciente->planosAtivos()->with('refeicoes.itens')->get();
+
         $itens = [];
-        if ($plano) {
-            $plano->load('refeicoes.itens');
-            foreach ($plano->refeicoes as $ref) {
+        foreach ($ativos as $pl) {
+            foreach ($pl->refeicoes as $ref) {
                 foreach ($ref->itens as $item) {
                     $chave = mb_strtolower($item->descricao);
                     $itens[$chave]['descricao'] = $item->descricao;
                     $itens[$chave]['total_g'] = ($itens[$chave]['total_g'] ?? 0) + $item->quantidade_g;
                 }
             }
-            ksort($itens);
         }
+        ksort($itens);
+        $plano = $ativos->first();
 
-        return view('nutri.portal.lista-compras', compact('paciente', 'itens', 'token', 'plano'));
+        return view('nutri.portal.lista-compras', compact('paciente', 'itens', 'token', 'plano', 'ativos'));
     }
 
     public function diario(string $token)

@@ -110,6 +110,8 @@ class PlanoAlimentarController extends Controller
             'objetivo' => 'nullable|string|max:120',
             'kcal_meta' => 'nullable|numeric|min:0',
             'observacoes' => 'nullable|string|max:2000',
+            'dias_semana' => 'nullable|array',
+            'dias_semana.*' => 'integer|min:0|max:6',
             'refeicoes' => 'array',
             'refeicoes.*.nome' => 'required|string|max:120',
             'refeicoes.*.horario' => 'nullable|string|max:10',
@@ -158,16 +160,20 @@ class PlanoAlimentarController extends Controller
 
     public function ativar(int $id)
     {
+        // O paciente pode ter mais de uma ficha ativa ao mesmo tempo (ex.: uma
+        // por dia da semana), então ativar NÃO desativa as demais.
         $plano = $this->planoDoNutri($id);
-        if ($plano->paciente_id) {
-            // Desativa outros planos ativos do mesmo paciente.
-            PlanoAlimentar::where('paciente_id', $plano->paciente_id)
-                ->where('id', '!=', $plano->id)
-                ->update(['ativo' => false]);
-        }
         $plano->update(['ativo' => true]);
 
-        return back()->with('success', 'Plano marcado como ativo para o paciente.');
+        return back()->with('success', 'Ficha marcada como ativa para o paciente.');
+    }
+
+    public function desativar(int $id)
+    {
+        $plano = $this->planoDoNutri($id);
+        $plano->update(['ativo' => false]);
+
+        return back()->with('success', 'Ficha desativada (o paciente não a vê mais).');
     }
 
     public function salvarComoModelo(int $id, Request $request)

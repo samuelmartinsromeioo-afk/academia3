@@ -72,10 +72,39 @@ class Paciente extends Model
         return $this->data_nascimento?->age;
     }
 
-    /** Plano alimentar ativo mais recente (o que o paciente enxerga). */
+    /** Todas as fichas (planos) ativas do paciente — pode haver mais de uma. */
+    public function planosAtivos()
+    {
+        return $this->planos()->where('ativo', true)->where('is_modelo', false);
+    }
+
+    /**
+     * Ficha ativa que vale para um dia da semana (0=Dom … 6=Sáb).
+     * Prioriza uma ficha atribuída àquele dia; se nenhuma for específica,
+     * usa uma ficha "para todos os dias".
+     */
+    public function planoDoDia(int $dia): ?PlanoAlimentar
+    {
+        return self::escolherPlanoDoDia($this->planosAtivos()->get(), $dia);
+    }
+
+    /** Regra de escolha da ficha do dia a partir de uma coleção já carregada. */
+    public static function escolherPlanoDoDia($ativos, int $dia): ?PlanoAlimentar
+    {
+        $especifica = $ativos->first(fn ($p) => ! empty($p->dias_semana) && $p->aplicaNoDia($dia));
+        if ($especifica) {
+            return $especifica;
+        }
+
+        return $ativos->first(fn ($p) => empty($p->dias_semana));
+    }
+
+    /** Ficha "principal" para telas de resumo: a de hoje ou, na falta, a mais recente. */
     public function planoAtivo(): ?PlanoAlimentar
     {
-        return $this->planos()->where('ativo', true)->where('is_modelo', false)->first();
+        $ativos = $this->planosAtivos()->latest()->get();
+
+        return self::escolherPlanoDoDia($ativos, now()->dayOfWeek) ?? $ativos->first();
     }
 
     // ==========================================================

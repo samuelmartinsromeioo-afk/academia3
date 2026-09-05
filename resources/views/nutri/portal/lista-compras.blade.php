@@ -4,7 +4,7 @@
 @section('conteudo')
     <div class="card">
         <strong>Lista de compras</strong>
-        <div class="muted" style="font-size:.8rem; margin:6px 0 12px;">Gerada a partir do seu plano ativo (quantidades por dia).</div>
+        <div class="muted" style="font-size:.8rem; margin:6px 0 12px;">Gerada a partir das suas fichas ativas{{ isset($ativos) && $ativos->count() > 1 ? ' (todas as fichas da semana somadas)' : ' (quantidades por dia)' }}.</div>
         @if (count($itens))
             @foreach ($itens as $it)
                 <label style="display:flex; gap:10px; align-items:center; padding:9px 0; border-bottom:1px solid var(--border); text-transform:none; color:#fff; font-weight:400;">

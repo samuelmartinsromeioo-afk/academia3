@@ -29,6 +29,11 @@
     .sub-chip .sub-name { color:#fff; }
     .sub-chip input { padding:6px 8px; font-size:.78rem; }
     .sub-chip .sub-mac { font-size:.72rem; white-space:nowrap; }
+    .dias-semana { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:6px; }
+    .dia-pill { display:inline-flex; margin:0; cursor:pointer; }
+    .dia-pill input { display:none; }
+    .dia-pill span { display:inline-block; padding:7px 12px; border:1px solid var(--border); border-radius:20px; font-size:.78rem; color:var(--text-dim); transition:.15s; }
+    .dia-pill input:checked + span { background:var(--primary); color:#000; border-color:var(--primary); font-weight:700; }
     @media(max-width:760px){ .item-row{ grid-template-columns:1fr 1fr; } .item-head{display:none;} .sub-chip{ grid-template-columns:1fr 1fr; } }
 </style>
 @endsection
@@ -46,7 +51,12 @@
             <button class="btn btn-ghost btn-sm" onclick="salvar(true)"><i class="ph ph-floppy-disk"></i> Salvar agora</button>
             <a href="{{ route('nutri.planos.pdf',$plano->id) }}" target="_blank" class="btn btn-ghost btn-sm"><i class="ph ph-printer"></i> PDF</a>
             @if (!$plano->is_modelo && $plano->paciente_id)
-            <form method="POST" action="{{ route('nutri.planos.ativar',$plano->id) }}"><button class="btn btn-sm"><i class="ph ph-check-circle"></i> Ativar p/ paciente</button></form>
+                @if ($plano->ativo)
+                    <span class="badge badge-ok" style="align-self:center;">Ativa para o paciente</span>
+                    <form method="POST" action="{{ route('nutri.planos.desativar',$plano->id) }}"><button class="btn btn-ghost btn-sm"><i class="ph ph-eye-slash"></i> Desativar</button></form>
+                @else
+                    <form method="POST" action="{{ route('nutri.planos.ativar',$plano->id) }}"><button class="btn btn-sm"><i class="ph ph-check-circle"></i> Ativar p/ paciente</button></form>
+                @endif
             @endif
         </div>
     </div>
@@ -66,6 +76,21 @@
                     <div><label>Meta kcal/dia</label><input type="number" id="p_kcal" value="{{ $plano->kcal_meta }}" oninput="marcarSujo()"></div>
                 </div>
                 <div style="margin-top:10px;"><label>Observações (visível ao paciente)</label><textarea id="p_obs" rows="2" oninput="marcarSujo()">{{ $plano->observacoes }}</textarea></div>
+
+                @unless ($plano->is_modelo)
+                <div style="margin-top:12px;">
+                    <label>Dias da semana desta ficha</label>
+                    <div class="dias-semana" id="diasSemana">
+                        @foreach (\App\Models\Nutri\PlanoAlimentar::DIAS_SEMANA as $num => $lbl)
+                            <label class="dia-pill">
+                                <input type="checkbox" class="dia-cb" value="{{ $num }}" @checked(in_array($num, (array) ($plano->dias_semana ?? []))) onchange="marcarSujo()">
+                                <span>{{ $lbl }}</span>
+                            </label>
+                        @endforeach
+                    </div>
+                    <span class="muted" style="font-size:.68rem;">Deixe todos desmarcados para valer <strong>todos os dias</strong>. Marque dias específicos quando o paciente tem uma ficha diferente por dia — o portal mostra a do dia automaticamente.</span>
+                </div>
+                @endunless
             </div>
 
             <div id="meals"></div>
@@ -392,6 +417,7 @@
             objetivo: document.getElementById('p_objetivo').value,
             kcal_meta: document.getElementById('p_kcal').value || null,
             observacoes: document.getElementById('p_obs').value,
+            dias_semana: Array.from(document.querySelectorAll('.dia-cb:checked')).map(c=>+c.value),
             refeicoes: state.refeicoes.map(r=>({
                 nome:r.nome, horario:r.horario||null, observacoes:r.observacoes||null,
                 itens:r.itens.map(it=>({
