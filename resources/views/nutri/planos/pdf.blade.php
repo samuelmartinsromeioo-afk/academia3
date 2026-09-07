@@ -77,11 +77,11 @@
         @if($plano->kcal_meta)<span>Meta {{ number_format($plano->kcal_meta,0,',','.') }} kcal</span>@endif
     </div>
 
-    @php $custoMensal = $plano->custoMensal(); $ufRef = $plano->paciente->uf ?? $nutri->estado ?? 'BR'; @endphp
+    @php $custoDia = $plano->custoDiario(); $diasMes = $plano->diasNoMes(); $custoMensal = $plano->custoMensal(); $ufRef = $plano->paciente->uf ?? $nutri->estado ?? 'BR'; @endphp
     @if($custoMensal > 0)
     <div class="obs" style="margin-top:10px;">
-        <strong>Custo estimado:</strong> ≈ R$ {{ number_format($custoMensal,2,',','.') }}/mês
-        (R$ {{ number_format($custoMensal/30,2,',','.') }}/dia) · referência {{ $ufRef }}.
+        <strong>Custo estimado:</strong> R$ {{ number_format($custoDia,2,',','.') }}/dia
+        ≈ R$ {{ number_format($custoMensal,2,',','.') }}/mês ({{ $diasMes }} dia(s) no mês) · referência {{ $ufRef }}.
         <span style="color:#777;">Estimativa com base em preços médios regionais; pode variar conforme mercado e marcas.</span>
     </div>
     @endif

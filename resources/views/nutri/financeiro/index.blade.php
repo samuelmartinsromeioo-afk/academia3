@@ -12,6 +12,29 @@
         <div class="stat"><div class="n" style="color:var(--warn)">R$ {{ number_format($pendente,2,',','.') }}</div><div class="l">A receber</div></div>
     </div>
 
+    <div class="card" style="margin-bottom:18px; border-color:rgba(212,255,0,.2);">
+        <h3 style="margin-bottom:6px; display:flex; align-items:center; gap:8px;"><i class="ph ph-credit-card" style="color:var(--primary);"></i> Consulta online (paga pelo cliente)</h3>
+        <p class="muted" style="font-size:.8rem; margin-bottom:12px;">Defina o valor da sua consulta. Ele aparece no seu perfil público, e o cliente paga direto pelo app (Pix, cartão ou boleto) na sua conta de recebimento.</p>
+        <form method="POST" action="{{ route('nutri.financeiro.consulta') }}" style="display:flex; gap:10px; align-items:flex-end; flex-wrap:wrap;">
+            @csrf
+            <div style="max-width:220px;">
+                <label>Valor da consulta (R$)</label>
+                <input type="number" step="10" min="0" name="valor_consulta" value="{{ $nutri->valor_consulta }}" placeholder="Ex.: 150">
+            </div>
+            <button class="btn"><i class="ph ph-check"></i> Salvar valor</button>
+        </form>
+        @php $temRecebimento = (bool) $nutri->asaas_wallet_id; @endphp
+        <div style="margin-top:10px; font-size:.78rem;">
+            @if ($temRecebimento)
+                <span class="badge badge-ok"><i class="ph ph-check-circle"></i> Pagamento online ativo</span>
+                <span class="muted">— você recebe 90% de cada consulta; a plataforma retém 10% de comissão.</span>
+            @else
+                <span class="badge badge-warn"><i class="ph ph-warning"></i> Conta de recebimento pendente</span>
+                <span class="muted">— você ainda não tem uma conta de recebimento. Enquanto isso, o cliente é orientado a te chamar no WhatsApp. Fale com o suporte para habilitar o recebimento online.</span>
+            @endif
+        </div>
+    </div>
+
     <div id="nova" class="card" style="display:none; margin-bottom:18px;">
         <form method="POST" action="{{ route('nutri.cobrancas.store') }}">
             @csrf

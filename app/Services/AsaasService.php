@@ -353,6 +353,53 @@ class AsaasService
         }
     }
 
+    /**
+     * Cobrança avulsa do marketplace (conta da plataforma) com split 90/10 para o
+     * recebedor. Não cria registro Payment — a confirmação é feita por quem chama,
+     * casando o externalReference no webhook. Usada na consulta do nutricionista.
+     * Retorna ['asaasPaymentId','invoiceUrl'] ou [] em caso de falha.
+     */
+    public function criarCobrancaAvulsaComSplit(Cliente $cliente, float $amount, string $description, string $extRef, ?array $split, string $billingType = 'UNDEFINED'): array
+    {
+        $this->garantirValorMinimo($amount);
+
+        try {
+            $asaasCustomerId = $this->obterOuCriarClienteAsaas($cliente);
+
+            $payload = [
+                'customer' => $asaasCustomerId,
+                'billingType' => $billingType, // UNDEFINED = checkout escolhe Pix/cartão/boleto
+                'value' => $amount,
+                'dueDate' => now()->addDays(3)->format('Y-m-d'),
+                'description' => $description,
+                'externalReference' => $extRef,
+            ];
+            if ($split) {
+                $payload['split'] = $split;
+            }
+
+            $res = Http::withHeaders($this->asaasHeaders())->post($this->asaas().'/payments', $payload);
+            if ($res->failed()) {
+                Log::error('Asaas consulta nutri: falha ao criar cobrança', ['body' => $res->json()]);
+
+                return [];
+            }
+
+            $data = $res->json();
+
+            return [
+                'asaasPaymentId' => $data['id'] ?? null,
+                'invoiceUrl' => $data['invoiceUrl'] ?? null,
+            ];
+        } catch (\Illuminate\Http\Exceptions\HttpResponseException $e) {
+            throw $e;
+        } catch (\Throwable $e) {
+            Log::error('Asaas consulta nutri: exceção ao criar cobrança', ['error' => $e->getMessage()]);
+
+            return [];
+        }
+    }
+
     // ─────────────────────────────────────────────
     // ASSINATURA MENSAL PIX (Asaas /subscriptions)
     // ─────────────────────────────────────────────

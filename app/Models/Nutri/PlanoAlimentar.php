@@ -110,10 +110,37 @@ class PlanoAlimentar extends Model
         return round($total, 2);
     }
 
-    /** Custo estimado mensal (R$) — o "mínimo para manter" a dieta. */
+    /**
+     * Quantos dias no mês esta ficha é realmente usada = quantas vezes os dias da
+     * semana dela caem no mês atual. Ficha "todos os dias" = mês inteiro.
+     */
+    public function diasNoMes(?\Carbon\Carbon $ref = null): int
+    {
+        $ref = $ref ?? now();
+        $dias = $this->dias_semana ?? [];
+        if (empty($dias)) {
+            return $ref->daysInMonth;
+        }
+        $set = array_map('intval', $dias);
+        $total = 0;
+        $cursor = $ref->copy()->startOfMonth();
+        $fim = $ref->copy()->endOfMonth();
+        for (; $cursor->lte($fim); $cursor->addDay()) {
+            if (in_array($cursor->dayOfWeek, $set, true)) {
+                $total++;
+            }
+        }
+
+        return $total;
+    }
+
+    /**
+     * Custo estimado mensal (R$) desta ficha: custo/dia × dias que ela é usada no
+     * mês (não o mês inteiro, quando é uma ficha de dia específico).
+     */
     public function custoMensal(?float $ufIndice = null): float
     {
-        return round($this->custoDiario($ufIndice) * (int) config('precos.dias_mes', 30), 2);
+        return round($this->custoDiario($ufIndice) * $this->diasNoMes(), 2);
     }
 
     /** Snapshot completo (para versionamento e portabilidade). */

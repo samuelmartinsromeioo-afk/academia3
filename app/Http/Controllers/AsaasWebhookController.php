@@ -83,6 +83,8 @@ class AsaasWebhookController extends Controller
         } elseif ($subscriptionId) {
             // Cobrança nova de uma assinatura existente = renovação mensal.
             app(PaymentController::class)->processarRenovacaoAssinatura($subscriptionId, $payment);
+        } elseif ($this->confirmarCobrancaNutri($payment)) {
+            // Consulta/cobrança do nutricionista paga via payment link.
         } else {
             Log::warning('Asaas webhook: pagamento não encontrado', ['asaas_payment_id' => $asaasPaymentId]);
         }
@@ -93,4 +95,46 @@ class AsaasWebhookController extends Controller
 
     return response()->json(['received' => true]);
 }
+
+    /**
+     * Confirma uma cobrança do nutricionista (consulta paga pelo cliente) a partir
+     * do payload do Asaas. Casa por externalReference (nutri_cobranca:ID) ou pelo
+     * id do payment link. Marca como paga e dispara o Purchase (server-side).
+     */
+    private function confirmarCobrancaNutri(array $payment): bool
+    {
+        $ref = $payment['externalReference'] ?? null;
+        $linkId = $payment['paymentLink'] ?? null;
+        $paymentId = $payment['id'] ?? null;
+
+        $cobranca = null;
+        if ($ref && str_starts_with($ref, 'nutri_cobranca:')) {
+            $cobranca = \App\Models\Nutri\Cobranca::find((int) substr($ref, strlen('nutri_cobranca:')));
+        }
+        // Casa pelo id do pagamento (cobrança avulsa) ou do payment link (billing do consultório).
+        if (! $cobranca && ($paymentId || $linkId)) {
+            $cobranca = \App\Models\Nutri\Cobranca::whereIn('asaas_payment_id', array_filter([$paymentId, $linkId]))->first();
+        }
+        if (! $cobranca) {
+            return false;
+        }
+
+        if ($cobranca->status !== 'pago') {
+            $cobranca->update(['status' => 'pago', 'pago_em' => now()]);
+
+            // Purchase (Conversions API) — event_id determinístico p/ dedup em retries.
+            try {
+                app(\App\Services\MetaConversionsService::class)->trackServer('Purchase', [
+                    'value' => (float) $cobranca->valor,
+                    'currency' => 'BRL',
+                    'content_name' => $cobranca->descricao,
+                    'content_category' => 'Consulta Nutricional',
+                ], $cobranca->cliente ? app(\App\Services\MetaConversionsService::class)->userDataFromModel($cobranca->cliente) : [], 'nutri_cobranca_'.$cobranca->id);
+            } catch (\Throwable $e) {
+                Log::warning('Nutri: falha ao enviar Purchase (consulta)', ['error' => $e->getMessage()]);
+            }
+        }
+
+        return true;
+    }
 }

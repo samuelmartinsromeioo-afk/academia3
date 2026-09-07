@@ -196,6 +196,21 @@
         }
         .empty-state i { font-size: 3rem; margin-bottom: 16px; display: block; opacity: 0.4; color: var(--accent); }
 
+        /* Abas de tipo de profissional */
+        .tabs { display: inline-flex; gap: 6px; background: rgba(255,255,255,0.04); border: 1px solid var(--border); border-radius: 12px; padding: 5px; margin-bottom: 24px; }
+        .tab { background: transparent; border: none; color: var(--text-muted); font-family: inherit; font-weight: 800; font-size: 0.82rem; padding: 10px 20px; border-radius: 9px; cursor: pointer; transition: 0.2s; display: inline-flex; align-items: center; gap: 8px; }
+        .tab .cnt { font-weight: 700; font-size: 0.72rem; opacity: 0.7; }
+        .tab.active { background: var(--primary); color: #000; }
+        .tab:not(.active):hover { color: #fff; }
+        .tab-panel { display: none; }
+        .tab-panel.active { display: block; }
+        /* Card do nutricionista (verde-lima em vez do azul) */
+        .card.nutri:hover { border-color: rgba(212,255,0,0.4); }
+        .card.nutri .card-img { background: linear-gradient(135deg, rgba(212,255,0,0.14), rgba(212,255,0,0.03)); color: var(--primary); }
+        .card.nutri .card-badge { color: var(--primary); border-color: rgba(212,255,0,0.4); }
+        .chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0 4px; }
+        .chip { font-size: 0.68rem; background: rgba(212,255,0,0.08); color: var(--primary); border: 1px solid rgba(212,255,0,0.2); padding: 3px 9px; border-radius: 20px; }
+
         @media (max-width: 600px) {
             .top-bar { padding: 14px 20px; }
         }
@@ -210,87 +225,153 @@
 
 <div class="container">
     <div class="welcome">
-        <div class="ed-eyebrow"><i class="ph ph-user"></i> Descobrir</div><h1 class="ed-h">Explorar <span class="ed-mark">Personais</span></h1>
-        <p>Encontre personal trainers, veja avaliações e contrate aulas avulsas ou pacotes.</p>
+        <div class="ed-eyebrow"><i class="ph ph-user"></i> Descobrir</div><h1 class="ed-h">Explorar <span class="ed-mark">Profissionais</span></h1>
+        <p>Encontre personal trainers e nutricionistas, veja avaliações e entre em contato.</p>
+    </div>
+
+    <div class="tabs" role="tablist">
+        <button class="tab active" data-tab="personais" onclick="trocarAba('personais')"><i class="ph ph-barbell"></i> Personais <span class="cnt">{{ $personais->count() }}</span></button>
+        <button class="tab" data-tab="nutricionistas" onclick="trocarAba('nutricionistas')"><i class="ph ph-carrot"></i> Nutricionistas <span class="cnt">{{ $nutricionistas->count() }}</span></button>
     </div>
 
     <div class="search-wrapper">
         <i class="ph ph-magnifying-glass"></i>
-        <input type="text" id="buscaPersonal" placeholder="Buscar por nome ou cidade...">
+        <input type="text" id="buscaProfissional" placeholder="Buscar por nome ou cidade...">
     </div>
 
-    @if ($personais->isEmpty())
-        <div class="empty-state">
-            <i class="ph ph-user-minus"></i>
-            <p>Nenhum personal disponível no momento.</p>
-        </div>
-    @else
-        <div class="grid" id="gridPersonais">
-            @foreach ($personais as $personal)
-                <div class="card {{ $personal->eh_pioneiro ? 'pioneiro' : '' }}" data-busca="{{ strtolower($personal->nome . ' ' . ($personal->cidade ?? '')) }}">
-                    <div class="card-img">
-                        @if ($personal->foto)
-                            <img src="{{ asset('storage/' . $personal->foto) }}" alt="{{ $personal->nome }}">
-                        @elseif ($personal->fotos->isNotEmpty())
-                            <img src="{{ asset('storage/' . $personal->fotos->first()->path) }}" alt="{{ $personal->nome }}">
-                        @else
-                            <i class="ph ph-user-list"></i>
-                        @endif
-                        <span class="card-badge"><i class="ph ph-user-list"></i> Personal</span>
-                        @if ($personal->eh_pioneiro)
-                            <div style="position:absolute; top:12px; right:12px; z-index:2;">
-                                @include('partials.badge-pioneiro', ['posicao' => $personal->pioneiro_posicao, 'estado' => $personal->estado])
-                            </div>
-                        @endif
-                    </div>
-                    <div class="card-body">
-                        <h3>{{ $personal->nome }}</h3>
-                        @if ($personal->cidade)
-                            <div class="card-meta"><i class="ph ph-map-pin"></i> {{ $personal->cidade }}{{ $personal->estado ? ' - ' . $personal->estado : '' }}</div>
-                        @endif
-
-                        <div class="rating">
-                            @if($personal->eh_novo_profissional)
-                                <span class="num" style="color: var(--primary);"><i class="ph ph-plant"></i> Novo profissional</span>
+    {{-- ABA: PERSONAIS --}}
+    <div class="tab-panel active" id="panel-personais">
+        @if ($personais->isEmpty())
+            <div class="empty-state"><i class="ph ph-user-minus"></i><p>Nenhum personal disponível no momento.</p></div>
+        @else
+            <div class="grid grid-prof">
+                @foreach ($personais as $personal)
+                    <div class="card {{ $personal->eh_pioneiro ? 'pioneiro' : '' }}" data-busca="{{ strtolower($personal->nome . ' ' . ($personal->cidade ?? '')) }}">
+                        <div class="card-img">
+                            @if ($personal->foto)
+                                <img src="{{ asset('storage/' . $personal->foto) }}" alt="{{ $personal->nome }}">
+                            @elseif ($personal->fotos->isNotEmpty())
+                                <img src="{{ asset('storage/' . $personal->fotos->first()->path) }}" alt="{{ $personal->nome }}">
                             @else
-                                @php $media = (float) $personal->media_avaliacao; @endphp
-                                @for ($i = 1; $i <= 5; $i++)
-                                    <i class="ph-star {{ $i <= round($media) ? 'ph-fill' : 'ph' }}"></i>
-                                @endfor
-                                <span class="num">{{ $personal->media_avaliacao }} ({{ $personal->avaliacoes->count() }})</span>
+                                <i class="ph ph-user-list"></i>
+                            @endif
+                            <span class="card-badge"><i class="ph ph-barbell"></i> Personal</span>
+                            @if ($personal->eh_pioneiro)
+                                <div style="position:absolute; top:12px; right:12px; z-index:2;">
+                                    @include('partials.badge-pioneiro', ['posicao' => $personal->pioneiro_posicao, 'estado' => $personal->estado])
+                                </div>
                             @endif
                         </div>
-
-                        <div class="card-footer">
-                            <div class="preco">R$ {{ number_format($personal->valor_secao ?? 0, 2, ',', '.') }} <small>/aula</small></div>
-                            <a href="{{ route('cliente.index') }}?personal={{ $personal->id }}" class="btn-detalhes">Ver detalhes <i class="ph ph-arrow-right"></i></a>
+                        <div class="card-body">
+                            <h3>{{ $personal->nome }}</h3>
+                            @if ($personal->cidade)
+                                <div class="card-meta"><i class="ph ph-map-pin"></i> {{ $personal->cidade }}{{ $personal->estado ? ' - ' . $personal->estado : '' }}</div>
+                            @endif
+                            <div class="rating">
+                                @if($personal->eh_novo_profissional)
+                                    <span class="num" style="color: var(--primary);"><i class="ph ph-plant"></i> Novo profissional</span>
+                                @else
+                                    @php $media = (float) $personal->media_avaliacao; @endphp
+                                    @for ($i = 1; $i <= 5; $i++)
+                                        <i class="ph-star {{ $i <= round($media) ? 'ph-fill' : 'ph' }}"></i>
+                                    @endfor
+                                    <span class="num">{{ $personal->media_avaliacao }} ({{ $personal->avaliacoes->count() }})</span>
+                                @endif
+                            </div>
+                            <div class="card-footer">
+                                <div class="preco">R$ {{ number_format($personal->valor_secao ?? 0, 2, ',', '.') }} <small>/aula</small></div>
+                                <a href="{{ route('cliente.index') }}?personal={{ $personal->id }}" class="btn-detalhes">Ver detalhes <i class="ph ph-arrow-right"></i></a>
+                            </div>
                         </div>
                     </div>
-                </div>
-            @endforeach
-        </div>
-        <div class="empty-state" id="semResultados" style="display:none;">
-            <i class="ph ph-magnifying-glass"></i>
-            <p>Nenhum personal encontrado para a sua busca.</p>
-        </div>
-    @endif
+                @endforeach
+            </div>
+        @endif
+    </div>
+
+    {{-- ABA: NUTRICIONISTAS --}}
+    <div class="tab-panel" id="panel-nutricionistas">
+        @if ($nutricionistas->isEmpty())
+            <div class="empty-state"><i class="ph ph-carrot"></i><p>Nenhum nutricionista disponível no momento.</p></div>
+        @else
+            <div class="grid grid-prof">
+                @foreach ($nutricionistas as $nutri)
+                    <div class="card nutri" data-busca="{{ strtolower($nutri->nome . ' ' . ($nutri->cidade ?? '')) }}">
+                        <div class="card-img">
+                            @if ($nutri->foto)
+                                <img src="{{ asset('storage/' . $nutri->foto) }}" alt="{{ $nutri->nome }}">
+                            @elseif ($nutri->fotos->isNotEmpty())
+                                <img src="{{ asset('storage/' . $nutri->fotos->first()->path) }}" alt="{{ $nutri->nome }}">
+                            @else
+                                <i class="ph ph-carrot"></i>
+                            @endif
+                            <span class="card-badge"><i class="ph ph-carrot"></i> Nutricionista</span>
+                        </div>
+                        <div class="card-body">
+                            <h3>{{ $nutri->nome }}</h3>
+                            @if ($nutri->cidade)
+                                <div class="card-meta"><i class="ph ph-map-pin"></i> {{ $nutri->cidade }}{{ $nutri->estado ? ' - ' . $nutri->estado : '' }}</div>
+                            @endif
+                            @if ($nutri->crn)
+                                <div class="card-meta"><i class="ph ph-identification-badge"></i> CRN {{ $nutri->crn }}</div>
+                            @endif
+                            @if (!empty($nutri->especialidades))
+                                <div class="chips">
+                                    @foreach (array_slice((array) $nutri->especialidades, 0, 3) as $esp)
+                                        <span class="chip">{{ $esp }}</span>
+                                    @endforeach
+                                </div>
+                            @endif
+                            <div class="rating">
+                                @php $media = (float) $nutri->media_avaliacao; @endphp
+                                @if ($nutri->avaliacoes->count())
+                                    @for ($i = 1; $i <= 5; $i++)<i class="ph-star {{ $i <= round($media) ? 'ph-fill' : 'ph' }}"></i>@endfor
+                                    <span class="num">{{ $nutri->media_avaliacao }} ({{ $nutri->avaliacoes->count() }})</span>
+                                @else
+                                    <span class="num" style="color: var(--primary);"><i class="ph ph-plant"></i> Novo profissional</span>
+                                @endif
+                            </div>
+                            <div class="card-footer">
+                                <div class="preco" style="font-size:.82rem; color:var(--text-muted);"><i class="ph ph-fork-knife"></i> Nutrição</div>
+                                <a href="{{ route('nutricionistas.detalhes', $nutri->id) }}" class="btn-detalhes">Ver perfil <i class="ph ph-arrow-right"></i></a>
+                            </div>
+                        </div>
+                    </div>
+                @endforeach
+            </div>
+        @endif
+    </div>
+
+    <div class="empty-state" id="semResultados" style="display:none;">
+        <i class="ph ph-magnifying-glass"></i>
+        <p>Nenhum profissional encontrado para a sua busca.</p>
+    </div>
 </div>
 
 <script>
-    const inputBusca = document.getElementById('buscaPersonal');
-    if (inputBusca) {
-        inputBusca.addEventListener('input', () => {
-            const termo = inputBusca.value.toLowerCase().trim();
-            let visiveis = 0;
-            document.querySelectorAll('#gridPersonais .card').forEach(card => {
-                const ok = !termo || card.dataset.busca.includes(termo);
-                card.style.display = ok ? '' : 'none';
-                if (ok) visiveis++;
-            });
-            const vazio = document.getElementById('semResultados');
-            if (vazio) vazio.style.display = visiveis === 0 ? '' : 'none';
-        });
+    function trocarAba(aba) {
+        document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === aba));
+        document.querySelectorAll('.tab-panel').forEach(p => p.classList.toggle('active', p.id === 'panel-' + aba));
+        filtrar();
     }
+
+    const inputBusca = document.getElementById('buscaProfissional');
+    function filtrar() {
+        const termo = (inputBusca?.value || '').toLowerCase().trim();
+        const panel = document.querySelector('.tab-panel.active');
+        let visiveis = 0;
+        panel?.querySelectorAll('.card').forEach(card => {
+            const ok = !termo || card.dataset.busca.includes(termo);
+            card.style.display = ok ? '' : 'none';
+            if (ok) visiveis++;
+        });
+        const vazio = document.getElementById('semResultados');
+        if (vazio) vazio.style.display = (visiveis === 0 && panel && panel.querySelectorAll('.card').length) ? '' : 'none';
+    }
+    if (inputBusca) inputBusca.addEventListener('input', filtrar);
+
+    // Abre direto na aba de nutricionistas via ?tipo=nutricionistas
+    if (new URLSearchParams(location.search).get('tipo') === 'nutricionistas') trocarAba('nutricionistas');
 </script>
 </body>
 </html>

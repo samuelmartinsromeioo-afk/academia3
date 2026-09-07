@@ -420,7 +420,8 @@
         <a href="{{ route('desempenho.meu') }}" class="qa-item"><span class="qa-ico"><i class="ph ph-lightning"></i></span><span class="qa-lbl">Meu Desempenho</span></a>
         <a href="{{ route('fichas-treino.minhas') }}" class="qa-item"><span class="qa-ico"><i class="ph ph-barbell"></i></span><span class="qa-lbl">Minha Ficha</span></a>
         <a href="{{ route('lojas.explorar') }}" class="qa-item"><span class="qa-ico"><i class="ph ph-storefront"></i></span><span class="qa-lbl">Lojas</span></a>
-        <a href="{{ route('personais.explorar') }}" class="qa-item"><span class="qa-ico"><i class="ph ph-user-list"></i></span><span class="qa-lbl">Personais</span></a>
+        <a href="{{ route('personais.explorar') }}" class="qa-item"><span class="qa-ico"><i class="ph ph-barbell"></i></span><span class="qa-lbl">Personais</span></a>
+        <a href="{{ route('personais.explorar') }}?tipo=nutricionistas" class="qa-item"><span class="qa-ico"><i class="ph ph-carrot"></i></span><span class="qa-lbl">Nutricionistas</span></a>
         <a href="{{ route('academias.explorar') }}" class="qa-item"><span class="qa-ico"><i class="ph ph-building"></i></span><span class="qa-lbl">Academias</span></a>
         <a href="{{ route('studios.explorar') }}" class="qa-item"><span class="qa-ico"><i class="ph ph-flower-lotus"></i></span><span class="qa-lbl">Studios</span></a>
     </div>

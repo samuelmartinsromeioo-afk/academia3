@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Services\MetaConversionsService;
 use App\Models\Cadastro\Cliente;
 use App\Models\Cadastro\Personal;
+use App\Models\Nutri\Cobranca;
 use App\Models\Cadastro\Academia as Academia;
 use App\Models\Cadastro\Studio;
 use App\Models\Cadastro\Loja;
@@ -26,7 +27,9 @@ class ClienteController extends Controller
         if (!$id) return redirect()->route('login.index');
 
         $cliente = Cliente::find($id);
+        // Só personal trainers no painel (nutricionistas têm fluxo próprio).
         $personals = Personal::where('status', 'aprovado')
+            ->personalTrainers()
             ->with(['fotos', 'avaliacoes', 'pacotesAvaliacao' => fn($q) => $q->where('ativo', true)->orderBy('nome')])
             // Pioneiros (100 primeiros do estado) aparecem em destaque, no topo.
             ->orderByRaw('pioneiro_posicao IS NULL')
@@ -699,15 +702,103 @@ class ClienteController extends Controller
 
     public function listarPersonais()
     {
-        $cliente   = Cliente::find(session('cliente_id'));
+        $cliente = Cliente::find(session('cliente_id'));
+
+        // Personal trainers — pioneiros do estado em destaque no topo.
         $personais = Personal::where('status', 'aprovado')
+            ->personalTrainers()
             ->with(['fotos', 'avaliacoes'])
-            // Pioneiros (100 primeiros do estado) aparecem em destaque, no topo.
             ->orderByRaw('pioneiro_posicao IS NULL')
             ->orderBy('pioneiro_posicao')
             ->orderBy('nome')
             ->get();
-        return view('cliente.personais', compact('personais', 'cliente'));
+
+        // Nutricionistas — mesma vitrine, aba separada.
+        $nutricionistas = Personal::where('status', 'aprovado')
+            ->nutricionistas()
+            ->with(['fotos', 'avaliacoes'])
+            ->orderBy('nome')
+            ->get();
+
+        return view('cliente.personais', compact('personais', 'nutricionistas', 'cliente'));
+    }
+
+    /** Perfil público do nutricionista para o cliente (com contato via WhatsApp). */
+    public function detalheNutricionista($id)
+    {
+        $cliente = Cliente::find(session('cliente_id'));
+        $nutri = Personal::where('status', 'aprovado')
+            ->nutricionistas()
+            ->with(['fotos', 'avaliacoes' => fn ($q) => $q->latest()])
+            ->findOrFail($id);
+
+        $fb = app(MetaConversionsService::class);
+        $fbEvent = $fb->track('ViewContent', [
+            'content_type'     => 'nutricionista',
+            'content_ids'      => [(string) $nutri->id],
+            'content_name'     => $nutri->nome,
+            'content_category' => 'Nutricionista',
+        ], $fb->userDataFromModel($cliente));
+
+        return view('cliente.nutri-detalhes', compact('nutri', 'cliente', 'fbEvent'));
+    }
+
+    /**
+     * Cliente paga a consulta do nutricionista. Igual ao personal/academia:
+     * cobrança na conta da plataforma com split 90/10 (90% p/ o nutri via
+     * asaas_wallet_id, 10% de comissão da plataforma), checkout Pix/cartão/boleto.
+     */
+    public function pagarConsultaNutri($id, Request $request, \App\Services\AsaasService $asaas)
+    {
+        $cliente = Cliente::find(session('cliente_id'));
+        if (! $cliente) {
+            return redirect()->route('login.index');
+        }
+        $nutri = Personal::where('status', 'aprovado')->nutricionistas()->findOrFail($id);
+
+        $valor = (float) $nutri->valor_consulta;
+        if ($valor <= 0) {
+            return back()->with('error', 'Este nutricionista ainda não definiu o valor da consulta.');
+        }
+        if ($valor < \App\Services\AsaasService::MIN_SPLIT_VALUE) {
+            return back()->with('error', 'O valor mínimo para pagamento online é R$ '.number_format(\App\Services\AsaasService::MIN_SPLIT_VALUE, 2, ',', '.').'.');
+        }
+        // Precisa de conta de recebimento (wallet) do marketplace p/ receber o split.
+        if (! $nutri->asaas_wallet_id) {
+            return back()->with('error', 'Este nutricionista ainda não habilitou pagamento online. Fale com ele pelo WhatsApp para agendar.');
+        }
+
+        $cobranca = Cobranca::create([
+            'personal_id' => $nutri->id,
+            'cliente_id' => $cliente->id,
+            'descricao' => 'Consulta nutricional — '.$nutri->nome,
+            'valor' => $valor,
+            'status' => 'pendente',
+        ]);
+
+        // Split 90/10 (card-safe): 90% do bruto p/ o nutri, plataforma retém 10%.
+        $split = $asaas->splitPersonal($nutri, $valor, 'CREDIT_CARD');
+        if (! $split) {
+            $cobranca->delete();
+            return back()->with('error', 'Este nutricionista ainda não habilitou pagamento online. Fale com ele pelo WhatsApp para agendar.');
+        }
+
+        try {
+            $res = $asaas->criarCobrancaAvulsaComSplit(
+                $cliente, $valor, $cobranca->descricao, 'nutri_cobranca:'.$cobranca->id, $split, 'UNDEFINED'
+            );
+        } catch (\Throwable $e) {
+            $res = [];
+        }
+
+        if (empty($res['invoiceUrl'])) {
+            $cobranca->delete(); // não deixa cobrança órfã sem meio de pagamento
+            return back()->with('error', 'Não foi possível gerar o pagamento agora. Tente novamente em instantes.');
+        }
+
+        $cobranca->update(['asaas_payment_id' => $res['asaasPaymentId']]);
+
+        return redirect()->away($res['invoiceUrl']);
     }
 
     public function detalheAcademia($id)

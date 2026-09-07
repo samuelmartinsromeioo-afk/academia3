@@ -14,12 +14,13 @@ class Paciente extends Model
     protected $fillable = [
         'personal_id', 'cliente_id', 'nome', 'email', 'whatsapp',
         'data_nascimento', 'sexo', 'objetivo', 'uf', 'altura_cm', 'observacoes',
-        'ativo', 'portal_token',
+        'orcamento_mensal', 'ativo', 'portal_token',
     ];
 
     protected $casts = [
         'data_nascimento' => 'date',
         'altura_cm' => 'float',
+        'orcamento_mensal' => 'float',
         'ativo' => 'boolean',
     ];
 
@@ -76,6 +77,20 @@ class Paciente extends Model
     public function planosAtivos()
     {
         return $this->planos()->where('ativo', true)->where('is_modelo', false);
+    }
+
+    /**
+     * Cota mensal de cada ficha: orçamento dividido igualmente pelo nº de fichas
+     * ativas (a soma das cotas = orçamento). Null se não há orçamento definido.
+     */
+    public function cotaMensalPorFicha(?int $nFichas = null): ?float
+    {
+        if (! $this->orcamento_mensal) {
+            return null;
+        }
+        $n = $nFichas ?? $this->planosAtivos()->count();
+
+        return round($this->orcamento_mensal / max(1, $n), 2);
     }
 
     /**

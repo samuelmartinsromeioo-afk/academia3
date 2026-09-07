@@ -7,8 +7,6 @@ use App\Http\Controllers\Nutri\Concerns\ResolveNutri;
 use App\Models\Nutri\Cobranca;
 use App\Models\Nutri\Paciente;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Facades\Log;
 
 class CobrancaController extends Controller
 {
@@ -48,9 +46,21 @@ class CobrancaController extends Controller
         $cobranca = Cobranca::create($dados);
 
         // Tenta gerar link de pagamento na subconta Asaas do nutricionista.
-        $this->gerarLinkAsaas($nutri, $cobranca);
+        $cobranca->gerarLinkAsaas();
 
         return back()->with('success', 'Cobrança criada.'.($cobranca->link_pagamento ? ' Link de pagamento gerado.' : ''));
+    }
+
+    /** Salva o valor da consulta que o cliente paga pelo perfil do nutri. */
+    public function salvarConfig(Request $request)
+    {
+        $nutri = $this->nutri();
+        $dados = $request->validate([
+            'valor_consulta' => 'nullable|numeric|min:0|max:100000',
+        ]);
+        $nutri->update(['valor_consulta' => $dados['valor_consulta'] ?: null]);
+
+        return back()->with('success', 'Valor da consulta atualizado.');
     }
 
     public function marcarPago(int $id)
@@ -68,39 +78,5 @@ class CobrancaController extends Controller
         Cobranca::where('id', $id)->where('personal_id', $nutri->id)->firstOrFail()->delete();
 
         return back()->with('success', 'Cobrança removida.');
-    }
-
-    /** Cria um Payment Link na subconta Asaas do nutricionista (best-effort). */
-    private function gerarLinkAsaas($nutri, Cobranca $cobranca): void
-    {
-        $apiKey = $nutri->getAsaasApiKeyDecrypted();
-        if (! $apiKey) {
-            return; // sem subconta: cobrança fica como controle manual
-        }
-
-        try {
-            $res = Http::withHeaders([
-                'access_token' => $apiKey,
-                'Content-Type' => 'application/json',
-            ])->post(config('services.asaas.url').'/paymentLinks', [
-                'name' => $cobranca->descricao,
-                'billingType' => 'UNDEFINED',
-                'chargeType' => 'DETACHED',
-                'value' => $cobranca->valor,
-                'dueDateLimitDays' => 7,
-            ]);
-
-            $data = $res->json();
-            if ($res->successful() && ! empty($data['url'])) {
-                $cobranca->update([
-                    'asaas_payment_id' => $data['id'] ?? null,
-                    'link_pagamento' => $data['url'],
-                ]);
-            } else {
-                Log::warning('Nutri: falha ao criar payment link Asaas', ['status' => $res->status(), 'body' => $data]);
-            }
-        } catch (\Throwable $e) {
-            Log::error('Nutri: exceção ao criar payment link Asaas', ['error' => $e->getMessage()]);
-        }
     }
 }

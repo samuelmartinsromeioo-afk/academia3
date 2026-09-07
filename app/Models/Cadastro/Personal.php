@@ -49,6 +49,7 @@ class Personal extends Authenticatable
         'resultados',
         'avaliacao',
         'valor_secao',
+        'valor_consulta',
         'idade',
         'data_aceicao_termos_atualizacao',
         'ip_aceicao_termos_atualizacao',
@@ -98,6 +99,21 @@ class Personal extends Authenticatable
     public function registroConselho(): ?string
     {
         return $this->isNutricionista() ? $this->crn : $this->cref;
+    }
+
+    /** Só personal trainers (registros antigos com tipo nulo contam como PT). */
+    public function scopePersonalTrainers($query)
+    {
+        return $query->where(function ($w) {
+            $w->whereNull('professional_type')
+                ->orWhere('professional_type', \App\Enums\ProfessionalType::PERSONAL_TRAINER->value);
+        });
+    }
+
+    /** Só nutricionistas. */
+    public function scopeNutricionistas($query)
+    {
+        return $query->where('professional_type', \App\Enums\ProfessionalType::NUTRITIONIST->value);
     }
 
     // ── Relações do módulo de nutrição ───────────────────────────────

@@ -109,6 +109,9 @@ class PlanoAlimentarController extends Controller
             'ufs' => \App\Support\PrecoRegional::ufs(),
             'irmas' => $irmas,
             'indiceAtual' => $indiceAtual,
+            // Dias que ESTA ficha é usada no mês + cota mensal (p/ custo real no editor).
+            'diasMesFicha' => $plano->diasNoMes(),
+            'cotaFicha' => optional($plano->paciente)->cotaMensalPorFicha($irmas->count() ?: null),
         ]);
     }
 
@@ -268,16 +271,26 @@ class PlanoAlimentarController extends Controller
         // UF: da escolha, senão do paciente, senão do profissional.
         $uf = $dados['uf'] ?? $plano->paciente->uf ?? $nutri->estado ?? null;
         $ufIndice = \App\Support\PrecoRegional::indice($uf);
-        $orcamento = isset($dados['orcamento_mensal']) ? (float) $dados['orcamento_mensal'] : null;
 
-        // Modo "uma ficha por dia": o orçamento informado é DIVIDIDO entre os dias
-        // selecionados (ex.: R$ 1400 e 7 dias = R$ 200/dia).
+        // Orçamento MENSAL do paciente: usa o digitado; se não vier, o salvo no
+        // paciente. Se digitado, persiste no paciente (estipulado uma vez).
+        $orcamento = isset($dados['orcamento_mensal'])
+            ? (float) $dados['orcamento_mensal']
+            : ($plano->paciente->orcamento_mensal ?? null);
+        if (isset($dados['orcamento_mensal']) && $plano->paciente) {
+            $plano->paciente->update(['orcamento_mensal' => $orcamento]);
+        }
+
+        // O orçamento é dividido IGUALMENTE entre as fichas: a soma das cotas das
+        // fichas = orçamento (ex.: R$ 900 e 7 fichas = R$ 128,57 por ficha). O custo
+        // estimado de cada ficha é mostrado em valor MENSAL (custo/dia × quantas
+        // vezes os dias dela caem no mês) para bater com o orçamento mensal.
+        $orcamentoEfetivo = $orcamento; // prioriza opções econômicas quando há orçamento
+
         $porDia = $request->boolean('por_dia') && $plano->paciente_id;
         $diasSel = $porDia
             ? array_values(array_unique(array_map('intval', (array) ($dados['dias_semana'] ?? []))))
             : [];
-        $orcamentoDia = ($porDia && $diasSel && $orcamento) ? $orcamento / count($diasSel) : null;
-        $orcamentoEfetivo = $porDia ? $orcamentoDia : $orcamento;
 
         $pool = Alimento::where(fn ($w) => $w->whereNull('personal_id')->orWhere('personal_id', $nutri->id))->get();
         if ($pool->isEmpty()) {
@@ -307,6 +320,35 @@ class PlanoAlimentarController extends Controller
         $frutas = $economico($porGrupo(['Frutas'])->values());
         $gorduras = $economico($porGrupo(['Gorduras', 'Oleaginosas'])->values());
 
+        // Versão "mais barata" de cada papel (menor preço/kg) para caber no orçamento
+        // quando a geração normal estoura a cota.
+        $maisBaratos = function ($lista) {
+            $ord = $lista->sortBy(fn ($a) => $a->precoKgRef())->values();
+
+            return $ord->take(max(2, (int) ceil($ord->count() * 0.4)))->values();
+        };
+        $protPrincC = $maisBaratos($protPrinc);
+        $protLeveC = $maisBaratos($protLeve);
+        $carbosC = $maisBaratos($carbos);
+        $vegetaisC = $maisBaratos($vegetais);
+        $frutasC = $maisBaratos($frutas);
+        $gordurasC = $maisBaratos($gorduras);
+
+        // Custo diário (R$) de um conjunto de refeições já montado (p/ checar orçamento).
+        $poolById = $pool->keyBy('id');
+        $custoDiarioRefs = function (array $refs) use ($poolById, $ufIndice) {
+            $t = 0;
+            foreach ($refs as $r) {
+                foreach ($r['itens'] as $it) {
+                    if (! empty($it['alimento_id']) && isset($poolById[$it['alimento_id']])) {
+                        $t += $poolById[$it['alimento_id']]->custoPara((float) $it['quantidade_g'], $ufIndice);
+                    }
+                }
+            }
+
+            return $t;
+        };
+
         // Proteína principal escolhida (se compatível com a preferência).
         $proteinaPrincipal = null;
         if (! empty($dados['proteina_id'])) {
@@ -315,7 +357,15 @@ class PlanoAlimentarController extends Controller
 
         // Monta as refeições de UMA ficha. `$seed` desloca a rotação para variar
         // as escolhas entre dias diferentes (0 = comportamento padrão).
-        $montar = function (int $seed) use ($kcalMeta, $numRef, $preferencia, $protPrinc, $protLeve, $carbos, $vegetais, $frutas, $gorduras, $proteinaPrincipal) {
+        $montar = function (int $seed, bool $cheap = false) use ($kcalMeta, $numRef, $preferencia, $protPrinc, $protLeve, $carbos, $vegetais, $frutas, $gorduras, $protPrincC, $protLeveC, $carbosC, $vegetaisC, $frutasC, $gordurasC, $proteinaPrincipal) {
+            // Em modo econômico usa os pools mais baratos de cada papel.
+            $pPrinc = $cheap ? $protPrincC : $protPrinc;
+            $pLeve = $cheap ? $protLeveC : $protLeve;
+            $pCarb = $cheap ? $carbosC : $carbos;
+            $pVeg = $cheap ? $vegetaisC : $vegetais;
+            $pFru = $cheap ? $frutasC : $frutas;
+            $pGord = $cheap ? $gordurasC : $gorduras;
+
             $refeicoes = [];
             foreach ($this->templateRefeicoes($numRef, $preferencia) as $i => $ref) {
                 $kcalRef = $kcalMeta * $ref['frac'];
@@ -327,23 +377,23 @@ class PlanoAlimentarController extends Controller
                 // demais, e como fallback, rotaciona a lista para dar variedade.
                 // O pool do papel é passado p/ gerar substituições equivalentes.
                 if (isset($split['proteina'])) {
-                    $poolProt = $ref['tipo'] === 'principal' ? $protPrinc : $protLeve;
+                    $poolProt = $ref['tipo'] === 'principal' ? $pPrinc : $pLeve;
                     $al = ($ref['tipo'] === 'principal' && $proteinaPrincipal)
                         ? $proteinaPrincipal
                         : $this->rotaciona($poolProt, $b);
                     $this->pushItem($itens, $al, $kcalRef * $split['proteina'], $poolProt, $b);
                 }
                 if (isset($split['carbo'])) {
-                    $this->pushItem($itens, $this->rotaciona($carbos, $b + 1), $kcalRef * $split['carbo'], $carbos, $b);
+                    $this->pushItem($itens, $this->rotaciona($pCarb, $b + 1), $kcalRef * $split['carbo'], $pCarb, $b);
                 }
                 if (isset($split['vegetal'])) {
-                    $this->pushItem($itens, $this->rotaciona($vegetais, $b + 2), $kcalRef * $split['vegetal'], $vegetais, $b);
+                    $this->pushItem($itens, $this->rotaciona($pVeg, $b + 2), $kcalRef * $split['vegetal'], $pVeg, $b);
                 }
                 if (isset($split['fruta'])) {
-                    $this->pushItem($itens, $this->rotaciona($frutas, $b + 1), $kcalRef * $split['fruta'], $frutas, $b);
+                    $this->pushItem($itens, $this->rotaciona($pFru, $b + 1), $kcalRef * $split['fruta'], $pFru, $b);
                 }
                 if (isset($split['gordura'])) {
-                    $this->pushItem($itens, $this->rotaciona($gorduras, $b + 3), $kcalRef * $split['gordura'], $gorduras, $b);
+                    $this->pushItem($itens, $this->rotaciona($pGord, $b + 3), $kcalRef * $split['gordura'], $pGord, $b);
                 }
 
                 $refeicoes[] = [
@@ -356,11 +406,29 @@ class PlanoAlimentarController extends Controller
             return $refeicoes;
         };
 
+        // Gera a ficha; se estourar o orçamento diário, refaz com os itens mais
+        // baratos para caber na cota (best effort — sem baixar as kcal).
+        $gerarFicha = function (int $seed, ?float $orcamentoDiario) use ($montar, $custoDiarioRefs) {
+            $refs = $montar($seed, false);
+            if ($orcamentoDiario && $custoDiarioRefs($refs) > $orcamentoDiario) {
+                $barato = $montar($seed, true);
+                // Usa o econômico se ele realmente ficou mais barato.
+                if ($custoDiarioRefs($barato) < $custoDiarioRefs($refs)) {
+                    $refs = $barato;
+                }
+            }
+
+            return $refs;
+        };
+
         // MODO "UMA FICHA POR DIA": gera/atualiza uma ficha para cada dia marcado,
         // variando o cardápio entre os dias. Só faz sentido para plano de paciente.
         if ($porDia && $diasSel) {
             $pid = $plano->paciente_id;
             $linhas = [];
+            // Cota mensal por ficha e, a partir dela, o orçamento diário de cada dia
+            // (cota / quantas vezes o dia cai no mês) para a geração caber na cota.
+            $cotaFicha = $orcamento ? $orcamento / count($diasSel) : null;
             foreach ($diasSel as $dia) {
                 $ativas = PlanoAlimentar::where('paciente_id', $pid)
                     ->where('is_modelo', false)->where('ativo', true)->get();
@@ -380,14 +448,18 @@ class PlanoAlimentarController extends Controller
                         'versao' => 0,
                     ]);
                 }
+                $occ = $this->ocorrenciasNoMes([$dia]);
+                $orcamentoDiario = ($cotaFicha && $occ) ? $cotaFicha / $occ : null;
                 $ficha = $this->service->salvar($ficha, [
                     'nome' => $ficha->nome,
                     'objetivo' => $ficha->objetivo,
                     'kcal_meta' => $kcalMeta,
                     'dias_semana' => $ficha->dias_semana ?: [$dia],
-                    'refeicoes' => $montar($dia + 1),
+                    'refeicoes' => $gerarFicha($dia + 1, $orcamentoDiario),
                 ], 'manual');
-                $linhas[] = (PlanoAlimentar::DIAS_SEMANA[$dia] ?? '?').' ≈ R$ '.number_format($ficha->custoDiario($ufIndice), 2, ',', '.');
+                $custoMesFicha = round($ficha->custoDiario($ufIndice) * $occ, 2);
+                $linhas[] = (PlanoAlimentar::DIAS_SEMANA[$dia] ?? '?').': ~R$ '
+                    .number_format($custoMesFicha, 2, ',', '.').'/mês';
             }
 
             // Se a ficha de origem ficou vazia (só serviu de ponto de partida),
@@ -397,31 +469,51 @@ class PlanoAlimentarController extends Controller
                 $plano->delete();
             }
 
-            $msg = count($diasSel).' ficha(s) geradas — uma por dia da semana.';
-            if ($orcamentoDia) {
-                $msg .= ' Orçamento R$ '.number_format($orcamento, 2, ',', '.').' ÷ '.count($diasSel)
-                    .' dias = R$ '.number_format($orcamentoDia, 2, ',', '.').'/dia.';
+            $n = count($diasSel);
+            $msg = $n.' ficha(s) geradas — uma por dia da semana.';
+            if ($orcamento) {
+                $cota = round($orcamento / $n, 2);
+                $custoTotal = array_sum(array_map(fn ($p) => $this->ocorrenciasNoMes($p->dias_semana ?: [])
+                    * $p->custoDiario($ufIndice), $plano->paciente->planosAtivos()->get()->all()));
+                $msg .= ' Orçamento R$ '.number_format($orcamento, 2, ',', '.').'/mês ÷ '.$n
+                    .' fichas = cota R$ '.number_format($cota, 2, ',', '.').'/ficha (soma das cotas = R$ '
+                    .number_format($orcamento, 2, ',', '.').').'
+                    .' Custo real estimado ≈ R$ '.number_format(round($custoTotal, 2), 2, ',', '.').'/mês no total.';
             }
-            $msg .= ' Custo estimado por dia: '.implode(' · ', $linhas).'. Revise cada dia antes de entregar.';
+            $msg .= ' Custo por ficha: '.implode(' · ', $linhas).'. Revise cada dia antes de entregar.';
 
             return redirect()->route('nutri.pacientes.show', $pid)->with('success', $msg);
         }
 
+        // Orçamento diário da ficha = cota mensal (orçamento ÷ nº de fichas) dividido
+        // pelas vezes que os dias dela caem no mês — guia a geração a caber na cota.
+        $occ = $this->ocorrenciasNoMes($plano->dias_semana ?: []);
+        $orcamentoDiario = null;
+        if ($orcamento && $plano->paciente && $occ) {
+            $nAtual = max(1, $plano->paciente->planosAtivos()->count());
+            $orcamentoDiario = ($orcamento / $nAtual) / $occ;
+        }
         $plano = $this->service->salvar($plano, [
             'nome' => $plano->nome,
             'objetivo' => $plano->objetivo,
             'kcal_meta' => $kcalMeta,
-            'refeicoes' => $montar(0),
+            'refeicoes' => $gerarFicha(0, $orcamentoDiario),
         ], 'manual');
 
-        // Custo estimado do plano gerado, ajustado pela UF (o "mínimo para manter").
-        $custoMensal = $plano->custoMensal($ufIndice);
-        $msg = 'Rascunho gerado! Custo estimado ≈ R$ '.number_format($custoMensal, 2, ',', '.').'/mês'
-            .($uf ? ' ('.strtoupper($uf).')' : '').'.';
-        if ($orcamento) {
-            $msg .= $custoMensal <= $orcamento
-                ? ' Dentro do orçamento de R$ '.number_format($orcamento, 2, ',', '.').'. '
-                : ' ⚠️ Acima do orçamento de R$ '.number_format($orcamento, 2, ',', '.').' — considere trocar proteínas/porções. ';
+        // Cota desta ficha = orçamento ÷ nº de fichas ativas do paciente (soma das
+        // cotas = orçamento). Custo estimado MENSAL = custo/dia × dias que ela cai no mês.
+        $custoDia = $plano->custoDiario($ufIndice);
+        $custoMesFicha = round($custoDia * $occ, 2);
+        $msg = 'Rascunho gerado! Esta ficha cobre '.$occ.' dia(s) no mês → custo estimado ≈ R$ '
+            .number_format($custoMesFicha, 2, ',', '.').'/mês'.($uf ? ' ('.strtoupper($uf).')' : '').'.';
+        if ($orcamento && $plano->paciente) {
+            $nAtivas = max(1, $plano->paciente->planosAtivos()->count());
+            $cota = round($orcamento / $nAtivas, 2);
+            $msg .= ' Cota desta ficha: R$ '.number_format($cota, 2, ',', '.')
+                .' (R$ '.number_format($orcamento, 2, ',', '.').'/mês ÷ '.$nAtivas.' ficha(s)).';
+            $msg .= $custoMesFicha <= $cota
+                ? ' Dentro da cota. '
+                : ' ⚠️ Acima da cota — considere trocar proteínas/porções. ';
         }
         $msg .= ' Revise e ajuste antes de entregar.';
 
@@ -451,6 +543,29 @@ class PlanoAlimentarController extends Controller
         }
 
         return $pool->values();
+    }
+
+    /**
+     * Quantas vezes um conjunto de dias da semana (0=Dom … 6=Sáb) cai no mês atual.
+     * Lista vazia = ficha "todos os dias" → cobre o mês inteiro.
+     */
+    private function ocorrenciasNoMes(array $dias, ?\Carbon\Carbon $ref = null): int
+    {
+        $ref = $ref ?? now();
+        if (empty($dias)) {
+            return $ref->daysInMonth;
+        }
+        $set = array_map('intval', $dias);
+        $total = 0;
+        $cursor = $ref->copy()->startOfMonth();
+        $fim = $ref->copy()->endOfMonth();
+        for (; $cursor->lte($fim); $cursor->addDay()) {
+            if (in_array($cursor->dayOfWeek, $set, true)) {
+                $total++;
+            }
+        }
+
+        return $total;
     }
 
     /** Escolhe um alimento da lista pelo índice (rotação) para variar as refeições. */

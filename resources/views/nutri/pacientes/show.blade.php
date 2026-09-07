@@ -93,6 +93,15 @@
                 <a href="#" onclick="document.getElementById('formNovoPlano').submit(); return false;" class="btn btn-ghost btn-sm"><i class="ph ph-plus"></i> Nova ficha</a>
             </div>
             <p class="muted" style="font-size:.72rem; margin:-6px 0 8px;">Você pode manter várias fichas ativas — ex.: uma por dia da semana. O paciente vê a ficha do dia automaticamente.</p>
+            @php $ativasCount = $paciente->planos->where('is_modelo',false)->where('ativo',true)->count(); @endphp
+            @if ($paciente->orcamento_mensal)
+                <div class="muted" style="font-size:.72rem; margin-bottom:10px; padding:8px 10px; background:rgba(212,255,0,.05); border-radius:8px;">
+                    <i class="ph ph-wallet"></i> Orçamento R$ {{ number_format($paciente->orcamento_mensal,2,',','.') }}/mês
+                    @if ($ativasCount)
+                        ÷ {{ $ativasCount }} ficha(s) = <strong>R$ {{ number_format($paciente->cotaMensalPorFicha($ativasCount),2,',','.') }}/ficha</strong> (soma = R$ {{ number_format($paciente->orcamento_mensal,2,',','.') }})
+                    @endif
+                </div>
+            @endif
             @forelse ($paciente->planos as $plano)
                 <div style="display:flex; justify-content:space-between; align-items:center; padding:10px 0; border-bottom:1px solid var(--border);">
                     <div>

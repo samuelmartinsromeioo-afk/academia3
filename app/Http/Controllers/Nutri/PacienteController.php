@@ -116,6 +116,7 @@ class PacienteController extends Controller
             'objetivo' => 'nullable|string|max:120',
             'uf' => 'nullable|string|size:2',
             'altura_cm' => 'nullable|numeric|min:0|max:260',
+            'orcamento_mensal' => 'nullable|numeric|min:0|max:100000',
             'observacoes' => 'nullable|string|max:2000',
         ]);
     }

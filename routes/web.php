@@ -182,6 +182,8 @@ Route::middleware('check.login')->group(function () {
     Route::get('/lojas/explorar', [ClienteController::class, 'listarLojas'])->name('lojas.explorar');
     Route::get('/lojas/{id}/detalhes', [ClienteController::class, 'detalheLoja'])->name('lojas.detalhes');
     Route::get('/personais/explorar', [ClienteController::class, 'listarPersonais'])->name('personais.explorar');
+    Route::get('/nutricionistas/{id}/detalhes', [ClienteController::class, 'detalheNutricionista'])->whereNumber('id')->name('nutricionistas.detalhes');
+    Route::post('/nutricionistas/{id}/pagar-consulta', [ClienteController::class, 'pagarConsultaNutri'])->whereNumber('id')->name('nutricionistas.pagar');
     Route::post('/academias/contratar', [ClienteController::class, 'contratarAcademia'])->name('academias.contratar');
     Route::get('/pacotes/personal/{id}', [PacoteController::class, 'show'])->name('pacotes.show');
     Route::get('/cliente/minhas-fichas-solicitadas', [ClienteController::class, 'minhasSolicitacoesFicha'])->name('cliente.solicitacoes-ficha');
@@ -547,6 +549,7 @@ Route::middleware(['check.login', 'check.nutri'])->prefix('nutri')->name('nutri.
 
     // Financeiro / cobranças
     Route::get('/financeiro', [\App\Http\Controllers\Nutri\CobrancaController::class, 'index'])->name('financeiro');
+    Route::post('/financeiro/consulta', [\App\Http\Controllers\Nutri\CobrancaController::class, 'salvarConfig'])->name('financeiro.consulta');
     Route::post('/cobrancas', [\App\Http\Controllers\Nutri\CobrancaController::class, 'store'])->name('cobrancas.store');
     Route::put('/cobrancas/{id}/pago', [\App\Http\Controllers\Nutri\CobrancaController::class, 'marcarPago'])->whereNumber('id')->name('cobrancas.pago');
     Route::delete('/cobrancas/{id}', [\App\Http\Controllers\Nutri\CobrancaController::class, 'destroy'])->whereNumber('id')->name('cobrancas.destroy');

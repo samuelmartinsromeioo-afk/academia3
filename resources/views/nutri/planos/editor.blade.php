@@ -191,8 +191,8 @@
                     <span class="muted" style="font-size:.68rem;">O preço dos alimentos varia por estado.</span>
 
                     <label class="lbl-sm" style="margin-top:10px;">Orçamento mensal do paciente (R$)</label>
-                    <input type="number" name="orcamento_mensal" min="0" step="10" placeholder="Ex.: 600 (opcional)">
-                    <span class="muted" style="font-size:.68rem;">Se informado, o plano prioriza opções mais econômicas.</span>
+                    <input type="number" name="orcamento_mensal" min="0" step="10" value="{{ optional($plano->paciente)->orcamento_mensal }}" placeholder="Ex.: 1400 (opcional)">
+                    <span class="muted" style="font-size:.68rem;">Fica salvo no paciente e é <strong>dividido entre as fichas</strong> conforme os dias do mês (soma das fichas = orçamento).</span>
 
                     <label class="lbl-sm" style="margin-top:10px;">Restrições</label>
                     <div style="display:flex; flex-direction:column; gap:6px; font-size:.8rem;">
@@ -208,7 +208,7 @@
                             Gerar uma ficha <strong>diferente para cada dia</strong> da semana
                         </label>
                         <div id="ia_dias" style="display:none; margin-top:10px;">
-                            <span class="muted" style="font-size:.68rem;">Marque os dias que quer gerar (cada um vira uma ficha própria, com cardápio variado). O <strong>orçamento é dividido entre os dias</strong> — ex.: R$ 1400 ÷ 7 = R$ 200/dia.</span>
+                            <span class="muted" style="font-size:.68rem;">Marque os dias que quer gerar (cada um vira uma ficha própria, com cardápio variado). O <strong>orçamento é dividido pelos dias do mês</strong> — cada ficha recebe a cota conforme quantas vezes o dia dela cai no mês.</span>
                             <div class="dias-semana" style="margin-top:6px;">
                                 @foreach (\App\Models\Nutri\PlanoAlimentar::DIAS_SEMANA as $num => $lbl)
                                     <label class="dia-pill"><input type="checkbox" name="dias_semana[]" value="{{ $num }}" checked><span>{{ $lbl }}</span></label>
@@ -259,7 +259,9 @@
     const CSRF = document.querySelector('meta[name=csrf-token]').content;
     const META = {{ (int) ($plano->kcal_meta ?? 0) }};
     const UF_INDICE = {{ $ufIndice }};
-    const DIAS_MES = {{ (int) config('precos.dias_mes', 30) }};
+    // Dias que ESTA ficha é usada no mês (dias específicos → só eles; todos os dias → mês inteiro).
+    const DIAS_MES = {{ (int) $diasMesFicha }};
+    const COTA_FICHA = {{ $cotaFicha ? (float) $cotaFicha : 0 }};
 
     // Estado inicial vindo do servidor.
     let state = {!! json_encode([
@@ -396,8 +398,16 @@
         }));
         tKcal.innerHTML=`${k.toFixed(0)} <small>kcal</small>`; tCarb.innerHTML=`${c.toFixed(0)}g <small>carbo</small>`;
         tProt.innerHTML=`${p.toFixed(0)}g <small>proteína</small>`; tGord.innerHTML=`${g.toFixed(0)}g <small>gordura</small>`;
+        // Custo REAL da ficha no mês = custo/dia × dias que ela é usada no mês
+        // (não o mês inteiro, quando é ficha de dia específico).
         const custoMes = custoDia*DIAS_MES;
-        tCusto.innerHTML=`R$ ${custoMes.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})} <small>/mês ({{ $ufPlano ?? 'BR' }})</small>`;
+        const fmt = v => v.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+        let cotaTxt = '';
+        if (COTA_FICHA > 0) {
+            const ok = custoMes <= COTA_FICHA;
+            cotaTxt = ` <small style="color:${ok?'var(--ok)':'var(--warn)'}">· cota R$ ${fmt(COTA_FICHA)} ${ok?'✓':'⚠'}</small>`;
+        }
+        tCusto.innerHTML=`R$ ${fmt(custoMes)} <small>/mês · ${DIAS_MES} dia(s) ({{ $ufPlano ?? 'BR' }})</small>${cotaTxt}`;
         const meta = +document.getElementById('p_kcal').value || META;
         tMeta.textContent = meta ? `Meta: ${meta} kcal (${(k-meta>=0?'+':'')}${(k-meta).toFixed(0)})` : '';
     }

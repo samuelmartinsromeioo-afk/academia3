@@ -44,6 +44,11 @@
                 </select>
             </div>
             <div><label>Altura (cm)</label><input type="number" step="0.1" name="altura_cm" value="{{ old('altura_cm',$paciente->altura_cm) }}"></div>
+            <div>
+                <label>Orçamento mensal p/ alimentação (R$)</label>
+                <input type="number" step="10" min="0" name="orcamento_mensal" value="{{ old('orcamento_mensal',$paciente->orcamento_mensal) }}" placeholder="Ex.: 1400">
+                <span class="muted" style="font-size:.68rem;">Usado na geração assistida — dividido entre as fichas do paciente conforme os dias do mês.</span>
+            </div>
             <div style="grid-column:span 2;">
                 <label>Observações</label>
                 <textarea name="observacoes" rows="3">{{ old('observacoes',$paciente->observacoes) }}</textarea>
