@@ -106,6 +106,9 @@ Route::get('/termos/academia', fn () => view('legal.termos-academia'))->name('te
 Route::get('/termos/studio', fn () => view('legal.termos-studio'))->name('termos.studio');
 Route::get('/termos/loja', fn () => view('legal.termos-loja'))->name('termos.loja');
 
+// Central de suporte (exigida pela App Store — Guideline 1.5).
+Route::get('/suporte', fn () => view('suporte'))->name('suporte');
+
 // Privacidade: uma única fonte canônica (política LGPD). Mantém a rota antiga
 // funcionando via redirect para não quebrar links já publicados.
 Route::get('/privacidade', fn () => redirect()->route('lgpd.politica'))->name('privacidade');
