@@ -153,14 +153,45 @@ class IndicacaoService
      */
     public function creditarPorPagamento(Payment $payment): ?IndicacaoCredito
     {
-        try {
-            $fee = (float) $payment->company_fee;
-            if ($fee <= 0) {
-                return null;
-            }
+        [$tipo, $profissional] = $this->profissionalDoPagamento($payment);
 
-            [$tipo, $profissional] = $this->profissionalDoPagamento($payment);
-            if (! $profissional || empty($profissional->indicado_por_id)) {
+        return $this->creditar(
+            $tipo,
+            $profissional,
+            (float) $payment->company_fee,
+            'payment:'.$payment->id,
+            ['payment_id' => $payment->id]
+        );
+    }
+
+    /**
+     * Credita a partir de uma consulta do nutricionista vendida no marketplace.
+     *
+     * Essa receita não passa por `payments` — vive em `nutri_cobrancas` com split
+     * próprio —, então precisa de entrada própria. A cobrança que o nutri emite
+     * ao próprio paciente vai 100% para ele, não gera comissão e por isso não
+     * chega aqui.
+     */
+    public function creditarPorConsultaNutri(\App\Models\Nutri\Cobranca $cobranca): ?IndicacaoCredito
+    {
+        $nutri = config('indicacao.tipos')['personal']::find($cobranca->personal_id);
+
+        // A comissão é o que sobra do split do marketplace.
+        $fee = round((float) $cobranca->valor * (1 - \App\Services\AsaasService::SPLIT_RATE), 2);
+
+        return $this->creditar($nutri ? 'personal' : null, $nutri, $fee, 'nutri_cobranca:'.$cobranca->id);
+    }
+
+    /**
+     * Núcleo do crédito, comum a todas as origens de receita.
+     *
+     * `$origem` é a chave de idempotência ("payment:123"): o webhook do Asaas
+     * reenvia a confirmação, e sem ela o indicador receberia duas vezes.
+     */
+    private function creditar(?string $tipo, $profissional, float $fee, string $origem, array $extra = []): ?IndicacaoCredito
+    {
+        try {
+            if ($fee <= 0 || ! $tipo || ! $profissional || empty($profissional->indicado_por_id)) {
                 return null;
             }
 
@@ -174,11 +205,9 @@ class IndicacaoService
                 return null;
             }
 
-            // firstOrCreate na chave única do pagamento: o webhook do Asaas
-            // reenvia a confirmação, e sem isso o indicador receberia duas vezes.
             return IndicacaoCredito::firstOrCreate(
-                ['payment_id' => $payment->id],
-                [
+                ['origem' => $origem],
+                array_merge([
                     'indicador_tipo' => $profissional->indicado_por_tipo,
                     'indicador_id' => $profissional->indicado_por_id,
                     'indicado_tipo' => $tipo,
@@ -187,12 +216,12 @@ class IndicacaoService
                     'valor' => $valor,
                     'percentual' => $percentual,
                     'status' => 'a_receber',
-                ]
+                ], $extra)
             );
         } catch (\Throwable $e) {
             // Nunca derruba o pagamento por causa da indicação.
             Log::warning('IndicacaoService: falha ao creditar', [
-                'payment_id' => $payment->id ?? null,
+                'origem' => $origem,
                 'erro' => $e->getMessage(),
             ]);
 

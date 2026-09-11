@@ -623,6 +623,9 @@
                 <button type="button" id="btnOpenCarteira"><i class="ph ph-piggy-bank" style="color: var(--primary)"></i> Minha Carteira</button>
                 <button type="button" id="btnOpenGaleria"><i class="ph ph-images"></i> Minha Galeria</button>
                 <button type="button" id="btnOpenAvaliacoes"><i class="ph-fill ph-star" style="color: var(--primary)"></i> Minhas Avaliações</button>
+                <a href="{{ route('indicacao.painel') }}" style="display:flex; align-items:center; gap:12px; padding:15px 20px; color:#fff; text-decoration:none; font-size:14px; transition:0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.05)';this.style.color='#d4ff00'" onmouseout="this.style.background='';this.style.color='#fff'">
+                    <i class="ph ph-gift" style="color: var(--primary);"></i> Indique e ganhe
+                </a>
                 <a href="{{ route('lgpd.meus-dados') }}" style="display:flex; align-items:center; gap:12px; padding:15px 20px; color:#fff; text-decoration:none; font-size:14px; transition:0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.05)';this.style.color='#d4ff00'" onmouseout="this.style.background='';this.style.color='#fff'">
                     <i class="ph ph-shield-check" style="color: var(--primary);"></i> Privacidade e meus dados
                 </a>

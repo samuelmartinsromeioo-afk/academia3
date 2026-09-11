@@ -400,6 +400,7 @@
             <button type="button" id="btnOpenGaleria"><i class="ph ph-images"></i> Minha Galeria</button>
             <button type="button" id="btnOpenCarteira"><i class="ph ph-piggy-bank" style="color: var(--primary);"></i> Minha Carteira</button>
             <a href="{{ route('studio.horarios') }}"><i class="ph ph-clock"></i> Meus Horários</a>
+            <a href="{{ route('indicacao.painel') }}"><i class="ph ph-gift" style="color: var(--primary);"></i> Indique e ganhe</a>
             <a href="{{ route('lgpd.meus-dados') }}"><i class="ph ph-shield-check"></i> Privacidade e meus dados</a>
             <form action="{{ route('login.logout') }}" method="POST" style="margin:0;">
                 @csrf

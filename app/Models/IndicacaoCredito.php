@@ -15,7 +15,7 @@ class IndicacaoCredito extends Model
 
     protected $fillable = [
         'indicador_tipo', 'indicador_id', 'indicado_tipo', 'indicado_id',
-        'payment_id', 'base_company_fee', 'valor', 'percentual',
+        'origem', 'payment_id', 'base_company_fee', 'valor', 'percentual',
         'status', 'pago_em', 'observacao',
     ];
 
