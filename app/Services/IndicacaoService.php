@@ -111,12 +111,83 @@ class IndicacaoService
             return null;
         }
 
+        // Já vinculado (recadastro, reprocessamento): não troca de indicador.
+        if (! empty($novo->indicado_por_id)) {
+            return null;
+        }
+
+        // Um código por pessoa, para sempre. Ver jaUsouCodigo().
+        if ($this->jaUsouCodigo($novo, $tipoNovo)) {
+            Log::info('Indicação recusada: pessoa já usou um código antes', [
+                'tipo' => $tipoNovo,
+                'id' => $novo->id,
+                'codigo' => strtoupper(trim((string) $codigo)),
+            ]);
+
+            return null;
+        }
+
         $novo->forceFill([
             'indicado_por_tipo' => $indicador['tipo'],
             'indicado_por_id' => $indicador['model']->id,
         ])->save();
 
         return $indicador['model']->nome ?? null;
+    }
+
+    /**
+     * A pessoa por trás deste cadastro já usou algum código de indicação antes?
+     *
+     * O `unique` de CPF/CNPJ e e-mail vale DENTRO de cada tabela, então sozinho
+     * ele não impede que a mesma pessoa abra um personal e um studio e use o
+     * mesmo código duas vezes. Aqui a checagem cruza as três tabelas de
+     * profissional por documento e por e-mail.
+     *
+     * Documento é comparado só pelos dígitos: a base tem "111.444.777-35" e
+     * "11144477735" conforme o formulário de origem.
+     */
+    public function jaUsouCodigo(Model $novo, string $tipoNovo): bool
+    {
+        $documento = $this->apenasDigitos($novo->cpf ?? $novo->cnpj ?? '');
+        $email = mb_strtolower(trim((string) ($novo->email ?? '')));
+
+        if ($documento === '' && $email === '') {
+            return false;
+        }
+
+        foreach (config('indicacao.tipos') as $tipo => $classe) {
+            $q = $classe::query()->whereNotNull('indicado_por_id');
+
+            // Não compara o cadastro consigo mesmo.
+            if ($tipo === $tipoNovo) {
+                $q->where('id', '!=', $novo->id);
+            }
+
+            $coluna = $tipo === 'personal' ? 'cpf' : 'cnpj';
+
+            $q->where(function ($w) use ($documento, $email, $coluna) {
+                if ($documento !== '') {
+                    $w->orWhereRaw(
+                        "REPLACE(REPLACE(REPLACE(REPLACE(COALESCE($coluna,''), '.', ''), '-', ''), '/', ''), ' ', '') = ?",
+                        [$documento]
+                    );
+                }
+                if ($email !== '') {
+                    $w->orWhereRaw('LOWER(email) = ?', [$email]);
+                }
+            });
+
+            if ($q->exists()) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private function apenasDigitos(?string $valor): string
+    {
+        return preg_replace('/\D/', '', (string) $valor) ?? '';
     }
 
     /**
