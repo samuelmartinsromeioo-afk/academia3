@@ -11,7 +11,23 @@ class Alimento extends Model
     protected $fillable = [
         'personal_id', 'nome', 'grupo', 'fonte', 'medida_padrao', 'porcao_g',
         'kcal', 'carbo_g', 'proteina_g', 'gordura_g', 'fibra_g', 'sodio_mg', 'verificado', 'preco_kg',
+        'preparo', 'contem',
     ];
+
+    /** Grupos que são preparações prontas (bebida montada), não ingrediente cru. */
+    public const GRUPOS_PREPARO = ['Vitaminas', 'Sucos'];
+
+    /** Marcadores de restrição declarados no alimento (animal, lactose, gluten…). */
+    public function contemTags(): array
+    {
+        return array_filter(array_map('trim', explode(',', (string) $this->contem)));
+    }
+
+    /** O alimento tem um dos marcadores informados? */
+    public function contemAlgum(array $tags): bool
+    {
+        return (bool) array_intersect($tags, $this->contemTags());
+    }
 
     protected $casts = [
         'porcao_g' => 'float',

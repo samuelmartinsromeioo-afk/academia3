@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Nutri;
 use App\Http\Controllers\Controller;
 use App\Http\Controllers\Nutri\Concerns\ResolveNutri;
 use App\Models\Nutri\Alimento;
+use App\Models\Nutri\Antropometria;
 use App\Models\Nutri\PlanoAlimentar;
 use App\Models\Nutri\PlanoVersao;
 use App\Services\Nutri\PlanoAlimentarService;
@@ -13,6 +14,17 @@ use Illuminate\Http\Request;
 class PlanoAlimentarController extends Controller
 {
     use ResolveNutri;
+
+    /**
+     * Proteína diária (g por kg de peso) usada como padrão quando o profissional
+     * não digita o valor. Faixas usuais da prática clínica; o campo continua
+     * editável na tela porque a prescrição final é do nutricionista.
+     */
+    private const PROTEINA_G_KG = [
+        'emagrecimento' => 2.0,   // preserva massa magra em déficit calórico
+        'manutencao' => 1.6,
+        'hipertrofia' => 1.8,
+    ];
 
     public function __construct(private PlanoAlimentarService $service) {}
 
@@ -94,6 +106,13 @@ class PlanoAlimentarController extends Controller
         // UF de referência p/ custo (paciente > profissional) e índice regional.
         $ufPlano = $plano->paciente->uf ?? $nutri->estado ?? null;
 
+        // Pré-preenche a geração assistida: peso da última antropometria e o
+        // objetivo já cadastrado no paciente definem a proteína alvo sugerida.
+        $pesoAtual = $plano->paciente_id
+            ? Antropometria::where('paciente_id', $plano->paciente_id)->orderByDesc('data')->value('peso')
+            : null;
+        $objetivoNutri = $this->objetivoNutricional($plano->paciente->objetivo ?? null);
+
         // Fichas irmãs do mesmo paciente (para folhear com as setas no editor).
         [$irmas, $indiceAtual] = $this->fichasIrmas($plano);
 
@@ -104,6 +123,9 @@ class PlanoAlimentarController extends Controller
             'refeicoesPadrao' => config('textos.nutri.refeicoes_padrao'),
             'objetivos' => config('textos.nutri.objetivos'),
             'proteinas' => $proteinas,
+            'pesoAtual' => $pesoAtual,
+            'objetivoNutri' => $objetivoNutri,
+            'proteinaGKgPadrao' => self::PROTEINA_G_KG,
             'ufPlano' => $ufPlano,
             'ufIndice' => \App\Support\PrecoRegional::indice($ufPlano),
             'ufs' => \App\Support\PrecoRegional::ufs(),
@@ -255,6 +277,11 @@ class PlanoAlimentarController extends Controller
             'num_refeicoes' => 'nullable|integer|min:3|max:6',
             'preferencia' => 'nullable|in:onivoro,vegetariano,vegano,low_carb',
             'proteina_id' => 'nullable|integer',
+            'proteina_secundaria_id' => 'nullable|integer|different:proteina_id',
+            'peso_kg' => 'nullable|numeric|min:30|max:300',
+            'proteina_g_kg' => 'nullable|numeric|min:0.8|max:3',
+            'objetivo_nutricional' => 'nullable|in:emagrecimento,manutencao,hipertrofia',
+            'incluir_bebidas' => 'nullable|boolean',
             'restricoes' => 'nullable|array',
             'restricoes.*' => 'string|in:sem_lactose,sem_gluten,sem_oleaginosas',
             'uf' => 'nullable|string|size:2',
@@ -318,6 +345,16 @@ class PlanoAlimentarController extends Controller
         $carbos = $economico($porGrupo(['Cereais', 'Tubérculos'])->values());
         $vegetais = $porGrupo(['Hortaliças'])->values();
         $frutas = $economico($porGrupo(['Frutas'])->values());
+
+        // Bebidas ficam FORA dos pools genéricos de propósito. Jogadas lá dentro
+        // elas nunca sairiam: a rotação escolhe por índice e o pool leve é
+        // ordenado por proteína decrescente, então uma vitamina de 7 g/100 ml cai
+        // no fim da lista, atrás de todo suplemento e queijo. Aqui elas têm
+        // colocação própria — a vitamina vira o café da manhã, o suco entra no
+        // lanche — e só quando o profissional pede.
+        $vitaminas = $porGrupo(['Vitaminas'])->values();
+        $sucos = $porGrupo(['Sucos'])->values();
+        $incluirBebidas = $request->boolean('incluir_bebidas') && ($vitaminas->isNotEmpty() || $sucos->isNotEmpty());
         $gorduras = $economico($porGrupo(['Gorduras', 'Oleaginosas'])->values());
 
         // Versão "mais barata" de cada papel (menor preço/kg) para caber no orçamento
@@ -330,6 +367,13 @@ class PlanoAlimentarController extends Controller
         $protPrincC = $maisBaratos($protPrinc);
         $protLeveC = $maisBaratos($protLeve);
         $carbosC = $maisBaratos($carbos);
+
+        // Versão "magra" dos carboidratos: os que menos carregam proteína (arroz
+        // branco, batata, tapioca antes de pão e macarrão). Usada quando a ficha
+        // estoura o alvo proteico — troca a fonte em vez de encolher a carne.
+        $magros = fn ($lista) => $lista->sortBy(fn ($a) => $a->proteina_g)->values();
+        $carbosM = $magros($carbos);
+        $carbosMC = $magros($carbosC);
         $vegetaisC = $maisBaratos($vegetais);
         $frutasC = $maisBaratos($frutas);
         $gordurasC = $maisBaratos($gorduras);
@@ -349,51 +393,147 @@ class PlanoAlimentarController extends Controller
             return $t;
         };
 
-        // Proteína principal escolhida (se compatível com a preferência).
+        // Proteínas escolhidas (se compatíveis com a preferência). A secundária
+        // entra na SEGUNDA refeição principal, para o paciente não comer o mesmo
+        // alimento no almoço e no jantar todo dia.
         $proteinaPrincipal = null;
         if (! empty($dados['proteina_id'])) {
             $proteinaPrincipal = $pool->firstWhere('id', (int) $dados['proteina_id']);
         }
+        $proteinaSecundaria = null;
+        if (! empty($dados['proteina_secundaria_id'])) {
+            $proteinaSecundaria = $pool->firstWhere('id', (int) $dados['proteina_secundaria_id']);
+        }
+
+        // ── Alvo de proteína ────────────────────────────────────────────────
+        // Só kcal não define uma ficha: 2000 kcal cabem tanto 90g quanto 180g de
+        // proteína. Com peso + g/kg o gerador passa a mirar gramas de proteína e
+        // distribui o resto das kcal entre os outros papéis.
+        // Peso: o digitado, senão a última antropometria do paciente.
+        $pesoKg = isset($dados['peso_kg']) ? (float) $dados['peso_kg'] : null;
+        if (! $pesoKg && $plano->paciente_id) {
+            $pesoKg = (float) (Antropometria::where('paciente_id', $plano->paciente_id)
+                ->orderByDesc('data')->value('peso') ?: 0) ?: null;
+        }
+
+        // g/kg: o digitado, senão o padrão do objetivo informado (ou do paciente).
+        $objetivoNutri = $dados['objetivo_nutricional']
+            ?? $this->objetivoNutricional($plano->paciente->objetivo ?? null);
+        $gPorKg = isset($dados['proteina_g_kg'])
+            ? (float) $dados['proteina_g_kg']
+            : self::PROTEINA_G_KG[$objetivoNutri] ?? null;
+
+        $protAlvoG = ($pesoKg && $gPorKg) ? round($pesoKg * $gPorKg) : null;
 
         // Monta as refeições de UMA ficha. `$seed` desloca a rotação para variar
         // as escolhas entre dias diferentes (0 = comportamento padrão).
-        $montar = function (int $seed, bool $cheap = false) use ($kcalMeta, $numRef, $preferencia, $protPrinc, $protLeve, $carbos, $vegetais, $frutas, $gorduras, $protPrincC, $protLeveC, $carbosC, $vegetaisC, $frutasC, $gordurasC, $proteinaPrincipal) {
+        $montar = function (int $seed, bool $cheap = false, ?float $protAlvoG = null, float $fatorLeve = 1.0, float $fatorCarbo = 1.0, bool $carbMagro = false, int $maxLanchesProt = 99) use ($kcalMeta, $numRef, $preferencia, $protPrinc, $protLeve, $carbos, $vegetais, $frutas, $gorduras, $protPrincC, $protLeveC, $carbosC, $vegetaisC, $frutasC, $gordurasC, $carbosM, $carbosMC, $proteinaPrincipal, $proteinaSecundaria, $vitaminas, $sucos, $incluirBebidas) {
             // Em modo econômico usa os pools mais baratos de cada papel.
             $pPrinc = $cheap ? $protPrincC : $protPrinc;
             $pLeve = $cheap ? $protLeveC : $protLeve;
-            $pCarb = $cheap ? $carbosC : $carbos;
+            $pCarb = $carbMagro
+                ? ($cheap ? $carbosMC : $carbosM)
+                : ($cheap ? $carbosC : $carbos);
             $pVeg = $cheap ? $vegetaisC : $vegetais;
             $pFru = $cheap ? $frutasC : $frutas;
             $pGord = $cheap ? $gordurasC : $gorduras;
 
             $refeicoes = [];
+            $usados = [];      // ids já usados no dia — evita repetir o mesmo alimento
+            $nPrincipal = 0;   // conta as refeições principais p/ alternar as proteínas
+            $nLanchesProt = 0; // lanches que já receberam proteína
+            $sucoUsado = 0;    // um suco por dia, no máximo
+
             foreach ($this->templateRefeicoes($numRef, $preferencia) as $i => $ref) {
                 $kcalRef = $kcalMeta * $ref['frac'];
                 $split = $ref['split'];
                 $itens = [];
                 $b = $i + $seed; // deslocamento por dia
 
-                // Proteína: usa a principal escolhida nas refeições principais; nas
-                // demais, e como fallback, rotaciona a lista para dar variedade.
-                // O pool do papel é passado p/ gerar substituições equivalentes.
-                if (isset($split['proteina'])) {
+                // Proteína primeiro: ela é a âncora da refeição. Nas principais usa a
+                // proteína escolhida (a 1ª leva a principal, a 2ª a secundária); nas
+                // demais rotaciona o pool leve. O pool do papel vai junto p/ gerar as
+                // substituições equivalentes.
+                $kcalProt = 0.0;
+                // Último recurso do ajuste: lanche sem proteína. Serve fruta com
+                // oleaginosa, que é um lanche legítimo — melhor do que empurrar uma
+                // dose simbólica de whey só para o número fechar (o piso de 15g do
+                // cálculo de porção impede reduzir o suplemento indefinidamente).
+                // Só vale para lanches: café da manhã e refeições principais sempre
+                // mantêm proteína, senão o dia começa sem nenhuma.
+                $lancheSemProt = $ref['tipo'] === 'lanche' && $nLanchesProt >= $maxLanchesProt;
+                if ($ref['tipo'] === 'lanche' && isset($split['proteina']) && ! $lancheSemProt) {
+                    $nLanchesProt++;
+                }
+
+                if (isset($split['proteina']) && ! $lancheSemProt) {
                     $poolProt = $ref['tipo'] === 'principal' ? $pPrinc : $pLeve;
-                    $al = ($ref['tipo'] === 'principal' && $proteinaPrincipal)
-                        ? $proteinaPrincipal
-                        : $this->rotaciona($poolProt, $b);
-                    $this->pushItem($itens, $al, $kcalRef * $split['proteina'], $poolProt, $b);
+
+                    // Vitamina no lugar do café da manhã: é uma refeição inteira
+                    // (fruta + leite + aveia + proteína no mesmo copo). As outras
+                    // vitaminas do pool viram automaticamente as substituições.
+                    if ($incluirBebidas && $ref['tipo'] === 'cafe' && $vitaminas->isNotEmpty()) {
+                        $poolProt = $vitaminas;
+                    }
+                    $escolhida = null;
+                    if ($ref['tipo'] === 'principal') {
+                        $escolhida = $nPrincipal === 0
+                            ? $proteinaPrincipal
+                            : ($proteinaSecundaria ?: $proteinaPrincipal);
+                        $nPrincipal++;
+                    }
+                    $al = $escolhida ?: $this->rotaciona($poolProt, $b, $usados);
+
+                    // Com alvo de proteína, a porção sai das GRAMAS de proteína da
+                    // refeição (proporcional à fatia calórica dela), não da kcal.
+                    $protRef = $protAlvoG ? $protAlvoG * $ref['frac'] : null;
+
+                    // Quando a ficha estoura o alvo, o corte sai dos LANCHES (whey,
+                    // albumina, caseína — fáceis de reduzir sem estragar o cardápio)
+                    // e nunca do almoço/jantar, para a refeição principal continuar
+                    // com uma porção de carne/peixe de tamanho real.
+                    if ($protRef && $ref['tipo'] !== 'principal') {
+                        $protRef *= $fatorLeve;
+                    }
+                    $kcalProt = $this->pushItem($itens, $al, $kcalRef * $split['proteina'], $poolProt, $b, $usados, $protRef);
                 }
-                if (isset($split['carbo'])) {
-                    $this->pushItem($itens, $this->rotaciona($pCarb, $b + 1), $kcalRef * $split['carbo'], $pCarb, $b);
-                }
-                if (isset($split['vegetal'])) {
-                    $this->pushItem($itens, $this->rotaciona($pVeg, $b + 2), $kcalRef * $split['vegetal'], $pVeg, $b);
-                }
-                if (isset($split['fruta'])) {
-                    $this->pushItem($itens, $this->rotaciona($pFru, $b + 1), $kcalRef * $split['fruta'], $pFru, $b);
-                }
-                if (isset($split['gordura'])) {
-                    $this->pushItem($itens, $this->rotaciona($pGord, $b + 3), $kcalRef * $split['gordura'], $pGord, $b);
+
+                // O que sobrou de kcal depois da proteína é dividido entre os outros
+                // papéis, mantendo a proporção original entre eles. Sem alvo de
+                // proteína isso reproduz exatamente o comportamento antigo.
+                $outros = array_diff_key($split, ['proteina' => null]);
+                $somaOutros = array_sum($outros);
+                $restoKcal = max(0, $kcalRef - $kcalProt);
+
+                $poolsPorPapel = ['carbo' => [$pCarb, 1], 'vegetal' => [$pVeg, 2], 'fruta' => [$pFru, 1], 'gordura' => [$pGord, 3]];
+                foreach ($poolsPorPapel as $papel => [$poolPapel, $offset]) {
+                    if (! isset($split[$papel]) || $somaOutros <= 0) {
+                        continue;
+                    }
+
+                    // Um suco no lugar da fruta, em UM lanche só — dois sucos no
+                    // mesmo dia viraria açúcar líquido demais.
+                    if ($incluirBebidas && $papel === 'fruta' && $ref['tipo'] === 'lanche'
+                        && $sucoUsado === 0 && $sucos->isNotEmpty()) {
+                        $poolPapel = $sucos;
+                        $sucoUsado++;
+                    }
+                    $kcalPapel = $restoKcal * ($split[$papel] / $somaOutros);
+
+                    // Segundo ponto de ajuste: encolher o carboidrato. A kcal cortada
+                    // volta como gordura/fruta (densas e quase sem proteína), então o
+                    // total calórico se mantém e só a proteína cai.
+                    if ($papel === 'carbo') {
+                        $kcalPapel *= $fatorCarbo;
+                    } elseif (in_array($papel, ['gordura', 'fruta'], true) && isset($split['carbo']) && $fatorCarbo < 1) {
+                        $kcalCortada = $restoKcal * ($split['carbo'] / $somaOutros) * (1 - $fatorCarbo);
+                        $pesoDestino = ($split['gordura'] ?? 0) + ($split['fruta'] ?? 0);
+                        if ($pesoDestino > 0) {
+                            $kcalPapel += $kcalCortada * ($split[$papel] / $pesoDestino);
+                        }
+                    }
+
+                    $this->pushItem($itens, $this->rotaciona($poolPapel, $b + $offset, $usados), $kcalPapel, $poolPapel, $b, $usados);
                 }
 
                 $refeicoes[] = [
@@ -408,17 +548,19 @@ class PlanoAlimentarController extends Controller
 
         // Gera a ficha; se estourar o orçamento diário, refaz com os itens mais
         // baratos para caber na cota (best effort — sem baixar as kcal).
-        $gerarFicha = function (int $seed, ?float $orcamentoDiario) use ($montar, $custoDiarioRefs) {
-            $refs = $montar($seed, false);
+        $gerarFicha = function (int $seed, ?float $orcamentoDiario) use ($montar, $custoDiarioRefs, $protAlvoG, $poolById) {
+            $refs = $this->convergirProteina($montar, $seed, false, $protAlvoG, $poolById);
             if ($orcamentoDiario && $custoDiarioRefs($refs) > $orcamentoDiario) {
-                $barato = $montar($seed, true);
+                $barato = $this->convergirProteina($montar, $seed, true, $protAlvoG, $poolById);
                 // Usa o econômico se ele realmente ficou mais barato.
                 if ($custoDiarioRefs($barato) < $custoDiarioRefs($refs)) {
                     $refs = $barato;
                 }
             }
 
-            return $refs;
+            // A receita é escrita só na ficha vencedora — a convergência chama
+            // $montar até 12 vezes e não faz sentido montar texto nas descartadas.
+            return $this->comReceitas($refs, $poolById);
         };
 
         // MODO "UMA FICHA POR DIA": gera/atualiza uma ficha para cada dia marcado,
@@ -450,16 +592,19 @@ class PlanoAlimentarController extends Controller
                 }
                 $occ = $this->ocorrenciasNoMes([$dia]);
                 $orcamentoDiario = ($cotaFicha && $occ) ? $cotaFicha / $occ : null;
+                $refsDia = $gerarFicha($dia + 1, $orcamentoDiario);
                 $ficha = $this->service->salvar($ficha, [
                     'nome' => $ficha->nome,
                     'objetivo' => $ficha->objetivo,
                     'kcal_meta' => $kcalMeta,
                     'dias_semana' => $ficha->dias_semana ?: [$dia],
-                    'refeicoes' => $gerarFicha($dia + 1, $orcamentoDiario),
+                    'refeicoes' => $refsDia,
                 ], 'manual');
                 $custoMesFicha = round($ficha->custoDiario($ufIndice) * $occ, 2);
+                $totDia = $this->totaisRefs($refsDia, $poolById);
                 $linhas[] = (PlanoAlimentar::DIAS_SEMANA[$dia] ?? '?').': ~R$ '
-                    .number_format($custoMesFicha, 2, ',', '.').'/mês';
+                    .number_format($custoMesFicha, 2, ',', '.').'/mês · '
+                    .$totDia['kcal'].' kcal / '.$totDia['proteina_g'].'g prot';
             }
 
             // Se a ficha de origem ficou vazia (só serviu de ponto de partida),
@@ -471,6 +616,9 @@ class PlanoAlimentarController extends Controller
 
             $n = count($diasSel);
             $msg = $n.' ficha(s) geradas — uma por dia da semana.';
+            if ($protAlvoG) {
+                $msg .= ' Alvo de proteína: '.$protAlvoG.'g/dia ('.$gPorKg.'g/kg).';
+            }
             if ($orcamento) {
                 $cota = round($orcamento / $n, 2);
                 $custoTotal = array_sum(array_map(fn ($p) => $this->ocorrenciasNoMes($p->dias_semana ?: [])
@@ -493,11 +641,12 @@ class PlanoAlimentarController extends Controller
             $nAtual = max(1, $plano->paciente->planosAtivos()->count());
             $orcamentoDiario = ($orcamento / $nAtual) / $occ;
         }
+        $refsGeradas = $gerarFicha(0, $orcamentoDiario);
         $plano = $this->service->salvar($plano, [
             'nome' => $plano->nome,
             'objetivo' => $plano->objetivo,
             'kcal_meta' => $kcalMeta,
-            'refeicoes' => $gerarFicha(0, $orcamentoDiario),
+            'refeicoes' => $refsGeradas,
         ], 'manual');
 
         // Cota desta ficha = orçamento ÷ nº de fichas ativas do paciente (soma das
@@ -506,6 +655,22 @@ class PlanoAlimentarController extends Controller
         $custoMesFicha = round($custoDia * $occ, 2);
         $msg = 'Rascunho gerado! Esta ficha cobre '.$occ.' dia(s) no mês → custo estimado ≈ R$ '
             .number_format($custoMesFicha, 2, ',', '.').'/mês'.($uf ? ' ('.strtoupper($uf).')' : '').'.';
+
+        // Confere o que saiu contra o que foi pedido — o desvio acumulado item a
+        // item nunca era verificado, então uma ficha podia sair longe da meta.
+        $tot = $this->totaisRefs($refsGeradas, $poolById);
+        $desvio = $kcalMeta > 0 ? round((($tot['kcal'] - $kcalMeta) / $kcalMeta) * 100) : 0;
+        $msg .= ' Resultado: '.$tot['kcal'].' kcal ('.($desvio >= 0 ? '+' : '').$desvio.'% da meta)';
+        if ($protAlvoG) {
+            $msg .= ' e '.$tot['proteina_g'].'g de proteína (alvo '.$protAlvoG.'g'
+                .($pesoKg ? ' = '.$gPorKg.'g/kg × '.rtrim(rtrim(number_format($pesoKg, 1, ',', '.'), '0'), ',').'kg' : '').')';
+        } else {
+            $msg .= ' e '.$tot['proteina_g'].'g de proteína (sem alvo definido — informe peso e g/kg para maior precisão)';
+        }
+        $msg .= '.';
+        if (abs($desvio) > 10) {
+            $msg .= ' ⚠️ Desvio calórico acima de 10% — ajuste as porções.';
+        }
         if ($orcamento && $plano->paciente) {
             $nAtivas = max(1, $plano->paciente->planosAtivos()->count());
             $cota = round($orcamento / $nAtivas, 2);
@@ -518,6 +683,150 @@ class PlanoAlimentarController extends Controller
         $msg .= ' Revise e ajuste antes de entregar.';
 
         return redirect()->route('nutri.planos.editor', $plano->id)->with('success', $msg);
+    }
+
+    /**
+     * Converte o objetivo livre do paciente (config `textos.nutri.objetivos`) na
+     * categoria que define a proteína padrão. O que não se encaixa vira manutenção.
+     */
+    private function objetivoNutricional(?string $objetivo): string
+    {
+        $o = mb_strtolower((string) $objetivo);
+
+        return match (true) {
+            str_contains($o, 'emagrec') => 'emagrecimento',
+            str_contains($o, 'massa'), str_contains($o, 'performance') => 'hipertrofia',
+            default => 'manutencao',
+        };
+    }
+
+    /**
+     * Faz a ficha convergir para o alvo de proteína DO DIA.
+     *
+     * O alvo é repassado aos itens do papel "proteína", mas carboidratos,
+     * oleaginosas e laticínios também carregam proteína — pedir o alvo cheio ao
+     * papel estoura o total (numa ficha de 2600 kcal o excedente passou de 50g).
+     * Aqui a ficha é remontada descontando o excedente medido, até cair dentro
+     * de 5% do alvo. Guarda a melhor tentativa porque o arredondamento de 5g nas
+     * porções pode fazer o resultado oscilar em torno do alvo em vez de assentar.
+     */
+    private function convergirProteina(callable $montar, int $seed, bool $cheap, ?float $protAlvoG, $poolById): array
+    {
+        if (! $protAlvoG) {
+            return $montar($seed, $cheap, null);
+        }
+
+        $tolerancia = max(5.0, $protAlvoG * 0.05);
+        $melhor = null;
+        $melhorErro = INF;
+
+        // Avalia uma combinação e guarda a melhor vista até agora.
+        $tentar = function (float $fatorLeve, float $fatorCarbo, bool $carbMagro, int $maxLanches) use (&$melhor, &$melhorErro, $montar, $seed, $cheap, $protAlvoG, $poolById) {
+            $refs = $montar($seed, $cheap, $protAlvoG, $fatorLeve, $fatorCarbo, $carbMagro, $maxLanches);
+            $erro = abs($this->totaisRefs($refs, $poolById)['proteina_g'] - $protAlvoG);
+            if ($erro < $melhorErro) {
+                $melhor = $refs;
+                $melhorErro = $erro;
+            }
+
+            return $erro;
+        };
+
+        // A ordem das tentativas é a ordem de preferência: só se mexe no degrau
+        // seguinte quando o anterior não fecha a conta. Almoço e jantar mantêm a
+        // porção cheia de proteína em TODOS os degraus — a carne nunca é a variável
+        // de ajuste, que era justamente o defeito da versão anterior.
+        //   [proteína dos lanches, fator do carboidrato, carbo magro, nº de lanches com proteína]
+        $degraus = [
+            // 1. reduz a proteína dos lanches
+            [1.0, 1.0, false, 99], [0.8, 1.0, false, 99], [0.6, 1.0, false, 99],
+            [0.45, 1.0, false, 99], [0.3, 1.0, false, 99], [0.15, 1.0, false, 99],
+            // 2. tira a proteína de alguns lanches (fruta + oleaginosa bastam)
+            [0.3, 1.0, false, 2], [0.3, 1.0, false, 1], [0.3, 1.0, false, 0],
+            // 3. troca o carboidrato por fonte magra e encolhe a porção dele
+            [0.3, 0.85, true, 2], [0.3, 0.7, true, 1], [0.3, 0.55, true, 0],
+        ];
+
+        foreach ($degraus as [$fatorLeve, $fatorCarbo, $carbMagro, $maxLanches]) {
+            if ($tentar($fatorLeve, $fatorCarbo, $carbMagro, $maxLanches) <= $tolerancia) {
+                return $melhor;
+            }
+        }
+
+        return $melhor;
+    }
+
+    /**
+     * Escreve o modo de preparo de cada refeição em `observacoes`, campo que já
+     * aparece no editor, no PDF e no portal do paciente — então a receita chega
+     * a quem vai cozinhar sem precisar de tela nova.
+     *
+     * O texto sai do `preparo` de cada alimento. Itens sem preparo cadastrado
+     * (a base TACO antiga) são apenas listados como acompanhamento, para a
+     * receita não mentir sobre o que vai no prato.
+     */
+    private function comReceitas(array $refs, $poolById): array
+    {
+        foreach ($refs as &$r) {
+            $passos = [];
+            $simples = [];
+
+            foreach ($r['itens'] as $it) {
+                $al = $poolById[$it['alimento_id']] ?? null;
+                if (! $al) {
+                    continue;
+                }
+                $qtd = (int) $it['quantidade_g'].(in_array($al->grupo, Alimento::GRUPOS_PREPARO, true) ? ' ml' : ' g');
+
+                if (trim((string) $al->preparo) !== '') {
+                    $passo = '• '.$al->nome.' ('.$qtd.') — '.trim($al->preparo);
+                    // A receita da bebida descreve o copo inteiro, mas a ficha
+                    // prescreve o volume que fecha as kcal — avisa para ajustar.
+                    if (in_array($al->grupo, Alimento::GRUPOS_PREPARO, true)) {
+                        $passo .= ' Ajuste os ingredientes na proporção para render os '.$qtd.' da ficha.';
+                    }
+                    $passos[] = $passo;
+                } else {
+                    $simples[] = $al->nome.' ('.$qtd.')';
+                }
+            }
+
+            if (! $passos && ! $simples) {
+                continue;
+            }
+
+            $texto = "Como preparar:\n".implode("\n", $passos);
+            if ($simples) {
+                $texto .= ($passos ? "\n" : '').'• Acompanha: '.implode(', ', $simples).'.';
+            }
+            $r['observacoes'] = $texto;
+        }
+
+        return $refs;
+    }
+
+    /**
+     * Soma kcal e proteína de uma ficha já montada, para conferir o resultado
+     * contra a meta antes de entregar ao profissional.
+     */
+    private function totaisRefs(array $refs, $poolById): array
+    {
+        $kcal = 0.0;
+        $prot = 0.0;
+
+        foreach ($refs as $r) {
+            foreach ($r['itens'] as $it) {
+                $al = $poolById[$it['alimento_id']] ?? null;
+                if (! $al) {
+                    continue;
+                }
+                $f = ((float) $it['quantidade_g']) / 100;
+                $kcal += $al->kcal * $f;
+                $prot += $al->proteina_g * $f;
+            }
+        }
+
+        return ['kcal' => (int) round($kcal), 'proteina_g' => (int) round($prot)];
     }
 
     /** Remove alimentos incompatíveis com a preferência/restrições escolhidas. */
@@ -540,6 +849,29 @@ class PlanoAlimentarController extends Controller
         }
         if (in_array('sem_oleaginosas', $restricoes)) {
             $pool = $pool->where('grupo', '!=', 'Oleaginosas');
+        }
+
+        // Preparações compostas (vitaminas, sucos) não podem ser filtradas pelo
+        // grupo nem pelo nome — "Vitamina de morango" não avisa que leva leite.
+        // Elas declaram o que contêm na coluna `contem`.
+        $vetar = [];
+        if ($preferencia === 'vegetariano') {
+            $vetar[] = 'carne';
+        }
+        if ($preferencia === 'vegano') {
+            $vetar = array_merge($vetar, ['carne', 'animal', 'lactose']);
+        }
+        if (in_array('sem_lactose', $restricoes)) {
+            $vetar[] = 'lactose';
+        }
+        if (in_array('sem_gluten', $restricoes)) {
+            $vetar[] = 'gluten';
+        }
+        if (in_array('sem_oleaginosas', $restricoes)) {
+            $vetar[] = 'oleaginosa';
+        }
+        if ($vetar) {
+            $pool = $pool->reject(fn ($a) => $a->contemAlgum($vetar));
         }
 
         return $pool->values();
@@ -568,53 +900,128 @@ class PlanoAlimentarController extends Controller
         return $total;
     }
 
-    /** Escolhe um alimento da lista pelo índice (rotação) para variar as refeições. */
-    private function rotaciona($lista, int $i): ?Alimento
+    /**
+     * Escolhe um alimento da lista pelo índice (rotação) para variar as refeições.
+     * `$usados` são os ids já escolhidos no dia: a busca anda para frente até achar
+     * um inédito. Se a lista inteira já foi usada, aceita repetir (melhor repetir
+     * do que devolver nada e deixar a refeição sem o papel).
+     */
+    private function rotaciona($lista, int $i, array $usados = []): ?Alimento
     {
         $n = $lista->count();
+        if (! $n) {
+            return null;
+        }
 
-        return $n ? $lista[$i % $n] : null;
+        for ($t = 0; $t < $n; $t++) {
+            $al = $lista[($i + $t) % $n];
+            if ($al && ! in_array($al->id, $usados, true)) {
+                return $al;
+            }
+        }
+
+        return $lista[$i % $n];
     }
 
-    /** Gramas que aproximam a kcal alvo para um alimento (múltiplo de 5g, 15–400g). */
-    private function gramasParaKcal(Alimento $al, float $kcalAlvo): float
+    /** Vitaminas e sucos são líquidos: a porção é medida em ml, não em gramas. */
+    private function unidade(Alimento $al): string
     {
-        $gramas = round(($kcalAlvo / $al->kcal) * 100 / 5) * 5;
+        return in_array($al->grupo, Alimento::GRUPOS_PREPARO, true) ? ' ml' : ' g';
+    }
 
-        return max(15, min($gramas, 400));
+    /** Gramas que entregam a proteína alvo (múltiplo de 5g), respeitando o teto do grupo. */
+    private function gramasParaProteina(Alimento $al, float $protAlvoG): float
+    {
+        if ($al->proteina_g <= 0) {
+            return 0;
+        }
+        $gramas = round(($protAlvoG / $al->proteina_g) * 100 / 5) * 5;
+        $teto = self::MAX_GRAMAS_GRUPO[$al->grupo] ?? 400;
+        $piso = self::MIN_GRAMAS_GRUPO[$al->grupo] ?? 15;
+
+        return max($piso, min($gramas, $teto));
     }
 
     /**
-     * Adiciona um item calculando os gramas que aproximam a kcal alvo. Quando um
-     * pool do mesmo papel é informado, já anexa opções de substituição equivalentes
-     * (mesma faixa calórica) para o paciente poder trocar.
+     * Porção máxima realista por grupo. Sem isso a busca pela kcal alvo estoura em
+     * porções que ninguém come: meia xícara de linhaça, meio quilo de abobrinha.
+     * O teto vale mais que a kcal — o que faltar é reportado na conferência final.
      */
-    private function pushItem(array &$itens, ?Alimento $al, float $kcalAlvo, $poolSub = null, int $seedSub = 0): void
+    private const MAX_GRAMAS_GRUPO = [
+        'Gorduras' => 45,
+        'Oleaginosas' => 45,
+        'Suplementos' => 60,
+        'Hortaliças' => 300,
+        'Vitaminas' => 400,
+        'Sucos' => 400,
+    ];
+
+    /** Porção mínima por grupo. Um copo de vitamina não tem 15 ml. */
+    private const MIN_GRAMAS_GRUPO = [
+        'Vitaminas' => 150,
+        'Sucos' => 150,
+    ];
+
+    /** Gramas que aproximam a kcal alvo para um alimento (múltiplo de 5g). */
+    private function gramasParaKcal(Alimento $al, float $kcalAlvo): float
+    {
+        $gramas = round(($kcalAlvo / $al->kcal) * 100 / 5) * 5;
+        $teto = self::MAX_GRAMAS_GRUPO[$al->grupo] ?? 400;
+        $piso = self::MIN_GRAMAS_GRUPO[$al->grupo] ?? 15;
+
+        return max($piso, min($gramas, $teto));
+    }
+
+    /**
+     * Adiciona um item e devolve as kcal que ele de fato entrega (o chamador usa
+     * isso para repartir o que sobrou da refeição entre os outros papéis).
+     *
+     * Com `$protAlvo`, a porção é calculada pelas GRAMAS DE PROTEÍNA desejadas em
+     * vez da kcal — é o que faz a ficha bater o alvo proteico. Sem ele, mantém o
+     * cálculo antigo por kcal. `$usados` registra o id para não repetir no dia.
+     */
+    private function pushItem(array &$itens, ?Alimento $al, float $kcalAlvo, $poolSub = null, int $seedSub = 0, ?array &$usados = null, ?float $protAlvo = null): float
     {
         if (! $al || $al->kcal <= 0 || $kcalAlvo <= 0) {
-            return;
+            return 0.0;
         }
-        $gramas = $this->gramasParaKcal($al, $kcalAlvo);
+
+        $gramas = ($protAlvo && $al->proteina_g > 0)
+            ? $this->gramasParaProteina($al, $protAlvo)
+            : $this->gramasParaKcal($al, $kcalAlvo);
+
+        if ($gramas <= 0) {
+            return 0.0;
+        }
+
         $item = [
             'alimento_id' => $al->id,
             'descricao' => $al->nome,
             'quantidade_g' => $gramas,
-            'medida' => $gramas.' g',
+            'medida' => $gramas.$this->unidade($al),
         ];
         if ($poolSub) {
-            $subs = $this->montarSubs($poolSub, $al, $kcalAlvo, 2, $seedSub);
+            // As substituições seguem o mesmo critério do item: se o item foi
+            // dimensionado por proteína, as trocas também são equiproteicas.
+            $subs = $this->montarSubs($poolSub, $al, $kcalAlvo, 2, $seedSub, $protAlvo);
             if ($subs) {
                 $item['substituicoes'] = $subs;
             }
         }
         $itens[] = $item;
+
+        if (is_array($usados)) {
+            $usados[] = $al->id;
+        }
+
+        return $al->kcal * $gramas / 100;
     }
 
     /**
      * Monta até $n opções de substituição equivalentes a um alimento, escolhidas do
      * mesmo pool (papel) e ajustadas para a MESMA kcal alvo. Varia por $seed.
      */
-    private function montarSubs($pool, ?Alimento $escolhido, float $kcalAlvo, int $n = 2, int $seed = 0): array
+    private function montarSubs($pool, ?Alimento $escolhido, float $kcalAlvo, int $n = 2, int $seed = 0, ?float $protAlvo = null): array
     {
         if (! $pool || $pool->isEmpty() || $kcalAlvo <= 0) {
             return [];
@@ -642,12 +1049,21 @@ class PlanoAlimentarController extends Controller
             if (array_filter($subs, fn ($s) => $s['alimento_id'] === $al->id)) {
                 continue;
             }
-            $gramas = $this->gramasParaKcal($al, $kcalAlvo);
+            // Numa troca equiproteica, alimento sem proteína não serve de opção.
+            if ($protAlvo && $al->proteina_g <= 0) {
+                continue;
+            }
+            $gramas = ($protAlvo && $al->proteina_g > 0)
+                ? $this->gramasParaProteina($al, $protAlvo)
+                : $this->gramasParaKcal($al, $kcalAlvo);
+            if ($gramas <= 0) {
+                continue;
+            }
             $subs[] = [
                 'alimento_id' => $al->id,
                 'descricao' => $al->nome,
                 'quantidade_g' => $gramas,
-                'medida' => $gramas.' g',
+                'medida' => $gramas.$this->unidade($al),
             ];
         }
 

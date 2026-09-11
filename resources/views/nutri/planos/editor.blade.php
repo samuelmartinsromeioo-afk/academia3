@@ -183,6 +183,45 @@
                         @if ($grpAtual !== null)</optgroup>@endif
                     </select>
 
+                    <label class="lbl-sm" style="margin-top:10px;">Proteína secundária</label>
+                    <select name="proteina_secundaria_id">
+                        <option value="">Variar automaticamente</option>
+                        @php $grpSec = null; @endphp
+                        @foreach ($proteinas as $prot)
+                            @if ($prot->grupo !== $grpSec)
+                                @if ($grpSec !== null)</optgroup>@endif
+                                <optgroup label="{{ $prot->grupo }}">
+                                @php $grpSec = $prot->grupo; @endphp
+                            @endif
+                            <option value="{{ $prot->id }}">{{ $prot->nome }}</option>
+                        @endforeach
+                        @if ($grpSec !== null)</optgroup>@endif
+                    </select>
+                    <span class="muted" style="font-size:.68rem;">Usada no <strong>jantar</strong>, enquanto a principal fica no almoço — evita a mesma proteína duas vezes no dia.</span>
+
+                    <label class="lbl-sm" style="margin-top:10px;">Peso do paciente (kg)</label>
+                    <input type="number" name="peso_kg" id="ia_peso" min="30" max="300" step="0.1"
+                           value="{{ $pesoAtual }}" placeholder="Ex.: 78">
+                    <span class="muted" style="font-size:.68rem;">
+                        @if ($pesoAtual)
+                            Da última antropometria. Sem peso, a ficha mira só kcal.
+                        @else
+                            Sem peso não dá para calcular a proteína alvo — a ficha mira só kcal.
+                        @endif
+                    </span>
+
+                    <label class="lbl-sm" style="margin-top:10px;">Objetivo</label>
+                    <select name="objetivo_nutricional" id="ia_objetivo">
+                        <option value="emagrecimento" @selected($objetivoNutri==='emagrecimento')>Emagrecimento</option>
+                        <option value="manutencao" @selected($objetivoNutri==='manutencao')>Manutenção</option>
+                        <option value="hipertrofia" @selected($objetivoNutri==='hipertrofia')>Hipertrofia / performance</option>
+                    </select>
+
+                    <label class="lbl-sm" style="margin-top:10px;">Proteína alvo (g por kg)</label>
+                    <input type="number" name="proteina_g_kg" id="ia_gkg" min="0.8" max="3" step="0.1"
+                           value="{{ $proteinaGKgPadrao[$objetivoNutri] ?? 1.6 }}">
+                    <span class="muted" style="font-size:.68rem;">Total do dia: <strong id="ia_prot_total">—</strong>. O padrão vem do objetivo; ajuste se a prescrição pedir outro valor.</span>
+
                     <label class="lbl-sm" style="margin-top:10px;">Estado (UF) do paciente</label>
                     <select name="uf">
                         <option value="">— (usa referência nacional)</option>
@@ -193,6 +232,12 @@
                     <label class="lbl-sm" style="margin-top:10px;">Orçamento mensal do paciente (R$)</label>
                     <input type="number" name="orcamento_mensal" min="0" step="10" value="{{ optional($plano->paciente)->orcamento_mensal }}" placeholder="Ex.: 1400 (opcional)">
                     <span class="muted" style="font-size:.68rem;">Fica salvo no paciente e é <strong>dividido entre as fichas</strong> conforme os dias do mês (soma das fichas = orçamento).</span>
+
+                    <label class="lbl-sm" style="margin-top:10px;">Bebidas</label>
+                    <label style="display:flex; gap:8px; align-items:center; text-transform:none; color:#fff; font-weight:400; margin:0; font-size:.8rem;">
+                        <input type="checkbox" name="incluir_bebidas" value="1" style="width:auto;" checked> Usar vitaminas e sucos
+                    </label>
+                    <span class="muted" style="font-size:.68rem;">A <strong>vitamina vira o café da manhã</strong> (fruta, leite e proteína no mesmo copo) e um <strong>suco entra em um lanche</strong>. As outras bebidas do mesmo tipo aparecem como opções de substituição, com a receita junto.</span>
 
                     <label class="lbl-sm" style="margin-top:10px;">Restrições</label>
                     <div style="display:flex; flex-direction:column; gap:6px; font-size:.8rem;">
@@ -220,6 +265,32 @@
 
                     <button class="btn btn-sm" style="margin-top:12px; width:100%;" onclick="return confirmarGeracao()"><i class="ph ph-sparkle"></i> Gerar rascunho</button>
                 </form>
+                <script>
+                    // Mostra a proteína alvo do dia (peso × g/kg) e move o g/kg para o
+                    // padrão do objetivo enquanto o profissional não digitar um valor.
+                    (function () {
+                        const peso = document.getElementById('ia_peso');
+                        const gkg = document.getElementById('ia_gkg');
+                        const obj = document.getElementById('ia_objetivo');
+                        const out = document.getElementById('ia_prot_total');
+                        const PADRAO = @json($proteinaGKgPadrao);
+                        let gkgTocado = false;
+
+                        function atualizar() {
+                            const p = parseFloat(peso.value);
+                            const g = parseFloat(gkg.value);
+                            out.textContent = (p && g) ? Math.round(p * g) + ' g de proteína/dia' : '—';
+                        }
+
+                        gkg.addEventListener('input', () => { gkgTocado = true; atualizar(); });
+                        peso.addEventListener('input', atualizar);
+                        obj.addEventListener('change', () => {
+                            if (!gkgTocado && PADRAO[obj.value]) gkg.value = PADRAO[obj.value];
+                            atualizar();
+                        });
+                        atualizar();
+                    })();
+                </script>
             </div>
 
             <div class="card" style="margin-bottom:14px;">
