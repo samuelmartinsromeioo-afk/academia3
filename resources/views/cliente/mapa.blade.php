@@ -517,10 +517,18 @@
         zoomControl: true,
     });
 
-    // Tile escuro para combinar com o design
-    L.tileLayer('https:\/\/{s}.basemaps.cartocdn.com\/dark_all\/{z}\/{x}\/{y}{r}.png', {
-        attribution: '&copy; <a href="https://carto.com/">CARTO</a>',
-        maxZoom: 19
+    // Tile escuro para combinar com o design. O Esri Dark Gray Canvas dispensa
+    // chave de API (a CARTO passou a carimbar os tiles sem key) e vem em duas
+    // camadas: o fundo e os rótulos por cima dos marcadores do mapa.
+    // Atenção: a ordem dos eixos aqui é {z}/{y}/{x}, invertida em relação à CARTO,
+    // e o zoom máximo do Dark Gray Canvas é 16.
+    L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}', {
+        attribution: '&copy; <a href="https://www.esri.com/">Esri</a>',
+        maxZoom: 16
+    }).addTo(map);
+
+    L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Reference/MapServer/tile/{z}/{y}/{x}', {
+        maxZoom: 16
     }).addTo(map);
 
     // Ícones customizados
