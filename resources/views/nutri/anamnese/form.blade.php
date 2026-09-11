@@ -20,26 +20,44 @@
     </form>
 
     @if ($modelo)
-    <form method="POST" action="{{ route('nutri.anamnese.salvar',$paciente->id) }}" class="card" style="max-width:820px;">
+    @php $secoes = $modelo->camposPorSecao(); @endphp
+
+    @if ($anterior)
+        <div class="card" style="margin-bottom:18px; border-color:rgba(212,255,0,.25);">
+            <div style="display:flex; gap:10px; align-items:flex-start;">
+                <i class="ph ph-clock-counter-clockwise" style="color:var(--primary); font-size:1.2rem;"></i>
+                <div style="font-size:.85rem;">
+                    Formulário pré-preenchido com a anamnese de
+                    <strong>{{ $anterior->preenchida_em->format('d/m/Y') }}</strong>.
+                    Ajuste o que mudou — o histórico anterior é preservado, esta vira um novo registro.
+                    <a href="{{ route('nutri.anamnese.form',[$paciente->id,'modelo'=>$modelo->id,'limpar'=>1]) }}" class="muted">Começar em branco</a>
+                </div>
+            </div>
+        </div>
+    @endif
+
+    {{-- Índice das seções: com 60+ perguntas, sem isso não se acha nada. --}}
+    @if (count($secoes) > 1)
+        <div class="card" style="margin-bottom:18px; display:flex; flex-wrap:wrap; gap:8px;">
+            @foreach (array_keys($secoes) as $i => $secao)
+                <a href="#secao-{{ $i }}" class="btn btn-ghost btn-sm">{{ $secao }}</a>
+            @endforeach
+        </div>
+    @endif
+
+    <form method="POST" action="{{ route('nutri.anamnese.salvar',$paciente->id) }}" style="max-width:820px;">
         @csrf
         <input type="hidden" name="modelo_id" value="{{ $modelo->id }}">
-        @foreach ($modelo->campos as $campo)
-            @php $label = $campo['label']; $tipo = $campo['tipo'] ?? 'texto'; @endphp
-            <div style="margin-bottom:16px;">
-                <label>{{ $label }}</label>
-                @if ($tipo === 'textarea')
-                    <textarea name="respostas[{{ $label }}]" rows="3"></textarea>
-                @elseif ($tipo === 'numero')
-                    <input type="number" step="any" name="respostas[{{ $label }}]">
-                @elseif ($tipo === 'sim_nao')
-                    <select name="respostas[{{ $label }}]"><option value="">—</option><option>Sim</option><option>Não</option></select>
-                @elseif ($tipo === 'opcoes')
-                    <select name="respostas[{{ $label }}]"><option value="">—</option>@foreach (($campo['opcoes'] ?? []) as $op)<option>{{ $op }}</option>@endforeach</select>
-                @else
-                    <input type="text" name="respostas[{{ $label }}]">
-                @endif
+
+        @foreach ($secoes as $secao => $campos)
+            <div class="card" style="margin-bottom:18px;" id="secao-{{ $loop->index }}">
+                <h3 style="margin-bottom:16px;">{{ $secao }}</h3>
+                @foreach ($campos as $campo)
+                    @include('nutri.anamnese._campo', ['campo' => $campo, 'valor' => $respostas[$campo['label']] ?? null])
+                @endforeach
             </div>
         @endforeach
+
         <button class="btn"><i class="ph ph-check"></i> Salvar anamnese</button>
     </form>
     @else

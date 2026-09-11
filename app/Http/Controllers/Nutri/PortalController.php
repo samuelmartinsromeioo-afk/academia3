@@ -215,7 +215,13 @@ class PortalController extends Controller
     {
         $paciente = $this->paciente($token);
         $modelos = AnamneseModelo::where('personal_id', $paciente->personal_id)->get();
-        $modelo = $modelos->firstWhere('is_padrao', true) ?? $modelos->first();
+
+        // O questionário do paciente é escolhido explicitamente pelo profissional
+        // (uso_portal). O `is_padrao` vale para a consulta e costuma ser o modelo
+        // completo, longo demais para o paciente responder sozinho no celular.
+        $modelo = $modelos->firstWhere('uso_portal', true)
+            ?? $modelos->firstWhere('is_padrao', true)
+            ?? $modelos->first();
 
         return view('nutri.portal.anamnese', compact('paciente', 'modelo', 'token'));
     }
@@ -231,7 +237,7 @@ class PortalController extends Controller
         AnamneseResposta::create([
             'paciente_id' => $paciente->id,
             'modelo_id' => $dados['modelo_id'] ?? null,
-            'respostas' => $dados['respostas'],
+            'respostas' => AnamneseResposta::limpar($dados['respostas']),
             'origem' => 'pre_consulta',
             'preenchida_em' => now(),
         ]);
