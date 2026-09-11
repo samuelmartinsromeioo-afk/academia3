@@ -23,8 +23,6 @@
             --academia-color: #d4ff00;
             --personal-color: #1a5fd4;
             --filial-color: #ff9500;
-            --filial-contorno-color: #00c8ff;
-            --filial-pratique-color: #ff4444;
             --studio-color: #b14cff;
             --studio-yoga-color: #ff69b4;
             --studio-luta-color: #dd2233;
@@ -215,8 +213,6 @@
 
         .pin-icon.academia         { background: rgba(212,255,0,0.12);   color: var(--academia-color); }
         .pin-icon.personal         { background: rgba(26,95,212,0.15);   color: var(--personal-color); }
-        .pin-icon.filial-contorno  { background: rgba(0,200,255,0.12);   color: var(--filial-contorno-color); }
-        .pin-icon.filial-pratique  { background: rgba(255,68,68,0.12);   color: var(--filial-pratique-color); }
         .pin-icon.filial           { background: rgba(255,149,0,0.12);   color: var(--filial-color); }
         .pin-icon.studio           { background: rgba(177,76,255,0.12);  color: var(--studio-color); }
         .pin-icon.studio-yoga_pilates { background: rgba(255,105,180,0.14); color: var(--studio-yoga-color); }
@@ -239,8 +235,6 @@
 
         .badge-academia        { background: rgba(212,255,0,0.1);  color: var(--academia-color); }
         .badge-personal        { background: rgba(26,95,212,0.15); color: var(--personal-color); }
-        .badge-filial-contorno { background: rgba(0,200,255,0.1);  color: var(--filial-contorno-color); }
-        .badge-filial-pratique { background: rgba(255,68,68,0.1);  color: var(--filial-pratique-color); }
         .badge-filial          { background: rgba(255,149,0,0.1);  color: var(--filial-color); }
         .badge-studio          { background: rgba(177,76,255,0.1); color: var(--studio-color); }
         .badge-studio-yoga_pilates { background: rgba(255,105,180,0.12); color: var(--studio-yoga-color); }
@@ -466,16 +460,8 @@
                 <span>Personal</span>
             </div>
             <div class="legend-item">
-                <div class="legend-dot" style="background: var(--filial-contorno-color);"></div>
-                <span>Filial Contorno</span>
-            </div>
-            <div class="legend-item">
-                <div class="legend-dot" style="background: var(--filial-pratique-color);"></div>
-                <span>Filial Pratique</span>
-            </div>
-            <div class="legend-item">
                 <div class="legend-dot" style="background: var(--filial-color);"></div>
-                <span>Filial (outras)</span>
+                <span>Filial</span>
             </div>
             <div class="legend-item">
                 <div class="legend-dot" style="background: var(--studio-yoga-color);"></div>
@@ -532,13 +518,6 @@
     }).addTo(map);
 
     // Ícones customizados
-    function getFilialCor(pin) {
-        const nome = (pin.academia_nome || '').toLowerCase();
-        if (nome.includes('contorno')) return '#00c8ff';
-        if (nome.includes('pratique')) return '#ff4444';
-        return '#ff9500';
-    }
-
     const studioCores = {
         yoga_pilates: '#ff69b4',
         luta:         '#dd2233',
@@ -555,16 +534,9 @@
     function getPinCor(pin) {
         if (pin.tipo === 'academia') return '#d4ff00';
         if (pin.tipo === 'personal') return '#1a5fd4';
-        if (pin.tipo === 'filial')   return getFilialCor(pin);
+        if (pin.tipo === 'filial')   return '#ff9500';
         if (pin.tipo === 'studio')   return getStudioCor(pin);
         return '#ffffff';
-    }
-
-    function getFilialClass(pin) {
-        const nome = (pin.academia_nome || '').toLowerCase();
-        if (nome.includes('contorno')) return 'filial-contorno';
-        if (nome.includes('pratique')) return 'filial-pratique';
-        return 'filial';
     }
 
     const studioIcones = { yoga_pilates: '🧘', luta: '🥊', crossfit: '🏋️', fitness: '💪', danca: '💃', outros: '🏃' };
@@ -622,7 +594,7 @@
                               danca: 'Dança', outros: 'Outros' };
 
         lista.innerHTML = pins.map((pin, i) => {
-            const cssClass  = pin.tipo === 'filial'  ? getFilialClass(pin)
+            const cssClass  = pin.tipo === 'filial'  ? 'filial'
                             : pin.tipo === 'studio'  ? `studio-${pin.subtipo || 'outros'}`
                             : pin.tipo;
             const badgeText = pin.tipo === 'academia' ? 'Academia'
