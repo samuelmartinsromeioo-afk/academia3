@@ -131,6 +131,38 @@ The **nutrition module** lives under `App\...\Nutri\` (controllers, models, `Ser
 
 No SPA framework — standard Blade templates with Vite for asset bundling. Views are organized by role: `resources/views/personal/`, `cliente/`, `academia/`, `admin/`, `cadastro/`. Run `npm run dev` for hot-reloading during frontend work.
 
+#### Layouts are NOT interchangeable
+
+There is no single app layout, and the section names differ between them. Extending the wrong one renders a **blank page** with no error:
+
+| Layout | Section to fill |
+|---|---|
+| `layouts.nutri` | `@section('conteudo')` (+ `estilos`, `scripts`) |
+| `layouts.academia`, `layouts.dashboard` | `@section('content')` |
+| `layouts.personal` | **has no `@yield` at all** — not extendable |
+
+Most admin views (`admin/dashboard`, `admin/relatorio_financeiro`, `admin/*/lista`, `admin/*/detalhes`) and several role pages (`login/index`, `cliente/index`, the patient portal) are **standalone documents**, not `@extends` children.
+
+**Default for a new page that must serve more than one role, or any new admin page: write it standalone.** Only `@extends` when the page belongs to a single role whose layout you have verified. Examples of standalone pages added this way: `indicacao/painel.blade.php`, `admin/indicacoes.blade.php`, `nutri/financeiro/recibo.blade.php`.
+
+#### Blade directives glued to text are not compiled
+
+Blade only recognizes a directive when it is **not** preceded by a word character. These silently become literal text and unbalance the block:
+
+```blade
+Nutricionista@if($nutri->crn) ... @endif   {{-- @if is literal; the @endif is orphaned --}}
+@endif@endif                               {{-- the 2nd @endif is literal --}}
+```
+
+Use `@php`/ternary for inline conditions, or put whitespace before the directive. This caused a hard syntax error in the recibo view.
+
+#### Shared partials over duplicated markup
+
+Form/field markup repeated across role views drifts fast. Extract a partial and include it:
+
+- `cadastro/_codigo-indicacao.blade.php` — referral-code field, included by the personal, academia and studio forms. It relies on `.form-group` + `.input-wrapper`, which **all three cadastro views define with the same look**; without those classes the input renders as a raw white box.
+- `nutri/anamnese/_campo.blade.php` — renders one anamnese field (8 types), shared by the professional's form and the patient portal, so a new field type is written once.
+
 ## Environment Requirements
 
 Key `.env` variables (see `.env.example`):
