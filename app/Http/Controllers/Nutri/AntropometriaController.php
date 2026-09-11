@@ -6,18 +6,31 @@ use App\Http\Controllers\Controller;
 use App\Http\Controllers\Nutri\Concerns\ResolveNutri;
 use App\Models\Nutri\Antropometria;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 
 class AntropometriaController extends Controller
 {
     use ResolveNutri;
 
-    public function index(int $pacienteId)
+    public function index(int $pacienteId, Request $request)
     {
         $nutri = $this->nutri();
         $paciente = $this->pacienteDoNutri($pacienteId);
         $avaliacoes = $paciente->antropometrias()->orderByDesc('data')->get();
 
-        return view('nutri.antropometria.index', compact('nutri', 'paciente', 'avaliacoes'));
+        // Comparação de fotos: por padrão a mais antiga contra a mais recente que
+        // tenham foto — é o par que mostra a evolução real.
+        $comFoto = $avaliacoes->filter(fn ($a) => $a->temFoto())->values();
+        $antes = $this->avaliacaoComFoto($comFoto, $request->query('antes')) ?? $comFoto->last();
+        $depois = $this->avaliacaoComFoto($comFoto, $request->query('depois')) ?? $comFoto->first();
+
+        return view('nutri.antropometria.index', compact('nutri', 'paciente', 'avaliacoes', 'comFoto', 'antes', 'depois'));
+    }
+
+    /** Resolve o id vindo da querystring dentro das avaliações do próprio paciente. */
+    private function avaliacaoComFoto($comFoto, $id): ?Antropometria
+    {
+        return $id ? $comFoto->firstWhere('id', (int) $id) : null;
     }
 
     public function store(int $pacienteId, Request $request)
@@ -33,7 +46,16 @@ class AntropometriaController extends Controller
             'circunferencias' => 'nullable|array',
             'dobras' => 'nullable|array',
             'observacoes' => 'nullable|string|max:2000',
+            'foto_frente' => 'nullable|file|mimes:jpeg,jpg,png,webp,heic|max:10240',
+            'foto_lado' => 'nullable|file|mimes:jpeg,jpg,png,webp,heic|max:10240',
+            'foto_costas' => 'nullable|file|mimes:jpeg,jpg,png,webp,heic|max:10240',
         ]);
+
+        foreach (array_keys(Antropometria::ANGULOS) as $campo) {
+            $dados[$campo] = $request->hasFile($campo)
+                ? $request->file($campo)->store('nutri/evolucao', 'public')
+                : null;
+        }
 
         $altura = $dados['altura_cm'] ?? $paciente->altura_cm;
         $dados['altura_cm'] = $altura;
@@ -56,6 +78,15 @@ class AntropometriaController extends Controller
         $reg = Antropometria::findOrFail($id);
         // Garante que o registro pertence a um paciente do nutricionista.
         $this->pacienteDoNutri($reg->paciente_id);
+
+        // Apaga as fotos junto — são dado sensível do paciente e não podem ficar
+        // órfãs no disco depois que a avaliação some.
+        foreach (array_keys(Antropometria::ANGULOS) as $campo) {
+            if ($reg->$campo) {
+                Storage::disk('public')->delete($reg->$campo);
+            }
+        }
+
         $reg->delete();
 
         return back()->with('success', 'Avaliação removida.');

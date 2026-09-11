@@ -59,7 +59,7 @@
         <canvas id="grafico" height="90"></canvas>
     </div>
 
-    <form method="POST" action="{{ route('nutri.antropometria.store',$paciente->id) }}" class="card">
+    <form method="POST" action="{{ route('nutri.antropometria.store',$paciente->id) }}" class="card" enctype="multipart/form-data">
         <h3 style="margin-bottom:6px;">Nova avaliação</h3>
 
         @csrf
@@ -107,9 +107,77 @@
             </div>
         </div>
 
+        <!-- Fotos de evolução -->
+        <div class="fieldset">
+            <div class="leg"><i class="ph ph-camera"></i> Fotos de evolução (opcional)</div>
+            <div class="mgrid">
+                @foreach (\App\Models\Nutri\Antropometria::ANGULOS as $campo => $rotulo)
+                    <div><label class="lbl-sm">{{ $rotulo }}</label><input type="file" name="{{ $campo }}" accept="image/*"></div>
+                @endforeach
+            </div>
+            <span class="muted" style="font-size:.7rem;">Mesma pose, mesma distância e mesma luz em todas as avaliações — é o que torna a comparação honesta.</span>
+        </div>
+
         <div style="margin-top:14px;"><label>Observações</label><textarea name="observacoes" rows="2"></textarea></div>
         <button class="btn" style="margin-top:14px;"><i class="ph ph-plus"></i> Registrar avaliação</button>
     </form>
+
+    @if ($comFoto->count())
+        <div class="card" style="margin-top:18px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:14px;">
+                <h3 style="margin:0;">Evolução em foto</h3>
+                <form method="GET" style="display:flex; gap:8px; align-items:center;">
+                    <select name="antes" onchange="this.form.submit()" style="width:auto;">
+                        @foreach ($comFoto as $a)<option value="{{ $a->id }}" @selected($antes && $antes->id===$a->id)>{{ $a->data->format('d/m/Y') }}</option>@endforeach
+                    </select>
+                    <span class="muted">→</span>
+                    <select name="depois" onchange="this.form.submit()" style="width:auto;">
+                        @foreach ($comFoto as $a)<option value="{{ $a->id }}" @selected($depois && $depois->id===$a->id)>{{ $a->data->format('d/m/Y') }}</option>@endforeach
+                    </select>
+                </form>
+            </div>
+
+            @php
+                $delta = ($antes && $depois && $antes->peso && $depois->peso) ? round($depois->peso - $antes->peso, 1) : null;
+            @endphp
+            @if ($delta !== null)
+                <div class="muted" style="font-size:.82rem; margin-bottom:12px;">
+                    {{ $antes->data->format('d/m/Y') }} → {{ $depois->data->format('d/m/Y') }}:
+                    <strong style="color:var(--primary);">{{ $delta > 0 ? '+' : '' }}{{ number_format($delta,1,',','.') }} kg</strong>
+                    @if ($antes->percentual_gordura && $depois->percentual_gordura)
+                        · gordura {{ $antes->percentual_gordura }}% → {{ $depois->percentual_gordura }}%
+                    @endif
+                </div>
+            @endif
+
+            <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:16px;">
+                @foreach (\App\Models\Nutri\Antropometria::ANGULOS as $campo => $rotulo)
+                    @if (($antes && $antes->$campo) || ($depois && $depois->$campo))
+                        <div>
+                            <div class="lbl-sm" style="margin-bottom:6px;">{{ $rotulo }}</div>
+                            <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+                                @foreach ([['a',$antes],['d',$depois]] as [$slot, $av])
+                                    <div>
+                                        @if ($av && $av->$campo)
+                                            <img src="{{ asset('storage/'.$av->$campo) }}" alt="{{ $rotulo }} em {{ $av->data->format('d/m/Y') }}"
+                                                 style="width:100%; border-radius:10px; border:1px solid var(--border); display:block;">
+                                        @else
+                                            <div style="aspect-ratio:3/4; border:1px dashed var(--border); border-radius:10px; display:flex; align-items:center; justify-content:center;">
+                                                <span class="muted" style="font-size:.7rem;">sem foto</span>
+                                            </div>
+                                        @endif
+                                        <div class="muted" style="font-size:.68rem; text-align:center; margin-top:4px;">
+                                            {{ $av ? $av->data->format('d/m/y') : '—' }}
+                                        </div>
+                                    </div>
+                                @endforeach
+                            </div>
+                        </div>
+                    @endif
+                @endforeach
+            </div>
+        </div>
+    @endif
 
     <div class="card" style="margin-top:18px;">
         <h3 style="margin-bottom:14px;">Histórico</h3>

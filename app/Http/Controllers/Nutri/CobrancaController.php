@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Controllers\Nutri\Concerns\ResolveNutri;
 use App\Models\Nutri\Cobranca;
 use App\Models\Nutri\Paciente;
+use App\Support\ValorPorExtenso;
 use Illuminate\Http\Request;
 
 class CobrancaController extends Controller
@@ -70,6 +71,26 @@ class CobrancaController extends Controller
         $cobranca->update(['status' => 'pago', 'pago_em' => now()]);
 
         return back()->with('success', 'Cobrança marcada como paga.');
+    }
+
+    /**
+     * Recibo da cobrança paga, em página pronta para imprimir/salvar em PDF —
+     * mesmo padrão do PDF do plano alimentar (sem dependência de dompdf).
+     */
+    public function recibo(int $id)
+    {
+        $nutri = $this->nutri();
+        $cobranca = Cobranca::where('id', $id)->where('personal_id', $nutri->id)
+            ->with('paciente')->firstOrFail();
+
+        // Recibo só existe para o que foi efetivamente recebido.
+        if ($cobranca->status !== 'pago') {
+            return back()->with('error', 'O recibo só pode ser emitido depois que a cobrança for paga.');
+        }
+
+        $extenso = ValorPorExtenso::reais((float) $cobranca->valor);
+
+        return view('nutri.financeiro.recibo', compact('nutri', 'cobranca', 'extenso'));
     }
 
     public function destroy(int $id)

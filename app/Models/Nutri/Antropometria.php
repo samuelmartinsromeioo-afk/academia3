@@ -11,7 +11,23 @@ class Antropometria extends Model
     protected $fillable = [
         'paciente_id', 'data', 'peso', 'altura_cm', 'imc', 'percentual_gordura',
         'massa_magra', 'circunferencias', 'dobras', 'observacoes',
+        'foto_frente', 'foto_lado', 'foto_costas',
     ];
+
+    /** Ângulos fixos da foto de evolução, na ordem em que aparecem na tela. */
+    public const ANGULOS = ['foto_frente' => 'Frente', 'foto_lado' => 'Lado', 'foto_costas' => 'Costas'];
+
+    /** Esta avaliação tem pelo menos uma foto? */
+    public function temFoto(): bool
+    {
+        foreach (array_keys(self::ANGULOS) as $col) {
+            if ($this->$col) {
+                return true;
+            }
+        }
+
+        return false;
+    }
 
     protected $casts = [
         'data' => 'date',

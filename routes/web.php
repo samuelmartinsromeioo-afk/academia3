@@ -555,6 +555,7 @@ Route::middleware(['check.login', 'check.nutri'])->prefix('nutri')->name('nutri.
     Route::post('/financeiro/consulta', [\App\Http\Controllers\Nutri\CobrancaController::class, 'salvarConfig'])->name('financeiro.consulta');
     Route::post('/cobrancas', [\App\Http\Controllers\Nutri\CobrancaController::class, 'store'])->name('cobrancas.store');
     Route::put('/cobrancas/{id}/pago', [\App\Http\Controllers\Nutri\CobrancaController::class, 'marcarPago'])->whereNumber('id')->name('cobrancas.pago');
+    Route::get('/cobrancas/{id}/recibo', [\App\Http\Controllers\Nutri\CobrancaController::class, 'recibo'])->whereNumber('id')->name('cobrancas.recibo');
     Route::delete('/cobrancas/{id}', [\App\Http\Controllers\Nutri\CobrancaController::class, 'destroy'])->whereNumber('id')->name('cobrancas.destroy');
 
     // Relatórios e portabilidade (LGPD / anti-lock-in)

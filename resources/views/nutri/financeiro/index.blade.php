@@ -66,6 +66,8 @@
                     <td style="text-align:right; white-space:nowrap;">
                         @if ($c->status!=='pago')
                         <form method="POST" action="{{ route('nutri.cobrancas.pago',$c->id) }}" style="display:inline;">@csrf @method('PUT')<button class="btn btn-sm">Marcar pago</button></form>
+                        @else
+                        <a href="{{ route('nutri.cobrancas.recibo',$c->id) }}" target="_blank" class="btn btn-ghost btn-sm"><i class="ph ph-receipt"></i> Recibo</a>
                         @endif
                         <form method="POST" action="{{ route('nutri.cobrancas.destroy',$c->id) }}" style="display:inline;" onsubmit="return confirm('Remover?')">@csrf @method('DELETE')<button class="btn btn-danger btn-sm"><i class="ph ph-trash"></i></button></form>
                     </td>
