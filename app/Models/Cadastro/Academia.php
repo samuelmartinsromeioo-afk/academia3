@@ -51,6 +51,7 @@ class Academia extends Authenticatable
     protected $casts = [
         'valor' => 'decimal:2',
         'created_at' => 'datetime',
+        'indicacao_inicio' => 'datetime',
     ];
     public function cliente(): HasMany
     {

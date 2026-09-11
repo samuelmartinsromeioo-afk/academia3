@@ -44,6 +44,11 @@ use App\Http\Controllers\AcademiaSolicitacaoController;
 Route::middleware('check.admin')->group(function () {
     // Dashboard
     Route::get('/admin/dashboard', [AdminController::class, 'dashboard'])->name('admin.dashboard');
+
+    // Programa de indicação — conferência e baixa dos créditos
+    Route::get('/admin/indicacoes', [\App\Http\Controllers\IndicacaoController::class, 'admin'])->name('admin.indicacoes');
+    Route::put('/admin/indicacoes/{id}/pago', [\App\Http\Controllers\IndicacaoController::class, 'marcarPago'])->whereNumber('id')->name('admin.indicacoes.pago');
+    Route::put('/admin/indicacoes/{id}/cancelar', [\App\Http\Controllers\IndicacaoController::class, 'cancelar'])->whereNumber('id')->name('admin.indicacoes.cancelar');
     Route::post('/admin/personals/{id}/teste-aprovar', [AdminController::class, 'testeAprovar'])->name('admin.personals.teste-aprovar')->middleware('check.admin');
     // Gerenciar Personals
     Route::get('/admin/personals', [AdminController::class, 'listarPersonals'])->name('admin.personals.lista');
@@ -498,6 +503,10 @@ Route::middleware('check.login')->group(function () {
 // ==========================================
 // MÓDULO DE NUTRIÇÃO (nutricionista)
 // ==========================================
+// Programa de indicação — painel do profissional (personal, nutri, academia, studio).
+// O controller resolve o papel pela sessão; cliente e loja não participam.
+Route::middleware('check.login')->get('/indicacao', [\App\Http\Controllers\IndicacaoController::class, 'index'])->name('indicacao.painel');
+
 Route::middleware(['check.login', 'check.nutri'])->prefix('nutri')->name('nutri.')->group(function () {
     // Painel
     Route::get('/', [\App\Http\Controllers\Nutri\PainelController::class, 'index'])->name('painel');

@@ -1,4 +1,4 @@
-@extends('layouts.SelecaoCadastro')
+﻿@extends('layouts.SelecaoCadastro')
 
 @section('estilos')
 <style>
@@ -196,7 +196,7 @@
     </div>
 
     <div class="sel-grid">
-        <a href="{{ route('cadastro.ir', ['tipo' => 'personal']) }}" class="sel-card">
+        <a href="{{ route('cadastro.ir', array_filter(['tipo' => 'personal', 'ref' => request('ref')])) }}" class="sel-card">
             <img class="sel-img" src="{{ asset('img/selecao/personal.jpg') }}" alt="Personal trainer">
             <div class="sel-overlay"></div>
             <div class="sel-icon"><i class="ph-bold ph-barbell"></i></div>
@@ -220,7 +220,7 @@
             </div>
         </a>
 
-        <a href="{{ route('cadastro.ir', ['tipo' => 'academia']) }}" class="sel-card">
+        <a href="{{ route('cadastro.ir', array_filter(['tipo' => 'academia', 'ref' => request('ref')])) }}" class="sel-card">
             <img class="sel-img" src="{{ asset('img/selecao/academia.jpg') }}" alt="Academia">
             <div class="sel-overlay"></div>
             <div class="sel-icon"><i class="ph-bold ph-buildings"></i></div>
@@ -232,7 +232,7 @@
             </div>
         </a>
 
-        <a href="{{ route('cadastro.ir', ['tipo' => 'studio']) }}" class="sel-card">
+        <a href="{{ route('cadastro.ir', array_filter(['tipo' => 'studio', 'ref' => request('ref')])) }}" class="sel-card">
             <img class="sel-img" src="{{ asset('img/selecao/studio.jpg') }}" alt="Studio fitness">
             <div class="sel-overlay"></div>
             <div class="sel-icon"><i class="ph-bold ph-flower-lotus"></i></div>

@@ -50,6 +50,7 @@ class Studio extends Authenticatable
     protected $casts = [
         'valor_aula'     => 'decimal:2',
         'data_aprovacao' => 'datetime',
+        'indicacao_inicio' => 'datetime',
     ];
 
     public function fotos()

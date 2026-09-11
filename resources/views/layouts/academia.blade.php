@@ -42,6 +42,12 @@
                         <i class="bi bi-car-front me-1"></i>Relatórios
                     </a>
                 </li>
+
+                <li class="nav-item">
+                    <a class="nav-link" href="{{ route('indicacao.painel') }}">
+                        <i class="bi bi-gift me-1"></i>Indique e ganhe
+                    </a>
+                </li>
             </ul>
         </div>
     </div>

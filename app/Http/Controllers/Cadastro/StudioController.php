@@ -71,6 +71,9 @@ class StudioController extends Controller
 
         $studio = Studio::create($dados);
 
+        app(\App\Services\IndicacaoService::class)
+            ->vincular($studio, 'studio', $request->input('codigo_indicacao'));
+
         $fb = app(MetaConversionsService::class);
         return redirect()->route('login.index')
             ->with('sucesso', 'Cadastro enviado com sucesso! Seu studio será analisado pelo administrador e você poderá acessar após a aprovação.')

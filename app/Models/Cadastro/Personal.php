@@ -77,6 +77,7 @@ class Personal extends Authenticatable
         'precos_avaliacao' => 'array',
         'especialidades'   => 'array',
         'pioneiro_posicao' => 'integer',
+        'indicacao_inicio' => 'datetime',
     ];
 
     /** Tipo de profissional (enum), com fallback para personal trainer. */

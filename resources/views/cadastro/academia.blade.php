@@ -183,6 +183,8 @@
                 e a <a href="{{ route('lgpd.politica') }}" target="_blank" style="color:#d4ff00;">Política de Privacidade</a>.</span>
         </label>
 
+        <div class="full-width">@include('cadastro._codigo-indicacao')</div>
+
         <button type="submit" class="btn-submit full-width">
             FINALIZAR CADASTRO <i class="ph ph-paper-plane-tilt" style="margin-left: 10px;"></i>
         </button>

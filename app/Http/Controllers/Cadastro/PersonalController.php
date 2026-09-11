@@ -92,6 +92,11 @@ class PersonalController extends Controller
         // Marca o personal como pioneiro se estiver entre os 100 primeiros do estado.
         $personal->definirPosicaoPioneiro();
 
+        // Indicação: vincula a quem indicou. Código inválido é ignorado em
+        // silêncio — não pode barrar um cadastro legítimo.
+        app(\App\Services\IndicacaoService::class)
+            ->vincular($personal, 'personal', $request->input('codigo_indicacao'));
+
         $this->criarSubcontaAsaas($personal);
 
         $fb = app(MetaConversionsService::class);

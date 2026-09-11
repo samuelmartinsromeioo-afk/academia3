@@ -96,6 +96,7 @@
         <a href="{{ route('nutri.financeiro') }}" class="nav-item {{ $r==='nutri.financeiro'?'active':'' }}"><i class="ph ph-currency-circle-dollar"></i> Financeiro</a>
 
         <div class="nav-sec">Mais</div>
+        <a href="{{ route('indicacao.painel') }}" class="nav-item"><i class="ph ph-gift"></i> Indique e ganhe</a>
         <a href="{{ route('nutri.roadmap') }}" class="nav-item {{ $r==='nutri.roadmap'?'active':'' }}"><i class="ph ph-megaphone-simple"></i> Roadmap / sugestões</a>
         <a href="{{ route('lgpd.meus-dados') }}" class="nav-item"><i class="ph ph-shield-check"></i> Meus dados (LGPD)</a>
         <form action="{{ route('login.logout') }}" method="POST" style="margin-top:auto; padding-top:12px;">@csrf

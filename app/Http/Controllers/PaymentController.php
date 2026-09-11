@@ -850,6 +850,11 @@ class PaymentController extends Controller
             'next_billing_date' => now()->addDays(30)->toDateString(),
         ]);
 
+        // Programa de indicação: se este profissional entrou pelo código de
+        // alguém e a janela ainda está aberta, credita o indicador com uma fatia
+        // da comissão da plataforma. Best-effort — não derruba o pagamento.
+        app(\App\Services\IndicacaoService::class)->creditarPorPagamento($payment);
+
         // Assinatura: cada pagamento confirmado estende o acesso por 30 dias
         // a partir da data do pagamento.
         if ($payment->asaas_subscription_id) {

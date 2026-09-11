@@ -585,6 +585,8 @@
             <input type="hidden" name="cidade" id="cidade" value="{{ old('cidade') }}">
             <input type="hidden" name="estado" id="estado" value="{{ old('estado') }}">
 
+            @include('cadastro._codigo-indicacao')
+
             <button type="submit" class="btn-register">Finalizar Cadastro Profissional</button>
         </form>
     </div>

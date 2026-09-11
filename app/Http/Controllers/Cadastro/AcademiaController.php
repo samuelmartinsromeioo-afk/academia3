@@ -57,6 +57,9 @@ class AcademiaController extends Controller
 
         $academia = Academia::create($dados);
 
+        app(\App\Services\IndicacaoService::class)
+            ->vincular($academia, 'academia', $request->input('codigo_indicacao'));
+
         $fb = app(MetaConversionsService::class);
         return redirect()->route('cadastro.sucesso')
             ->with('cad_tipo', 'academia')
