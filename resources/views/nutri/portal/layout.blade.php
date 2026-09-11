@@ -22,8 +22,8 @@
         .flash { background:rgba(0,255,136,.1); border:1px solid rgba(0,255,136,.3); color:#00ff88; padding:12px; border-radius:10px; margin-bottom:14px; font-size:.88rem; }
         .muted { color:var(--dim); }
         .tabbar { position:fixed; bottom:0; left:0; right:0; background:var(--card); border-top:1px solid var(--border); display:flex; justify-content:space-around; padding:10px 0; }
-        .tabbar a { color:var(--dim); text-align:center; font-size:.65rem; text-decoration:none; }
-        .tabbar a i { font-size:1.4rem; display:block; }
+        .tabbar a { color:var(--dim); text-align:center; font-size:.6rem; text-decoration:none; flex:1; min-width:0; }
+        .tabbar a i { font-size:1.3rem; display:block; }
         .tabbar a.active { color:var(--primary); }
         @yield('estilos')
     </style>
@@ -40,6 +40,7 @@
     <nav class="tabbar">
         <a href="{{ route('portal.home',$token) }}" class="{{ $r==='portal.home'?'active':'' }}"><i class="ph ph-house"></i>Início</a>
         <a href="{{ route('portal.plano',$token) }}" class="{{ $r==='portal.plano'?'active':'' }}"><i class="ph ph-fork-knife"></i>Plano</a>
+        <a href="{{ route('portal.metas',$token) }}" class="{{ $r==='portal.metas'?'active':'' }}"><i class="ph ph-target"></i>Metas</a>
         <a href="{{ route('portal.lista-compras',$token) }}" class="{{ $r==='portal.lista-compras'?'active':'' }}"><i class="ph ph-shopping-cart"></i>Compras</a>
         <a href="{{ route('portal.diario',$token) }}" class="{{ $r==='portal.diario'?'active':'' }}"><i class="ph ph-notebook"></i>Diário</a>
         <a href="{{ route('portal.chat',$token) }}" class="{{ $r==='portal.chat'?'active':'' }}"><i class="ph ph-chat-circle"></i>Chat</a>

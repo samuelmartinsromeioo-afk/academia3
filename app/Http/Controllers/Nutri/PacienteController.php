@@ -67,7 +67,7 @@ class PacienteController extends Controller
     public function show(int $id)
     {
         $paciente = $this->pacienteDoNutri($id);
-        $paciente->load(['antropometrias', 'anamneses.modelo', 'planos', 'consultas', 'cobrancas']);
+        $paciente->load(['antropometrias', 'anamneses.modelo', 'planos', 'consultas', 'cobrancas', 'orientacoes']);
 
         $ultima = $paciente->antropometrias->last();
         $planoAtivo = $paciente->planoAtivo();

@@ -19,6 +19,22 @@
         <div class="card"><div class="muted" style="text-align:center; padding:20px;">Seu nutricionista ainda não publicou um plano. Você será avisado!</div></div>
     @endif
 
+    @if ($metasHoje->isNotEmpty())
+        @php $feitas = $metasHoje->filter(fn($m) => optional($m->registroDe(date('Y-m-d')))->concluida)->count(); @endphp
+        <div class="card">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+                <strong>Metas de hoje</strong>
+                <span class="muted" style="font-size:.8rem;">{{ $feitas }}/{{ $metasHoje->count() }}</span>
+            </div>
+            <div style="background:rgba(255,255,255,.06); border-radius:99px; height:8px; margin:12px 0;">
+                <div style="background:var(--primary); height:8px; border-radius:99px; width:{{ $metasHoje->count() ? round($feitas / $metasHoje->count() * 100) : 0 }}%;"></div>
+            </div>
+            <a href="{{ route('portal.metas',$token) }}" class="btn btn-ghost" style="width:100%; justify-content:center;">
+                <i class="ph ph-target"></i> {{ $feitas === $metasHoje->count() ? 'Tudo feito hoje 🎉' : 'Marcar minhas metas' }}
+            </a>
+        </div>
+    @endif
+
     <!-- Check-in rápido -->
     <div class="card">
         <strong>Check-in de hoje</strong>
@@ -34,6 +50,10 @@
             <button class="btn" style="margin-top:12px; width:100%; justify-content:center;">Enviar check-in</button>
         </form>
     </div>
+
+    @if ($temOrientacoes)
+        <a href="{{ route('portal.orientacoes',$token) }}" class="btn btn-ghost" style="width:100%; justify-content:center; margin-bottom:14px;"><i class="ph ph-book-open"></i> Orientações do seu nutricionista</a>
+    @endif
 
     <a href="{{ route('portal.anamnese',$token) }}" class="btn btn-ghost" style="width:100%; justify-content:center;"><i class="ph ph-clipboard-text"></i> Responder questionário pré-consulta</a>
 @endsection

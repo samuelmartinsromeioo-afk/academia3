@@ -8,6 +8,7 @@ use App\Models\Nutri\AnamneseResposta;
 use App\Models\Nutri\Checkin;
 use App\Models\Nutri\DiarioRefeicao;
 use App\Models\Nutri\MensagemNutri;
+use App\Models\Nutri\MetaRegistro;
 use App\Models\Nutri\Paciente;
 use Illuminate\Http\Request;
 
@@ -27,8 +28,10 @@ class PortalController extends Controller
         $paciente = $this->paciente($token);
         $plano = $paciente->planoAtivo();
         $ultimoCheckin = $paciente->checkins()->first();
+        $metasHoje = $paciente->metasAtivas()->with('registros')->get();
+        $temOrientacoes = $paciente->orientacoes()->exists();
 
-        return view('nutri.portal.home', compact('paciente', 'plano', 'token', 'ultimoCheckin'));
+        return view('nutri.portal.home', compact('paciente', 'plano', 'token', 'ultimoCheckin', 'metasHoje', 'temOrientacoes'));
     }
 
     public function plano(string $token, Request $request)
@@ -101,6 +104,65 @@ class PortalController extends Controller
         DiarioRefeicao::create($dados);
 
         return back()->with('success', 'Refeição registrada!');
+    }
+
+    /** Metas do dia + orientações que o nutricionista liberou para este paciente. */
+    public function metas(string $token, Request $request)
+    {
+        $paciente = $this->paciente($token);
+
+        // Permite marcar um dia anterior (esqueceu ontem), mas nunca o futuro.
+        $data = $request->filled('data') ? $request->date('data') : now();
+        $data = $data->gt(now()) ? now() : $data;
+        $dia = $data->toDateString();
+
+        $metas = $paciente->metasAtivas()->with('registros')->get();
+
+        return view('nutri.portal.metas', compact('paciente', 'metas', 'token', 'dia'));
+    }
+
+    public function salvarMetas(string $token, Request $request)
+    {
+        $paciente = $this->paciente($token);
+
+        $dados = $request->validate([
+            'data' => 'required|date|before_or_equal:today',
+            'marcadas' => 'nullable|array',
+            'marcadas.*' => 'integer',
+            'valores' => 'nullable|array',
+            'valores.*' => 'nullable|numeric|min:0|max:99999',
+        ]);
+
+        $marcadas = array_map('intval', $dados['marcadas'] ?? []);
+
+        // Percorre as metas DO PACIENTE, não o que veio no POST — assim um id de
+        // outro paciente enviado na mão não cria registro nenhum.
+        foreach ($paciente->metasAtivas()->get() as $meta) {
+            $valor = $dados['valores'][$meta->id] ?? null;
+            $concluida = in_array($meta->id, $marcadas, true);
+
+            // No tipo quantidade, informar um valor já conta como cumprido
+            // quando ele alcança o alvo — o paciente não precisa marcar duas coisas.
+            if ($meta->tipo === 'quantidade' && $valor !== null && $meta->alvo) {
+                $concluida = (float) $valor >= $meta->alvo;
+            }
+
+            MetaRegistro::updateOrCreate(
+                ['meta_id' => $meta->id, 'data' => $dados['data']],
+                ['concluida' => $concluida, 'valor' => $valor]
+            );
+        }
+
+        return back()->with('success', 'Metas do dia registradas!');
+    }
+
+    /** Biblioteca de orientações liberada para este paciente. */
+    public function orientacoes(string $token)
+    {
+        $paciente = $this->paciente($token);
+        $orientacoes = $paciente->orientacoes()->get();
+
+        return view('nutri.portal.orientacoes', compact('paciente', 'orientacoes', 'token'));
     }
 
     public function salvarCheckin(string $token, Request $request)

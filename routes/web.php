@@ -567,6 +567,19 @@ Route::middleware(['check.login', 'check.nutri'])->prefix('nutri')->name('nutri.
     Route::post('/pacientes/{pid}/chat', [\App\Http\Controllers\Nutri\ChatController::class, 'enviar'])->whereNumber('pid')->name('chat.enviar');
     Route::get('/pacientes/{pid}/chat/msgs', [\App\Http\Controllers\Nutri\ChatController::class, 'mensagens'])->whereNumber('pid')->name('chat.msgs');
 
+    // Metas comportamentais (hábitos entre consultas)
+    Route::get('/pacientes/{pid}/metas', [\App\Http\Controllers\Nutri\MetaController::class, 'index'])->whereNumber('pid')->name('metas.index');
+    Route::post('/pacientes/{pid}/metas', [\App\Http\Controllers\Nutri\MetaController::class, 'store'])->whereNumber('pid')->name('metas.store');
+    Route::put('/metas/{id}', [\App\Http\Controllers\Nutri\MetaController::class, 'update'])->whereNumber('id')->name('metas.update');
+    Route::post('/metas/{id}/alternar', [\App\Http\Controllers\Nutri\MetaController::class, 'alternar'])->whereNumber('id')->name('metas.alternar');
+    Route::delete('/metas/{id}', [\App\Http\Controllers\Nutri\MetaController::class, 'destroy'])->whereNumber('id')->name('metas.destroy');
+
+    // Biblioteca de orientações nutricionais
+    Route::get('/orientacoes', [\App\Http\Controllers\Nutri\OrientacaoController::class, 'index'])->name('orientacoes.index');
+    Route::post('/orientacoes', [\App\Http\Controllers\Nutri\OrientacaoController::class, 'store'])->name('orientacoes.store');
+    Route::delete('/orientacoes/{id}', [\App\Http\Controllers\Nutri\OrientacaoController::class, 'destroy'])->whereNumber('id')->name('orientacoes.destroy');
+    Route::post('/pacientes/{pid}/orientacoes', [\App\Http\Controllers\Nutri\OrientacaoController::class, 'sincronizarPaciente'])->whereNumber('pid')->name('orientacoes.paciente');
+
     // Roadmap / canal de escuta
     Route::get('/roadmap', [\App\Http\Controllers\Nutri\SugestaoController::class, 'index'])->name('roadmap');
     Route::post('/roadmap', [\App\Http\Controllers\Nutri\SugestaoController::class, 'store'])->name('roadmap.store');
@@ -580,6 +593,9 @@ Route::prefix('p/{token}')->name('portal.')->group(function () {
     Route::get('/', [\App\Http\Controllers\Nutri\PortalController::class, 'home'])->name('home');
     Route::get('/plano', [\App\Http\Controllers\Nutri\PortalController::class, 'plano'])->name('plano');
     Route::get('/lista-compras', [\App\Http\Controllers\Nutri\PortalController::class, 'listaCompras'])->name('lista-compras');
+    Route::get('/metas', [\App\Http\Controllers\Nutri\PortalController::class, 'metas'])->name('metas');
+    Route::post('/metas', [\App\Http\Controllers\Nutri\PortalController::class, 'salvarMetas'])->name('metas.salvar');
+    Route::get('/orientacoes', [\App\Http\Controllers\Nutri\PortalController::class, 'orientacoes'])->name('orientacoes');
     Route::get('/diario', [\App\Http\Controllers\Nutri\PortalController::class, 'diario'])->name('diario');
     Route::post('/diario', [\App\Http\Controllers\Nutri\PortalController::class, 'salvarDiario'])->name('diario.salvar');
     Route::post('/checkin', [\App\Http\Controllers\Nutri\PortalController::class, 'salvarCheckin'])->name('checkin');

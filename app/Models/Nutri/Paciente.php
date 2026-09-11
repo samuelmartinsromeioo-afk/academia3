@@ -68,6 +68,25 @@ class Paciente extends Model
         return $this->hasMany(Checkin::class, 'paciente_id')->orderByDesc('data');
     }
 
+    /** Metas comportamentais prescritas (hábitos entre consultas). */
+    public function metas()
+    {
+        return $this->hasMany(Meta::class, 'paciente_id')->orderBy('ordem')->orderBy('id');
+    }
+
+    public function metasAtivas()
+    {
+        return $this->metas()->where('ativo', true);
+    }
+
+    /** Orientações da biblioteca do nutricionista anexadas a este paciente. */
+    public function orientacoes()
+    {
+        return $this->belongsToMany(Orientacao::class, 'nutri_paciente_orientacoes', 'paciente_id', 'orientacao_id')
+            ->withTimestamps()
+            ->orderBy('titulo');
+    }
+
     public function getIdadeAttribute(): ?int
     {
         return $this->data_nascimento?->age;

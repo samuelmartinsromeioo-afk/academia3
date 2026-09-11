@@ -136,6 +136,61 @@
                 <div class="empty" style="padding:20px;"><i class="ph ph-currency-dollar"></i>Sem cobranças.</div>
             @endforelse
         </div>
+        <!-- Metas comportamentais -->
+        <div class="card">
+            <div style="display:flex; justify-content:space-between; margin-bottom:14px;">
+                <h3>Metas</h3>
+                <a href="{{ route('nutri.metas.index',$paciente->id) }}" class="btn btn-ghost btn-sm">Gerenciar</a>
+            </div>
+            @forelse ($paciente->metasAtivas()->with('registros')->get() as $meta)
+                <div style="display:flex; justify-content:space-between; padding:10px 0; border-bottom:1px solid var(--border);">
+                    <div>
+                        {{ $meta->titulo }}
+                        @if ($meta->alvoLabel())<div class="muted" style="font-size:.72rem;">alvo {{ $meta->alvoLabel() }}</div>@endif
+                    </div>
+                    <div style="text-align:right;">
+                        <strong style="color:var(--primary);">{{ $meta->adesao() }}%</strong>
+                        <div class="muted" style="font-size:.7rem;">30 dias</div>
+                    </div>
+                </div>
+            @empty
+                <div class="empty" style="padding:20px;">
+                    <i class="ph ph-target"></i>Sem metas.<br>
+                    <a href="{{ route('nutri.metas.index',$paciente->id) }}" class="muted">Prescrever hábitos</a>
+                </div>
+            @endforelse
+        </div>
+
+        <!-- Orientações liberadas -->
+        <div class="card">
+            <div style="display:flex; justify-content:space-between; margin-bottom:14px;">
+                <h3>Orientações</h3>
+                <a href="{{ route('nutri.orientacoes.index') }}" class="btn btn-ghost btn-sm">Biblioteca</a>
+            </div>
+            @php
+                $biblioteca = \App\Models\Nutri\Orientacao::where('personal_id', $nutri->id)->orderBy('titulo')->get();
+                $liberadas = $paciente->orientacoes->pluck('id')->all();
+            @endphp
+            @if ($biblioteca->isEmpty())
+                <div class="empty" style="padding:20px;">
+                    <i class="ph ph-book-open"></i>Biblioteca vazia.<br>
+                    <a href="{{ route('nutri.orientacoes.index') }}" class="muted">Escrever a primeira</a>
+                </div>
+            @else
+                <form method="POST" action="{{ route('nutri.orientacoes.paciente',$paciente->id) }}">
+                    @csrf
+                    <div style="max-height:230px; overflow-y:auto; display:flex; flex-direction:column; gap:8px;">
+                        @foreach ($biblioteca as $o)
+                            <label style="display:flex; gap:8px; align-items:flex-start; text-transform:none; color:#fff; font-weight:400; margin:0; font-size:.85rem;">
+                                <input type="checkbox" name="orientacoes[]" value="{{ $o->id }}" style="width:auto; margin-top:3px;" @checked(in_array($o->id, $liberadas))>
+                                <span>{{ $o->titulo }}@if($o->categoria)<span class="muted" style="font-size:.72rem;"> · {{ $o->categoria }}</span>@endif</span>
+                            </label>
+                        @endforeach
+                    </div>
+                    <button class="btn btn-sm" style="margin-top:12px;"><i class="ph ph-check"></i> Salvar o que o paciente vê</button>
+                </form>
+            @endif
+        </div>
     </div>
 
     @if ($paciente->observacoes)

@@ -85,12 +85,13 @@
         <a href="{{ route('nutri.painel') }}" class="nav-item {{ $r==='nutri.painel'?'active':'' }}"><i class="ph ph-squares-four"></i> Painel</a>
 
         <div class="nav-sec">Atendimento</div>
-        <a href="{{ route('nutri.pacientes') }}" class="nav-item {{ str_starts_with((string)$r,'nutri.pacientes')||str_starts_with((string)$r,'nutri.anamnese.form')||str_starts_with((string)$r,'nutri.antropometria')?'active':'' }}"><i class="ph ph-users-three"></i> Pacientes</a>
+        <a href="{{ route('nutri.pacientes') }}" class="nav-item {{ str_starts_with((string)$r,'nutri.pacientes')||str_starts_with((string)$r,'nutri.anamnese.form')||str_starts_with((string)$r,'nutri.antropometria')||str_starts_with((string)$r,'nutri.metas')?'active':'' }}"><i class="ph ph-users-three"></i> Pacientes</a>
         <a href="{{ route('nutri.planos') }}" class="nav-item {{ str_starts_with((string)$r,'nutri.planos')?'active':'' }}"><i class="ph ph-fork-knife"></i> Planos alimentares</a>
         <a href="{{ route('nutri.agenda') }}" class="nav-item {{ $r==='nutri.agenda'?'active':'' }}"><i class="ph ph-calendar-dots"></i> Agenda</a>
 
         <div class="nav-sec">Ferramentas</div>
         <a href="{{ route('nutri.anamnese.modelos') }}" class="nav-item {{ $r==='nutri.anamnese.modelos'?'active':'' }}"><i class="ph ph-clipboard-text"></i> Modelos de anamnese</a>
+        <a href="{{ route('nutri.orientacoes.index') }}" class="nav-item {{ str_starts_with((string)$r,'nutri.orientacoes')?'active':'' }}"><i class="ph ph-book-open"></i> Orientações</a>
         <a href="{{ route('nutri.alimentos.index') }}" class="nav-item {{ $r==='nutri.alimentos.index'?'active':'' }}"><i class="ph ph-carrot"></i> Alimentos</a>
         <a href="{{ route('nutri.financeiro') }}" class="nav-item {{ $r==='nutri.financeiro'?'active':'' }}"><i class="ph ph-currency-circle-dollar"></i> Financeiro</a>
 
