@@ -24,7 +24,7 @@ class StudioController extends Controller
         return view('cadastro.studio');
     }
 
-    public function store(Request $request)
+    public function store(Request $request, \App\Services\CupomService $cupons)
     {
         $dados = $request->validate([
             'nome' => 'required|string|max:255',
@@ -46,6 +46,7 @@ class StudioController extends Controller
             'capacidade_padrao' => 'required|integer|min:1|max:500',
             'latitude' => 'nullable|numeric',
             'longitude' => 'nullable|numeric',
+            'cupom' => $cupons->regraValidacao(),
         ], [
             'cnpj.unique' => 'Este CNPJ já está cadastrado.',
             'email.unique' => 'Este e-mail já está cadastrado.',
@@ -66,10 +67,14 @@ class StudioController extends Controller
             return back()->withErrors(['cnpj' => 'Este CNPJ já está em uso na plataforma.'])->withInput();
         }
 
+        // Fora do create(): `cupom` não é coluna de studios.
+        $codigoCupom = \Illuminate\Support\Arr::pull($dados, 'cupom');
+
         $dados['senha'] = Hash::make($dados['senha']);
         $dados['status'] = 'pendente';
 
         $studio = Studio::create($dados);
+        $cupons->registrarIndicacao($codigoCupom, $studio, $request->ip());
 
         $fb = app(MetaConversionsService::class);
         return redirect()->route('login.index')

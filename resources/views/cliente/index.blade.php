@@ -378,6 +378,7 @@
             <button type="button" onclick="window.location.href='{{ route('cliente.avaliacao-fisica') }}'"><i class="ph ph-heartbeat"></i> Avaliação Física</button>
             <button type="button" onclick="abrirHistoricoModal()"><i class="ph ph-clock-counter-clockwise"></i> Ver Histórico</button>
             <button type="button" onclick="window.location.href='{{ route('mapa.index') }}'"><i class="ph ph-map-pin-area"></i> Ver Mapa</button>
+            <button type="button" onclick="window.location.href='{{ route('indicacoes.painel') }}'"><i class="ph ph-gift"></i> Indique e ganhe</button>
             <button type="button" onclick="window.location.href='{{ route('lgpd.meus-dados') }}'"><i class="ph ph-shield-check"></i> Privacidade e meus dados</button>
             <form action="{{ route('login.logout') }}" method="POST">
                 @csrf

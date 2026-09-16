@@ -229,6 +229,7 @@
             <button type="button" id="btnOpenCarteira"><i class="ph ph-piggy-bank" style="color: var(--primary);"></i> Minha Carteira</button>
             <button type="button" id="btnOpenPerfil"><i class="ph ph-storefront"></i> Editar Loja</button>
             <a href="{{ route('lojas.detalhes', $loja->id) }}" target="_blank"><i class="ph ph-eye"></i> Ver minha vitrine</a>
+            <a href="{{ route('indicacoes.painel') }}"><i class="ph ph-gift"></i> Indique e ganhe</a>
             <a href="{{ route('lgpd.meus-dados') }}"><i class="ph ph-shield-check"></i> Privacidade e meus dados</a>
             <form action="{{ route('login.logout') }}" method="POST" style="margin:0;">
                 @csrf

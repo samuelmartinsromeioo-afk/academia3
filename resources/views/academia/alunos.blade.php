@@ -176,7 +176,6 @@
 <div class="top-bar">
     <div class="logo">SNR<span>FIT</span> <span style="font-family:'Inter'; font-size:0.65rem; color:var(--text-muted); letter-spacing:1px; text-transform:uppercase;">| Alunos</span></div>
     <div class="top-actions">
-        <a href="{{ route('academia.alunos.criar') }}" class="btn-top primary"><i class="ph ph-user-plus"></i> Cadastrar aluno</a>
         <a href="{{ route('academia.dashboard') }}" class="btn-top"><i class="ph ph-arrow-left"></i> Voltar ao painel</a>
     </div>
 </div>
@@ -210,6 +209,12 @@
         <div class="empty-state">
             <i class="ph ph-users"></i>
             <p>Nenhum aluno {{ $filialAtual ? 'nesta filial' : 'vinculado à academia' }} ainda.</p>
+            <p style="font-size:0.85rem; opacity:0.75; margin-top:10px; line-height:1.55;">
+                Os alunos aparecem aqui ao se cadastrarem na SnrFit e contratarem
+                um plano da sua academia pelo app. Compartilhe seu
+                <a href="{{ route('indicacoes.painel') }}" style="color:var(--primary);">código de indicação</a>
+                para trazê-los.
+            </p>
         </div>
     @elseif($alunosPorFilial->isNotEmpty())
         {{-- Conta principal: alunos separados por filial para comparar as unidades. --}}

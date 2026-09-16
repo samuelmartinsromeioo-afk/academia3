@@ -139,6 +139,10 @@ class ClienteController extends Controller
             'estado'      => 'nullable|string|max:255',
             'complemento' => 'nullable|string|max:255',
             'foto'        => 'nullable|file|mimes:jpeg,jpg,png,gif,webp,heic,heif|max:10240',
+            // A07 — a senha era gravada direto de $request->senha, sem passar por
+            // regra nenhuma: dava para trocar por uma senha de 1 caractere aqui,
+            // contornando o mínimo exigido no cadastro.
+            'senha'       => 'nullable|string|min:8|max:255',
         ]);
 
         $data = $validated;
@@ -167,12 +171,12 @@ class ClienteController extends Controller
         return view('cadastro.cliente');
     }
 
-    public function store(Request $request)
+    public function store(Request $request, \App\Services\CupomService $cupons)
     {
         $validated = $request->validate([
             'nome'               => 'required|string|max:255',
             'email'              => 'required|email|max:255|unique:clientes,email',
-            'senha'              => 'required|string|min:6|max:255',
+            'senha'              => 'required|string|min:8|max:255',
             'idade'              => 'required|date',
             'sexo'               => 'required|in:Masculino,Feminino,Outro,masculino,feminino,outro',
             'cep'                => 'required|string|max:9',
@@ -189,10 +193,14 @@ class ClienteController extends Controller
             'latitude'           => 'nullable|numeric',
             'longitude'          => 'nullable|numeric',
             'aceita_termos'      => 'required|accepted',
+            'cupom'              => $cupons->regraValidacao(),
         ], [
             'aceita_termos.required' => 'Você deve concordar com os Termos de Uso',
             'aceita_termos.accepted' => 'Você deve concordar com os Termos de Uso',
         ]);
+
+        // Fora do create(): `cupom` não é coluna de clientes.
+        $codigoCupom = \Illuminate\Support\Arr::pull($validated, 'cupom');
 
         $validated['sexo'] = strtolower($request->sexo);
         $validated['senha'] = Hash::make($validated['senha']);
@@ -201,6 +209,7 @@ class ClienteController extends Controller
         $validated['ip_aceitacao_termos'] = $request->ip();
 
         $cliente = Cliente::create($validated);
+        $cupons->registrarIndicacao($codigoCupom, $cliente, $request->ip());
         $fb = app(MetaConversionsService::class);
         return redirect()->route('login.index')
             ->with('success', 'Cliente cadastrado com sucesso!')

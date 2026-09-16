@@ -14,6 +14,7 @@ use App\Models\Cadastro\Filial;
 class Academia extends Authenticatable
 {
     use HasApiTokens;
+    use \App\Models\Concerns\TemCupomIndicacao;
 
     // O nome da tabela deve bater com o banco
     protected $table = 'academias';

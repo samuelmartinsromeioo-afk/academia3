@@ -23,8 +23,6 @@ class AcademiaController extends Controller
 {
     use ResolvesApiUser;
 
-    private const SENHA_PADRAO_ALUNO = '123456';
-
     // ===================== DASHBOARD =====================
 
     // GET /api/v1/academia/dashboard
@@ -139,48 +137,9 @@ class AcademiaController extends Controller
         return response()->json(['alunos' => $alunos]);
     }
 
-    // POST /api/v1/academia/alunos — cadastro de aluno pela academia
-    public function criarAluno(Request $request)
-    {
-        $academia = $this->academiaAutenticada($request);
-        $filialId = $this->filialDoToken($request);
-
-        $dados = $request->validate([
-            'nome' => 'required|string|max:255',
-            'email' => 'required|email|max:255|unique:clientes,email',
-            'whatsapp' => 'nullable|string|max:20',
-            'idade' => 'nullable|date|before:today',
-            'sexo' => 'required|in:masculino,feminino,outro',
-            'altura' => 'nullable|numeric|min:0|max:300',
-            'peso' => 'nullable|numeric|min:0|max:600',
-            'plano' => 'nullable|string|max:255',
-            'resumo_objetivo' => 'nullable|string|max:1000',
-            'condicao_clinica' => 'nullable|string|max:1000',
-        ], [
-            'email.unique' => 'Já existe um aluno cadastrado com este e-mail.',
-        ]);
-
-        $dados['academia_id'] = $academia->id;
-        $dados['senha'] = Hash::make(self::SENHA_PADRAO_ALUNO);
-        $dados['plano_ativo'] = $request->filled('plano');
-
-        if ($filialId !== null) {
-            $dados['filial_id'] = $filialId;
-        } else {
-            $escolhida = $request->input('filial_id');
-            $dados['filial_id'] = ($escolhida && Filial::where('id', $escolhida)->where('academia_id', $academia->id)->exists())
-                ? (int) $escolhida
-                : null;
-        }
-
-        $cliente = Cliente::create($dados);
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Aluno cadastrado! Senha padrão: ' . self::SENHA_PADRAO_ALUNO . ' — o aluno troca no primeiro acesso.',
-            'cliente' => ['id' => $cliente->id, 'nome' => $cliente->nome],
-        ], 201);
-    }
+    // A academia não cria contas de aluno (o antigo POST /academia/alunos dava
+    // senha fixa "123456" a toda conta criada pela recepção). O aluno se
+    // cadastra na SnrFit e contrata a academia pelo app, definindo a própria senha.
 
     // GET /api/v1/academia/alunos/{clienteId}/anamnese
     public function anamnese(Request $request, $clienteId)
@@ -357,7 +316,7 @@ class AcademiaController extends Controller
 
         $request->validate([
             'nome' => 'required|string|max:255',
-            'senha' => 'required|string|min:6|max:255',
+            'senha' => 'required|string|min:8|max:255',
             'cep' => 'required|string|max:9',
             'rua' => 'required|string|max:300',
             'bairro' => 'required|string|max:200',

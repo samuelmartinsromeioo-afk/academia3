@@ -107,7 +107,7 @@ class RecuperarSenhaController extends Controller
         $request->validate([
             'token'           => 'required',
             'email'           => 'required|email',
-            'senha'           => 'required|min:6|confirmed',
+            'senha'           => 'required|min:8|confirmed',
             'senha_confirmation' => 'required',
         ], [
             'senha.required'       => 'A nova senha é obrigatória.',

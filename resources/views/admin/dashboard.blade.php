@@ -551,6 +551,27 @@
         >
             <i class="ph ph-storefront"></i> Ver Lojas
         </a>
+        <a href="{{ route('admin.indicacoes') }}" style="
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: transparent;
+            border: 1px solid var(--primary);
+            color: var(--primary);
+            padding: 12px 24px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 700;
+            text-transform: uppercase;
+            font-size: 0.8rem;
+            transition: 0.2s;
+            margin-left: 12px;
+        "
+        onmouseover="this.style.background='rgba(212, 255, 0, 0.1)'"
+        onmouseout="this.style.background='transparent'"
+        >
+            <i class="ph ph-gift"></i> Cupons e Indicações
+        </a>
     </div>
 </div>
 

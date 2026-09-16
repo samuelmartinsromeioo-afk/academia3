@@ -31,6 +31,7 @@ use App\Http\Controllers\AdminController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\PersonalAcademiaController;
 use App\Http\Controllers\AcademiaSolicitacaoController;
+use App\Http\Controllers\IndicacaoController;
 
 /*
 |--------------------------------------------------------------------------
@@ -79,6 +80,11 @@ Route::middleware('check.admin')->group(function () {
 
     // Relatórios Financeiros
     Route::get('/admin/relatorio-financeiro', [AdminController::class, 'relatorioFinanceiro'])->name('admin.relatorio-financeiro');
+
+    // Cupons e indicações
+    Route::get('/admin/indicacoes', [IndicacaoController::class, 'adminIndex'])->name('admin.indicacoes');
+    Route::post('/admin/indicacoes', [IndicacaoController::class, 'adminStore'])->name('admin.indicacoes.store');
+    Route::post('/admin/indicacoes/{id}/toggle', [IndicacaoController::class, 'adminToggle'])->name('admin.indicacoes.toggle');
  
     // Logout
     Route::post('/admin/logout', [AdminController::class, 'logout'])->name('admin.logout');
@@ -130,26 +136,46 @@ Route::get('/cadastro/ir-cadastro/{tipo}', [SelecaoController::class, 'redirecio
 
 // Cadastro - Cliente
 Route::get('/cadastro/cliente', [ClienteController::class, 'create'])->name('form.cliente');
-Route::post('/cadastro/cliente', [ClienteController::class, 'store'])->name('cliente.store');
 
 // Cadastro - Personal
 Route::get('/cadastro/personal', [PersonalController::class, 'create'])->name('form.personal');
-Route::post('/cadastro/personal', [PersonalController::class, 'store'])->name('personal.store');
 
 // Tela de conclusão de cadastro (agradecimento / aviso de análise)
 Route::get('/cadastro/sucesso', fn () => view('cadastro.sucesso'))->name('cadastro.sucesso');
 
 // Cadastro - Academia
 Route::get('/cadastro/academia', [AcademiaController::class, 'create'])->name('form.academia');
-Route::post('/cadastro/academia', [AcademiaController::class, 'store'])->name('academia.store');
 
 // Cadastro - Studio
 Route::get('/cadastro/studio', [StudioController::class, 'create'])->name('form.studio');
-Route::post('/cadastro/studio', [StudioController::class, 'store'])->name('studio.store');
 
 // Cadastro - Loja de Suplementos
 Route::get('/cadastro/loja', [LojaController::class, 'create'])->name('form.loja');
-Route::post('/cadastro/loja', [LojaController::class, 'store'])->name('loja.store');
+
+// A04 — os POSTs de cadastro criam conta, gravam upload e disparam subconta
+// Asaas/e-mail. Sem limite eles permitem cadastro em massa (spam de contas,
+// enchimento do storage e do banco). 5 tentativas por minuto por IP.
+Route::middleware('throttle:5,1')->group(function () {
+    Route::post('/cadastro/cliente', [ClienteController::class, 'store'])->name('cliente.store');
+    Route::post('/cadastro/personal', [PersonalController::class, 'store'])->name('personal.store');
+    Route::post('/cadastro/academia', [AcademiaController::class, 'store'])->name('academia.store');
+    Route::post('/cadastro/studio', [StudioController::class, 'store'])->name('studio.store');
+    Route::post('/cadastro/loja', [LojaController::class, 'store'])->name('loja.store');
+});
+
+// ==========================================
+// CUPOM DE INDICAÇÃO
+// ==========================================
+// Checagem do código digitado no formulário. Pública (o cadastro é anônimo),
+// mas com rate limit para não permitir varredura de códigos válidos.
+Route::get('/cupom/validar', [IndicacaoController::class, 'validar'])
+    ->name('cupom.validar')
+    ->middleware('throttle:20,1');
+
+// Painel "Indique e ganhe" — qualquer perfil logado.
+Route::get('/indicacoes', [IndicacaoController::class, 'painel'])
+    ->name('indicacoes.painel')
+    ->middleware('check.login');
 
 
 // ==========================================
@@ -158,10 +184,15 @@ Route::post('/cadastro/loja', [LojaController::class, 'store'])->name('loja.stor
 Route::get('/mapa', [MapaController::class, 'index'])->name('mapa.index');
 Route::get('/mapa/dados', [MapaController::class, 'dados'])->name('mapa.dados');
 
-Route::post('/personal/fotos', [FotoController::class, 'storePersonal'])->name('personal.fotos.store');
-Route::post('/academia/fotos', [FotoController::class, 'storeAcademia'])->name('academia.fotos.store');
-Route::post('/studio/fotos', [FotoController::class, 'storeStudio'])->name('studio.fotos.store');
-Route::delete('/fotos/{id}', [FotoController::class, 'destroy'])->name('fotos.destroy');
+// A01 — upload/remoção de fotos exige sessão. Antes essas rotas eram públicas e
+// só "falhavam fechado" por acidente (findOrFail de um id de sessão nulo → 404),
+// o que ainda expunha a existência de ids de foto a anônimos (404 x 403).
+Route::middleware('check.login')->group(function () {
+    Route::post('/personal/fotos', [FotoController::class, 'storePersonal'])->name('personal.fotos.store');
+    Route::post('/academia/fotos', [FotoController::class, 'storeAcademia'])->name('academia.fotos.store');
+    Route::post('/studio/fotos', [FotoController::class, 'storeStudio'])->name('studio.fotos.store');
+    Route::delete('/fotos/{id}', [FotoController::class, 'destroy'])->name('fotos.destroy')->whereNumber('id');
+});
 
 Route::post('/avaliar', [AvaliacaoController::class, 'store'])->name('avaliar.store')->middleware('check.login');
 
@@ -265,9 +296,9 @@ Route::middleware('check.login')->group(function () {
     Route::post('/academia/solicitacoes/{id}/aprovar', [AcademiaSolicitacaoController::class, 'aprovar'])->name('academia.solicitacoes.aprovar')->whereNumber('id');
     Route::post('/academia/solicitacoes/{id}/rejeitar', [AcademiaSolicitacaoController::class, 'rejeitar'])->name('academia.solicitacoes.rejeitar')->whereNumber('id');
 
-    // Cadastro de alunos pela própria academia (+ anamnese logo após)
-    Route::get('/academia/alunos/criar', [AcademiaController::class, 'criarAluno'])->name('academia.alunos.criar');
-    Route::post('/academia/alunos', [AcademiaController::class, 'storeAluno'])->name('academia.alunos.store');
+    // A academia não cria contas de aluno — o aluno se cadastra na SnrFit e
+    // contrata a academia pelo app, definindo a própria senha. Só a anamnese
+    // do aluno já vinculado fica com a academia.
     Route::get('/academia/alunos/{clienteId}/anamnese', [AcademiaController::class, 'anamneseForm'])->name('academia.alunos.anamnese')->whereNumber('clienteId');
     Route::post('/academia/alunos/{clienteId}/anamnese', [AcademiaController::class, 'salvarAnamnese'])->name('academia.alunos.anamnese.salvar')->whereNumber('clienteId');
 

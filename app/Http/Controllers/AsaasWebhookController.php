@@ -34,7 +34,13 @@ class AsaasWebhookController extends Controller
             return response()->json(['error' => 'Unauthorized'], 401);
         }
 
-        Log::info('Asaas: autorização de saque concedida (token válido)', $request->all());
+        // A02 — não despejamos o corpo inteiro no log: a autorização de saque
+        // carrega valor e identificadores da conta de destino. Só metadados.
+        Log::info('Asaas: autorização de saque concedida (token válido)', [
+            'event'       => $event,
+            'transfer_id' => $request->input('transfer.id') ?? $request->input('id'),
+            'ip'          => $request->ip(),
+        ]);
 
         // O Asaas aprova o saque quando o status retornado é APPROVED
         // (REFUSED bloquearia). Mantemos também 'authorized' por segurança,

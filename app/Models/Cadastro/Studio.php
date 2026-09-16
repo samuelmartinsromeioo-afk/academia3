@@ -15,6 +15,7 @@ class Studio extends Authenticatable
 {
     use HasFactory;
     use HasApiTokens;
+    use \App\Models\Concerns\TemCupomIndicacao;
 
     protected $table = 'studios';
 

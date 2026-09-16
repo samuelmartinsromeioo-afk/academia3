@@ -59,6 +59,10 @@ Two middleware aliases are registered in `Kernel.php`:
 - `check.login` — blocks unauthenticated requests across all roles
 - `check.admin` — blocks non-admin requests (checks `admin_id` in session)
 
+**Session hardening**: `loginController::abrirSessao()` calls `session()->regenerate()` before writing the role id (anti session-fixation, CWE-384), and `logout()` calls `invalidate()` + `regenerateToken()`. Never write a role id into the session without going through `abrirSessao()`. Failed logins are recorded on the `security` log channel (`storage/logs/security-*.log`); `LogSecurityEvents` is registered on both the `web` and `api` middleware groups and logs 401/403/419/429 + 5xx.
+
+**Accounts are always self-created.** Only two code paths may create a `Cliente`: `Cadastro\ClienteController@store` (web) and `Api\AuthController@register` (app) — both with the user choosing their own password (`min:8`). An academia/studio/loja **cannot** create student accounts; the student signs up on SnrFit and contracts the gym through the app, which sets `academia_id`. The old "academia cadastra aluno" flow was removed because it assigned the fixed password `123456` to every account created at the front desk with no forced change. Don't reintroduce it.
+
 ### Approval Workflow for Personal Trainers
 
 New Personais register with `status = 'pendente'`. The Admin must approve them before they can log in. The approval flow lives in `AdminController` and updates `status`, `data_aprovacao`, or `motivo_rejeicao`.
@@ -126,6 +130,21 @@ The **nutrition module** lives under `App\...\Nutri\` (controllers, models, `Ser
 **Multiple fichas per patient / per weekday**: a patient can have more than one active plan at once — activating one no longer deactivates the others (`ativar`/`desativar`). Each `nutri_planos` row carries `dias_semana` (JSON array of `Carbon::dayOfWeek` ints, 0=Sun…6=Sat; empty/null = every day), edited via the weekday pills in the plan editor header. `Paciente::planosAtivos()` returns all active fichas; `Paciente::escolherPlanoDoDia($ativos, $dia)` picks the day's ficha (a day-specific one wins over an "every day" one), and `planoDoDia()`/`planoAtivo()` (today's) wrap it. The plan editor has a **ficha navigator** (`PlanoAlimentarController::fichasIrmas()` → prev/next + day chips) to flip through a patient's fichas without leaving the editor. The **assisted generation** (`gerarIA`) has a *"uma ficha por dia"* mode: with `por_dia` + `dias_semana[]` it creates/reuses one ficha per selected day (varied menu via a per-day rotation seed), then redirects to the patient page; an empty origin ficha is cleaned up. Each generated item also gets **auto substitutions** (2 equivalents from the same role pool, matched to the same kcal). The **food budget is the patient's** (`nutri_pacientes.orcamento_mensal`, set in the patient form / IA form and persisted): the assisted generation divides it across the month — daily target = `orcamento_mensal ÷ days-in-month`, and each ficha's monthly cota = daily × how many times its weekday(s) fall in the month (`ocorrenciasNoMes()`), so the fichas' cotas sum to the stipulated budget (1 ficha = full budget; N fichas split it). The success message reports the cota vs estimated cost per ficha/day. The patient portal (`PortalController@plano`, `?dia=`) shows a weekday tab bar and renders that day's ficha; the shopping list aggregates all active fichas. Day labels come from `PlanoAlimentar::diasSemanaLabels()`.
 
 **Absent patients**: `Paciente::estaAusente()` / `diasSemRetorno()` / `ultimaInteracaoEm()` flag patients with no "retorno" in over a month (`Paciente::DIAS_AUSENCIA` = 30). "Retorno" = latest of a concluded consulta, a check-in, an anthropometry, or (fallback) the registration date. The `scopeAusentes()` query filter (SQL `whereDoesntHave` on all three, paginatable) and `scopeComUltimaInteracao()` (withMax pre-aggregation to avoid N+1) power the painel "Pacientes ausentes" card, the pacientes-list *Situação* filter/badge, and the ficha banner.
+
+### Referral Coupons ("Indique e ganhe")
+
+Every account (Personal/Nutri, Cliente, Academia, Studio, Loja) gets a personal referral code and can enter someone else's at signup. Tracking + bonus only — it does **not** change any amount charged.
+
+Two tables: `cupons` (`codigo` unique, `tipo` = `indicacao` | `promocional`, polymorphic `dono` — null on admin campaigns, `bonus_valor`, `ativo`, `expira_em`, `limite_usos`, `usos`) and `cupom_usos` (polymorphic `usuario`, snapshot of `bonus_valor`, `status`, `ip`; **unique on `usuario_type` + `usuario_id`** so an account can only be referred once). Models `App\Models\Cupom` / `CupomUso`; the five account models use the `App\Models\Concerns\TemCupomIndicacao` trait (`cupomIndicacao()`, `indicacaoRecebida()`, `indicacoesFeitas()`, `codigoIndicacao()`, `bonusIndicacao()`, `totalIndicacoes()`).
+
+All the rules live in `App\Services\CupomService`:
+- `regraValidacao()` — drop into each cadastro's `$request->validate()` as the `cupom` rule. A wrong code **blocks the submit** with a clear message instead of being silently dropped. Always `Arr::pull($dados, 'cupom')` before `Model::create()` — `cupom` is not a column on any of the five tables.
+- `registrarIndicacao($codigo, $model, $ip)` — call right after create. Never throws (a failure here must not undo a persisted signup), blocks self-referral (same account **or** same e-mail as the owner), and increments `usos` inside a `lockForUpdate` transaction.
+- `cupomDe($model)` — get-or-create the account's own code, generated from the name with an unambiguous alphabet (no 0/O, 1/I) so it can be dictated over the phone.
+
+`Cupom::normalizar()` is the single entry point for anything the user typed (`" perso-nd9qs "` → `PERSOND9QS`) — use it for form input, query strings and admin search alike.
+
+UI: the shared field is `partials/campo-cupom.blade.php` (included by all five cadastro views; live check against `GET /cupom/validar`, public but `throttle:20,1` so codes can't be enumerated). Invite link `/cadastro/selecionar?cupom=XXXX` shows who referred you and carries the code into the chosen form. `/indicacoes` (`check.login`, resolves any of the five session keys) is the user panel; `/admin/indicacoes` (`check.admin`) lists coupons, total bonus owed, and creates promotional campaigns. Bonus amount and all copy are in `config/indicacao.php` — run `php artisan config:clear` after editing.
 
 ### Frontend
 

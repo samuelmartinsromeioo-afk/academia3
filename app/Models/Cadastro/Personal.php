@@ -16,6 +16,7 @@ use Laravel\Sanctum\HasApiTokens;
 class Personal extends Authenticatable
 {
     use HasApiTokens;
+    use \App\Models\Concerns\TemCupomIndicacao;
 
     protected $table = 'personals';
 

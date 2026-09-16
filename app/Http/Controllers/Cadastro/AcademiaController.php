@@ -30,7 +30,7 @@ class AcademiaController extends Controller
         return view('cadastro.academia');
     }
 
-    public function store(Request $request)
+    public function store(Request $request, \App\Services\CupomService $cupons)
     {
         $dados = $request->validate([
             'nome' => 'required|string|max:255',
@@ -50,12 +50,17 @@ class AcademiaController extends Controller
             'tipos_aulas' => 'required|string|max:255',
             'latitude' => 'nullable|numeric',
             'longitude' => 'nullable|numeric',
+            'cupom' => $cupons->regraValidacao(),
         ]);
+
+        // Fora do create(): `cupom` não é coluna de academias.
+        $codigoCupom = \Illuminate\Support\Arr::pull($dados, 'cupom');
 
         $dados['senha']  = Hash::make($dados['senha']);
         $dados['status'] = 'pendente'; // precisa de aprovação do administrador
 
         $academia = Academia::create($dados);
+        $cupons->registrarIndicacao($codigoCupom, $academia, $request->ip());
 
         $fb = app(MetaConversionsService::class);
         return redirect()->route('cadastro.sucesso')
@@ -166,79 +171,17 @@ class AcademiaController extends Controller
     }
 
     // ==========================================
-    // CADASTRO DE ALUNOS PELA ACADEMIA (+ anamnese)
+    // ANAMNESE DO ALUNO VINCULADO À ACADEMIA
     // ==========================================
+    //
+    // A academia NÃO cria contas de aluno. O aluno se cadastra na SnrFit e
+    // contrata a academia pelo app — só então aparece aqui. O fluxo antigo
+    // (`criarAluno`/`storeAluno`) atribuía a senha fixa "123456" a toda conta
+    // criada pela recepção, sem obrigar a troca: qualquer um que soubesse o
+    // e-mail entrava na conta do aluno. Removido em favor da contratação
+    // direta pelo aluno, que define a própria senha.
 
-    /** Senha padrão atribuída no cadastro feito pela academia. */
-    private const SENHA_PADRAO_ALUNO = '123456';
-
-    /** Formulário de cadastro de um novo aluno pela academia. */
-    public function criarAluno()
-    {
-        $academia = $this->academiaLogada();
-        if (!$academia) {
-            return redirect()->route('login.index');
-        }
-
-        $planos = Plano::where('academia_id', $academia->id)
-            ->where('ativo', true)
-            ->orderBy('nome')
-            ->get();
-
-        // Principal escolhe a filial do aluno; a subconta já tem a sua fixa.
-        $filiais = $this->ehAcademiaPrincipal()
-            ? Filial::where('academia_id', $academia->id)->orderBy('nome')->get()
-            : collect();
-        $filialAtual = $this->ehSubcontaFilial() ? Filial::find($this->filialId()) : null;
-
-        return view('academia.aluno-criar', compact('academia', 'planos', 'filiais', 'filialAtual'));
-    }
-
-    /** Cria o aluno vinculado à academia com senha padrão e segue para a anamnese. */
-    public function storeAluno(Request $request)
-    {
-        $academia = $this->academiaLogada();
-        if (!$academia) {
-            return redirect()->route('login.index');
-        }
-
-        $dados = $request->validate([
-            'nome'             => 'required|string|max:255',
-            'email'            => 'required|email|max:255|unique:clientes,email',
-            'whatsapp'         => 'nullable|string|max:20',
-            'idade'            => 'nullable|date|before:today',
-            'sexo'             => 'required|in:masculino,feminino,outro',
-            'altura'           => 'nullable|numeric|min:0|max:300',
-            'peso'             => 'nullable|numeric|min:0|max:600',
-            'plano'            => 'nullable|string|max:255',
-            'resumo_objetivo'  => 'nullable|string|max:1000',
-            'condicao_clinica' => 'nullable|string|max:1000',
-        ], [
-            'email.unique' => 'Já existe um aluno cadastrado com este e-mail.',
-        ]);
-
-        $dados['academia_id'] = $academia->id;
-        $dados['senha']       = Hash::make(self::SENHA_PADRAO_ALUNO);
-        $dados['plano_ativo'] = $request->filled('plano');
-
-        // Vínculo de filial: subconta usa a sua; principal escolhe (validando posse).
-        if ($this->ehSubcontaFilial()) {
-            $dados['filial_id'] = $this->filialId();
-        } else {
-            $filialId = $request->input('filial_id');
-            $dados['filial_id'] = ($filialId && Filial::where('id', $filialId)->where('academia_id', $academia->id)->exists())
-                ? (int) $filialId
-                : null;
-        }
-
-        $cliente = Cliente::create($dados);
-
-        return redirect()
-            ->route('academia.alunos.anamnese', $cliente->id)
-            ->with('success', 'Aluno cadastrado! Senha padrão: ' . self::SENHA_PADRAO_ALUNO . ' — o aluno troca no primeiro acesso. Agora preencha a anamnese.');
-    }
-
-    /** Formulário de anamnese do aluno, preenchido pela academia logo após o cadastro. */
+    /** Formulário de anamnese do aluno já vinculado à academia. */
     public function anamneseForm($clienteId)
     {
         $academia = $this->academiaLogada();
@@ -417,7 +360,7 @@ class AcademiaController extends Controller
 
         $request->validate([
             'nome'        => 'required|string|max:255',
-            'senha'       => 'required|string|min:6|max:255',
+            'senha'       => 'required|string|min:8|max:255',
             'cep'         => 'required|string|max:9',
             'rua'         => 'required|string|max:300',
             'bairro'      => 'required|string|max:200',
@@ -452,7 +395,7 @@ class AcademiaController extends Controller
 
         $request->validate([
             'nome'        => 'required|string|max:255',
-            'senha'       => 'nullable|string|min:6|max:255',
+            'senha'       => 'nullable|string|min:8|max:255',
             'cep'         => 'required|string|max:9',
             'rua'         => 'required|string|max:300',
             'bairro'      => 'required|string|max:200',

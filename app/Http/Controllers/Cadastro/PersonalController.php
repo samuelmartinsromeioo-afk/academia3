@@ -23,7 +23,7 @@ class PersonalController extends Controller
         return view('cadastro.personal');
     }
 
-    public function store(Request $request)
+    public function store(Request $request, \App\Services\CupomService $cupons)
     {
         // Passo 1 define os campos condicionais (CREF x CRN, especialidades).
         $tipo = \App\Enums\ProfessionalType::tryFromDefault($request->input('professional_type'));
@@ -57,6 +57,7 @@ class PersonalController extends Controller
             'especialidades.*' => 'string|max:80',
             'modalidade'    => 'nullable|string|in:Presencial,Online,Híbrido',
             'bio'           => 'nullable|string|max:2000',
+            'cupom'         => $cupons->regraValidacao(),
         ];
 
         if ($ehNutri) {
@@ -72,6 +73,9 @@ class PersonalController extends Controller
         }
 
         $dados = $request->validate($regras);
+
+        // Fora do create(): `cupom` não é coluna de personals.
+        $codigoCupom = \Illuminate\Support\Arr::pull($dados, 'cupom');
 
         if ($request->hasFile('foto')) {
             $path = $request->file('foto')->store('personals', 'public');
@@ -91,6 +95,8 @@ class PersonalController extends Controller
 
         // Marca o personal como pioneiro se estiver entre os 100 primeiros do estado.
         $personal->definirPosicaoPioneiro();
+
+        $cupons->registrarIndicacao($codigoCupom, $personal, $request->ip());
 
         $this->criarSubcontaAsaas($personal);
 

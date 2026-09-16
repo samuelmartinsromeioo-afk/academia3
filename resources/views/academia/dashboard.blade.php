@@ -326,9 +326,6 @@
             <button type="button" onclick="window.location.href='{{ route('academia.alunos') }}'">
                 <i class="ph ph-users"></i> Alunos
             </button>
-            <button type="button" onclick="window.location.href='{{ route('academia.alunos.criar') }}'">
-                <i class="ph ph-user-plus" style="color: var(--primary);"></i> Cadastrar aluno
-            </button>
             <button type="button" onclick="window.location.href='{{ route('academia.avaliacao-fisica') }}'">
                 <i class="ph ph-heartbeat" style="color: var(--primary);"></i> Avaliação física
             </button>
@@ -348,6 +345,9 @@
             </button>
             <button type="button" onclick="document.getElementById('modalGaleriaAcademia').style.display='block'; toggleMenu();">
                 <i class="ph ph-images"></i> Galeria de Fotos
+            </button>
+            <button type="button" onclick="window.location.href='{{ route('indicacoes.painel') }}'">
+                <i class="ph ph-gift"></i> Indique e ganhe
             </button>
             <button type="button" onclick="window.location.href='{{ route('lgpd.meus-dados') }}'">
                 <i class="ph ph-shield-check"></i> Privacidade e meus dados

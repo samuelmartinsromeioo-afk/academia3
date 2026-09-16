@@ -340,6 +340,9 @@
                 </div>
             </div>
 
+            <!-- CUPOM DE INDICAÇÃO -->
+            @include('partials.campo-cupom')
+
             <!-- ✅ NOVO: CHECKBOX TERMOS DE USO -->
             <div class="terms-section">
                 <input type="checkbox" id="termsCheckbox" name="aceita_termos" value="1" required>

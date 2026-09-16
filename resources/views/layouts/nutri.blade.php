@@ -96,6 +96,7 @@
 
         <div class="nav-sec">Mais</div>
         <a href="{{ route('nutri.roadmap') }}" class="nav-item {{ $r==='nutri.roadmap'?'active':'' }}"><i class="ph ph-megaphone-simple"></i> Roadmap / sugestões</a>
+        <a href="{{ route('indicacoes.painel') }}" class="nav-item {{ $r==='indicacoes.painel'?'active':'' }}"><i class="ph ph-gift"></i> Indique e ganhe</a>
         <a href="{{ route('lgpd.meus-dados') }}" class="nav-item"><i class="ph ph-shield-check"></i> Meus dados (LGPD)</a>
         <form action="{{ route('login.logout') }}" method="POST" style="margin-top:auto; padding-top:12px;">@csrf
             <button class="nav-item" style="width:100%; background:none; border:none; cursor:pointer;"><i class="ph ph-sign-out"></i> Sair</button>

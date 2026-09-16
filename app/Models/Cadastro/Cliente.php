@@ -12,6 +12,7 @@ use Laravel\Sanctum\HasApiTokens;
 class Cliente extends Authenticatable
 {
     use HasApiTokens;
+    use \App\Models\Concerns\TemCupomIndicacao;
 
     protected $primaryKey = 'id';
     protected $table = 'clientes';

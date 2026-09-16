@@ -10,16 +10,20 @@ class SelecaoController extends \App\Http\Controllers\Controller
        
     }
 
-    public function redirecionar($tipo)
+    public function redirecionar($tipo, Request $request)
     {
-        // Lógica para decidir qual view abrir baseado no clique
-        return match ($tipo) {
-            'personal' => redirect()->route('form.personal'),
-            'cliente'    => redirect()->route('form.cliente'),
-            'academia' => redirect()->route('form.academia'),
-            'studio'   => redirect()->route('form.studio'),
-            'loja'     => redirect()->route('form.loja'),
+        $rota = match ($tipo) {
+            'personal' => 'form.personal',
+            'cliente'  => 'form.cliente',
+            'academia' => 'form.academia',
+            'studio'   => 'form.studio',
+            'loja'     => 'form.loja',
             default    => abort(404),
         };
+
+        // Preserva o cupom de indicação vindo do link de convite.
+        $codigo = \App\Models\Cupom::normalizar($request->query('cupom'));
+
+        return redirect()->route($rota, $codigo !== '' ? ['cupom' => $codigo] : []);
     }
 }

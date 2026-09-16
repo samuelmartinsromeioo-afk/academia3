@@ -97,6 +97,17 @@ class AcademiaController extends Controller
 
     public function update(Request $request, $id)
     {
+        // A01 — sem esta checagem qualquer sessão autenticada poderia editar
+        // OUTRA academia pelo id da URL e, como o método também troca a senha,
+        // tomar a conta. Hoje nenhuma rota aponta para cá (a rota
+        // /academia/update/{id} usa Cadastro\AcademiaController), mas a classe
+        // continua no repositório: o guard evita que religar uma rota reintroduza
+        // a falha silenciosamente.
+        $academiaSessao = session('academia_id');
+        if (! $academiaSessao || (int) $academiaSessao !== (int) $id) {
+            abort(403);
+        }
+
         $academia = Academia::findOrFail($id);
 
         $dados = $request->validate([
@@ -104,6 +115,7 @@ class AcademiaController extends Controller
             'cidade'            => 'required|string',
             'valor_mensalidade' => 'required|numeric',
             'descricao'         => 'nullable|string',
+            'senha'             => 'nullable|string|min:8|max:255',
         ]);
 
         if ($request->filled('senha')) {

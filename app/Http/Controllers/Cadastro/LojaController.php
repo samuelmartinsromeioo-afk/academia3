@@ -26,7 +26,7 @@ class LojaController extends Controller
         return view('cadastro.loja');
     }
 
-    public function store(Request $request)
+    public function store(Request $request, \App\Services\CupomService $cupons)
     {
         $dados = $request->validate([
             'nome'        => 'required|string|max:255',
@@ -44,6 +44,7 @@ class LojaController extends Controller
             'descricao'   => 'nullable|string|max:500',
             'latitude'    => 'nullable|numeric',
             'longitude'   => 'nullable|numeric',
+            'cupom'       => $cupons->regraValidacao(),
         ], [
             'cnpj.unique'     => 'Este CNPJ já está cadastrado.',
             'email.unique'    => 'Este e-mail já está cadastrado.',
@@ -69,10 +70,14 @@ class LojaController extends Controller
             return back()->withErrors(['cnpj' => 'Este CNPJ já está em uso na plataforma.'])->withInput();
         }
 
+        // Fora do create(): `cupom` não é coluna de lojas.
+        $codigoCupom = \Illuminate\Support\Arr::pull($dados, 'cupom');
+
         $dados['senha']  = Hash::make($dados['senha']);
         $dados['status'] = 'pendente'; // precisa de aprovação do administrador
 
         $loja = Loja::create($dados);
+        $cupons->registrarIndicacao($codigoCupom, $loja, $request->ip());
 
         $fb = app(MetaConversionsService::class);
         return redirect()->route('login.index')

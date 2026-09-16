@@ -168,6 +168,8 @@
             </div>
         </div>
 
+        @include('partials.campo-cupom')
+
         <input type="hidden" name="latitude" id="latitude" value="{{ old('latitude') }}">
         <input type="hidden" name="longitude" id="longitude" value="{{ old('longitude') }}">
 

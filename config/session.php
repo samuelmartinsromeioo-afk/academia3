@@ -168,7 +168,10 @@ return [
     |
     */
 
-    'secure' => env('SESSION_SECURE_COOKIE'),
+    // A02 — sem SESSION_SECURE_COOKIE definido o cookie de sessão também trafega
+    // em HTTP puro, onde pode ser capturado. Em produção o padrão passa a ser
+    // `true`; em local (HTTP) continua desligado para não quebrar o dev.
+    'secure' => env('SESSION_SECURE_COOKIE', env('APP_ENV') === 'production'),
 
     /*
     |--------------------------------------------------------------------------
