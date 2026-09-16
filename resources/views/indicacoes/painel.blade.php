@@ -86,12 +86,33 @@
             font-size:.68rem; font-weight:700; text-transform:uppercase; letter-spacing:.6px;
             background:rgba(212,255,0,.12); color:var(--primary); border:1px solid rgba(212,255,0,.3);
         }
+        .stat-nota { font-size:.7rem; color:var(--text-dim); margin-top:7px; line-height:1.4; }
+
+        .regra {
+            display:flex; gap:12px; align-items:flex-start;
+            background:rgba(255,255,255,.03); border:1px solid var(--border);
+            border-radius:14px; padding:16px 18px; margin-bottom:22px;
+            font-size:.84rem; color:var(--text-dim); line-height:1.55;
+        }
+        .regra i { color:var(--primary); font-size:1.1rem; flex-shrink:0; margin-top:1px; }
+
+        .prog {
+            width:92px; height:5px; border-radius:99px; overflow:hidden;
+            background:rgba(255,255,255,.1); margin-bottom:5px;
+        }
+        .prog span { display:block; height:100%; background:var(--primary); border-radius:99px; }
+        .prog-txt { font-size:.7rem; color:var(--text-dim); }
+        .prog-txt.ok { color:var(--primary); display:inline-flex; align-items:center; gap:5px; }
+        .valor-ok { color:var(--primary); font-weight:700; }
+        .valor-espera { color:#f0b429; }
+
         .vazio { text-align:center; padding:44px 20px; color:var(--text-dim); }
         .vazio i { font-size:2.4rem; color:rgba(212,255,0,.35); display:block; margin-bottom:14px; }
         .titulo-secao { font-size:.72rem; text-transform:uppercase; letter-spacing:2px; color:var(--text-dim); margin-bottom:18px; }
         .paginacao { margin-top:18px; }
         .paginacao a, .paginacao span { color:var(--text-dim); }
-        @media (max-width:560px) { .card { padding:20px; } th:nth-child(3), td:nth-child(3) { display:none; } }
+        /* No celular a data sai primeiro; o progresso até a meta é o que importa. */
+        @media (max-width:560px) { .card { padding:20px; } th:nth-child(4), td:nth-child(4) { display:none; } }
     </style>
 </head>
 <body>
@@ -102,7 +123,7 @@
     </div>
 
     <h1>{{ config('indicacao.painel.titulo') }}</h1>
-    <p class="sub">{{ config('indicacao.painel.chamada') }}</p>
+    <p class="sub">{{ str_replace(':meta', $meta, config('indicacao.painel.chamada')) }}</p>
 
     <div class="card">
         <div class="titulo-secao">Seu código de indicação</div>
@@ -123,16 +144,27 @@
 
     <div class="stats">
         <div class="stat">
-            <div class="stat-label">Indicações confirmadas</div>
-            <div class="stat-valor">{{ $total }}</div>
+            <div class="stat-label">Bônus liberado</div>
+            <div class="stat-valor">R$ {{ number_format($bonus, 2, ',', '.') }}</div>
+            <div class="stat-nota">{{ $total }} indicação(ões) com meta batida</div>
         </div>
         <div class="stat">
-            <div class="stat-label">Bônus acumulado</div>
-            <div class="stat-valor">R$ {{ number_format($bonus, 2, ',', '.') }}</div>
+            <div class="stat-label">Aguardando meta</div>
+            <div class="stat-valor" style="color:#f0b429;">R$ {{ number_format($bonusPendente, 2, ',', '.') }}</div>
+            <div class="stat-nota">{{ $pendentes }} indicação(ões) a caminho</div>
         </div>
         <div class="stat">
             <div class="stat-label">Bônus por indicação</div>
             <div class="stat-valor">R$ {{ number_format((float) $cupom->bonus_valor, 2, ',', '.') }}</div>
+            <div class="stat-nota">libera com {{ $meta }} alunos do indicado</div>
+        </div>
+    </div>
+
+    <div class="regra">
+        <i class="ph-bold ph-info"></i>
+        <div>
+            <p>{{ str_replace(':meta', $meta, config('indicacao.painel.regra')) }}</p>
+            <p style="margin-top:8px; opacity:.8;">{{ config('indicacao.painel.aluno') }}</p>
         </div>
     </div>
 
@@ -150,17 +182,41 @@
                     <tr>
                         <th>Nome</th>
                         <th>Perfil</th>
+                        <th>Progresso</th>
                         <th>Data</th>
                         <th>Bônus</th>
                     </tr>
                 </thead>
                 <tbody>
                     @foreach ($indicacoes as $uso)
+                        @php
+                            $alunos = $uso->geraBonus() ? $uso->alunosDoIndicado() : null;
+                            $pct    = $alunos === null ? 0 : min(100, (int) round($alunos / max($meta, 1) * 100));
+                        @endphp
                         <tr>
                             <td>{{ $uso->usuario->nome ?? 'Conta removida' }}</td>
                             <td><span class="badge">{{ $uso->tipoLabel() }}</span></td>
+                            <td>
+                                @if (! $uso->geraBonus())
+                                    <span class="prog-txt">—</span>
+                                @elseif ($uso->estaLiberado())
+                                    <span class="prog-txt ok"><i class="ph-bold ph-check-circle"></i> Meta batida</span>
+                                @else
+                                    <div class="prog"><span style="width:{{ $pct }}%"></span></div>
+                                    <span class="prog-txt">{{ $alunos }} / {{ $meta }} alunos</span>
+                                @endif
+                            </td>
                             <td>{{ $uso->created_at?->format('d/m/Y') }}</td>
-                            <td>R$ {{ number_format((float) $uso->bonus_valor, 2, ',', '.') }}</td>
+                            <td>
+                                @if (! $uso->geraBonus())
+                                    <span class="badge">{{ $uso->situacao() }}</span>
+                                @else
+                                    <span class="{{ $uso->estaLiberado() ? 'valor-ok' : 'valor-espera' }}">
+                                        R$ {{ number_format((float) $uso->bonus_valor, 2, ',', '.') }}
+                                    </span>
+                                    <div class="prog-txt">{{ $uso->situacao() }}</div>
+                                @endif
+                            </td>
                         </tr>
                     @endforeach
                 </tbody>

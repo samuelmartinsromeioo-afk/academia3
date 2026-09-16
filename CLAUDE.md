@@ -135,11 +135,20 @@ The **nutrition module** lives under `App\...\Nutri\` (controllers, models, `Ser
 
 Every account (Personal/Nutri, Cliente, Academia, Studio, Loja) gets a personal referral code and can enter someone else's at signup. Tracking + bonus only — it does **not** change any amount charged.
 
-Two tables: `cupons` (`codigo` unique, `tipo` = `indicacao` | `promocional`, polymorphic `dono` — null on admin campaigns, `bonus_valor`, `ativo`, `expira_em`, `limite_usos`, `usos`) and `cupom_usos` (polymorphic `usuario`, snapshot of `bonus_valor`, `status`, `ip`; **unique on `usuario_type` + `usuario_id`** so an account can only be referred once). Models `App\Models\Cupom` / `CupomUso`; the five account models use the `App\Models\Concerns\TemCupomIndicacao` trait (`cupomIndicacao()`, `indicacaoRecebida()`, `indicacoesFeitas()`, `codigoIndicacao()`, `bonusIndicacao()`, `totalIndicacoes()`).
+**The bonus is conditional.** R$ 30 per referral (`config('indicacao.bonus')`), but it is only *redeemable* once the **referred** account reaches `config('indicacao.meta_alunos')` (6) students won **through the platform**. Three rules that are easy to get wrong:
+
+1. **What counts as a student** — `TemCupomIndicacao::alunosPelaPlataforma()` counts distinct clients with a *confirmed payment* (`Cupom::STATUS_PAGAMENTO_VALIDO`) in `payments`/`subscriptions` for that receiver (`trainer_id`/`academia_id`/`studio_id`/`loja_id`), plus paid `nutri_cobrancas` for nutritionists. It deliberately does **not** count hand-made links (`clientes.academia_id`, nutri patients, unpaid agenda rows) — those are free to create, so counting them would let anyone link 6 friends and unlock R$ 30. If you extend this, keep the "money actually moved" bar.
+2. **Referring a student earns nothing** — a `Cliente` has no students, so the use is stored as `sem_bonus` with `bonus_valor = 0` (history only). Otherwise creating fake student accounts would be a cheap farm.
+3. **Release is sticky** — `CupomService::reavaliar()` only moves `pendente → liberado` and stamps `liberado_em`. A referred account that later loses students does **not** re-lock the bonus; the referrer doesn't control the other party's churn, and a balance that disappears from the panel is worse than a strict rule.
+
+Re-evaluation runs when the referrer opens `/indicacoes` (their own pending uses) and via `php artisan indicacoes:reavaliar` (cron, keeps the admin report current without the referrer logging in).
+
+Two tables: `cupons` (`codigo` unique, `tipo` = `indicacao` | `promocional`, polymorphic `dono` — null on admin campaigns, `bonus_valor`, `ativo`, `expira_em`, `limite_usos`, `usos`) and `cupom_usos` (polymorphic `usuario`, snapshot of `bonus_valor`, `status` = `pendente` | `liberado` | `sem_bonus` | `cancelado`, `liberado_em`, `ip`; **unique on `usuario_type` + `usuario_id`** so an account can only be referred once). Models `App\Models\Cupom` / `CupomUso`; the five account models use the `App\Models\Concerns\TemCupomIndicacao` trait (`cupomIndicacao()`, `indicacaoRecebida()`, `indicacoesFeitas()`, `codigoIndicacao()`, `bonusIndicacao()`, `totalIndicacoes()`).
 
 All the rules live in `App\Services\CupomService`:
 - `regraValidacao()` — drop into each cadastro's `$request->validate()` as the `cupom` rule. A wrong code **blocks the submit** with a clear message instead of being silently dropped. Always `Arr::pull($dados, 'cupom')` before `Model::create()` — `cupom` is not a column on any of the five tables.
-- `registrarIndicacao($codigo, $model, $ip)` — call right after create. Never throws (a failure here must not undo a persisted signup), blocks self-referral (same account **or** same e-mail as the owner), and increments `usos` inside a `lockForUpdate` transaction.
+- `registrarIndicacao($codigo, $model, $ip)` — call right after create. Never throws (a failure here must not undo a persisted signup), blocks self-referral (same account **or** same e-mail as the owner), increments `usos` inside a `lockForUpdate` transaction, and decides the starting status (`sem_bonus` for a `Cliente`, otherwise `pendente`).
+- `reavaliar($usos)` / `reavaliarDoIndicador($dono)` — release pending bonuses whose referred account hit the goal.
 - `cupomDe($model)` — get-or-create the account's own code, generated from the name with an unambiguous alphabet (no 0/O, 1/I) so it can be dictated over the phone.
 
 `Cupom::normalizar()` is the single entry point for anything the user typed (`" perso-nd9qs "` → `PERSOND9QS`) — use it for form input, query strings and admin search alike.

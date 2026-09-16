@@ -69,12 +69,17 @@ class CupomService
                     return null;
                 }
 
+                // Aluno indicado entra no histórico sem bônus — o prêmio é por
+                // trazer quem conquista alunos. Os demais nascem `pendente` e
+                // só liberam quando o indicado bate a meta (ver reavaliar()).
+                $ehAluno = class_basename($usuario) === 'Cliente';
+
                 $uso = CupomUso::create([
                     'cupom_id'     => $cupom->id,
                     'usuario_type' => $usuario->getMorphClass(),
                     'usuario_id'   => $usuario->getKey(),
-                    'bonus_valor'  => $cupom->bonus_valor,
-                    'status'       => CupomUso::STATUS_CONFIRMADO,
+                    'bonus_valor'  => $ehAluno ? 0 : $cupom->bonus_valor,
+                    'status'       => $ehAluno ? CupomUso::STATUS_SEM_BONUS : CupomUso::STATUS_PENDENTE,
                     'ip'           => $ip,
                 ]);
 
@@ -93,6 +98,52 @@ class CupomService
 
             return null;
         }
+    }
+
+    /**
+     * Libera as indicações pendentes cujo indicado já bateu a meta de alunos.
+     *
+     * Só anda para frente: uma vez liberado, o bônus não volta a travar se o
+     * indicado perder alunos depois — quem indicou não controla a evasão do
+     * outro, e um saldo que some do painel é pior que um critério rígido.
+     *
+     * @return int quantas indicações foram liberadas nesta passada
+     */
+    public function reavaliar(iterable $usos): int
+    {
+        $meta      = (int) config('indicacao.meta_alunos', 6);
+        $liberados = 0;
+
+        foreach ($usos as $uso) {
+            if ($uso->status !== CupomUso::STATUS_PENDENTE) {
+                continue;
+            }
+
+            $indicado = $uso->usuario;
+
+            // Conta apagada: não há como comprovar a meta, fica pendente.
+            if (! $indicado || ! method_exists($indicado, 'alunosPelaPlataforma')) {
+                continue;
+            }
+
+            if ($indicado->alunosPelaPlataforma() >= $meta) {
+                $uso->update([
+                    'status'      => CupomUso::STATUS_LIBERADO,
+                    'liberado_em' => now(),
+                ]);
+                $liberados++;
+            }
+        }
+
+        return $liberados;
+    }
+
+    /** Reavalia as indicações pendentes feitas por um indicador específico. */
+    public function reavaliarDoIndicador(Model $dono): int
+    {
+        return $this->reavaliar(
+            $dono->indicacoesFeitas()->pendentes()->with('usuario')->get()
+        );
     }
 
     /** O cupom pessoal de um usuário, criado no primeiro acesso. */

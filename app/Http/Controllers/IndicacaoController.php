@@ -57,19 +57,26 @@ class IndicacaoController extends Controller
 
         $cupom = $this->cupons->cupomDe($usuario);
 
+        // Libera na hora o que já bateu a meta, para o painel nunca mostrar um
+        // bônus travado que na verdade já venceu a condição.
+        $this->cupons->reavaliarDoIndicador($usuario);
+
         $indicacoes = $usuario->indicacoesFeitas()
             ->with('usuario')
             ->latest()
             ->paginate(15);
 
         return view('indicacoes.painel', [
-            'usuario'    => $usuario,
-            'cupom'      => $cupom,
-            'indicacoes' => $indicacoes,
-            'total'      => $usuario->totalIndicacoes(),
-            'bonus'      => $usuario->bonusIndicacao(),
-            'linkConvite' => route('cadastro.SelecaoCadastro', ['cupom' => $cupom->codigo]),
-            'voltar'     => $this->rotaDashboard($usuario),
+            'usuario'       => $usuario,
+            'cupom'         => $cupom,
+            'indicacoes'    => $indicacoes,
+            'total'         => $usuario->totalIndicacoes(),
+            'bonus'         => $usuario->bonusIndicacao(),
+            'pendentes'     => $usuario->indicacoesPendentes(),
+            'bonusPendente' => $usuario->bonusPendente(),
+            'meta'          => (int) config('indicacao.meta_alunos', 6),
+            'linkConvite'   => route('cadastro.SelecaoCadastro', ['cupom' => $cupom->codigo]),
+            'voltar'        => $this->rotaDashboard($usuario),
         ]);
     }
 
@@ -95,8 +102,11 @@ class IndicacaoController extends Controller
 
         return view('admin.indicacoes', [
             'cupons'          => $cupons,
-            'totalIndicacoes' => CupomUso::confirmados()->count(),
-            'bonusTotal'      => (float) CupomUso::confirmados()->sum('bonus_valor'),
+            'totalIndicacoes' => CupomUso::liberados()->count(),
+            'bonusTotal'      => (float) CupomUso::liberados()->sum('bonus_valor'),
+            'pendentes'       => CupomUso::pendentes()->count(),
+            'bonusPendente'   => (float) CupomUso::pendentes()->sum('bonus_valor'),
+            'meta'            => (int) config('indicacao.meta_alunos', 6),
         ]);
     }
 

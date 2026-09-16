@@ -43,6 +43,7 @@
         .stat { background:var(--card-bg); border:1px solid var(--border); border-radius:16px; padding:20px; }
         .stat-label { font-size:.66rem; text-transform:uppercase; letter-spacing:1.6px; color:var(--text-dim); margin-bottom:9px; }
         .stat-valor { font-family:'Syncopate',sans-serif; font-size:1.55rem; color:var(--primary); }
+        .stat-nota { font-size:.68rem; color:var(--text-dim); margin-top:7px; line-height:1.4; }
 
         .card { background:var(--card-bg); border:1px solid var(--border); border-radius:18px; padding:24px; margin-bottom:22px; }
         .titulo-secao { font-size:.7rem; text-transform:uppercase; letter-spacing:2px; color:var(--text-dim); margin-bottom:18px; }
@@ -100,16 +101,19 @@
 
     <div class="stats">
         <div class="stat">
-            <div class="stat-label">Indicações confirmadas</div>
-            <div class="stat-valor">{{ $totalIndicacoes }}</div>
+            <div class="stat-label">Bônus a pagar (liberado)</div>
+            <div class="stat-valor">R$ {{ number_format($bonusTotal, 2, ',', '.') }}</div>
+            <div class="stat-nota">{{ $totalIndicacoes }} indicação(ões) com {{ $meta }}+ alunos</div>
         </div>
         <div class="stat">
-            <div class="stat-label">Bônus a pagar</div>
-            <div class="stat-valor">R$ {{ number_format($bonusTotal, 2, ',', '.') }}</div>
+            <div class="stat-label">Reservado (aguardando meta)</div>
+            <div class="stat-valor" style="color:#f0b429;">R$ {{ number_format($bonusPendente, 2, ',', '.') }}</div>
+            <div class="stat-nota">{{ $pendentes }} indicação(ões) pendente(s)</div>
         </div>
         <div class="stat">
             <div class="stat-label">Cupons cadastrados</div>
             <div class="stat-valor">{{ $cupons->total() }}</div>
+            <div class="stat-nota">meta atual: {{ $meta }} alunos pela plataforma</div>
         </div>
     </div>
 

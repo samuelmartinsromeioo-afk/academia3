@@ -16,8 +16,21 @@ class Cupom extends Model
     public const TIPO_INDICACAO   = 'indicacao';
     public const TIPO_PROMOCIONAL = 'promocional';
 
-    /** Bônus padrão creditado ao indicador por cada indicação confirmada. */
-    public const BONUS_PADRAO = 10.00;
+    /** Bônus por indicação. Só vira resgatável com a meta batida — ver CupomUso. */
+    public const BONUS_PADRAO = 30.00;
+
+    /**
+     * Status de `payments`/`subscriptions` que representam dinheiro que entrou —
+     * usado para contar os alunos que liberam o bônus do indicador.
+     *
+     * A tabela acumulou grafias diferentes ao longo do tempo (pago/paid/
+     * succeeded), então a lista é generosa; mas nunca inclui pending/processing/
+     * failed/canceled/overdue, que não comprovam aluno conquistado.
+     *
+     * (Fica aqui e não no trait TemCupomIndicacao porque PHP 8.1 não permite
+     * constante em trait.)
+     */
+    public const STATUS_PAGAMENTO_VALIDO = ['succeeded', 'paid', 'pago', 'confirmed', 'received', 'active'];
 
     protected $fillable = [
         'codigo',
