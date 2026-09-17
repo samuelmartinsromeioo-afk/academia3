@@ -45,10 +45,14 @@ class CobrancaController extends Controller
 
         $cobranca = Cobranca::create($dados);
 
-        // Tenta gerar link de pagamento na subconta Asaas do nutricionista.
+        // Link no marketplace: 90% para o nutricionista, 10% de comissão.
         $cobranca->gerarLinkAsaas();
 
-        return back()->with('success', 'Cobrança criada.'.($cobranca->link_pagamento ? ' Link de pagamento gerado.' : ''));
+        if ($cobranca->link_pagamento) {
+            return back()->with('success', 'Cobrança criada e link de pagamento gerado.');
+        }
+
+        return back()->with('success', 'Cobrança criada para controle manual. Para gerar link de pagamento online, é preciso concluir a habilitação da sua conta de recebimento.');
     }
 
     /** Salva o valor da consulta que o cliente paga pelo perfil do nutri. */
