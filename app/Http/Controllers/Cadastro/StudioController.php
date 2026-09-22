@@ -74,18 +74,19 @@ class StudioController extends Controller
         $dados['status'] = 'pendente';
 
         $studio = Studio::create($dados);
+
         $cupons->registrarIndicacao($codigoCupom, $studio, $request->ip());
 
         $fb = app(MetaConversionsService::class);
-        return redirect()->route('login.index')
-            ->with('sucesso', 'Cadastro enviado com sucesso! Seu studio será analisado pelo administrador e você poderá acessar após a aprovação.')
+        return redirect()->route('cadastro.sucesso')
+            ->with('cad_tipo', 'studio')
             ->with('fb_event', $fb->track(
                 'CompleteRegistration',
                 ['content_name' => 'Studio', 'status' => 'pendente'],
                 $fb->userDataFromModel($studio),
                 null,
                 null,
-                route('login.index')
+                route('cadastro.sucesso')
             ));
     }
 

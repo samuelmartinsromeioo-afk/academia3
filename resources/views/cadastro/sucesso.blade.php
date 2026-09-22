@@ -16,7 +16,7 @@
         .card {
             position: relative; width: 100%; max-width: 600px; text-align: center;
             background: linear-gradient(180deg, #16181d, #0a0b0d);
-            border: 1px solid rgba(212,255,0,0.22);
+            border: 1px solid rgba(124,255,0,0.22);
             border-radius: 26px; padding: 52px 40px 40px;
             box-shadow: 0 30px 80px rgba(0,0,0,0.55);
         }
@@ -24,7 +24,7 @@
             width: 96px; height: 96px; margin: 0 auto 26px; border-radius: 50%;
             display: flex; align-items: center; justify-content: center;
             background: radial-gradient(circle at 34% 28%, rgba(255,255,255,0.35), transparent 55%), #d4ff00;
-            box-shadow: 0 0 0 7px rgba(212,255,0,0.08), 0 0 40px rgba(212,255,0,0.35);
+            box-shadow: 0 0 0 7px rgba(124,255,0,0.08), 0 0 40px rgba(124,255,0,0.35);
             animation: selo .6s cubic-bezier(.2,1.2,.3,1.4) both;
         }
         @keyframes selo { 0% { transform: scale(0) rotate(-20deg); } 100% { transform: scale(1) rotate(0); } }
@@ -59,7 +59,7 @@
             padding: 15px 30px; border-radius: 14px; font-weight: 800; font-size: 0.95rem;
             transition: transform .15s ease, box-shadow .15s ease;
         }
-        .btn:hover { transform: translateY(-2px); box-shadow: 0 12px 28px rgba(212,255,0,0.25); }
+        .btn:hover { transform: translateY(-2px); box-shadow: 0 12px 28px rgba(124,255,0,0.25); }
 
         .assinatura { margin-top: 26px; font-size: 0.7rem; color: rgba(255,255,255,0.45); }
         .assinatura .marca { font-family: 'Syncopate', sans-serif; font-weight: 700; letter-spacing: 2px; color: rgba(255,255,255,0.7); }
@@ -69,40 +69,28 @@
     </style>
 </head>
 <body class="ed-page">
-    @php $tipo = session('cad_tipo', 'academia'); @endphp
+    @php
+        // Copy por tipo de conta em config/textos.php. Sem `cad_tipo` na sessão
+        // (F5 na página perde o flash) cai no texto padrão.
+        $tipo  = session('cad_tipo', 'padrao');
+        $textos = config('textos.boas_vindas.' . $tipo) ?? config('textos.boas_vindas.padrao');
+    @endphp
     <div class="card">
         <div class="selo"><i class="ph-fill ph-check"></i></div>
-        <div class="eyebrow">Cadastro recebido</div>
+        <div class="eyebrow">{{ $textos['eyebrow'] }}</div>
 
-        @if($tipo === 'academia')
-            <h1>Obrigado por crescer <span class="mark">com a gente</span></h1>
+        <h1>{{ $textos['titulo_inicio'] }} <span class="mark">{{ $textos['titulo_destaque'] }}</span></h1>
 
-            <p>
-                Obrigado por escolher a <strong>SnrFit</strong> para fazer parte da trajetória da sua academia.
-                É uma honra ter o seu negócio conosco — e o nosso compromisso é <strong>crescer junto com você</strong>.
-            </p>
-            <p>
-                Seu cadastro foi enviado para análise da nossa equipe. Em breve <strong>entraremos em contato</strong>
-                para alinhar um <strong>valor mensal sob medida</strong>, garantindo que a sua academia aproveite
-                tudo o que a plataforma oferece — gestão completa, divulgação do seu espaço e visibilidade para novos alunos.
-            </p>
-            <p>
-                Assim que o seu acesso for aprovado, você será avisado e poderá entrar normalmente.
-                Seja muito bem-vindo à SnrFit. <strong>Vamos longe juntos.</strong>
-            </p>
+        {{-- Copy de config (nossa, nunca entrada de usuário): o <strong> precisa passar. --}}
+        @foreach($textos['paragrafos'] as $paragrafo)
+            <p>{!! $paragrafo !!}</p>
+        @endforeach
 
-            <div class="destaques">
-                <div class="item"><i class="ph ph-gauge"></i><span>Gestão completa num só painel</span></div>
-                <div class="item"><i class="ph ph-megaphone"></i><span>Divulgação da sua academia</span></div>
-                <div class="item"><i class="ph ph-users-three"></i><span>Visibilidade para novos alunos</span></div>
-            </div>
-        @else
-            <h1>Cadastro <span class="mark">enviado</span></h1>
-            <p style="text-align:center;">
-                Recebemos o seu cadastro com sucesso. Nossa equipe vai analisar os seus dados e,
-                assim que for aprovado, você poderá acessar a plataforma normalmente. <strong>Bora pra cima!</strong>
-            </p>
-        @endif
+        <div class="destaques">
+            @foreach($textos['destaques'] as $destaque)
+                <div class="item"><i class="ph {{ $destaque['icone'] }}"></i><span>{{ $destaque['texto'] }}</span></div>
+            @endforeach
+        </div>
 
         <a href="{{ route('login.index') }}" class="btn">
             <i class="ph ph-arrow-left"></i> Voltar ao início

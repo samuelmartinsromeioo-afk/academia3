@@ -77,18 +77,19 @@ class LojaController extends Controller
         $dados['status'] = 'pendente'; // precisa de aprovação do administrador
 
         $loja = Loja::create($dados);
+
         $cupons->registrarIndicacao($codigoCupom, $loja, $request->ip());
 
         $fb = app(MetaConversionsService::class);
-        return redirect()->route('login.index')
-            ->with('sucesso', 'Cadastro enviado com sucesso! Sua loja será analisada pelo administrador e você poderá acessar após a aprovação.')
+        return redirect()->route('cadastro.sucesso')
+            ->with('cad_tipo', 'loja')
             ->with('fb_event', $fb->track(
                 'CompleteRegistration',
                 ['content_name' => 'Loja', 'status' => 'pendente'],
                 $fb->userDataFromModel($loja),
                 null,
                 null,
-                route('login.index')
+                route('cadastro.sucesso')
             ));
     }
 

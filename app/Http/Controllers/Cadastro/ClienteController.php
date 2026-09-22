@@ -211,8 +211,10 @@ class ClienteController extends Controller
         $cliente = Cliente::create($validated);
         $cupons->registrarIndicacao($codigoCupom, $cliente, $request->ip());
         $fb = app(MetaConversionsService::class);
+        // A tela de login lê `sucesso`, não `success` — com a chave errada o
+        // aluno voltava ao login sem nenhuma confirmação na tela.
         return redirect()->route('login.index')
-            ->with('success', 'Cliente cadastrado com sucesso!')
+            ->with('sucesso', 'Sua conta está pronta! Faça login e bora começar — você agora é da família SnrFit.')
             ->with('fb_event', $fb->track(
                 'CompleteRegistration',
                 ['content_name' => 'Cliente', 'status' => 'completo'],

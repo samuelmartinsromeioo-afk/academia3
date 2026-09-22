@@ -101,15 +101,15 @@ class PersonalController extends Controller
         $this->criarSubcontaAsaas($personal);
 
         $fb = app(MetaConversionsService::class);
-        return redirect()->route('login.index')
-            ->with('sucesso', $tipo->label() . ' cadastrado(a) com sucesso! Aguarde a aprovação do administrador.')
+        return redirect()->route('cadastro.sucesso')
+            ->with('cad_tipo', $ehNutri ? 'nutricionista' : 'personal')
             ->with('fb_event', $fb->track(
                 'CompleteRegistration',
                 ['content_name' => $tipo->label(), 'status' => 'pendente'],
                 $fb->userDataFromModel($personal),
                 null,
                 null,
-                route('login.index')
+                route('cadastro.sucesso')
             ));
     }
 
