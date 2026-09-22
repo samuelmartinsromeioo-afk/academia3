@@ -263,9 +263,6 @@ class AdminController extends Controller
         if ($personal->foto) {
             \Illuminate\Support\Facades\Storage::disk('public')->delete($personal->foto);
         }
-        if ($personal->certificado) {
-            \Illuminate\Support\Facades\Storage::disk('public')->delete($personal->certificado);
-        }
 
         // Deletar pacotes
         \App\Models\Cadastro\Pacote::where('personal_id', $id)->delete();

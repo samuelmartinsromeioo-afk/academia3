@@ -42,7 +42,6 @@ class Personal extends Authenticatable
         'complemento',
         'senha',
         'email',
-        'certificado',
         'cref',
         'crn',
         'especialidades',

@@ -69,7 +69,7 @@ class PaymentTest extends TestCase
             'id' => 1, 'nome' => 'Trainer', 'email' => 'trainer@test.com',
             'senha' => bcrypt('pass'), 'cpf' => '00000000001', 'status' => 'aprovado',
             'cep' => '30000-000', 'rua' => 'R', 'bairro' => 'B', 'cidade' => 'BH', 'estado' => 'MG',
-            'complemento' => '-', 'foto' => 'f.jpg', 'certificado' => 'c.pdf', 'idade' => '1990-01-01', 'valor_secao' => 100,
+            'complemento' => '-', 'foto' => 'f.jpg', 'idade' => '1990-01-01', 'valor_secao' => 100,
         ]);
         \DB::table('clientes')->insert([
             'id' => 1, 'nome' => 'Cliente', 'email' => 'cliente@test.com', 'senha' => bcrypt('pass'),
@@ -110,7 +110,7 @@ class PaymentTest extends TestCase
             'id' => 2, 'nome' => 'Trainer2', 'email' => 'trainer2@test.com',
             'senha' => bcrypt('pass'), 'cpf' => '00000000002', 'status' => 'aprovado',
             'cep' => '30000-000', 'rua' => 'R', 'bairro' => 'B', 'cidade' => 'BH', 'estado' => 'MG',
-            'complemento' => '-', 'foto' => 'f.jpg', 'certificado' => 'c.pdf', 'idade' => '1990-01-01', 'valor_secao' => 100,
+            'complemento' => '-', 'foto' => 'f.jpg', 'idade' => '1990-01-01', 'valor_secao' => 100,
         ]);
         \DB::table('clientes')->insert([
             'id' => 2, 'nome' => 'Cliente2', 'email' => 'cli2@test.com', 'senha' => bcrypt('pass'),
@@ -151,7 +151,7 @@ class PaymentTest extends TestCase
             'id' => 3, 'nome' => 'Trainer3', 'email' => 'trainer3@test.com',
             'senha' => bcrypt('pass'), 'cpf' => '00000000003', 'status' => 'aprovado',
             'cep' => '30000-000', 'rua' => 'R', 'bairro' => 'B', 'cidade' => 'BH', 'estado' => 'MG',
-            'complemento' => '-', 'foto' => 'f.jpg', 'certificado' => 'c.pdf', 'idade' => '1990-01-01', 'valor_secao' => 100,
+            'complemento' => '-', 'foto' => 'f.jpg', 'idade' => '1990-01-01', 'valor_secao' => 100,
         ]);
         \DB::table('clientes')->insert([
             'id' => 3, 'nome' => 'Cliente3', 'email' => 'cli3@test.com', 'senha' => bcrypt('pass'),

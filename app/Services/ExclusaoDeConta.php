@@ -87,7 +87,7 @@ class ExclusaoDeConta
         $p->forceFill([
             'nome' => 'Conta removida', 'email' => 'removido_' . $p->id . '@snrfit.local',
             'cpf' => '', 'cep' => '', 'rua' => '', 'bairro' => '', 'cidade' => '', 'estado' => '',
-            'complemento' => '', 'foto' => '', 'certificado' => '', 'whatsapp' => null,
+            'complemento' => '', 'foto' => '', 'whatsapp' => null,
             'chave_pix' => null, 'cref' => null,
             'asaas_account_id' => null, 'asaas_wallet_id' => null, 'asaas_api_key' => null, 'stripe_account_id' => null,
             'status' => 'rejeitado',

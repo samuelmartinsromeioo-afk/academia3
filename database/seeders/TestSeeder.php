@@ -112,7 +112,6 @@ class TestSeeder extends Seeder
             'avaliacao' => 'Aguardando avaliação inicial',
             'resultados' => 'Nenhum resultado registrado',
             'foto' => 'personals/default.jpg',
-            'certificado' => 'certificados/default.pdf',
             'latitude' => -19.9200,
             'longitude' => -43.9400,
         ];

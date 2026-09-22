@@ -48,7 +48,7 @@ Resposta `200`:
 Erros: `401` credenciais inválidas · `403` personal ainda não aprovado.
 
 ### POST /api/v1/register
-Público (rate limit: 10/min). Cadastro de **cliente** (personal se cadastra pelo site, pois exige certificado/CREF e aprovação do admin).
+Público (rate limit: 10/min). Cadastro de **cliente** (personal se cadastra pelo site, pois exige CREF/CRN e aprovação do admin).
 
 | Campo | Tipo | Obrigatório |
 |---|---|---|

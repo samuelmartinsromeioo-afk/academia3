@@ -178,7 +178,7 @@ class TesteSnrFitSeeder extends Seeder
             'email' => self::PERSONAL_EMAIL, 'senha' => Hash::make(self::SENHA),
             'cep' => '01001000', 'rua' => 'Av. Paulista', 'bairro' => 'Bela Vista',
             'cidade' => 'São Paulo', 'estado' => 'SP', 'complemento' => 'Sala 10',
-            'foto' => '', 'certificado' => '', 'cref' => '012345-G/SP',
+            'foto' => '', 'cref' => '012345-G/SP',
             'idade' => '1988-03-15', 'valor_secao' => 90.00,
             'whatsapp' => '11988887777', 'status' => 'aprovado', 'data_aprovacao' => now(),
         ]);

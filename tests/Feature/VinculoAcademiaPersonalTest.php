@@ -29,7 +29,7 @@ class VinculoAcademiaPersonalTest extends TestCase
             'email' => 'carlos.personal@teste.com', 'senha' => bcrypt('x'),
             'cep' => '30130-000', 'rua' => 'Rua A', 'bairro' => 'Savassi',
             'cidade' => 'Belo Horizonte', 'estado' => 'MG', 'complemento' => '-',
-            'foto' => '', 'certificado' => '', 'idade' => '1990-01-01',
+            'foto' => '', 'idade' => '1990-01-01',
             'valor_secao' => 80.00, 'status' => 'aprovado', 'cref' => '123456-G/MG',
         ]);
 
