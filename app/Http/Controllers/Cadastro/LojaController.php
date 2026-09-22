@@ -78,6 +78,9 @@ class LojaController extends Controller
 
         $loja = Loja::create($dados);
 
+        // Marca como pioneira se estiver entre as primeiras do estado.
+        $loja->definirPosicaoPioneiro();
+
         $cupons->registrarIndicacao($codigoCupom, $loja, $request->ip());
 
         $fb = app(MetaConversionsService::class);

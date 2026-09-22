@@ -13,7 +13,7 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/bold/style.css">
     <style>
         :root {
-            --primary:#d4ff00; --bg-dark:#0a0b0d; --card-bg:#16181d; --card-2:#1e2127;
+            --primary:#7cff00; --bg-dark:#0a0b0d; --card-bg:#16181d; --card-2:#1e2127;
             --text-main:#fff; --text-dim:#9ca3af; --border:rgba(255,255,255,.08);
             --input-bg:rgba(255,255,255,.04); --ok:#00ff88; --warn:#ffaa00; --err:#ff4444;
         }

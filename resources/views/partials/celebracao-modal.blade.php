@@ -37,7 +37,7 @@
             'titulo'   => $c->titulo,
             'mensagem' => $c->mensagem,
             'icone'    => $c->icone ?: 'ph-trophy',
-            'cor'      => $c->cor_medalha ?: '#d4ff00',
+            'cor'      => $c->cor_medalha ?: '#7cff00',
             'num'      => $c->dados_extras['sequencia_atual'] ?? null,
         ];
     })->values();
@@ -177,7 +177,7 @@
     }
 </style>
 
-<div id="snrCelebOverlay" role="dialog" aria-modal="true" style="--cor:#d4ff00;">
+<div id="snrCelebOverlay" role="dialog" aria-modal="true" style="--cor:#7cff00;">
     <div class="snr-celeb-card">
         <button type="button" class="snr-celeb-close" aria-label="Fechar" onclick="snrCelebFechar()">
             <i class="ph ph-x"></i>
@@ -243,7 +243,7 @@
 
     function confete(cor) {
         if (reduz) return;
-        const cores = ['#d4ff00', cor, '#ffffff', '#FFD700'];
+        const cores = ['#7cff00', cor, '#ffffff', '#FFD700'];
         for (let k = 0; k < 48; k++) {
             const p = document.createElement('span');
             p.className = 'snr-confetti';

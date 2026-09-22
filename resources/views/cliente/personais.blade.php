@@ -12,7 +12,7 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/fill/style.css">
     <style>
         :root {
-            --primary: #d4ff00;
+            --primary: #7cff00;
             --bg-dark: #0a0b0d;
             --card-bg: #16181d;
             --text-main: #ffffff;
@@ -48,7 +48,7 @@
             font-size: 1.1rem;
             letter-spacing: 3px;
         }
-        .logo span { color: var(--primary); }
+        .logo, .logo span { color: var(--primary); }
 
         .btn-top {
             background: transparent;
@@ -114,16 +114,13 @@
         }
         .card:hover { transform: translateY(-4px); border-color: rgba(26,95,212,0.4); box-shadow: 0 12px 30px rgba(0,0,0,0.5); }
 
-        /* Destaque para personais pioneiros (100 primeiros do estado) — realce fino */
-        .card.pioneiro { border-color: rgba(255,210,80,0.5); box-shadow: 0 0 14px rgba(255,170,40,0.10), 0 12px 30px rgba(0,0,0,0.5); }
-        .card.pioneiro::before { content: ""; position: absolute; top: 0; left: 0; right: 0; height: 3px; background: linear-gradient(90deg, #FFE259, #FFA751); z-index: 4; }
-        .card.pioneiro:hover { transform: translateY(-6px); border-color: rgba(255,210,80,0.75); box-shadow: 0 0 20px rgba(255,170,40,0.16), 0 18px 40px rgba(0,0,0,0.55); }
-        .card.pioneiro .card-img { background: linear-gradient(135deg, rgba(255,170,40,0.24), rgba(255,210,80,0.06)); }
-        .card.pioneiro .badge-pioneiro { font-size: 0.7rem !important; padding: 6px 12px !important; }
+        /* Pioneiro: só o selo ao lado do nome — sem realce no card.
+           A regra abaixo não é destaque, é só o alinhamento do selo. */
+        .card.pioneiro .card-body h3 { display: flex; align-items: center; gap: 5px; }
 
         .card-img {
             height: 160px;
-            background: linear-gradient(135deg, rgba(26,95,212,0.18), rgba(212,255,0,0.06));
+            background: linear-gradient(135deg, rgba(26,95,212,0.18), rgba(124,255,0,0.06));
             display: flex;
             align-items: center;
             justify-content: center;
@@ -187,7 +184,7 @@
             align-items: center;
             gap: 6px;
         }
-        .btn-detalhes:hover { transform: translateY(-1px); box-shadow: 0 6px 16px rgba(212,255,0,0.25); }
+        .btn-detalhes:hover { transform: translateY(-1px); box-shadow: 0 6px 16px rgba(124,255,0,0.25); }
 
         .empty-state {
             text-align: center;
@@ -205,11 +202,11 @@
         .tab-panel { display: none; }
         .tab-panel.active { display: block; }
         /* Card do nutricionista (verde-lima em vez do azul) */
-        .card.nutri:hover { border-color: rgba(212,255,0,0.4); }
-        .card.nutri .card-img { background: linear-gradient(135deg, rgba(212,255,0,0.14), rgba(212,255,0,0.03)); color: var(--primary); }
-        .card.nutri .card-badge { color: var(--primary); border-color: rgba(212,255,0,0.4); }
+        .card.nutri:hover { border-color: rgba(124,255,0,0.4); }
+        .card.nutri .card-img { background: linear-gradient(135deg, rgba(124,255,0,0.14), rgba(124,255,0,0.03)); color: var(--primary); }
+        .card.nutri .card-badge { color: var(--primary); border-color: rgba(124,255,0,0.4); }
         .chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0 4px; }
-        .chip { font-size: 0.68rem; background: rgba(212,255,0,0.08); color: var(--primary); border: 1px solid rgba(212,255,0,0.2); padding: 3px 9px; border-radius: 20px; }
+        .chip { font-size: 0.68rem; background: rgba(124,255,0,0.08); color: var(--primary); border: 1px solid rgba(124,255,0,0.2); padding: 3px 9px; border-radius: 20px; }
 
         @media (max-width: 600px) {
             .top-bar { padding: 14px 20px; }
@@ -256,14 +253,14 @@
                                 <i class="ph ph-user-list"></i>
                             @endif
                             <span class="card-badge"><i class="ph ph-barbell"></i> Personal</span>
-                            @if ($personal->eh_pioneiro)
-                                <div style="position:absolute; top:12px; right:12px; z-index:2;">
-                                    @include('partials.badge-pioneiro', ['posicao' => $personal->pioneiro_posicao, 'estado' => $personal->estado])
-                                </div>
-                            @endif
                         </div>
                         <div class="card-body">
-                            <h3>{{ $personal->nome }}</h3>
+                            <h3>
+                                {{ $personal->nome }}
+                                @if ($personal->eh_pioneiro)
+                                    @include('partials.badge-pioneiro', ['posicao' => $personal->pioneiro_posicao, 'estado' => $personal->estado, 'tipo' => 'personal', 'tamanho' => 15])
+                                @endif
+                            </h3>
                             @if ($personal->cidade)
                                 <div class="card-meta"><i class="ph ph-map-pin"></i> {{ $personal->cidade }}{{ $personal->estado ? ' - ' . $personal->estado : '' }}</div>
                             @endif
@@ -296,7 +293,7 @@
         @else
             <div class="grid grid-prof">
                 @foreach ($nutricionistas as $nutri)
-                    <div class="card nutri" data-busca="{{ strtolower($nutri->nome . ' ' . ($nutri->cidade ?? '')) }}">
+                    <div class="card nutri {{ $nutri->eh_pioneiro ? 'pioneiro' : '' }}" data-busca="{{ strtolower($nutri->nome . ' ' . ($nutri->cidade ?? '')) }}">
                         <div class="card-img">
                             @if ($nutri->foto)
                                 <img src="{{ asset('storage/' . $nutri->foto) }}" alt="{{ $nutri->nome }}">
@@ -308,7 +305,12 @@
                             <span class="card-badge"><i class="ph ph-carrot"></i> Nutricionista</span>
                         </div>
                         <div class="card-body">
-                            <h3>{{ $nutri->nome }}</h3>
+                            <h3>
+                                {{ $nutri->nome }}
+                                @if ($nutri->eh_pioneiro)
+                                    @include('partials.badge-pioneiro', ['posicao' => $nutri->pioneiro_posicao, 'estado' => $nutri->estado, 'tipo' => 'nutricionista', 'tamanho' => 15])
+                                @endif
+                            </h3>
                             @if ($nutri->cidade)
                                 <div class="card-meta"><i class="ph ph-map-pin"></i> {{ $nutri->cidade }}{{ $nutri->estado ? ' - ' . $nutri->estado : '' }}</div>
                             @endif

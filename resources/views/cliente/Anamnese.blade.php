@@ -17,7 +17,7 @@
             --border: rgba(255, 255, 255, 0.08);
         }
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { background-color: var(--bg-dark); font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; color: var(--text-main); min-height: 100vh; background-image: radial-gradient(circle at 50% -10%, rgba(212, 255, 0, 0.12), transparent 50%); }
+        body { background-color: var(--bg-dark); font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; color: var(--text-main); min-height: 100vh; background-image: radial-gradient(circle at 50% -10%, rgba(124, 255, 0, 0.12), transparent 50%); }
         a { color: inherit; text-decoration: none; }
         .top-bar { display: flex; align-items: center; gap: 15px; padding: 15px 40px; background: rgba(0,0,0,0.6); border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 100; backdrop-filter: blur(10px); }
         .back-btn { background: var(--card-bg); border: 1px solid var(--border); color: var(--primary); width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1.1rem; transition: 0.3s; }
@@ -72,7 +72,7 @@
             <div class="alert alert-error"><i class="ph ph-warning-circle"></i> {{ $errors->first() }}</div>
         @endif
 
-        <div style="background:rgba(212,255,0,0.08); border:1px solid rgba(212,255,0,0.35); border-radius:12px; padding:14px 16px; margin-bottom:18px; font-size:0.82rem; color:#cfcfcf; line-height:1.5;">
+        <div style="background:rgba(124,255,0,0.08); border:1px solid rgba(124,255,0,0.35); border-radius:12px; padding:14px 16px; margin-bottom:18px; font-size:0.82rem; color:#cfcfcf; line-height:1.5;">
             <i class="ph ph-shield-check" style="color:var(--primary);"></i>
             São <strong>dados sensíveis de saúde</strong>. Ao salvar, você <strong>consente</strong> com o uso dessas informações pelo seu personal para montar um treino seguro, conforme a
             <a href="{{ route('lgpd.politica') }}" target="_blank" style="color:var(--primary);">Política de Privacidade</a>. Você pode editá-las ou removê-las quando quiser.

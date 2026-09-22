@@ -12,7 +12,7 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/fill/style.css">
     <style>
         :root {
-            --primary: #d4ff00;
+            --primary: #7cff00;
             --bg-dark: #0a0b0d;
             --card-bg: #16181d;
             --text-main: #ffffff;
@@ -56,7 +56,7 @@
 
         .perfil-tag {
             display: inline-flex; align-items: center; gap: 8px; margin-top: 16px;
-            background: rgba(212, 255, 0, 0.1); border: 1px solid rgba(212, 255, 0, 0.35);
+            background: rgba(124, 255, 0, 0.1); border: 1px solid rgba(124, 255, 0, 0.35);
             color: var(--primary); padding: 6px 14px; border-radius: 999px;
             font-size: 0.8rem; font-weight: 700;
         }
@@ -67,7 +67,7 @@
         }
         .content h2 {
             color: var(--primary); font-size: 1.4rem; margin-top: 40px; margin-bottom: 18px;
-            padding-bottom: 10px; border-bottom: 2px solid rgba(212, 255, 0, 0.2);
+            padding-bottom: 10px; border-bottom: 2px solid rgba(124, 255, 0, 0.2);
         }
         .content h2:first-of-type { margin-top: 0; }
         .content h3 { color: #fff; font-size: 1.1rem; margin-top: 25px; margin-bottom: 12px; }
@@ -78,14 +78,14 @@
         .content a { color: var(--primary); }
 
         .highlighted {
-            background: rgba(212, 255, 0, 0.08); border-left: 4px solid var(--primary);
+            background: rgba(124, 255, 0, 0.08); border-left: 4px solid var(--primary);
             padding: 15px 20px; border-radius: 8px; margin: 20px 0;
         }
         .warn { border-left-color: #ff5252; background: rgba(255, 82, 82, 0.06); }
         .warn strong { color: #ff8a8a; }
 
         .toc {
-            background: rgba(212, 255, 0, 0.05); border: 1px solid rgba(212, 255, 0, 0.2);
+            background: rgba(124, 255, 0, 0.05); border: 1px solid rgba(124, 255, 0, 0.2);
             border-radius: 12px; padding: 25px; margin-bottom: 40px;
         }
         .toc h3 { margin-top: 0; color: var(--primary); margin-bottom: 15px; }
@@ -102,7 +102,7 @@
             padding: 8px 14px; border-radius: 999px; text-decoration: none; font-size: 0.82rem;
         }
         .doc-nav a:hover { border-color: var(--primary); color: var(--primary); }
-        .doc-nav a.active { border-color: var(--primary); color: var(--primary); background: rgba(212,255,0,0.08); }
+        .doc-nav a.active { border-color: var(--primary); color: var(--primary); background: rgba(124,255,0,0.08); }
 
         .footer {
             text-align: center; margin-top: 50px; padding-top: 30px;

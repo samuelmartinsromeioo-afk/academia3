@@ -11,7 +11,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Syncopate:wght@700&family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
     <style>
         :root {
-            --primary: #d4ff00;
+            --primary: #7cff00;
             --bg-dark: #0a0b0d;
             --card-bg: #16181d;
             --text-main: #fff;
@@ -22,8 +22,8 @@
         body {
             background: var(--bg-dark);
             background-image:
-                radial-gradient(circle at 12% 15%, rgba(212,255,0,.06) 0%, transparent 22%),
-                radial-gradient(circle at 88% 85%, rgba(212,255,0,.05) 0%, transparent 22%);
+                radial-gradient(circle at 12% 15%, rgba(124,255,0,.06) 0%, transparent 22%),
+                radial-gradient(circle at 88% 85%, rgba(124,255,0,.05) 0%, transparent 22%);
             font-family: 'Inter', sans-serif;
             color: var(--text-main);
             min-height: 100vh;
@@ -38,7 +38,7 @@
             color:var(--text-dim); border:1px solid var(--border); border-radius:10px;
             padding:9px 16px; font-size:.85rem; transition:.25s;
         }
-        .btn-voltar:hover { color:var(--primary); border-color:rgba(212,255,0,.4); }
+        .btn-voltar:hover { color:var(--primary); border-color:rgba(124,255,0,.4); }
 
         h1 { font-family:'Syncopate',sans-serif; font-size:clamp(1.3rem,3.4vw,1.9rem); text-transform:uppercase; margin-bottom:10px; }
         h1 span { background:var(--primary); color:var(--bg-dark); padding:0 .12em; }
@@ -53,7 +53,7 @@
         .codigo {
             font-family:'Syncopate',sans-serif; font-size:clamp(1.4rem,5vw,2.1rem);
             letter-spacing:4px; color:var(--primary);
-            background:rgba(212,255,0,.07); border:1px dashed rgba(212,255,0,.45);
+            background:rgba(124,255,0,.07); border:1px dashed rgba(124,255,0,.45);
             border-radius:14px; padding:14px 22px; user-select:all;
         }
         .acoes { display:flex; gap:10px; flex-wrap:wrap; }
@@ -63,9 +63,9 @@
             font-size:.85rem; font-weight:700; text-decoration:none; transition:.25s;
         }
         .btn-primary { background:var(--primary); color:#000; }
-        .btn-primary:hover { background:#b8de00; transform:translateY(-2px); }
+        .btn-primary:hover { background:#6bde00; transform:translateY(-2px); }
         .btn-ghost { background:transparent; color:var(--text-main); border:1px solid var(--border); }
-        .btn-ghost:hover { border-color:rgba(212,255,0,.45); color:var(--primary); }
+        .btn-ghost:hover { border-color:rgba(124,255,0,.45); color:var(--primary); }
 
         .link-convite {
             margin-top:18px; padding:12px 14px; border-radius:11px;
@@ -84,7 +84,7 @@
         .badge {
             display:inline-block; padding:3px 10px; border-radius:999px;
             font-size:.68rem; font-weight:700; text-transform:uppercase; letter-spacing:.6px;
-            background:rgba(212,255,0,.12); color:var(--primary); border:1px solid rgba(212,255,0,.3);
+            background:rgba(124,255,0,.12); color:var(--primary); border:1px solid rgba(124,255,0,.3);
         }
         .stat-nota { font-size:.7rem; color:var(--text-dim); margin-top:7px; line-height:1.4; }
 
@@ -107,7 +107,7 @@
         .valor-espera { color:#f0b429; }
 
         .vazio { text-align:center; padding:44px 20px; color:var(--text-dim); }
-        .vazio i { font-size:2.4rem; color:rgba(212,255,0,.35); display:block; margin-bottom:14px; }
+        .vazio i { font-size:2.4rem; color:rgba(124,255,0,.35); display:block; margin-bottom:14px; }
         .titulo-secao { font-size:.72rem; text-transform:uppercase; letter-spacing:2px; color:var(--text-dim); margin-bottom:18px; }
         .paginacao { margin-top:18px; }
         .paginacao a, .paginacao span { color:var(--text-dim); }

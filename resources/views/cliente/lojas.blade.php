@@ -12,7 +12,7 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/fill/style.css">
     <style>
         :root {
-            --primary: #d4ff00;
+            --primary: #7cff00;
             --bg-dark: #0a0b0d;
             --card-bg: #16181d;
             --text-main: #ffffff;
@@ -37,7 +37,7 @@
             position: sticky; top: 0; z-index: 100; backdrop-filter: blur(10px);
         }
         .logo { font-family: 'Syncopate', sans-serif; font-size: 1.1rem; letter-spacing: 3px; }
-        .logo span { color: var(--primary); }
+        .logo, .logo span { color: var(--primary); }
         .btn-top {
             background: transparent; border: 1px solid var(--border); color: var(--text-main);
             padding: 9px 16px; border-radius: 8px; cursor: pointer; font-weight: 700; font-size: 0.78rem;
@@ -69,11 +69,13 @@
         .card:hover { transform: translateY(-4px); border-color: rgba(255,157,46,0.4); box-shadow: 0 12px 30px rgba(0,0,0,0.5); }
 
         .card-img {
-            height: 160px; background: linear-gradient(135deg, rgba(255,157,46,0.18), rgba(212,255,0,0.06));
+            height: 160px; background: linear-gradient(135deg, rgba(255,157,46,0.18), rgba(124,255,0,0.06));
             display: flex; align-items: center; justify-content: center; color: var(--loja-color);
             font-size: 2.4rem; position: relative; overflow: hidden;
         }
         .card-img img { width: 100%; height: 100%; object-fit: cover; }
+        /* Pioneiro: só o selo ao lado do nome — sem realce no card. */
+        .card.pioneiro .card-body h3 { display: flex; align-items: center; gap: 5px; }
         .card-badge {
             position: absolute; top: 12px; left: 12px; background: rgba(0,0,0,0.6); backdrop-filter: blur(6px);
             color: var(--loja-color); font-size: 0.65rem; font-weight: 800; text-transform: uppercase;
@@ -99,7 +101,7 @@
             font-weight: 800; font-size: 0.78rem; cursor: pointer; text-decoration: none; transition: 0.2s;
             display: inline-flex; align-items: center; gap: 6px;
         }
-        .btn-detalhes:hover { transform: translateY(-1px); box-shadow: 0 6px 16px rgba(212,255,0,0.25); }
+        .btn-detalhes:hover { transform: translateY(-1px); box-shadow: 0 6px 16px rgba(124,255,0,0.25); }
 
         .empty-state { text-align: center; padding: 80px 20px; color: var(--text-muted); }
         .empty-state i { font-size: 3rem; margin-bottom: 16px; display: block; opacity: 0.4; color: var(--loja-color); }
@@ -133,7 +135,7 @@
     @else
         <div class="grid" id="gridLojas">
             @foreach ($lojas as $loja)
-                <div class="card" data-busca="{{ strtolower($loja->nome . ' ' . ($loja->cidade ?? '')) }}">
+                <div class="card {{ $loja->eh_pioneiro ? 'pioneiro' : '' }}" data-busca="{{ strtolower($loja->nome . ' ' . ($loja->cidade ?? '')) }}">
                     <div class="card-img">
                         @if ($loja->logo)
                             <img src="{{ asset('storage/' . $loja->logo) }}" alt="{{ $loja->nome }}">
@@ -143,7 +145,12 @@
                         <span class="card-badge"><i class="ph ph-storefront"></i> Loja</span>
                     </div>
                     <div class="card-body">
-                        <h3>{{ $loja->nome }}</h3>
+                        <h3>
+                            {{ $loja->nome }}
+                            @if ($loja->eh_pioneiro)
+                                @include('partials.badge-pioneiro', ['posicao' => $loja->pioneiro_posicao, 'estado' => $loja->estado, 'tipo' => 'loja', 'tamanho' => 15])
+                            @endif
+                        </h3>
                         @if ($loja->descricao)
                             <div class="card-meta"><i class="ph ph-info"></i> {{ \Illuminate\Support\Str::limit($loja->descricao, 60) }}</div>
                         @endif

@@ -11,7 +11,7 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/fill/style.css">
     <style>
         :root {
-            --primary: #d4ff00; --bg-dark: #0a0b0d; --card-bg: #16181d;
+            --primary: #7cff00; --bg-dark: #0a0b0d; --card-bg: #16181d;
             --text-main: #ffffff; --text-muted: #a0a0a0; --border: rgba(255,255,255,0.08);
             --input-bg: rgba(255,255,255,0.04); --error: #ff4444;
         }
@@ -29,14 +29,14 @@
         .filter-select:focus, .filter-input:focus { border-color: var(--primary); background: rgba(255,255,255,0.06); }
         .table-container { background: var(--card-bg); border: 1px solid var(--border); border-radius: 16px; overflow: hidden; margin-bottom: 32px; }
         table { width: 100%; border-collapse: collapse; }
-        thead { background: rgba(212,255,0,0.05); border-bottom: 2px solid var(--border); }
+        thead { background: rgba(124,255,0,0.05); border-bottom: 2px solid var(--border); }
         th { padding: 16px; text-align: left; font-weight: 800; font-size: 0.75rem; color: var(--primary); text-transform: uppercase; letter-spacing: 1px; }
         td { padding: 16px; border-bottom: 1px solid var(--border); }
         tbody tr { transition: 0.2s; }
-        tbody tr:hover { background: rgba(212,255,0,0.02); }
+        tbody tr:hover { background: rgba(124,255,0,0.02); }
         tbody tr:last-child td { border-bottom: none; }
         .acad-name { display: flex; align-items: center; gap: 12px; font-weight: 600; }
-        .acad-avatar { width: 40px; height: 40px; border-radius: 10px; background: rgba(212,255,0,0.1); border: 1px solid var(--primary); display: flex; align-items: center; justify-content: center; color: var(--primary); font-weight: 700; }
+        .acad-avatar { width: 40px; height: 40px; border-radius: 10px; background: rgba(124,255,0,0.1); border: 1px solid var(--primary); display: flex; align-items: center; justify-content: center; color: var(--primary); font-weight: 700; }
         .status-badge { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 20px; font-size: 0.7rem; font-weight: 800; text-transform: uppercase; }
         .status-pendente { background: rgba(255,193,7,0.1); color: #ffc107; border: 1px solid rgba(255,193,7,0.2); }
         .status-aprovado { background: rgba(40,167,69,0.1); color: #28a745; border: 1px solid rgba(40,167,69,0.2); }

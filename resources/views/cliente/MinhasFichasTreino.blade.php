@@ -12,7 +12,7 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/fill/style.css">
     <style>
         :root {
-            --primary: #d4ff00;
+            --primary: #7cff00;
             --bg-dark: #0a0b0d;
             --card-bg: #16181d;
             --text-main: #ffffff;
@@ -169,7 +169,7 @@
             gap: 15px;
             margin-bottom: 20px;
             padding-bottom: 15px;
-            border-bottom: 2px solid rgba(212, 255, 0, 0.3);
+            border-bottom: 2px solid rgba(124, 255, 0, 0.3);
         }
 
         .personal-header img {
@@ -194,7 +194,7 @@
 
         .ficha-card {
             background: var(--card-bg);
-            border: 1px solid rgba(212, 255, 0, 0.2);
+            border: 1px solid rgba(124, 255, 0, 0.2);
             border-radius: 20px;
             padding: 20px;
             transition: 0.3s;
@@ -202,8 +202,8 @@
         }
 
         .ficha-card:hover {
-            border-color: rgba(212, 255, 0, 0.5);
-            box-shadow: 0 0 20px rgba(212, 255, 0, 0.1);
+            border-color: rgba(124, 255, 0, 0.5);
+            box-shadow: 0 0 20px rgba(124, 255, 0, 0.1);
         }
 
         .ficha-header {
@@ -220,7 +220,7 @@
         }
 
         .btn-marcar {
-            background: rgba(212, 255, 0, 0.1);
+            background: rgba(124, 255, 0, 0.1);
             color: var(--primary);
             border: 1px solid var(--primary);
             padding: 8px 15px;
@@ -394,7 +394,7 @@
         .form-group textarea:focus {
             outline: none;
             border-color: var(--primary);
-            box-shadow: 0 0 10px rgba(212, 255, 0, 0.2);
+            box-shadow: 0 0 10px rgba(124, 255, 0, 0.2);
         }
 
         .form-group textarea {
@@ -579,7 +579,7 @@
         </button>
         <div class="profile-header">
             <span style="font-weight: 700; font-size: 0.9rem;">Minhas Fichas de Treino</span>
-            <img src="https://ui-avatars.com/api/?name={{ urlencode($cliente->nome) }}&background=d4ff00&color=000" class="avatar-img">
+            <img src="https://ui-avatars.com/api/?name={{ urlencode($cliente->nome) }}&background=7cff00&color=000" class="avatar-img">
         </div>
     </div>
 
@@ -926,7 +926,7 @@
             <button onclick="fecharExercicio()" style="position:absolute; top:14px; right:16px; background:none; border:none; color:#a0a0a0; font-size:1.3rem; cursor:pointer;">✕</button>
             <h2 id="exModalNome" style="color:#fff; font-size:1.2rem; font-weight:900; margin:0 32px 4px 0;"></h2>
             <video id="exModalVideo" controls playsinline style="display:none; width:100%; border-radius:12px; background:#000; margin:14px 0;"></video>
-            <p style="color:#d4ff00; font-size:0.7rem; text-transform:uppercase; letter-spacing:1px; font-weight:800; margin:16px 0 6px;"><i class="ph ph-info"></i> Resumo / Técnica</p>
+            <p style="color:#7cff00; font-size:0.7rem; text-transform:uppercase; letter-spacing:1px; font-weight:800; margin:16px 0 6px;"><i class="ph ph-info"></i> Resumo / Técnica</p>
             <p id="exModalResumo" style="color:#cfcfcf; font-size:0.9rem; line-height:1.6; white-space:pre-line; margin:0;"></p>
         </div>
     </div>

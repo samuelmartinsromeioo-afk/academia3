@@ -103,7 +103,8 @@ class RegisterController extends Controller
         $dados['senha'] = Hash::make($dados['senha']);
         $dados['status'] = 'pendente';
 
-        Academia::create($dados);
+        $academia = Academia::create($dados);
+        $academia->definirPosicaoPioneiro();
 
         return response()->json([
             'success' => true,
@@ -148,7 +149,8 @@ class RegisterController extends Controller
         $dados['senha'] = Hash::make($dados['senha']);
         $dados['status'] = 'pendente';
 
-        Studio::create($dados);
+        $studio = Studio::create($dados);
+        $studio->definirPosicaoPioneiro();
 
         return response()->json([
             'success' => true,
@@ -189,7 +191,8 @@ class RegisterController extends Controller
         $dados['senha'] = Hash::make($dados['senha']);
         $dados['status'] = 'pendente';
 
-        Loja::create($dados);
+        $loja = Loja::create($dados);
+        $loja->definirPosicaoPioneiro();
 
         return response()->json([
             'success' => true,

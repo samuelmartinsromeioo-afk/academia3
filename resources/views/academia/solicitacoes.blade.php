@@ -11,7 +11,7 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/fill/style.css">
     <style>
         :root {
-            --primary: #d4ff00;
+            --primary: #7cff00;
             --accent: #F4BE16;
             --bg-dark: #0a0b0d;
             --card-bg: #16181d;
@@ -74,7 +74,7 @@
 
         .actions { display: flex; gap: 10px; }
         .btn-aprovar { background: var(--primary); color: #000; border: none; padding: 9px 16px; border-radius: 9px; cursor: pointer; font-weight: 800; font-size: 0.78rem; }
-        .btn-aprovar:hover { background: #e8ff40; }
+        .btn-aprovar:hover { background: #9cff40; }
         .btn-rejeitar { background: rgba(255,68,68,0.1); color: var(--error); border: 1px solid rgba(255,68,68,0.35); padding: 9px 16px; border-radius: 9px; cursor: pointer; font-weight: 800; font-size: 0.78rem; }
         .btn-rejeitar:hover { background: var(--error); color: #fff; }
 

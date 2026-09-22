@@ -16,6 +16,7 @@ class Studio extends Authenticatable
     use HasFactory;
     use HasApiTokens;
     use \App\Models\Concerns\TemCupomIndicacao;
+    use \App\Models\Concerns\TemSeloPioneiro;
 
     protected $table = 'studios';
 
@@ -51,6 +52,8 @@ class Studio extends Authenticatable
     protected $casts = [
         'valor_aula'     => 'decimal:2',
         'data_aprovacao' => 'datetime',
+        // Fora do $fillable de propósito: quem grava é definirPosicaoPioneiro().
+        'pioneiro_posicao' => 'integer',
     ];
 
     public function fotos()

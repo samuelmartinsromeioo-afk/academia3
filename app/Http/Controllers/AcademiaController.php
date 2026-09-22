@@ -45,7 +45,8 @@ class AcademiaController extends Controller
         ]);
 
         $dados['senha'] = Hash::make($dados['senha']);
-        Academia::create($dados);
+        $academia = Academia::create($dados);
+        $academia->definirPosicaoPioneiro();
 
         return redirect()->route('login.index')->with('sucesso', 'Academia cadastrada com sucesso!');
     }

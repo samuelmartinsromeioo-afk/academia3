@@ -15,7 +15,7 @@
 
     <style>
         :root {
-            --primary: #d4ff00;
+            --primary: #7cff00;
             --bg-dark: #0a0b0d;
             --card-bg: #16181d;
             --text-main: #ffffff;
@@ -28,7 +28,7 @@
 
         body {
             background-color: var(--bg-dark);
-            background-image: radial-gradient(circle at 10% 20%, rgba(212, 255, 0, 0.05) 0%, transparent 20%);
+            background-image: radial-gradient(circle at 10% 20%, rgba(124, 255, 0, 0.05) 0%, transparent 20%);
             font-family: 'Inter', sans-serif;
             color: var(--text-main);
             display: flex;
@@ -150,7 +150,7 @@
             padding: 20px;
             background: rgba(255, 255, 255, 0.02);
             border-radius: 16px;
-            border: 1px dashed rgba(212, 255, 0, 0.2);
+            border: 1px dashed rgba(124, 255, 0, 0.2);
         }
 
         .academias-title {
@@ -178,7 +178,7 @@
             padding: 20px;
             background: rgba(255, 255, 255, 0.02);
             border-radius: 16px;
-            border: 1px dashed rgba(212, 255, 0, 0.2);
+            border: 1px dashed rgba(124, 255, 0, 0.2);
         }
 
         .packages-title {
@@ -235,8 +235,8 @@
             gap: 10px;
             margin: 25px 0;
             padding: 15px;
-            background: rgba(212, 255, 0, 0.03);
-            border: 1px solid rgba(212, 255, 0, 0.2);
+            background: rgba(124, 255, 0, 0.03);
+            border: 1px solid rgba(124, 255, 0, 0.2);
             border-radius: 12px;
         }
 
@@ -291,10 +291,10 @@
             border-radius: 16px; padding: 18px; cursor: pointer;
             display: flex; gap: 14px; align-items: flex-start; transition: 0.25s;
         }
-        .type-card:hover { border-color: rgba(212,255,0,0.4); }
+        .type-card:hover { border-color: rgba(124,255,0,0.4); }
         .type-card.active {
             border-color: var(--primary);
-            background: rgba(212,255,0,0.06);
+            background: rgba(124,255,0,0.06);
             box-shadow: 0 0 0 1px var(--primary) inset;
         }
         .type-card i { font-size: 1.7rem; color: var(--primary); }
@@ -326,7 +326,7 @@
         }
         .diferenciais.show { display: grid; }
         .dif-item {
-            background: rgba(212,255,0,0.04); border: 1px solid rgba(212,255,0,0.18);
+            background: rgba(124,255,0,0.04); border: 1px solid rgba(124,255,0,0.18);
             border-radius: 12px; padding: 12px 14px; font-size: 0.74rem;
             color: var(--text-main); line-height: 1.45; display: flex; gap: 10px;
         }
@@ -626,7 +626,7 @@
                             if (results.length > 0) {
                                 document.getElementById('latitude').value  = results[0].lat;
                                 document.getElementById('longitude').value = results[0].lon;
-                                loadingIcon.innerHTML = '<i class="ph ph-check" style="color:#d4ff00"></i> Localização confirmada!';
+                                loadingIcon.innerHTML = '<i class="ph ph-check" style="color:#7cff00"></i> Localização confirmada!';
                             } else {
                                 loadingIcon.innerHTML = '<i class="ph ph-warning" style="color:orange"></i> Endereço achado, mas sem GPS preciso.';
                             }

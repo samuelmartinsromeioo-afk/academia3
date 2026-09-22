@@ -60,6 +60,10 @@ class AcademiaController extends Controller
         $dados['status'] = 'pendente'; // precisa de aprovação do administrador
 
         $academia = Academia::create($dados);
+
+        // Marca como pioneira se estiver entre as primeiras do estado.
+        $academia->definirPosicaoPioneiro();
+
         $cupons->registrarIndicacao($codigoCupom, $academia, $request->ip());
 
         $fb = app(MetaConversionsService::class);

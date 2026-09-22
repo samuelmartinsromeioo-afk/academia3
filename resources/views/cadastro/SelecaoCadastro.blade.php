@@ -120,7 +120,7 @@
         border-radius: 13px;
         background: rgba(10, 11, 13, .55);
         backdrop-filter: blur(6px);
-        border: 1px solid rgba(212, 255, 0, .4);
+        border: 1px solid rgba(124, 255, 0, .4);
         color: var(--primary);
         display: flex;
         align-items: center;
@@ -173,15 +173,15 @@
 
     /* Hover: elevar card, aproximar imagem, acender ícone e seta */
     .sel-card:hover {
-        border-color: rgba(212, 255, 0, .5);
+        border-color: rgba(124, 255, 0, .5);
         transform: translateY(-6px);
-        box-shadow: 0 24px 60px rgba(0, 0, 0, .6), 0 0 0 1px rgba(212, 255, 0, .15);
+        box-shadow: 0 24px 60px rgba(0, 0, 0, .6), 0 0 0 1px rgba(124, 255, 0, .15);
     }
     .sel-card:hover .sel-img { transform: scale(1.07); }
     .sel-card:hover .sel-icon {
         background: var(--primary);
         color: var(--bg-dark);
-        box-shadow: 0 0 24px rgba(212, 255, 0, .55);
+        box-shadow: 0 0 24px rgba(124, 255, 0, .55);
     }
     .sel-card:hover .sel-go { color: var(--primary); gap: 14px; }
     .sel-card:hover .sel-go i { transform: translateX(4px); }
@@ -208,9 +208,9 @@
 
     @if ($cupomValido)
         <div style="max-width:720px;margin:0 auto 28px;padding:14px 18px;border-radius:14px;
-                    background:rgba(212,255,0,.08);border:1px solid rgba(212,255,0,.35);
+                    background:rgba(124,255,0,.08);border:1px solid rgba(124,255,0,.35);
                     color:#fff;display:flex;align-items:center;gap:12px;font-size:.92rem;">
-            <i class="ph-bold ph-gift" style="color:#d4ff00;font-size:1.3rem;"></i>
+            <i class="ph-bold ph-gift" style="color:#7cff00;font-size:1.3rem;"></i>
             <span>
                 @if ($cupomValido->nomeDono())
                     Você foi indicado por <strong>{{ strtok(trim($cupomValido->nomeDono()), ' ') }}</strong>.

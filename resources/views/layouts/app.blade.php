@@ -17,8 +17,8 @@
 
     <style>
         :root {
-            --primary: #d4ff00;
-            --primary-hover: #b8de00;
+            --primary: #7cff00;
+            --primary-hover: #6bde00;
             --bg-dark: #0a0b0d;
             --card-bg: #16181d;
             --text-main: #ffffff;
@@ -33,8 +33,8 @@
         body {
             background-color: var(--bg-dark);
             background-image: 
-                radial-gradient(circle at 10% 20%, rgba(212, 255, 0, 0.05) 0%, transparent 20%),
-                radial-gradient(circle at 90% 80%, rgba(212, 255, 0, 0.05) 0%, transparent 20%);
+                radial-gradient(circle at 10% 20%, rgba(124, 255, 0, 0.05) 0%, transparent 20%),
+                radial-gradient(circle at 90% 80%, rgba(124, 255, 0, 0.05) 0%, transparent 20%);
             font-family: 'Inter', sans-serif;
             color: var(--text-main);
             display: flex;
@@ -100,7 +100,7 @@
 
         .input-wrapper:focus-within {
             border-color: var(--primary);
-            background: rgba(212, 255, 0, 0.03);
+            background: rgba(124, 255, 0, 0.03);
         }
 
         .input-wrapper i { color: var(--text-dim); width: 20px; text-align: center; margin-right: 10px; font-size: 0.9rem; }

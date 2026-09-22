@@ -11,7 +11,7 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/fill/style.css">
     <style>
         :root {
-            --primary: #d4ff00;
+            --primary: #7cff00;
             --bg-dark: #0a0b0d;
             --card-bg: #16181d;
             --text-main: #ffffff;
@@ -26,13 +26,13 @@
         .container { max-width: 900px; margin: 40px auto; padding: 0 20px; }
         .page-sub { color: var(--text-muted); font-size: 0.85rem; margin: 0 0 30px; }
         .card { background: var(--card-bg); border-radius: 20px; border: 1px solid var(--border); padding: 24px; margin-bottom: 16px; transition: 0.3s; }
-        .card:hover { border-color: rgba(212,255,0,0.2); }
+        .card:hover { border-color: rgba(124,255,0,0.2); }
         .badge { padding: 4px 12px; border-radius: 20px; font-size: 0.65rem; font-weight: 900; text-transform: uppercase; }
-        .badge-plano { background: rgba(212,255,0,0.1); color: var(--primary); border: 1px solid rgba(212,255,0,0.3); }
+        .badge-plano { background: rgba(124,255,0,0.1); color: var(--primary); border: 1px solid rgba(124,255,0,0.3); }
         .badge-sem { background: rgba(255,255,255,0.05); color: var(--text-muted); border: 1px solid var(--border); }
         .cliente-nome { font-size: 1.1rem; font-weight: 900; margin: 0 0 4px; }
         .btn-primary { background: var(--primary); color: #000; border: none; padding: 10px 20px; border-radius: 10px; font-weight: 900; font-size: 0.8rem; cursor: pointer; text-transform: uppercase; transition: 0.3s; text-decoration: none; display: inline-flex; align-items: center; gap: 8px; }
-        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(212,255,0,0.2); }
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(124,255,0,0.2); }
         .btn-back { background: rgba(255,255,255,0.06); border: 1px solid var(--border); color: var(--text-main); padding: 10px 18px; border-radius: 10px; font-weight: 700; font-size: 0.8rem; cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; gap: 8px; transition: 0.2s; }
         .btn-back:hover { border-color: var(--primary); color: var(--primary); }
         .empty-state { text-align: center; padding: 60px 20px; }

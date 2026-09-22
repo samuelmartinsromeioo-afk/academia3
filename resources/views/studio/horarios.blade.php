@@ -12,7 +12,7 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/fill/style.css">
     <style>
         :root {
-            --primary: #d4ff00;
+            --primary: #7cff00;
             --bg-dark: #0a0b0d;
             --card-bg: #16181d;
             --text-main: #ffffff;
@@ -53,7 +53,7 @@
             letter-spacing: 3px;
             color: var(--text-main);
         }
-        .logo span { color: var(--primary); }
+        .logo, .logo span { color: var(--primary); }
         .logo small { font-family: 'Inter', sans-serif; letter-spacing: 0; color: var(--text-muted); font-size: 0.7rem; font-weight: 700; margin-left: 8px; }
 
         .btn-top {
@@ -147,7 +147,7 @@
             gap: 8px;
             justify-content: center;
         }
-        .btn:hover { transform: translateY(-1px); box-shadow: 0 6px 18px rgba(212,255,0,0.25); }
+        .btn:hover { transform: translateY(-1px); box-shadow: 0 6px 18px rgba(124,255,0,0.25); }
 
         .btn-outline {
             background: transparent;
@@ -177,7 +177,7 @@
         tr:last-child td { border-bottom: none; }
 
         .badge-cap {
-            background: rgba(212,255,0,0.1);
+            background: rgba(124,255,0,0.1);
             color: var(--primary);
             padding: 4px 10px;
             border-radius: 20px;
@@ -204,7 +204,7 @@
             padding: 16px;
             transition: 0.2s;
         }
-        .slot-card:hover { border-color: rgba(212,255,0,0.3); }
+        .slot-card:hover { border-color: rgba(124,255,0,0.3); }
         .slot-card.lotado { opacity: 0.6; }
 
         .slot-hora { font-weight: 800; font-size: 0.95rem; margin-bottom: 6px; }

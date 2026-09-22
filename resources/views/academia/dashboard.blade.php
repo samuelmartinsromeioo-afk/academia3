@@ -12,7 +12,7 @@
     <link rel="stylesheet" href="{{ asset('css/snrfit-brand.css') }}">
     <style>
         :root {
-            --primary: #d4ff00;
+            --primary: #7cff00;
             --bg-dark: #0a0b0d;
             --card-bg: #16181d;
             --text-main: #ffffff;
@@ -104,7 +104,7 @@
         .stat-card span { display: block; color: var(--text-muted); font-size: 0.7rem; text-transform: uppercase; font-weight: 800; }
         .stat-card h2 { margin: 5px 0 0; font-size: 1.6rem; font-weight: 900; }
 
-        .ctx-pill { display: flex; align-items: center; gap: 10px; background: rgba(212,255,0,0.07); border: 1px solid rgba(212,255,0,0.3); color: #cfe88a; border-radius: 12px; padding: 11px 16px; font-size: 0.82rem; margin-bottom: 22px; }
+        .ctx-pill { display: flex; align-items: center; gap: 10px; background: rgba(124,255,0,0.07); border: 1px solid rgba(124,255,0,0.3); color: #cfe88a; border-radius: 12px; padding: 11px 16px; font-size: 0.82rem; margin-bottom: 22px; }
         .ctx-pill i { color: var(--primary); font-size: 1.1rem; }
         .filial-breakdown { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 14px; margin-bottom: 30px; }
         .fb-card { background: var(--card-bg); border: 1px solid var(--border); border-left: 3px solid var(--primary); border-radius: 14px; padding: 16px 18px; }
@@ -143,7 +143,7 @@
             position: relative;
             transition: 0.3s;
         }
-        .plano-card:hover { border-color: rgba(212,255,0,0.3); }
+        .plano-card:hover { border-color: rgba(124,255,0,0.3); }
         .plano-card.inativo { opacity: 0.5; }
 
         .plano-nome { font-size: 1.1rem; font-weight: 900; margin-bottom: 5px; }
@@ -176,8 +176,8 @@
         }
 
         .btn-novo-plano {
-            background: rgba(212,255,0,0.08);
-            border: 1px dashed rgba(212,255,0,0.4);
+            background: rgba(124,255,0,0.08);
+            border: 1px dashed rgba(124,255,0,0.4);
             border-radius: 20px;
             padding: 25px;
             cursor: pointer;
@@ -193,7 +193,7 @@
             text-transform: uppercase;
             min-height: 150px;
         }
-        .btn-novo-plano:hover { background: rgba(212,255,0,0.12); }
+        .btn-novo-plano:hover { background: rgba(124,255,0,0.12); }
         .btn-novo-plano i { font-size: 1.5rem; }
 
         .alunos-list { display: flex; flex-direction: column; gap: 10px; }
@@ -296,8 +296,8 @@
         .galeria-upload-slot {
             aspect-ratio: 1;
             border-radius: 12px;
-            border: 1px dashed rgba(212,255,0,0.4);
-            background: rgba(212,255,0,0.05);
+            border: 1px dashed rgba(124,255,0,0.4);
+            background: rgba(124,255,0,0.05);
             display: flex; flex-direction: column;
             align-items: center; justify-content: center;
             gap: 5px; cursor: pointer;
@@ -305,7 +305,7 @@
             font-weight: 700; text-transform: uppercase;
             transition: 0.2s;
         }
-        .galeria-upload-slot:hover { background: rgba(212,255,0,0.1); }
+        .galeria-upload-slot:hover { background: rgba(124,255,0,0.1); }
         .galeria-upload-slot i { font-size: 1.2rem; }
 
         @media (max-width: 768px) {
@@ -488,7 +488,7 @@
     <div class="alunos-list">
         @forelse($alunos as $aluno)
         <div class="aluno-item">
-            <img src="https://ui-avatars.com/api/?name={{ urlencode($aluno->nome) }}&background=d4ff00&color=000">
+            <img src="https://ui-avatars.com/api/?name={{ urlencode($aluno->nome) }}&background=7cff00&color=000">
             <div>
                 <h4>{{ $aluno->nome }}</h4>
                 <p>{{ $aluno->email }}</p>
@@ -661,7 +661,7 @@
         </div>
 
         <div id="carteiraConteudo" style="display:none;">
-            <div style="background:rgba(212,255,0,0.07); border:1px solid rgba(212,255,0,0.3); border-radius:16px; padding:24px; text-align:center; margin-bottom:20px;">
+            <div style="background:rgba(124,255,0,0.07); border:1px solid rgba(124,255,0,0.3); border-radius:16px; padding:24px; text-align:center; margin-bottom:20px;">
                 <p style="margin:0; color: var(--text-muted); font-size:0.75rem; text-transform:uppercase; margin-bottom:8px;">Saldo disponível</p>
                 <p id="carteiraValor" style="margin:0; color:#fff; font-size:2rem; font-weight:900;">R$ 0,00</p>
             </div>

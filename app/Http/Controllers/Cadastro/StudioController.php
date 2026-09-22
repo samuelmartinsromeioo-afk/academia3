@@ -75,6 +75,9 @@ class StudioController extends Controller
 
         $studio = Studio::create($dados);
 
+        // Marca como pioneiro se estiver entre os primeiros do estado.
+        $studio->definirPosicaoPioneiro();
+
         $cupons->registrarIndicacao($codigoCupom, $studio, $request->ip());
 
         $fb = app(MetaConversionsService::class);

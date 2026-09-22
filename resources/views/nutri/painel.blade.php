@@ -79,7 +79,7 @@
         @endforelse
     </div>
 
-    <div class="card" style="margin-top:22px; border-color:rgba(212,255,0,.2); background:rgba(212,255,0,.03);">
+    <div class="card" style="margin-top:22px; border-color:rgba(124,255,0,.2); background:rgba(124,255,0,.03);">
         <div style="display:flex; gap:12px; align-items:flex-start;">
             <i class="ph ph-shield-check" style="color:var(--primary); font-size:1.4rem;"></i>
             <div>

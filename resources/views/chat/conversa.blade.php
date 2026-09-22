@@ -38,7 +38,7 @@
 <body class="ed-page">
     <div class="top-bar">
         <a href="{{ route('chat.index') }}" class="back-btn"><i class="ph ph-arrow-left"></i></a>
-        <img src="https://ui-avatars.com/api/?name={{ urlencode($outro?->nome ?? 'Contato') }}&background=d4ff00&color=0a0b0d" alt="">
+        <img src="https://ui-avatars.com/api/?name={{ urlencode($outro?->nome ?? 'Contato') }}&background=7cff00&color=0a0b0d" alt="">
         <div class="nome">{{ $outro?->nome ?? 'Contato' }}</div>
     </div>
 

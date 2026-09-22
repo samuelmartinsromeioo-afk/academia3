@@ -11,7 +11,7 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/fill/style.css">
     <style>
         :root {
-            --primary: #d4ff00;
+            --primary: #7cff00;
             --bg-dark: #0a0b0d;
             --card-bg: #16181d;
             --text-main: #ffffff;
@@ -87,7 +87,7 @@
             width: 150px;
             height: 150px;
             border-radius: 16px;
-            background: rgba(212, 255, 0, 0.1);
+            background: rgba(124, 255, 0, 0.1);
             border: 2px solid var(--primary);
             display: flex;
             align-items: center;
@@ -131,7 +131,7 @@
         .info-icon {
             width: 40px;
             height: 40px;
-            background: rgba(212, 255, 0, 0.1);
+            background: rgba(124, 255, 0, 0.1);
             border-radius: 10px;
             display: flex;
             align-items: center;
@@ -652,7 +652,7 @@
 
         {{-- Status da conta Asaas --}}
         @if($personal->asaas_wallet_id)
-            <div style="background: rgba(212, 255, 0, 0.07); padding: 16px 20px; border-radius: 12px; border: 1px solid rgba(212, 255, 0, 0.3); margin-bottom: 16px; display: flex; align-items: center; gap: 12px;">
+            <div style="background: rgba(124, 255, 0, 0.07); padding: 16px 20px; border-radius: 12px; border: 1px solid rgba(124, 255, 0, 0.3); margin-bottom: 16px; display: flex; align-items: center; gap: 12px;">
                 <i class="ph ph-check-circle" style="color: var(--primary); font-size: 1.2rem;"></i>
                 <div>
                     <p style="margin: 0; font-weight: 700; color: #fff; font-size: 0.9rem;">Conta Asaas configurada</p>

@@ -172,7 +172,7 @@ fetch("{{ route('nutri.antropometria.dados',$paciente->id) }}")
         new Chart(document.getElementById('grafico'), {
             type:'line',
             data:{ labels:d.labels, datasets:[
-                {label:'Peso (kg)', data:d.peso, borderColor:'#d4ff00', backgroundColor:'rgba(212,255,0,.1)', tension:.3},
+                {label:'Peso (kg)', data:d.peso, borderColor:'#7cff00', backgroundColor:'rgba(124,255,0,.1)', tension:.3},
                 {label:'% Gordura', data:d.gordura, borderColor:'#ffaa00', tension:.3},
                 {label:'Cintura (cm)', data:d.cintura, borderColor:'#00ff88', tension:.3},
             ]},

@@ -15,6 +15,7 @@ class Academia extends Authenticatable
 {
     use HasApiTokens;
     use \App\Models\Concerns\TemCupomIndicacao;
+    use \App\Models\Concerns\TemSeloPioneiro;
 
     // O nome da tabela deve bater com o banco
     protected $table = 'academias';
@@ -52,6 +53,8 @@ class Academia extends Authenticatable
     protected $casts = [
         'valor' => 'decimal:2',
         'created_at' => 'datetime',
+        // Fora do $fillable de propósito: quem grava é definirPosicaoPioneiro().
+        'pioneiro_posicao' => 'integer',
     ];
     public function cliente(): HasMany
     {

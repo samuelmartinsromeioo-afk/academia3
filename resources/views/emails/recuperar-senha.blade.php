@@ -28,7 +28,7 @@
             font-size: 1.6rem;
             font-weight: 900;
             letter-spacing: 4px;
-            color: #d4ff00;
+            color: #7cff00;
             text-transform: uppercase;
         }
         .body {
@@ -51,7 +51,7 @@
             display: inline-block;
             margin: 20px 0;
             padding: 14px 32px;
-            background-color: #d4ff00;
+            background-color: #7cff00;
             color: #0a0b0d;
             font-weight: 700;
             font-size: 0.95rem;

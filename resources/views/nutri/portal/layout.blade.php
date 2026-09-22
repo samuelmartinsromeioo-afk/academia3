@@ -8,7 +8,7 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/regular/style.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
     <style>
-        :root { --primary:#d4ff00; --bg:#0a0b0d; --card:#16181d; --card2:#1e2127; --dim:#9ca3af; --border:rgba(255,255,255,.08); }
+        :root { --primary:#7cff00; --bg:#0a0b0d; --card:#16181d; --card2:#1e2127; --dim:#9ca3af; --border:rgba(255,255,255,.08); }
         * { margin:0; padding:0; box-sizing:border-box; }
         body { background:var(--bg); color:#fff; font-family:'Inter',sans-serif; padding-bottom:80px; }
         .wrap { max-width:640px; margin:0 auto; padding:18px; }

@@ -26,10 +26,10 @@
    ---------------------------------------------------------------------------- */
 :root {
     /* Cor de marca */
-    --snr-lime:        #d4ff00;
-    --snr-lime-hover:  #b8de00;
-    --snr-lime-soft:   rgba(212, 255, 0, 0.12);
-    --snr-lime-line:   rgba(212, 255, 0, 0.25);
+    --snr-lime:        #7cff00;
+    --snr-lime-hover:  #6bde00;
+    --snr-lime-soft:   rgba(124, 255, 0, 0.12);
+    --snr-lime-line:   rgba(124, 255, 0, 0.25);
 
     /* Superfícies (escala escura única) */
     --snr-bg:      #0a0b0d;
@@ -53,7 +53,7 @@
     /* Raio e sombra */
     --snr-radius: 16px;
     --snr-radius-lg: 24px;
-    --snr-glow: 0 0 24px rgba(212, 255, 0, 0.18);
+    --snr-glow: 0 0 24px rgba(124, 255, 0, 0.18);
 
     /* Aliases compatíveis com o código existente */
     --primary:       var(--snr-lime);
@@ -88,7 +88,7 @@
     font-size: var(--logo-size);
     letter-spacing: 4px;
     text-transform: uppercase;
-    color: var(--snr-text);
+    color: var(--snr-lime);
     text-decoration: none;
     line-height: 1;
 }
@@ -102,13 +102,13 @@
     margin-left: 8px;
     border-radius: 50%;
     background: var(--snr-lime);
-    box-shadow: 0 0 0 0 rgba(212, 255, 0, 0.55);
+    box-shadow: 0 0 0 0 rgba(124, 255, 0, 0.55);
     animation: snrPulse 2.4s infinite;
 }
 @keyframes snrPulse {
-    0%   { box-shadow: 0 0 0 0 rgba(212, 255, 0, 0.5); }
-    70%  { box-shadow: 0 0 0 9px rgba(212, 255, 0, 0); }
-    100% { box-shadow: 0 0 0 0 rgba(212, 255, 0, 0); }
+    0%   { box-shadow: 0 0 0 0 rgba(124, 255, 0, 0.5); }
+    70%  { box-shadow: 0 0 0 9px rgba(124, 255, 0, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(124, 255, 0, 0); }
 }
 @media (prefers-reduced-motion: reduce) {
     .snr-logo::after { animation: none; }
@@ -208,8 +208,8 @@
 body.snr-dark {
     background-color: var(--snr-bg) !important;
     background-image:
-        radial-gradient(circle at 12% 0%,  rgba(212,255,0,0.06) 0%, transparent 32%),
-        radial-gradient(circle at 88% 100%, rgba(212,255,0,0.05) 0%, transparent 36%);
+        radial-gradient(circle at 12% 0%,  rgba(124,255,0,0.06) 0%, transparent 32%),
+        radial-gradient(circle at 88% 100%, rgba(124,255,0,0.05) 0%, transparent 36%);
     color: var(--snr-text);
     font-family: var(--snr-font-body);
     min-height: 100vh;
@@ -257,7 +257,7 @@ body.snr-dark .alert-success { background: rgba(0,200,83,0.12); border: 1px soli
 /* Toggler (hambúrguer) visível mesmo sem a classe navbar-dark */
 body.snr-dark .navbar-toggler { border-color: var(--snr-border); color: var(--snr-text); }
 body.snr-dark .navbar-toggler-icon {
-    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3e%3cpath stroke='%23d4ff00' stroke-linecap='round' stroke-miterlimit='10' stroke-width='2' d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e");
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3e%3cpath stroke='%237cff00' stroke-linecap='round' stroke-miterlimit='10' stroke-width='2' d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e");
 }
 
 /* ============================================================================
@@ -341,7 +341,7 @@ body.snr-dark .navbar-toggler-icon {
     transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease, color .18s ease;
 }
 .ed-btn-solid { background: var(--snr-lime); color: var(--snr-bg); }
-.ed-btn-solid:hover { transform: translate(-2px, -2px); box-shadow: 6px 6px 0 rgba(212, 255, 0, 0.25); }
+.ed-btn-solid:hover { transform: translate(-2px, -2px); box-shadow: 6px 6px 0 rgba(124, 255, 0, 0.25); }
 .ed-btn-line { background: transparent; color: var(--snr-text); border-color: rgba(255, 255, 255, 0.22); }
 .ed-btn-line:hover { border-color: var(--snr-lime); color: var(--snr-lime); }
 

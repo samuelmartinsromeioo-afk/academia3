@@ -22,13 +22,13 @@
     .item-wrap .item-row { border:none; padding:6px 0; }
     .row-acts { display:flex; gap:6px; align-items:center; justify-content:flex-end; }
     .sub-line { display:flex; align-items:center; gap:10px; cursor:pointer; padding:6px 10px; margin:2px 0 6px; border-radius:8px; border:1px dashed var(--border); background:rgba(255,255,255,.02); font-size:.76rem; user-select:none; }
-    .sub-line:hover { border-color:var(--primary); background:rgba(212,255,0,.05); }
+    .sub-line:hover { border-color:var(--primary); background:rgba(124,255,0,.05); }
     .sub-line-lbl { color:var(--primary); font-weight:700; white-space:nowrap; }
     .sub-line-hint { color:var(--text-dim); flex:1; }
     .sub-line-caret { color:var(--text-dim); }
-    .sub-line.has { border-style:solid; border-color:rgba(212,255,0,.35); }
+    .sub-line.has { border-style:solid; border-color:rgba(124,255,0,.35); }
     .sub-line.open { border-style:solid; border-bottom-left-radius:0; border-bottom-right-radius:0; margin-bottom:0; }
-    .subs-block { background:var(--card-2); border-radius:0 0 10px 10px; padding:10px 12px; margin:0 0 10px; border:1px solid rgba(212,255,0,.35); border-top:none; }
+    .subs-block { background:var(--card-2); border-radius:0 0 10px 10px; padding:10px 12px; margin:0 0 10px; border:1px solid rgba(124,255,0,.35); border-top:none; }
     .subs-title { font-size:.72rem; color:var(--text-dim); margin-bottom:8px; }
     .subs-list { display:flex; flex-direction:column; gap:6px; }
     .sub-chip { display:grid; grid-template-columns:1fr 80px 1fr auto auto; gap:8px; align-items:center; font-size:.8rem; }

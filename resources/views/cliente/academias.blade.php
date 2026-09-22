@@ -12,13 +12,13 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/fill/style.css">
     <style>
         :root {
-            --primary: #d4ff00;
+            --primary: #7cff00;
             --bg-dark: #0a0b0d;
             --card-bg: #16181d;
             --text-main: #ffffff;
             --text-muted: #a0a0a0;
             --border: rgba(255,255,255,0.08);
-            --accent: #d4ff00;
+            --accent: #7cff00;
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -48,7 +48,7 @@
             font-size: 1.1rem;
             letter-spacing: 3px;
         }
-        .logo span { color: var(--primary); }
+        .logo, .logo span { color: var(--primary); }
 
         .btn-top {
             background: transparent;
@@ -111,11 +111,11 @@
             display: flex;
             flex-direction: column;
         }
-        .card:hover { transform: translateY(-4px); border-color: rgba(212,255,0,0.4); box-shadow: 0 12px 30px rgba(0,0,0,0.5); }
+        .card:hover { transform: translateY(-4px); border-color: rgba(124,255,0,0.4); box-shadow: 0 12px 30px rgba(0,0,0,0.5); }
 
         .card-img {
             height: 160px;
-            background: linear-gradient(135deg, rgba(212,255,0,0.18), rgba(212,255,0,0.06));
+            background: linear-gradient(135deg, rgba(124,255,0,0.18), rgba(124,255,0,0.06));
             display: flex;
             align-items: center;
             justify-content: center;
@@ -125,6 +125,8 @@
             overflow: hidden;
         }
         .card-img img { width: 100%; height: 100%; object-fit: cover; }
+        /* Pioneiro: só o selo ao lado do nome — sem realce no card. */
+        .card.pioneiro .card-body h3 { display: flex; align-items: center; gap: 5px; }
 
         .card-badge {
             position: absolute;
@@ -138,7 +140,7 @@
             text-transform: uppercase;
             padding: 5px 11px;
             border-radius: 20px;
-            border: 1px solid rgba(212,255,0,0.4);
+            border: 1px solid rgba(124,255,0,0.4);
         }
 
         .card-body { padding: 20px; flex: 1; display: flex; flex-direction: column; }
@@ -179,7 +181,7 @@
             align-items: center;
             gap: 6px;
         }
-        .btn-detalhes:hover { transform: translateY(-1px); box-shadow: 0 6px 16px rgba(212,255,0,0.25); }
+        .btn-detalhes:hover { transform: translateY(-1px); box-shadow: 0 6px 16px rgba(124,255,0,0.25); }
 
         .empty-state {
             text-align: center;
@@ -219,7 +221,7 @@
     @else
         <div class="grid" id="gridAcademias">
             @foreach ($academias as $academia)
-                <div class="card" data-busca="{{ strtolower($academia->nome . ' ' . ($academia->tipos_aulas ?? '') . ' ' . ($academia->cidade ?? '')) }}">
+                <div class="card {{ $academia->eh_pioneiro ? 'pioneiro' : '' }}" data-busca="{{ strtolower($academia->nome . ' ' . ($academia->tipos_aulas ?? '') . ' ' . ($academia->cidade ?? '')) }}">
                     <div class="card-img">
                         @if ($academia->fotos->isNotEmpty())
                             <img src="{{ asset('storage/' . $academia->fotos->first()->path) }}" alt="{{ $academia->nome }}">
@@ -229,7 +231,12 @@
                         <span class="card-badge"><i class="ph ph-building"></i> Academia</span>
                     </div>
                     <div class="card-body">
-                        <h3>{{ $academia->nome }}</h3>
+                        <h3>
+                            {{ $academia->nome }}
+                            @if ($academia->eh_pioneiro)
+                                @include('partials.badge-pioneiro', ['posicao' => $academia->pioneiro_posicao, 'estado' => $academia->estado, 'tipo' => 'academia', 'tamanho' => 15])
+                            @endif
+                        </h3>
                         @if ($academia->tipos_aulas)
                             <div class="card-meta"><i class="ph ph-barbell"></i> {{ $academia->tipos_aulas }}</div>
                         @endif

@@ -13,7 +13,7 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/fill/style.css">
     <style>
         :root {
-            --primary: #d4ff00;
+            --primary: #7cff00;
             --bg-dark: #0a0b0d;
             --card-bg: #16181d;
             --text-main: #ffffff;
@@ -26,14 +26,14 @@
 
         .top-bar { display: flex; justify-content: space-between; align-items: center; padding: 18px 40px; background: rgba(0,0,0,0.3); border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 100; backdrop-filter: blur(10px); }
         .logo { font-family: 'Syncopate', sans-serif; font-size: 1.1rem; letter-spacing: 3px; }
-        .logo span { color: var(--primary); }
+        .logo, .logo span { color: var(--primary); }
         .btn-top { background: transparent; border: 1px solid var(--border); color: var(--text-main); padding: 9px 16px; border-radius: 8px; font-weight: 700; font-size: 0.78rem; transition: 0.2s; text-decoration: none; display: inline-flex; align-items: center; gap: 6px; }
         .btn-top:hover { border-color: var(--primary); color: var(--primary); }
 
         .container { max-width: 1100px; margin: 0 auto; padding: 36px 20px; }
 
         .header-card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 18px; padding: 28px; margin-bottom: 28px; display: flex; gap: 24px; align-items: flex-start; flex-wrap: wrap; }
-        .header-icon { width: 80px; height: 80px; border-radius: 20px; background: rgba(212,255,0,0.1); display: flex; align-items: center; justify-content: center; color: var(--primary); font-size: 2rem; flex-shrink: 0; }
+        .header-icon { width: 80px; height: 80px; border-radius: 20px; background: rgba(124,255,0,0.1); display: flex; align-items: center; justify-content: center; color: var(--primary); font-size: 2rem; flex-shrink: 0; }
         .header-info { flex: 1; min-width: 240px; }
         .header-info h1 { font-size: 1.5rem; font-weight: 900; margin-bottom: 4px; }
         .header-info .modalidades { color: var(--primary); font-weight: 700; font-size: 0.85rem; margin-bottom: 10px; }
@@ -66,7 +66,7 @@
 
         .prof-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; }
         .prof-card { background: var(--input-bg); border: 1px solid var(--border); border-radius: 14px; padding: 16px; display: flex; align-items: center; gap: 12px; }
-        .prof-card .avatar { width: 44px; height: 44px; border-radius: 12px; background: rgba(212,255,0,0.12); color: var(--primary); display: flex; align-items: center; justify-content: center; font-size: 1.1rem; flex-shrink: 0; }
+        .prof-card .avatar { width: 44px; height: 44px; border-radius: 12px; background: rgba(124,255,0,0.12); color: var(--primary); display: flex; align-items: center; justify-content: center; font-size: 1.1rem; flex-shrink: 0; }
         .prof-card .nome { font-weight: 800; font-size: 0.92rem; }
         .prof-card .ver { color: var(--text-muted); font-size: 0.72rem; }
         .prof-card.clickable { cursor: pointer; transition: 0.2s; }
@@ -94,8 +94,8 @@
 
         /* MENSALIDADE BASE */
         .mensalidade-box {
-            background: rgba(212,255,0,0.06);
-            border: 1px solid rgba(212,255,0,0.25);
+            background: rgba(124,255,0,0.06);
+            border: 1px solid rgba(124,255,0,0.25);
             border-radius: 14px;
             padding: 18px 20px;
             margin-bottom: 18px;
@@ -111,7 +111,7 @@
 
         /* PLANOS */
         .planos-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 16px; }
-        .plano-card { background: var(--input-bg); border: 1px solid rgba(212,255,0,0.2); border-radius: 14px; padding: 20px; display: flex; flex-direction: column; }
+        .plano-card { background: var(--input-bg); border: 1px solid rgba(124,255,0,0.2); border-radius: 14px; padding: 20px; display: flex; flex-direction: column; }
         .plano-card h4 { color: var(--primary); font-size: 1rem; font-weight: 800; margin-bottom: 6px; }
         .plano-card .valor { font-size: 1.3rem; font-weight: 900; margin-bottom: 4px; }
         .plano-card .valor small { color: var(--text-muted); font-weight: 400; font-size: 0.7rem; }
@@ -120,7 +120,7 @@
         .botoes-pagamento { display: flex; gap: 8px; }
         .btn-pix, .btn-cartao { flex: 1; border: none; border-radius: 9px; padding: 10px; font-weight: 900; font-size: 0.78rem; cursor: pointer; transition: 0.2s; font-family: inherit; display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
         .btn-pix { background: var(--primary); color: #000; }
-        .btn-pix:hover { background: #e8ff40; }
+        .btn-pix:hover { background: #9cff40; }
         .btn-cartao { background: rgba(255,255,255,0.08); color: #fff; border: 1px solid rgba(255,255,255,0.2); }
         .btn-cartao:hover { background: rgba(255,255,255,0.15); }
 
@@ -335,7 +335,7 @@
         <h3><i class="ph ph-qr-code"></i> PAGAMENTO PIX</h3>
         <p class="modal-sub" id="pixDescricao"></p>
         <p class="modal-valor" id="pixValor">Gerando QR Code...</p>
-        <p id="pixRecorrenteNota" style="display:none; color:#d4ff00; font-size:0.78rem; font-weight:700; margin:0 0 12px; background:rgba(212,255,0,0.08); border:1px solid rgba(212,255,0,0.25); border-radius:10px; padding:8px 12px;">
+        <p id="pixRecorrenteNota" style="display:none; color:#7cff00; font-size:0.78rem; font-weight:700; margin:0 0 12px; background:rgba(124,255,0,0.08); border:1px solid rgba(124,255,0,0.25); border-radius:10px; padding:8px 12px;">
             🔁 Assinatura mensal — uma nova cobrança PIX é gerada todo mês.
         </p>
         <img class="pix-qr" id="pixQr" src="" alt="QR Code PIX">

@@ -175,6 +175,9 @@ class AsaasService
             $description = "Pacote {$pacote->frequencia}x/semana — {$personal->nome}";
         } elseif ($validated['tipo'] === 'ficha') {
             $amount = (float) ($personal->valor_ficha ?? 0);
+            if ($amount <= 0) {
+                abort(response()->json(['error' => 'Este personal não trabalha com ficha personalizada.'], 422));
+            }
             $description = "Ficha Personalizada — {$personal->nome}";
         } elseif ($validated['tipo'] === 'avaliacao') {
             if (! empty($validated['pacote_avaliacao_id'])) {
@@ -196,6 +199,9 @@ class AsaasService
                 $avaliacaoTipos = [$tipoAv];
             } else {
                 $amount = (float) ($personal->valor_avaliacao ?? 0);
+                if ($amount <= 0) {
+                    abort(response()->json(['error' => 'Este personal não trabalha com avaliação física.'], 422));
+                }
                 $description = "Avaliação Física — {$personal->nome}";
             }
         } else {

@@ -57,7 +57,7 @@
         @endif
     </div>
 
-    <div class="card" style="margin-top:14px; background:rgba(212,255,0,.03); border-color:rgba(212,255,0,.2);">
+    <div class="card" style="margin-top:14px; background:rgba(124,255,0,.03); border-color:rgba(124,255,0,.2);">
         <div class="muted" style="font-size:.82rem;"><i class="ph ph-info"></i> Reduza faltas: adicione a consulta ao Google Agenda pelo botão em cada linha. Lembretes automáticos por WhatsApp/e-mail podem ser disparados aos pacientes com contato cadastrado.</div>
     </div>
 @endsection

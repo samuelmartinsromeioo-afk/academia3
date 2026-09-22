@@ -10,7 +10,7 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/regular/style.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/fill/style.css">
     <style>
-        :root { --primary: #d4ff00; --bg: #0a0a0a; --card: #141414; --border: #222; }
+        :root { --primary: #7cff00; --bg: #0a0a0a; --card: #141414; --border: #222; }
         body { background: var(--bg); color: white; font-family: 'Inter', sans-serif; padding: 20px; }
         .container { max-width: 500px; margin: 0 auto; }
         .card { background: var(--card); border: 1px solid var(--border); border-radius: 20px; padding: 25px; }

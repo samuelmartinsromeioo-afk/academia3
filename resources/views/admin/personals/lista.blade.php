@@ -11,7 +11,7 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/fill/style.css">
     <style>
         :root {
-            --primary: #d4ff00;
+            --primary: #7cff00;
             --bg-dark: #0a0b0d;
             --card-bg: #16181d;
             --text-main: #ffffff;
@@ -144,7 +144,7 @@
         }
 
         thead {
-            background: rgba(212, 255, 0, 0.05);
+            background: rgba(124, 255, 0, 0.05);
             border-bottom: 2px solid var(--border);
         }
 
@@ -168,7 +168,7 @@
         }
 
         tbody tr:hover {
-            background: rgba(212, 255, 0, 0.02);
+            background: rgba(124, 255, 0, 0.02);
         }
 
         tbody tr:last-child td {
@@ -186,7 +186,7 @@
             width: 40px;
             height: 40px;
             border-radius: 10px;
-            background: rgba(212, 255, 0, 0.1);
+            background: rgba(124, 255, 0, 0.1);
             border: 1px solid var(--primary);
             display: flex;
             align-items: center;
@@ -275,7 +275,7 @@
 
         .pagination a:hover {
             border-color: var(--primary);
-            background: rgba(212, 255, 0, 0.1);
+            background: rgba(124, 255, 0, 0.1);
             color: var(--primary);
         }
 

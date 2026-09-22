@@ -11,7 +11,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Syncopate:wght@700&family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
     <style>
         :root {
-            --primary: #d4ff00;
+            --primary: #7cff00;
             --bg-dark: #0a0b0d;
             --card-bg: #16181d;
             --text-main: #fff;
@@ -31,11 +31,11 @@
             display:inline-flex; align-items:center; gap:8px; text-decoration:none; color:var(--text-dim);
             border:1px solid var(--border); border-radius:10px; padding:9px 16px; font-size:.85rem; transition:.25s;
         }
-        .btn-voltar:hover { color:var(--primary); border-color:rgba(212,255,0,.4); }
+        .btn-voltar:hover { color:var(--primary); border-color:rgba(124,255,0,.4); }
 
         .alerta {
             padding:13px 18px; border-radius:12px; margin-bottom:20px; font-size:.9rem;
-            background:rgba(212,255,0,.1); border:1px solid rgba(212,255,0,.35); color:var(--primary);
+            background:rgba(124,255,0,.1); border:1px solid rgba(124,255,0,.35); color:var(--primary);
         }
         .alerta.erro { background:rgba(255,107,107,.1); border-color:rgba(255,107,107,.4); color:var(--danger); }
 
@@ -61,12 +61,12 @@
             font-family:inherit; transition:.25s; text-decoration:none;
         }
         .btn-primary { background:var(--primary); color:#000; }
-        .btn-primary:hover { background:#b8de00; }
+        .btn-primary:hover { background:#6bde00; }
         .btn-mini {
             background:transparent; border:1px solid var(--border); color:var(--text-dim);
             padding:6px 12px; font-size:.72rem; border-radius:8px; cursor:pointer; font-family:inherit; transition:.25s;
         }
-        .btn-mini:hover { border-color:rgba(212,255,0,.45); color:var(--primary); }
+        .btn-mini:hover { border-color:rgba(124,255,0,.45); color:var(--primary); }
 
         .tabela-scroll { overflow-x:auto; }
         table { width:100%; border-collapse:collapse; min-width:820px; }
@@ -78,7 +78,7 @@
             font-weight:700; text-transform:uppercase; letter-spacing:.6px;
             background:rgba(255,255,255,.06); color:var(--text-dim); border:1px solid var(--border);
         }
-        .badge.on { background:rgba(212,255,0,.12); color:var(--primary); border-color:rgba(212,255,0,.3); }
+        .badge.on { background:rgba(124,255,0,.12); color:var(--primary); border-color:rgba(124,255,0,.3); }
         .badge.off { background:rgba(255,107,107,.1); color:var(--danger); border-color:rgba(255,107,107,.3); }
         .vazio { text-align:center; padding:40px; color:var(--text-dim); }
         .filtros { display:flex; gap:12px; flex-wrap:wrap; align-items:end; margin-bottom:18px; }

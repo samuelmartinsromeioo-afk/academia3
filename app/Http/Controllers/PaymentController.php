@@ -101,6 +101,9 @@ class PaymentController extends Controller
         } elseif ($validated['tipo'] === 'ficha') {
             $pacote = null;
             $amount = (float) ($personal->valor_ficha ?? 0);
+            if ($amount <= 0) {
+                return response()->json(['error' => 'Este personal não trabalha com ficha personalizada.'], 422);
+            }
             $description = "Ficha Personalizada — {$personal->nome}";
         } elseif ($validated['tipo'] === 'avaliacao') {
             $pacote = null;
@@ -126,6 +129,9 @@ class PaymentController extends Controller
                 $avaliacaoTipos = [$tipoAv];
             } else {
                 $amount = (float) ($personal->valor_avaliacao ?? 0);
+                if ($amount <= 0) {
+                    return response()->json(['error' => 'Este personal não trabalha com avaliação física.'], 422);
+                }
                 $description = "Avaliação Física — {$personal->nome}";
             }
         } else {
@@ -1360,6 +1366,9 @@ class PaymentController extends Controller
         } elseif ($validated['tipo'] === 'ficha') {
             $pacote = null;
             $amount = (float) ($personal->valor_ficha ?? 0);
+            if ($amount <= 0) {
+                return response()->json(['error' => 'Este personal não trabalha com ficha personalizada.'], 422);
+            }
             $description = "Ficha Personalizada — {$personal->nome}";
         } elseif ($validated['tipo'] === 'avaliacao') {
             $pacote = null;
@@ -1385,6 +1394,9 @@ class PaymentController extends Controller
                 $avaliacaoTipos = [$tipoAv];
             } else {
                 $amount = (float) ($personal->valor_avaliacao ?? 0);
+                if ($amount <= 0) {
+                    return response()->json(['error' => 'Este personal não trabalha com avaliação física.'], 422);
+                }
                 $description = "Avaliação Física — {$personal->nome}";
             }
         } else {

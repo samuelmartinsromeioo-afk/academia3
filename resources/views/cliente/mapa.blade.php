@@ -12,7 +12,7 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
     <style>
         :root {
-            --primary: #d4ff00;
+            --primary: #7cff00;
             --bg-dark: #0a0b0d;
             --card-bg: #16181d;
             --text-main: #ffffff;
@@ -20,7 +20,7 @@
             --error: #ff4444;
             --success: #00ff88;
             --border: rgba(255, 255, 255, 0.08);
-            --academia-color: #d4ff00;
+            --academia-color: #7cff00;
             --personal-color: #1a5fd4;
             --filial-color: #ff9500;
             --filial-contorno-color: #00c8ff;
@@ -121,7 +121,7 @@
         }
 
         .filter-tab.active-academia {
-            background: rgba(212, 255, 0, 0.1);
+            background: rgba(124, 255, 0, 0.1);
             border-color: var(--academia-color);
             color: var(--academia-color);
         }
@@ -200,7 +200,7 @@
         }
 
         .pin-card:hover { background: rgba(255,255,255,0.04); }
-        .pin-card.selected { background: rgba(212,255,0,0.05); border-color: rgba(212,255,0,0.3); }
+        .pin-card.selected { background: rgba(124,255,0,0.05); border-color: rgba(124,255,0,0.3); }
 
         .pin-icon {
             width: 38px;
@@ -213,7 +213,7 @@
             flex-shrink: 0;
         }
 
-        .pin-icon.academia         { background: rgba(212,255,0,0.12);   color: var(--academia-color); }
+        .pin-icon.academia         { background: rgba(124,255,0,0.12);   color: var(--academia-color); }
         .pin-icon.personal         { background: rgba(26,95,212,0.15);   color: var(--personal-color); }
         .pin-icon.filial-contorno  { background: rgba(0,200,255,0.12);   color: var(--filial-contorno-color); }
         .pin-icon.filial-pratique  { background: rgba(255,68,68,0.12);   color: var(--filial-pratique-color); }
@@ -237,7 +237,7 @@
             margin-top: 4px;
         }
 
-        .badge-academia        { background: rgba(212,255,0,0.1);  color: var(--academia-color); }
+        .badge-academia        { background: rgba(124,255,0,0.1);  color: var(--academia-color); }
         .badge-personal        { background: rgba(26,95,212,0.15); color: var(--personal-color); }
         .badge-filial-contorno { background: rgba(0,200,255,0.1);  color: var(--filial-contorno-color); }
         .badge-filial-pratique { background: rgba(255,68,68,0.1);  color: var(--filial-pratique-color); }
@@ -250,18 +250,19 @@
         .badge-studio-danca        { background: rgba(0,204,221,0.12);   color: var(--studio-danca-color); }
         .badge-studio-outros       { background: rgba(177,76,255,0.1);   color: var(--studio-outros-color); }
 
-        /* Selo de Pioneiro no mapa (lista + popup) */
+        /* Selo de Pioneiro no mapa (lista + popup) — verde chumbo, estilo "verificado".
+           No mapa o selo é redondo em vez do starburst: em 14px a silhueta
+           serrilhada vira ruído, e o SVG teria de ser montado em JS. */
         .badge-pioneiro-map {
-            display: inline-flex; align-items: center; gap: 5px;
-            background: linear-gradient(135deg,#FFE259,#FFA751);
-            color: #1a1200; font-weight: 800; font-size: 0.6rem;
-            text-transform: uppercase; letter-spacing: 0.5px;
-            padding: 3px 9px; border-radius: 20px;
-            border: 1px solid rgba(255,210,80,0.7);
-            box-shadow: 0 2px 8px rgba(255,170,40,0.3); white-space: nowrap;
+            display: inline-flex; align-items: center; justify-content: center;
+            width: 14px; height: 14px; border-radius: 50%;
+            background: linear-gradient(160deg, #4a9c6d, #2f6b4a);
+            color: #fff; font-size: 0.55rem; line-height: 1;
+            border: 1px solid rgba(0,0,0,0.35);
+            box-shadow: 0 1px 3px rgba(0,0,0,0.5);
+            vertical-align: -0.15em; flex: none;
         }
-        .badge-pioneiro-map i { color: #000; }
-        .pin-card.pioneiro { border-color: rgba(255,210,80,0.5); }
+        .badge-pioneiro-map i { color: #fff; }
 
         .empty-state {
             text-align: center;
@@ -545,7 +546,7 @@
     }
 
     function getPinCor(pin) {
-        if (pin.tipo === 'academia') return '#d4ff00';
+        if (pin.tipo === 'academia') return '#7cff00';
         if (pin.tipo === 'personal') return '#1a5fd4';
         if (pin.tipo === 'filial')   return getFilialCor(pin);
         if (pin.tipo === 'studio')   return getStudioCor(pin);
@@ -563,7 +564,7 @@
 
     function criarIcone(pin) {
         const tipo  = typeof pin === 'string' ? pin : pin.tipo;
-        const cor   = typeof pin === 'string' ? (pin === 'academia' ? '#d4ff00' : pin === 'personal' ? '#1a5fd4' : '#ff9500') : getPinCor(pin);
+        const cor   = typeof pin === 'string' ? (pin === 'academia' ? '#7cff00' : pin === 'personal' ? '#1a5fd4' : '#ff9500') : getPinCor(pin);
         const iconeBase = { academia: '🏋️', personal: '👤', filial: '📍' };
         const icone = tipo === 'studio'
             ? (studioIcones[pin.subtipo] || '🏃')
@@ -630,7 +631,7 @@
                 <div class="pin-info" style="flex: 1; min-width: 0;">
                     <h4 style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${pin.nome}</h4>
                     <p>${pin.endereco}</p>
-                    <span class="badge-${cssClass}">${badgeText}</span>${pin.pioneiro ? ' <span class="badge-pioneiro-map"><i class="ph-fill ph-crown"></i> Pioneiro</span>' : ''}
+                    <span class="badge-${cssClass}">${badgeText}</span>${pin.pioneiro ? ' <span class="badge-pioneiro-map" title="Pioneiro na plataforma"><i class="ph-bold ph-check"></i></span>' : ''}
                 </div>
             </div>`;
         }).join('');
@@ -696,7 +697,7 @@
                         <span class="popup-badge" style="background: ${pinColor}22; color: ${pinColor};">
                             ${badgeLabel}
                         </span>
-                        ${pin.pioneiro ? '<span class="badge-pioneiro-map" style="margin-left:6px;"><i class="ph-fill ph-crown"></i> Pioneiro</span>' : ''}
+                        ${pin.pioneiro ? '<span class="badge-pioneiro-map" style="margin-left:6px;" title="Pioneiro na plataforma"><i class="ph-bold ph-check"></i></span>' : ''}
                         <h3>${pin.nome}</h3>
                         <p><i class="ph ph-map-pin" style="color: var(--primary);"></i> ${pin.endereco}</p>
                         <p class="popup-info-value"><i class="ph ph-tag"></i> ${pin.info}</p>

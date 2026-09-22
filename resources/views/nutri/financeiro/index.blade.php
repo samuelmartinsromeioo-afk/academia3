@@ -12,7 +12,7 @@
         <div class="stat"><div class="n" style="color:var(--warn)">R$ {{ number_format($pendente,2,',','.') }}</div><div class="l">A receber</div></div>
     </div>
 
-    <div class="card" style="margin-bottom:18px; border-color:rgba(212,255,0,.2);">
+    <div class="card" style="margin-bottom:18px; border-color:rgba(124,255,0,.2);">
         <h3 style="margin-bottom:6px; display:flex; align-items:center; gap:8px;"><i class="ph ph-credit-card" style="color:var(--primary);"></i> Consulta online (paga pelo cliente)</h3>
         <p class="muted" style="font-size:.8rem; margin-bottom:12px;">Defina o valor da sua consulta. Ele aparece no seu perfil público, e o cliente paga direto pelo app (Pix, cartão ou boleto) na sua conta de recebimento.</p>
         <form method="POST" action="{{ route('nutri.financeiro.consulta') }}" style="display:flex; gap:10px; align-items:flex-end; flex-wrap:wrap;">

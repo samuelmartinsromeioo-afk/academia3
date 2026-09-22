@@ -56,7 +56,7 @@
                 headers: { 'Accept': 'application/json' }
             })
             .then(r => r.ok ? r.json() : Promise.reject())
-            .then(d => mostrar(d.mensagem, d.valido ? '#d4ff00' : '#ff6b6b'))
+            .then(d => mostrar(d.mensagem, d.valido ? '#7cff00' : '#ff6b6b'))
             .catch(() => mostrar(AJUDA, '#9ca3af'));
     }
 

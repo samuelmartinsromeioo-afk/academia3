@@ -23,7 +23,7 @@
         .selo {
             width: 96px; height: 96px; margin: 0 auto 26px; border-radius: 50%;
             display: flex; align-items: center; justify-content: center;
-            background: radial-gradient(circle at 34% 28%, rgba(255,255,255,0.35), transparent 55%), #d4ff00;
+            background: radial-gradient(circle at 34% 28%, rgba(255,255,255,0.35), transparent 55%), #7cff00;
             box-shadow: 0 0 0 7px rgba(124,255,0,0.08), 0 0 40px rgba(124,255,0,0.35);
             animation: selo .6s cubic-bezier(.2,1.2,.3,1.4) both;
         }
@@ -32,13 +32,13 @@
 
         .eyebrow {
             font-size: 0.66rem; font-weight: 800; letter-spacing: 3px; text-transform: uppercase;
-            color: #d4ff00; margin-bottom: 12px;
+            color: #7cff00; margin-bottom: 12px;
         }
         h1 {
             font-family: 'Syncopate', sans-serif; font-weight: 700; text-transform: uppercase;
             font-size: clamp(1.3rem, 4vw, 1.9rem); line-height: 1.2; letter-spacing: -0.5px; margin-bottom: 22px;
         }
-        h1 .mark { background: #d4ff00; color: #0a0b0d; padding: 0 0.1em; }
+        h1 .mark { background: #7cff00; color: #0a0b0d; padding: 0 0.1em; }
         p { color: #cfd3da; font-size: 1.02rem; line-height: 1.7; margin-bottom: 18px; text-align: left; }
         p:last-of-type { margin-bottom: 30px; }
         p strong { color: #fff; font-weight: 600; }
@@ -50,12 +50,12 @@
             background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.07);
             border-radius: 14px; padding: 16px 10px;
         }
-        .destaques .item i { color: #d4ff00; font-size: 1.5rem; display: block; margin-bottom: 8px; }
+        .destaques .item i { color: #7cff00; font-size: 1.5rem; display: block; margin-bottom: 8px; }
         .destaques .item span { font-size: 0.74rem; color: #cfd3da; font-weight: 600; line-height: 1.3; display: block; }
 
         .btn {
             display: inline-flex; align-items: center; justify-content: center; gap: 8px;
-            background: #d4ff00; color: #0a0b0d; text-decoration: none;
+            background: #7cff00; color: #0a0b0d; text-decoration: none;
             padding: 15px 30px; border-radius: 14px; font-weight: 800; font-size: 0.95rem;
             transition: transform .15s ease, box-shadow .15s ease;
         }
@@ -63,7 +63,7 @@
 
         .assinatura { margin-top: 26px; font-size: 0.7rem; color: rgba(255,255,255,0.45); }
         .assinatura .marca { font-family: 'Syncopate', sans-serif; font-weight: 700; letter-spacing: 2px; color: rgba(255,255,255,0.7); }
-        .assinatura .marca b { color: #d4ff00; }
+        .assinatura .marca b { color: #7cff00; }
 
         @media (max-width: 560px) { .destaques { grid-template-columns: 1fr; } p { text-align: center; } }
     </style>
