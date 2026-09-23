@@ -138,7 +138,7 @@ class ClienteController extends Controller
         // Quem já fechou com alguém vê o treino em primeiro lugar; quem ainda
         // não fechou continua caindo direto na vitrine de personais/academias.
         $hoje = $agendas->agora();
-        $treino = $this->painelDeTreino($cliente, $hoje);
+        $treino = $this->painelDeTreino($cliente, $hoje, $agendas);
 
         return view('cliente.index', compact(
             'cliente', 'personals', 'meusAgendamentos', 'horariosDisponiveis',
@@ -154,7 +154,7 @@ class ClienteController extends Controller
      * nada disso o bloco não aparece — não adianta mostrar um calendário vazio
      * para quem ainda está escolhendo com quem treinar.
      */
-    private function painelDeTreino(?Cliente $cliente, \Carbon\Carbon $hoje): array
+    private function painelDeTreino(?Cliente $cliente, \Carbon\Carbon $hoje, \App\Services\AgendaService $agendas): array
     {
         if (! $cliente) {
             return ['tem_vinculo' => false];
@@ -234,12 +234,20 @@ class ClienteController extends Controller
                     'exercicios' => $ficha->exercicios->count(),
                     'url' => route('fichas-treino.executar', $ficha->id),
                 ] : null,
+                // `id`, `eh_pacote`, `pode_agir` e `bloqueio` são o que a tela
+                // precisa para montar os botões de cancelar/repor — os mesmos
+                // campos da lista de agendamentos, para reaproveitar a função
+                // que já desenha esses botões.
                 'aulas' => ($porDia[$d] ?? collect())->map(fn ($a) => [
+                    'id' => $a->id,
                     'hora' => substr($a->hora_inicio ?? '', 0, 5),
                     'fim' => substr($a->hora_fim ?? '', 0, 5),
                     'personal' => $a->personal->nome ?? null,
                     'cancelado' => (bool) $a->cancelado,
                     'tipo' => $a->tipo_aula === 'pacote' ? 'Pacote' : 'Avulsa',
+                    'eh_pacote' => $agendas->ehPacote($a),
+                    'pode_agir' => ! $a->cancelado && $agendas->alunoEstaNoPrazo($a),
+                    'bloqueio' => $a->cancelado ? null : $agendas->motivoParaAlunoNaoAgir($a),
                 ])->values()->all(),
             ];
         }

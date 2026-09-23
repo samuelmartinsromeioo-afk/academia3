@@ -870,11 +870,15 @@
                 let corpo = '';
 
                 if (d.aulas.length) {
+                    // Os botões de cancelar/repor saem da MESMA função que
+                    // desenha os da lista de agendamentos — regra e aparência
+                    // num lugar só.
                     corpo += d.aulas.map(a => `
                         <div class="dd-aula ${a.cancelado ? 'cancel' : ''}">
                             <span class="dd-hora">${esc(a.hora)}${a.fim ? '–' + esc(a.fim) : ''}</span>
                             <span class="dd-quem">${a.personal ? esc(a.personal) : 'Aula'} · ${esc(a.tipo)}</span>
                             ${a.cancelado ? '<span class="dd-tag">cancelada</span>' : ''}
+                            ${montarAcoesAula(a)}
                         </div>`).join('');
                 } else {
                     corpo += `<p class="dd-vazio">Sem aula marcada nesse dia.</p>`;
@@ -895,7 +899,9 @@
                     ${corpo}`;
             }
 
-            abrirDiaAgenda({{ $hoje->day }});
+            // Só depois que todos os scripts da página rodaram: montarAcoesAula
+            // é declarada num bloco <script> mais abaixo e ainda não existe aqui.
+            document.addEventListener('DOMContentLoaded', () => abrirDiaAgenda({{ $hoje->day }}));
         </script>
     @endif
 
