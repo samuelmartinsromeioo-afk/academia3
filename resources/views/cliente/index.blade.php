@@ -87,7 +87,11 @@
         .mes-layout { display: grid; grid-template-columns: minmax(0, 430px) minmax(0, 1fr); gap: 24px; align-items: start; }
         .mes-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
         .mes-cab { text-align: center; font-size: 0.72rem; font-weight: 800; color: var(--text-muted); padding-bottom: 6px; }
-        .mes-dia { height: 54px; display: flex; flex-direction: column; align-items: center; justify-content: center; line-height: 1.1; border-radius: 10px; border: 1px solid transparent; color: var(--text-muted); }
+        .mes-dia { height: 54px; display: flex; flex-direction: column; align-items: center; justify-content: center; line-height: 1.1; border-radius: 10px; border: 1px solid transparent; color: var(--text-muted); background: transparent; font-family: inherit; cursor: pointer; transition: 0.12s; padding: 0; }
+        .mes-dia:hover { background: rgba(255,255,255,0.07); }
+        .mes-dia.tem-aula:hover { background: rgba(124,255,0,0.26); }
+        .mes-dia.selecionado { border-color: var(--primary); box-shadow: 0 0 0 2px rgba(124,255,0,0.25); color: var(--text-main); }
+        .mes-dia.vazio { pointer-events: none; }
         .mes-dia .num { font-size: 1rem; }
         .mes-dia .hr { font-size: 0.66rem; margin-top: 3px; opacity: 0.85; }
         .mes-dia.vazio { border: none; }
@@ -95,6 +99,20 @@
         .mes-dia.cancelada { background: rgba(255,68,68,0.1); border-color: rgba(255,68,68,0.28); color: var(--error); }
         .mes-dia.cancelada .num { text-decoration: line-through; }
         .mes-dia.hoje { outline: 2px solid var(--primary); outline-offset: -1px; color: var(--text-main); }
+
+        /* Detalhe do dia clicado */
+        .dia-detalhe { background: rgba(255,255,255,0.04); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; margin-bottom: 18px; }
+        .dd-tit { font-size: 0.85rem; font-weight: 800; margin-bottom: 10px; }
+        .dd-tit b { color: var(--primary); font-weight: 800; }
+        .dd-aula { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; padding: 7px 0; border-bottom: 1px solid rgba(255,255,255,0.06); font-size: 0.82rem; }
+        .dd-aula:last-of-type { border-bottom: none; }
+        .dd-aula.cancel .dd-hora { text-decoration: line-through; color: var(--error); }
+        .dd-hora { font-weight: 800; color: var(--primary); min-width: 88px; }
+        .dd-quem { color: var(--text-muted); }
+        .dd-tag { font-size: 0.63rem; text-transform: uppercase; font-weight: 800; color: var(--error); background: rgba(255,68,68,0.12); padding: 2px 7px; border-radius: 999px; }
+        .dd-vazio { color: var(--text-muted); font-size: 0.79rem; margin: 4px 0; }
+        .dd-ficha { display: inline-flex; align-items: center; gap: 8px; margin-top: 10px; color: var(--primary); text-decoration: none; font-size: 0.8rem; font-weight: 700; }
+        .dd-ficha:hover { text-decoration: underline; }
 
         /* Lista precisa ao lado da grade */
         .proximas-tit { font-size: 0.68rem; text-transform: uppercase; letter-spacing: 1.4px; font-weight: 800; color: var(--text-muted); margin-bottom: 10px; }
@@ -801,19 +819,25 @@
 
                     @for($dia = 1; $dia <= $totalDias; $dia++)
                         @php $aula = $treino['dias_com_aula'][$dia] ?? null; @endphp
-                        <div class="mes-dia {{ $aula ? ($aula['cancelado'] ? 'cancelada' : 'tem-aula') : '' }} {{ $dia === $hoje->day ? 'hoje' : '' }}">
+                        <button type="button"
+                                class="mes-dia {{ $aula ? ($aula['cancelado'] ? 'cancelada' : 'tem-aula') : '' }} {{ $dia === $hoje->day ? 'hoje' : '' }}"
+                                data-dia="{{ $dia }}" onclick="abrirDiaAgenda({{ $dia }})">
                             <span class="num">{{ $dia }}</span>
                             @if($aula && ! $aula['cancelado'] && count($aula['horas']))
                                 <span class="hr">{{ $aula['horas'][0] }}</span>
                             @endif
-                        </div>
+                        </button>
                     @endfor
                 </div>
 
                 <div class="proximas">
+                    {{-- Detalhe do dia clicado; começa no dia de hoje. --}}
+                    <div class="dia-detalhe" id="diaDetalhe"></div>
+
                     <div class="proximas-tit">Próximas</div>
                     @forelse($treino['proximas_aulas'] as $a)
-                        <div class="prox-item {{ $a['hoje'] ? 'e-hoje' : '' }}">
+                        <div class="prox-item {{ $a['hoje'] ? 'e-hoje' : '' }}"
+                             onclick="abrirDiaAgenda({{ $a['dia'] }})" style="cursor:pointer;">
                             <span class="prox-data">{{ $a['dow'] }} {{ $a['data'] }}</span>
                             <span class="prox-hora">{{ $a['hora'] ?: '--:--' }}</span>
                             @if($a['personal'])<span class="prox-quem">{{ $a['personal'] }}</span>@endif
@@ -824,6 +848,55 @@
                 </div>
             </div>
         </div>
+
+        <script>
+            // Detalhe de cada dia do mês já vem pronto do servidor — clicar não
+            // faz requisição nenhuma.
+            window.detalheDias = {!! json_encode($treino['detalhe_dias']) !!};
+
+            function abrirDiaAgenda(dia) {
+                const d = window.detalheDias[dia];
+                const alvo = document.getElementById('diaDetalhe');
+                if (!d || !alvo) return;
+
+                document.querySelectorAll('.mes-dia.selecionado').forEach(el => el.classList.remove('selecionado'));
+                const botao = document.querySelector(`.mes-dia[data-dia="${dia}"]`);
+                if (botao) botao.classList.add('selecionado');
+
+                const esc = t => String(t ?? '').replace(/[&<>"']/g, c => ({
+                    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+                })[c]);
+
+                let corpo = '';
+
+                if (d.aulas.length) {
+                    corpo += d.aulas.map(a => `
+                        <div class="dd-aula ${a.cancelado ? 'cancel' : ''}">
+                            <span class="dd-hora">${esc(a.hora)}${a.fim ? '–' + esc(a.fim) : ''}</span>
+                            <span class="dd-quem">${a.personal ? esc(a.personal) : 'Aula'} · ${esc(a.tipo)}</span>
+                            ${a.cancelado ? '<span class="dd-tag">cancelada</span>' : ''}
+                        </div>`).join('');
+                } else {
+                    corpo += `<p class="dd-vazio">Sem aula marcada nesse dia.</p>`;
+                }
+
+                if (d.ficha) {
+                    corpo += `
+                        <a class="dd-ficha" href="${d.ficha.url}">
+                            <i class="ph ph-barbell"></i>
+                            <span>${esc(d.ficha.nome)} · ${d.ficha.exercicios} exercício(s)</span>
+                        </a>`;
+                } else {
+                    corpo += `<p class="dd-vazio">Sem ficha para esse dia da semana.</p>`;
+                }
+
+                alvo.innerHTML = `
+                    <div class="dd-tit">${esc(d.rotulo)}${d.eh_hoje ? ' <b>· hoje</b>' : ''}</div>
+                    ${corpo}`;
+            }
+
+            abrirDiaAgenda({{ $hoje->day }});
+        </script>
     @endif
 
     <div id="dashboardSummary">

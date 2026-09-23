@@ -206,12 +206,43 @@ class ClienteController extends Controller
 
         // Dias do mês que têm aula, indexados pelo número do dia — o calendário
         // só precisa perguntar "tem aula no dia X?".
-        $diasComAula = $aulasDoMes->groupBy(fn ($a) => (int) $a->data->day)
-            ->map(fn ($doDia) => [
-                'cancelado' => $doDia->every(fn ($a) => (bool) $a->cancelado),
-                'horas' => $doDia->map(fn ($a) => substr($a->hora_inicio ?? '', 0, 5))->filter()->values()->all(),
-                'personal' => $doDia->first()->personal->nome ?? null,
-            ]);
+        $porDia = $aulasDoMes->groupBy(fn ($a) => (int) $a->data->day);
+
+        $diasComAula = $porDia->map(fn ($doDia) => [
+            'cancelado' => $doDia->every(fn ($a) => (bool) $a->cancelado),
+            'horas' => $doDia->map(fn ($a) => substr($a->hora_inicio ?? '', 0, 5))->filter()->values()->all(),
+            'personal' => $doDia->first()->personal->nome ?? null,
+        ]);
+
+        // Detalhe de TODOS os dias do mês, para o clique no calendário abrir o
+        // dia sem ida ao servidor. Dia sem aula também entra: o aluno clica para
+        // ver qual é a ficha daquele dia da semana.
+        $nomesDow = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
+        $detalheDias = [];
+        for ($d = 1; $d <= $hoje->daysInMonth; $d++) {
+            $dataDia = $hoje->copy()->startOfMonth()->addDays($d - 1);
+            $dow = $dataDia->dayOfWeek;
+            $ficha = $fichas->firstWhere('dia_semana', $dow);
+
+            $detalheDias[$d] = [
+                'dia' => $d,
+                'rotulo' => $nomesDow[$dow] . ', ' . $dataDia->format('d/m'),
+                'eh_hoje' => $dataDia->format('Y-m-d') === $hoje->format('Y-m-d'),
+                'passou' => $dataDia->format('Y-m-d') < $hoje->format('Y-m-d'),
+                'ficha' => $ficha ? [
+                    'nome' => $ficha->nome_treino,
+                    'exercicios' => $ficha->exercicios->count(),
+                    'url' => route('fichas-treino.executar', $ficha->id),
+                ] : null,
+                'aulas' => ($porDia[$d] ?? collect())->map(fn ($a) => [
+                    'hora' => substr($a->hora_inicio ?? '', 0, 5),
+                    'fim' => substr($a->hora_fim ?? '', 0, 5),
+                    'personal' => $a->personal->nome ?? null,
+                    'cancelado' => (bool) $a->cancelado,
+                    'tipo' => $a->tipo_aula === 'pacote' ? 'Pacote' : 'Avulsa',
+                ])->values()->all(),
+            ];
+        }
 
         // Lista precisa das próximas aulas — o calendário dá a visão do mês, mas
         // é aqui que o aluno lê dia, hora e com quem, sem passar o mouse em nada.
@@ -236,6 +267,7 @@ class ClienteController extends Controller
             'feito_hoje' => $feitoHoje,
             'fichas_por_dia' => $fichas->keyBy('dia_semana'),
             'dias_com_aula' => $diasComAula,
+            'detalhe_dias' => $detalheDias,
             'proximas_aulas' => $proximasAulas,
             'aulas_no_mes' => $aulasDoMes->where('cancelado', false)->count(),
             'treinos_no_mes' => \App\Models\Cadastro\TreinoConcluido::where('cliente_id', $cliente->id)
