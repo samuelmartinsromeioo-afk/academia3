@@ -84,12 +84,12 @@
         .mes-legenda .pt { display: inline-block; width: 6px; height: 6px; border-radius: 2px; background: var(--primary); margin-right: 4px; }
         .mes-legenda .pt.cancel { background: var(--error); }
 
-        .mes-layout { display: grid; grid-template-columns: minmax(0, 250px) minmax(0, 1fr); gap: 20px; align-items: start; }
-        .mes-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px; }
-        .mes-cab { text-align: center; font-size: 0.58rem; font-weight: 800; color: var(--text-muted); padding-bottom: 3px; }
-        .mes-dia { height: 30px; display: flex; flex-direction: column; align-items: center; justify-content: center; line-height: 1; border-radius: 6px; border: 1px solid transparent; color: var(--text-muted); }
-        .mes-dia .num { font-size: 0.72rem; }
-        .mes-dia .hr { font-size: 0.5rem; margin-top: 1px; opacity: 0.85; letter-spacing: -0.2px; }
+        .mes-layout { display: grid; grid-template-columns: minmax(0, 430px) minmax(0, 1fr); gap: 24px; align-items: start; }
+        .mes-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
+        .mes-cab { text-align: center; font-size: 0.72rem; font-weight: 800; color: var(--text-muted); padding-bottom: 6px; }
+        .mes-dia { height: 54px; display: flex; flex-direction: column; align-items: center; justify-content: center; line-height: 1.1; border-radius: 10px; border: 1px solid transparent; color: var(--text-muted); }
+        .mes-dia .num { font-size: 1rem; }
+        .mes-dia .hr { font-size: 0.66rem; margin-top: 3px; opacity: 0.85; }
         .mes-dia.vazio { border: none; }
         .mes-dia.tem-aula { background: rgba(124,255,0,0.16); border-color: rgba(124,255,0,0.4); color: var(--primary); font-weight: 800; }
         .mes-dia.cancelada { background: rgba(255,68,68,0.1); border-color: rgba(255,68,68,0.28); color: var(--error); }
@@ -97,15 +97,16 @@
         .mes-dia.hoje { outline: 2px solid var(--primary); outline-offset: -1px; color: var(--text-main); }
 
         /* Lista precisa ao lado da grade */
-        .proximas-tit { font-size: 0.58rem; text-transform: uppercase; letter-spacing: 1.4px; font-weight: 800; color: var(--text-muted); margin-bottom: 8px; }
-        .prox-item { display: flex; align-items: baseline; gap: 9px; padding: 6px 9px; border-radius: 7px; background: rgba(255,255,255,0.03); margin-bottom: 4px; font-size: 0.76rem; }
+        .proximas-tit { font-size: 0.68rem; text-transform: uppercase; letter-spacing: 1.4px; font-weight: 800; color: var(--text-muted); margin-bottom: 10px; }
+        .prox-item { display: flex; align-items: baseline; gap: 11px; padding: 10px 13px; border-radius: 9px; background: rgba(255,255,255,0.03); margin-bottom: 6px; font-size: 0.87rem; }
         .prox-item.e-hoje { background: rgba(124,255,0,0.12); border: 1px solid rgba(124,255,0,0.3); }
-        .prox-data { color: var(--text-muted); min-width: 62px; }
+        .prox-data { color: var(--text-muted); min-width: 74px; }
         .prox-hora { font-weight: 800; color: var(--primary); }
-        .prox-quem { color: var(--text-muted); font-size: 0.7rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-        .prox-vazio { color: var(--text-muted); font-size: 0.74rem; margin: 0; }
+        .prox-quem { color: var(--text-muted); font-size: 0.79rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .prox-vazio { color: var(--text-muted); font-size: 0.82rem; margin: 0; }
 
-        @media (max-width: 640px) { .mes-layout { grid-template-columns: 1fr; gap: 14px; } }
+        /* A grade sozinha ja pede ~430px; abaixo disso a lista desce. */
+        @media (max-width: 780px) { .mes-layout { grid-template-columns: 1fr; gap: 16px; } }
 
         @media (max-width: 560px) {
             .treino-titulo { font-size: 1.2rem; }
