@@ -403,7 +403,7 @@ class PersonalController extends Controller
         return view('personal.frequencia', compact('personal', 'alunos', 'stats'));
     }
 
-    public function frequenciaAluno(Request $request, $clienteId)
+    public function frequenciaAluno(Request $request, $clienteId, \App\Services\PresencaService $presencas)
     {
         $personalId = session('personal_id');
         if (!$personalId) return redirect()->route('login.index');
@@ -444,16 +444,8 @@ class PersonalController extends Controller
             ->filter(fn ($p) => $p->data->format('Y-m') === now()->format('Y-m'))
             ->count();
 
-        // Dias de aula agendados no mês escolhido (para marcação rápida)
-        $diasAgenda = Agenda::where('personal_id', $personalId)
-            ->where('cliente_id', $clienteId)
-            ->where('cancelado', false)
-            ->where('tipo_aula', '!=', 'bloqueio')
-            ->whereYear('data', substr($mes, 0, 4))
-            ->whereMonth('data', substr($mes, 5, 2))
-            ->get()
-            ->map(fn ($a) => $a->data->format('Y-m-d'))
-            ->unique()->sort()->values();
+        // Dias de aula do mês, já com o horário e se a marcação está liberada.
+        $diasAgenda = $presencas->diasDoMes($personalId, (int) $clienteId, $mes);
 
         $presencasPorData = $todas->keyBy(fn ($p) => $p->data->format('Y-m-d'));
 
@@ -468,7 +460,7 @@ class PersonalController extends Controller
         ));
     }
 
-    public function marcarPresenca(Request $request)
+    public function marcarPresenca(Request $request, \App\Services\PresencaService $presencas)
     {
         $personalId = session('personal_id');
         if (!$personalId) return redirect()->route('login.index');
@@ -482,6 +474,13 @@ class PersonalController extends Controller
         $alunoIds = $this->alunosDoPersonal($personalId)->pluck('id');
         if (!$alunoIds->contains((int) $dados['cliente_id'])) {
             abort(403);
+        }
+
+        // Só dia com aula agendada, e só depois de a aula começar. A tela já
+        // desabilita o botão; aqui é o bloqueio que vale (form pode ser forjado).
+        $bloqueio = $presencas->motivoDoBloqueio($personalId, (int) $dados['cliente_id'], $dados['data']);
+        if ($bloqueio) {
+            return redirect()->back()->with('error', $bloqueio);
         }
 
         Presenca::updateOrCreate(

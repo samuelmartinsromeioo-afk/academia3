@@ -74,6 +74,23 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Fuso do negócio
+    |--------------------------------------------------------------------------
+    |
+    | Os horários de aula (`agendas.hora_inicio`) são hora de parede do Brasil:
+    | o personal marca "13:00" pensando no relógio dele, não em UTC. Quem
+    | compara horário de aula com o "agora" precisa usar este fuso nos DOIS
+    | lados — comparar contra now() em UTC adianta a conta em 3h.
+    |
+    | Não troque o 'timezone' acima para resolver isso: os timestamps já
+    | gravados no banco estão em UTC e seriam todos reinterpretados.
+    |
+    */
+
+    'timezone_negocio' => env('APP_TIMEZONE_NEGOCIO', 'America/Sao_Paulo'),
+
+    /*
+    |--------------------------------------------------------------------------
     | Application Locale Configuration
     |--------------------------------------------------------------------------
     |
