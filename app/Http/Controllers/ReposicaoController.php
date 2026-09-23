@@ -22,7 +22,16 @@ class ReposicaoController extends Controller
         return session('personal_id') ?: null;
     }
 
-    /** Pedidos do personal, pendentes primeiro. */
+    /**
+     * Tudo que os alunos desmarcaram, com o que dá para fazer em cada caso.
+     *
+     * Por que `cancelado = true` basta para dizer "foi o aluno": todo
+     * cancelamento feito pelo PERSONAL apaga a linha da agenda
+     * (`PersonalController::cancelarAula` e `cancelarDia`, e os equivalentes na
+     * API). Só o `AulaAlunoController` marca a aula como cancelada e a mantém.
+     * Se algum dia o lado do personal virar soft-delete, este filtro precisa de
+     * um `cancelado_por`.
+     */
     public function index()
     {
         $personalId = $this->personalLogado();
@@ -32,13 +41,33 @@ class ReposicaoController extends Controller
 
         $personal = \App\Models\Cadastro\Personal::findOrFail($personalId);
 
-        $pedidos = AulaReposicao::with(['cliente', 'agenda', 'agendaReposta'])
+        $faltas = Agenda::with('cliente:id,nome')
             ->where('personal_id', $personalId)
-            ->orderByRaw("FIELD(status, 'pendente', 'aceita', 'recusada', 'cancelada')")
-            ->latest()
+            ->where('cancelado', true)
+            ->where('tipo_aula', '!=', 'bloqueio')
+            ->orderByDesc('data')
+            ->orderByDesc('hora_inicio')
+            ->limit(80)
             ->get();
 
-        return view('personal.reposicoes', compact('personal', 'pedidos'));
+        // Pedido de reposição e estorno indexados por aula, para a tela não
+        // consultar o banco dentro do laço.
+        $pedidos = AulaReposicao::with('agendaReposta')
+            ->whereIn('agenda_id', $faltas->pluck('id'))
+            ->get()
+            ->keyBy('agenda_id');
+
+        $estornos = \App\Models\Estorno::whereIn('agenda_id', $faltas->pluck('id'))
+            ->get()
+            ->keyBy('agenda_id');
+
+        return view('personal.reposicoes', [
+            'personal' => $personal,
+            'faltas' => $faltas,
+            'pedidos' => $pedidos,
+            'estornos' => $estornos,
+            'pendentes' => $pedidos->where('status', AulaReposicao::STATUS_PENDENTE)->count(),
+        ]);
     }
 
     /**

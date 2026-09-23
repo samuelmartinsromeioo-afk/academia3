@@ -138,7 +138,12 @@ class PersonalController extends Controller
 
         $resultado = $this->calcularFinanceiroMes($id);
 
-        return view('personal.dashboard', compact('personal', 'inicioSemana', 'dataRef', 'resultado'));
+        // Badge do atalho "Faltas": pedidos de reposição ainda sem resposta.
+        $reposicoesPendentes = \App\Models\AulaReposicao::where('personal_id', $personal->id)
+            ->pendentes()
+            ->count();
+
+        return view('personal.dashboard', compact('personal', 'inicioSemana', 'dataRef', 'resultado', 'reposicoesPendentes'));
     }
 
     public function storeHorario(Request $request)

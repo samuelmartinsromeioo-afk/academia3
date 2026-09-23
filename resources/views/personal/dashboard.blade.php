@@ -674,6 +674,15 @@
             <a href="{{ route('personal.frequencia') }}" class="qa-item"><span class="qa-ico"><i class="ph ph-user-check"></i></span><span class="qa-lbl">Frequência</span></a>
             <a href="{{ route('personal.avaliacao-fisica') }}" class="qa-item"><span class="qa-ico"><i class="ph ph-heartbeat"></i></span><span class="qa-lbl">Avaliação Física</span></a>
             <a href="{{ route('personal.solicitacoes-ficha') }}" class="qa-item"><span class="qa-ico"><i class="ph ph-clipboard-text"></i></span><span class="qa-lbl">Solicitações</span></a>
+            <a href="{{ route('personal.reposicoes') }}" class="qa-item">
+                <span class="qa-ico" style="position:relative;">
+                    <i class="ph ph-calendar-x"></i>
+                    @if(($reposicoesPendentes ?? 0) > 0)
+                        <span style="position:absolute; top:-4px; right:-4px; background:#ff3b30; color:#fff; font-size:0.6rem; font-weight:900; min-width:16px; height:16px; border-radius:8px; display:flex; align-items:center; justify-content:center; padding:0 4px;">{{ $reposicoesPendentes }}</span>
+                    @endif
+                </span>
+                <span class="qa-lbl">Faltas</span>
+            </a>
         </div>
 
         <div class="ed-eyebrow"><span class="ed-num">01</span> <span id="snrSaud">Olá</span>, {{ explode(' ', trim($personal->nome))[0] }} — bora pra cima</div>

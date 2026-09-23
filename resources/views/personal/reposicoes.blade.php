@@ -3,30 +3,35 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Reposições - SnrFit</title>
+    <title>Faltas e reposições - SnrFit</title>
     <link rel="icon" type="image/png" href="{{ asset('SnrFit.png') }}">
     @include('partials.meta-pixel')
     @include('partials.brand-head')
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #0a0b0d; color: #eef0f2; padding: 24px 18px 60px; }
-        .wrap { max-width: 860px; margin: 0 auto; }
+        .wrap { max-width: 900px; margin: 0 auto; }
         .back { display: inline-flex; align-items: center; gap: 6px; color: #9aa1ab; text-decoration: none; font-size: 0.8rem; margin-bottom: 16px; }
         .back:hover { color: #7cff00; }
         h1 { font-family: 'Syncopate', sans-serif; font-size: 1.2rem; text-transform: uppercase; margin-bottom: 6px; }
         .sub { color: #9aa1ab; font-size: 0.85rem; margin-bottom: 20px; }
 
         .card { background: #16181d; border: 1px solid rgba(255,255,255,0.07); border-radius: 16px; padding: 18px 20px; margin-bottom: 12px; }
-        .card.pendente { border-color: rgba(255,176,32,0.35); }
+        .card.pendente { border-color: rgba(255,176,32,0.38); }
+        .cab { display: flex; justify-content: space-between; gap: 14px; flex-wrap: wrap; align-items: flex-start; }
         .quem { font-weight: 800; font-size: 0.97rem; }
         .meta { color: #9aa1ab; font-size: 0.79rem; line-height: 1.65; margin-top: 5px; }
-        .sugestao { background: rgba(124,255,0,0.07); border: 1px solid rgba(124,255,0,0.22); border-radius: 10px; padding: 10px 13px; margin-top: 11px; font-size: 0.82rem; }
+        .risco { text-decoration: line-through; }
 
-        .badge { display: inline-block; padding: 3px 9px; border-radius: 999px; font-size: 0.63rem; font-weight: 800; text-transform: uppercase; }
+        .badge { display: inline-block; padding: 3px 9px; border-radius: 999px; font-size: 0.63rem; font-weight: 800; text-transform: uppercase; white-space: nowrap; }
         .b-pendente { background: rgba(255,176,32,0.15); color: #ffb020; }
         .b-aceita { background: rgba(0,255,136,0.13); color: #00ff88; }
         .b-recusada { background: rgba(255,68,68,0.13); color: #ff4444; }
-        .b-cancelada { background: rgba(255,255,255,0.08); color: #9aa1ab; }
+        .b-avulsa { background: rgba(255,255,255,0.08); color: #9aa1ab; }
+
+        .aviso { border-radius: 10px; padding: 11px 14px; margin-top: 12px; font-size: 0.8rem; line-height: 1.55; }
+        .aviso.ok { background: rgba(0,255,136,0.08); border: 1px solid rgba(0,255,136,0.25); color: #00ff88; }
+        .aviso.neutro { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.09); color: #cfd3da; }
 
         form { margin-top: 14px; }
         .campos { display: flex; gap: 8px; flex-wrap: wrap; align-items: end; }
@@ -48,39 +53,58 @@
 <div class="wrap">
     <a href="{{ route('personal.dashboard') }}" class="back"><i class="ph ph-arrow-left"></i> Voltar</a>
 
-    <h1>Reposições</h1>
-    <p class="sub">Alunos de pacote que avisaram falta e querem repor a aula. Quem define o horário é você.</p>
+    <h1>Faltas e reposições</h1>
+    <p class="sub">
+        Aulas que os alunos desmarcaram.
+        @if($pendentes > 0)
+            <b style="color:#ffb020;">{{ $pendentes }} esperando você marcar a reposição.</b>
+        @endif
+    </p>
 
     @if(session('success'))<div class="alert a-ok">{{ session('success') }}</div>@endif
     @if(session('error'))<div class="alert a-err">{{ session('error') }}</div>@endif
 
-    @forelse($pedidos as $p)
-        <div class="card {{ $p->status === 'pendente' ? 'pendente' : '' }}">
-            <div class="quem">
-                {{ $p->cliente->nome ?? 'Aluno' }}
-                <span class="badge b-{{ $p->status }}">{{ $p->status }}</span>
-            </div>
-            <div class="meta">
-                @if($p->agenda)
-                    Aula perdida: {{ \Carbon\Carbon::parse($p->agenda->data)->format('d/m/Y') }}
-                    às {{ substr($p->agenda->hora_inicio ?? '', 0, 5) }}<br>
-                @endif
-                Avisou em {{ $p->created_at?->format('d/m/Y H:i') }}
-                @if($p->motivo)<br>Motivo: “{{ $p->motivo }}”@endif
-            </div>
+    @forelse($faltas as $falta)
+        @php
+            $pedido = $pedidos[$falta->id] ?? null;
+            $estorno = $estornos[$falta->id] ?? null;
+            $ehPacote = $falta->tipo_aula === 'pacote';
+            $aguardando = $pedido && $pedido->estaPendente();
+        @endphp
 
-            @if($p->estaPendente())
-                <div class="sugestao">
-                    <i class="ph ph-calendar-plus"></i> Você define o dia e a hora da reposição.
+        <div class="card {{ $aguardando ? 'pendente' : '' }}">
+            <div class="cab">
+                <div>
+                    <div class="quem">{{ $falta->cliente->nome ?? 'Aluno' }}</div>
+                    <div class="meta">
+                        <span class="risco">
+                            {{ \Carbon\Carbon::parse($falta->data)->format('d/m/Y') }}
+                            às {{ substr($falta->hora_inicio ?? '', 0, 5) }}
+                        </span>
+                        · {{ $ehPacote ? 'Pacote' : 'Avulsa' }}
+                        @if($falta->cancelado_em)<br>Avisou em {{ \Carbon\Carbon::parse($falta->cancelado_em)->format('d/m/Y H:i') }}@endif
+                        @if($falta->justificativa_cancelamento)<br>“{{ $falta->justificativa_cancelamento }}”@endif
+                    </div>
                 </div>
-            @endif
 
-            @if($p->estaPendente())
-                <form method="POST" action="{{ route('personal.reposicoes.aceitar', $p->id) }}">
+                <div>
+                    @if($pedido)
+                        <span class="badge b-{{ $pedido->status }}">
+                            {{ $pedido->status === 'pendente' ? 'repor' : $pedido->status }}
+                        </span>
+                    @else
+                        <span class="badge b-avulsa">cancelada</span>
+                    @endif
+                </div>
+            </div>
+
+            {{-- PACOTE AGUARDANDO: você escolhe o dia e a hora --}}
+            @if($aguardando)
+                <form method="POST" action="{{ route('personal.reposicoes.aceitar', $pedido->id) }}">
                     @csrf
                     <div class="campos">
                         <div class="campo">
-                            <label>Data da reposição</label>
+                            <label>Remarcar para</label>
                             <input type="date" name="data" required min="{{ now()->format('Y-m-d') }}">
                         </div>
                         <div class="campo">
@@ -95,36 +119,51 @@
                     </div>
                     <div class="campo" style="margin-top:10px;">
                         <label>Recado para o aluno</label>
-                        <input type="text" name="resposta" placeholder="Opcional no aceite. Obrigatório se for recusar.">
+                        <input type="text" name="resposta" placeholder="Opcional no aceite.">
                     </div>
                 </form>
 
                 <div class="sep">
-                    <form method="POST" action="{{ route('personal.reposicoes.recusar', $p->id) }}">
+                    <form method="POST" action="{{ route('personal.reposicoes.recusar', $pedido->id) }}">
                         @csrf
                         <div class="campos">
                             <div class="campo" style="flex:1 1 320px;">
-                                <label>Não consigo repor — explique ou proponha outro horário</label>
-                                <input type="text" name="resposta" required minlength="5" placeholder="Ex: nessa semana não tenho horário, consegue dia 30 às 9h?">
+                                <label>Não vou conseguir repor — explique ao aluno</label>
+                                <input type="text" name="resposta" required minlength="5" placeholder="Ex: essa semana está cheia, consigo só na outra.">
                             </div>
                             <button class="b-no" type="submit">Recusar</button>
                         </div>
                     </form>
                 </div>
-            @elseif($p->resposta)
-                <div class="meta" style="margin-top:10px;">Sua resposta: “{{ $p->resposta }}”</div>
-            @endif
 
-            @if($p->agendaReposta)
-                <div class="meta" style="margin-top:8px; color:#00ff88;">
+            {{-- PACOTE JÁ RESPONDIDO --}}
+            @elseif($pedido && $pedido->agendaReposta)
+                <div class="aviso ok">
                     <i class="ph ph-calendar-check"></i>
-                    Reposta em {{ \Carbon\Carbon::parse($p->agendaReposta->data)->format('d/m/Y') }}
-                    às {{ substr($p->agendaReposta->hora_inicio ?? '', 0, 5) }}
+                    Reposta em <b>{{ \Carbon\Carbon::parse($pedido->agendaReposta->data)->format('d/m/Y') }}
+                    às {{ substr($pedido->agendaReposta->hora_inicio ?? '', 0, 5) }}</b>.
+                    @if($pedido->resposta)<br>Você disse: “{{ $pedido->resposta }}”@endif
+                </div>
+            @elseif($pedido && $pedido->status === 'recusada')
+                <div class="aviso neutro">
+                    Você recusou a reposição. “{{ $pedido->resposta }}”
+                </div>
+
+            {{-- AVULSA: o dinheiro voltou, então não há aula a repor --}}
+            @else
+                <div class="aviso neutro">
+                    <i class="ph ph-info"></i>
+                    Aula avulsa cancelada dentro do prazo.
+                    @if($estorno)
+                        O valor de <b>R$ {{ number_format((float) $estorno->valor, 2, ',', '.') }}</b>
+                        {{ $estorno->status === 'devolvido' ? 'foi devolvido ao aluno.' : 'está para ser devolvido ao aluno.' }}
+                    @endif
+                    Não há aula a repor — se ele quiser voltar, precisa marcar uma nova.
                 </div>
             @endif
         </div>
     @empty
-        <p class="vazio"><i class="ph ph-check-circle"></i> Nenhum pedido de reposição por aqui.</p>
+        <p class="vazio"><i class="ph ph-check-circle"></i> Nenhum aluno desmarcou aula até agora.</p>
     @endforelse
 </div>
 </body>
