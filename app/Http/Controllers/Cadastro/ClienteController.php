@@ -175,14 +175,26 @@ class ClienteController extends Controller
             ->orderBy('hora_inicio')
             ->get();
 
-        $temVinculo = $cliente->academia_id
+        // "Fechou com um personal" é mais estrito que "tem vínculo": quem já tem
+        // profissional não vê mais a vitrine de personais no painel. Academia e
+        // studio não contam aqui — quem treina em academia ainda pode querer um
+        // personal.
+        $temPersonal = (bool) $cliente->personal_id
+            || $fichas->contains(fn ($f) => $f->personal_id !== null)
+            || Agenda::where('cliente_id', $cliente->id)
+                ->whereNotNull('personal_id')
+                ->where('cancelado', false)
+                ->where('tipo_aula', '!=', 'bloqueio')
+                ->exists();
+
+        $temVinculo = $temPersonal
+            || $cliente->academia_id
             || $cliente->studio_id
-            || $cliente->personal_id
             || $fichas->isNotEmpty()
             || $aulasDoMes->isNotEmpty();
 
         if (! $temVinculo) {
-            return ['tem_vinculo' => false];
+            return ['tem_vinculo' => false, 'tem_personal' => $temPersonal];
         }
 
         $fichaHoje = $fichas->firstWhere('dia_semana', $hoje->dayOfWeek);
@@ -201,12 +213,30 @@ class ClienteController extends Controller
                 'personal' => $doDia->first()->personal->nome ?? null,
             ]);
 
+        // Lista precisa das próximas aulas — o calendário dá a visão do mês, mas
+        // é aqui que o aluno lê dia, hora e com quem, sem passar o mouse em nada.
+        $proximasAulas = $aulasDoMes
+            ->where('cancelado', false)
+            ->filter(fn ($a) => $a->data->format('Y-m-d') >= $hoje->format('Y-m-d'))
+            ->take(5)
+            ->map(fn ($a) => [
+                'dia' => $a->data->day,
+                'dow' => ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'][$a->data->dayOfWeek],
+                'data' => $a->data->format('d/m'),
+                'hora' => substr($a->hora_inicio ?? '', 0, 5),
+                'personal' => $a->personal->nome ?? null,
+                'hoje' => $a->data->format('Y-m-d') === $hoje->format('Y-m-d'),
+            ])
+            ->values();
+
         return [
             'tem_vinculo' => true,
+            'tem_personal' => $temPersonal,
             'ficha_hoje' => $fichaHoje,
             'feito_hoje' => $feitoHoje,
             'fichas_por_dia' => $fichas->keyBy('dia_semana'),
             'dias_com_aula' => $diasComAula,
+            'proximas_aulas' => $proximasAulas,
             'aulas_no_mes' => $aulasDoMes->where('cancelado', false)->count(),
             'treinos_no_mes' => \App\Models\Cadastro\TreinoConcluido::where('cliente_id', $cliente->id)
                 ->where('concluido', true)

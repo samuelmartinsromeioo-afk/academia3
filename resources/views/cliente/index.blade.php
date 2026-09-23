@@ -72,21 +72,40 @@
         .dia-pill.com-ficha { background: rgba(124,255,0,0.14); border-color: rgba(124,255,0,0.4); color: var(--primary); }
         .dia-pill.hoje { outline: 2px solid var(--primary); outline-offset: 1px; }
 
-        /* ── CALENDÁRIO DO MÊS ── */
-        .mes-card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 18px; padding: 20px; }
-        .mes-resumo { display: flex; gap: 22px; flex-wrap: wrap; color: var(--text-muted); font-size: 0.8rem; margin-bottom: 16px; }
-        .mes-resumo b { color: var(--text-main); font-size: 1rem; }
-        .mes-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; }
-        .mes-cab { text-align: center; font-size: 0.62rem; text-transform: uppercase; font-weight: 800; color: var(--text-muted); padding-bottom: 6px; }
-        .mes-dia { position: relative; aspect-ratio: 1; display: flex; align-items: center; justify-content: center; border-radius: 9px; font-size: 0.78rem; color: var(--text-muted); border: 1px solid transparent; }
+        /* ── CALENDÁRIO DO MÊS ──
+           Compacto de proposito: celula de altura fixa (nao aspect-ratio, que
+           esticava o mes inteiro), grade estreita e a HORA impressa no dia em
+           vez de escondida num title. */
+        .mes-card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 16px; padding: 16px 18px; }
+        .mes-topo { display: flex; justify-content: space-between; align-items: center; gap: 14px; flex-wrap: wrap; margin-bottom: 12px; }
+        .mes-resumo { color: var(--text-muted); font-size: 0.76rem; }
+        .mes-resumo b { color: var(--text-main); font-size: 0.9rem; }
+        .mes-legenda { display: flex; gap: 12px; font-size: 0.67rem; color: var(--text-muted); }
+        .mes-legenda .pt { display: inline-block; width: 6px; height: 6px; border-radius: 2px; background: var(--primary); margin-right: 4px; }
+        .mes-legenda .pt.cancel { background: var(--error); }
+
+        .mes-layout { display: grid; grid-template-columns: minmax(0, 250px) minmax(0, 1fr); gap: 20px; align-items: start; }
+        .mes-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px; }
+        .mes-cab { text-align: center; font-size: 0.58rem; font-weight: 800; color: var(--text-muted); padding-bottom: 3px; }
+        .mes-dia { height: 30px; display: flex; flex-direction: column; align-items: center; justify-content: center; line-height: 1; border-radius: 6px; border: 1px solid transparent; color: var(--text-muted); }
+        .mes-dia .num { font-size: 0.72rem; }
+        .mes-dia .hr { font-size: 0.5rem; margin-top: 1px; opacity: 0.85; letter-spacing: -0.2px; }
         .mes-dia.vazio { border: none; }
-        .mes-dia.tem-aula { background: rgba(124,255,0,0.13); border-color: rgba(124,255,0,0.35); color: var(--primary); font-weight: 800; }
-        .mes-dia.cancelada { background: rgba(255,68,68,0.1); border-color: rgba(255,68,68,0.3); color: var(--error); text-decoration: line-through; }
-        .mes-dia.hoje { outline: 2px solid var(--primary); outline-offset: 1px; color: var(--text-main); }
-        .mes-dia .ponto { position: absolute; bottom: 5px; width: 4px; height: 4px; border-radius: 50%; background: var(--primary); }
-        .mes-legenda { display: flex; gap: 16px; margin-top: 14px; font-size: 0.7rem; color: var(--text-muted); flex-wrap: wrap; }
-        .ponto-legenda { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--primary); margin-right: 5px; }
-        .ponto-legenda.cancel { background: var(--error); }
+        .mes-dia.tem-aula { background: rgba(124,255,0,0.16); border-color: rgba(124,255,0,0.4); color: var(--primary); font-weight: 800; }
+        .mes-dia.cancelada { background: rgba(255,68,68,0.1); border-color: rgba(255,68,68,0.28); color: var(--error); }
+        .mes-dia.cancelada .num { text-decoration: line-through; }
+        .mes-dia.hoje { outline: 2px solid var(--primary); outline-offset: -1px; color: var(--text-main); }
+
+        /* Lista precisa ao lado da grade */
+        .proximas-tit { font-size: 0.58rem; text-transform: uppercase; letter-spacing: 1.4px; font-weight: 800; color: var(--text-muted); margin-bottom: 8px; }
+        .prox-item { display: flex; align-items: baseline; gap: 9px; padding: 6px 9px; border-radius: 7px; background: rgba(255,255,255,0.03); margin-bottom: 4px; font-size: 0.76rem; }
+        .prox-item.e-hoje { background: rgba(124,255,0,0.12); border: 1px solid rgba(124,255,0,0.3); }
+        .prox-data { color: var(--text-muted); min-width: 62px; }
+        .prox-hora { font-weight: 800; color: var(--primary); }
+        .prox-quem { color: var(--text-muted); font-size: 0.7rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .prox-vazio { color: var(--text-muted); font-size: 0.74rem; margin: 0; }
+
+        @media (max-width: 640px) { .mes-layout { grid-template-columns: 1fr; gap: 14px; } }
 
         @media (max-width: 560px) {
             .treino-titulo { font-size: 1.2rem; }
@@ -753,45 +772,65 @@
         <div class="section-title">Suas aulas em {{ $meses[$hoje->month] }}</div>
 
         <div class="mes-card">
-            <div class="mes-resumo">
-                <div><b>{{ $treino['aulas_no_mes'] }}</b> aula(s) marcada(s)</div>
-                <div><b>{{ $treino['treinos_no_mes'] }}</b> treino(s) concluído(s)</div>
+            <div class="mes-topo">
+                <div class="mes-resumo">
+                    <b>{{ $treino['aulas_no_mes'] }}</b> aula(s) ·
+                    <b>{{ $treino['treinos_no_mes'] }}</b> treino(s) concluído(s)
+                </div>
+                <div class="mes-legenda">
+                    <span><i class="pt"></i> aula</span>
+                    <span><i class="pt cancel"></i> cancelada</span>
+                </div>
             </div>
 
-            <div class="mes-grid">
-                @foreach(['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'] as $cab)
-                    <div class="mes-cab">{{ $cab }}</div>
-                @endforeach
+            <div class="mes-layout">
+                <div class="mes-grid">
+                    @foreach(['D','S','T','Q','Q','S','S'] as $cab)
+                        <div class="mes-cab">{{ $cab }}</div>
+                    @endforeach
 
-                @php
-                    $inicio = $hoje->copy()->startOfMonth();
-                    $totalDias = $hoje->daysInMonth;
-                @endphp
+                    @php
+                        $inicio = $hoje->copy()->startOfMonth();
+                        $totalDias = $hoje->daysInMonth;
+                    @endphp
 
-                @for($i = 0; $i < $inicio->dayOfWeek; $i++)
-                    <div class="mes-dia vazio"></div>
-                @endfor
+                    @for($i = 0; $i < $inicio->dayOfWeek; $i++)
+                        <div class="mes-dia vazio"></div>
+                    @endfor
 
-                @for($dia = 1; $dia <= $totalDias; $dia++)
-                    @php $aula = $treino['dias_com_aula'][$dia] ?? null; @endphp
-                    <div class="mes-dia {{ $aula ? ($aula['cancelado'] ? 'cancelada' : 'tem-aula') : '' }} {{ $dia === $hoje->day ? 'hoje' : '' }}"
-                         @if($aula) title="{{ $aula['cancelado'] ? 'Aula cancelada' : 'Aula às ' . implode(', ', $aula['horas']) }}{{ $aula['personal'] ? ' — ' . $aula['personal'] : '' }}" @endif>
-                        {{ $dia }}
-                        @if($aula && ! $aula['cancelado'])<span class="ponto"></span>@endif
-                    </div>
-                @endfor
-            </div>
+                    @for($dia = 1; $dia <= $totalDias; $dia++)
+                        @php $aula = $treino['dias_com_aula'][$dia] ?? null; @endphp
+                        <div class="mes-dia {{ $aula ? ($aula['cancelado'] ? 'cancelada' : 'tem-aula') : '' }} {{ $dia === $hoje->day ? 'hoje' : '' }}">
+                            <span class="num">{{ $dia }}</span>
+                            @if($aula && ! $aula['cancelado'] && count($aula['horas']))
+                                <span class="hr">{{ $aula['horas'][0] }}</span>
+                            @endif
+                        </div>
+                    @endfor
+                </div>
 
-            <div class="mes-legenda">
-                <span><i class="ponto-legenda"></i> dia com aula</span>
-                <span><i class="ponto-legenda cancel"></i> cancelada</span>
+                <div class="proximas">
+                    <div class="proximas-tit">Próximas</div>
+                    @forelse($treino['proximas_aulas'] as $a)
+                        <div class="prox-item {{ $a['hoje'] ? 'e-hoje' : '' }}">
+                            <span class="prox-data">{{ $a['dow'] }} {{ $a['data'] }}</span>
+                            <span class="prox-hora">{{ $a['hora'] ?: '--:--' }}</span>
+                            @if($a['personal'])<span class="prox-quem">{{ $a['personal'] }}</span>@endif
+                        </div>
+                    @empty
+                        <p class="prox-vazio">Nenhuma aula marcada daqui para a frente.</p>
+                    @endforelse
+                </div>
             </div>
         </div>
     @endif
 
     <div id="dashboardSummary">
-        {{-- PERSONALS --}}
-        <div class="section-title">{{ $treino['tem_vinculo'] ? 'Explorar outros personais' : 'Personals Disponíveis' }}</div>
+        {{-- PERSONALS — some para quem já fechou com um profissional. O atalho
+             "Personais" do menu continua levando à busca, então ninguém fica
+             preso caso queira trocar. --}}
+        @unless($treino['tem_personal'] ?? false)
+        <div class="section-title">Personals Disponíveis</div>
         <p style="color: var(--text-muted); font-size: 0.8rem; margin: -10px 0 15px 0;">
             <i class="ph ph-info" style="color: var(--primary);"></i>
             Você pode contratar um personal com ou sem vínculo com academia.
@@ -869,6 +908,7 @@
             </a>
         </div>
         @endif
+        @endunless
 
         {{-- ACADEMIAS --}}
         <div class="section-title">Academias Parceiras (Contratar)</div>
