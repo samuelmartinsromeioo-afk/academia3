@@ -107,7 +107,7 @@ class PersonalGestaoController extends Controller
     }
 
     // POST /api/v1/personal/agenda/{id}/cancelar — regra das 24h + justificativa
-    public function cancelarAula(Request $request, $id)
+    public function cancelarAula(Request $request, $id, \App\Services\AgendaService $agendas)
     {
         $personal = $this->personalAutenticado($request);
 
@@ -117,11 +117,10 @@ class PersonalGestaoController extends Controller
         }
 
         $dataStr = $agenda->data instanceof Carbon ? $agenda->data->format('Y-m-d') : $agenda->data;
-        $dataAula = Carbon::parse($dataStr . ' ' . $agenda->hora_inicio);
-        $diffHoras = Carbon::now()->diffInHours($dataAula);
 
-        if ($diffHoras < 24) {
-            return response()->json(['error' => "O cancelamento só é permitido com 24h de antecedência. Faltam {$diffHoras} horas."], 422);
+        $bloqueio = $agendas->motivoParaNaoCancelar($agenda);
+        if ($bloqueio) {
+            return response()->json(['error' => $bloqueio], 422);
         }
 
         $request->validate(['justificativa' => 'required|string|min:10']);
@@ -153,7 +152,7 @@ class PersonalGestaoController extends Controller
     }
 
     // POST /api/v1/personal/agenda/cancelar-dia
-    public function cancelarDia(Request $request)
+    public function cancelarDia(Request $request, \App\Services\AgendaService $agendas)
     {
         $personal = $this->personalAutenticado($request);
 
@@ -170,8 +169,7 @@ class PersonalGestaoController extends Controller
 
         $cancelados = 0;
         foreach ($agendamentos as $ag) {
-            $dataStr = $ag->data instanceof Carbon ? $ag->data->format('Y-m-d') : $ag->data;
-            if (Carbon::now()->diffInHours(Carbon::parse($dataStr . ' ' . $ag->hora_inicio)) >= 24) {
+            if ($agendas->podeCancelar($ag)) {
                 $ag->delete();
                 $cancelados++;
             }

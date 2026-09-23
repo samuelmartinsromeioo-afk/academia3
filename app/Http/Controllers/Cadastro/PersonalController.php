@@ -240,7 +240,7 @@ class PersonalController extends Controller
         return redirect()->back()->with('success', 'Perfil atualizado com sucesso!');
     }
 
-    public function cancelarAula(Request $request, $id)
+    public function cancelarAula(Request $request, $id, \App\Services\AgendaService $agendas)
     {
         try {
             $agenda = Agenda::findOrFail($id);
@@ -253,14 +253,11 @@ class PersonalController extends Controller
                 $agenda->data->format('Y-m-d') :
                 $agenda->data;
 
-            $dataAula = Carbon::parse($dataStr . ' ' . $agenda->hora_inicio);
-            $agora = Carbon::now();
-            $diffHoras = $agora->diffInHours($dataAula);
+            Log::info("Cancelamento - ID: $id | Aula: {$agendas->inicioDaAula($agenda)} | Agora: {$agendas->agora()} | Faltam: {$agendas->horasAteAula($agenda)}h");
 
-            Log::info("Cancelamento - ID: $id | Aula: $dataAula | Agora: $agora | Diff: $diffHoras horas");
-
-            if ($diffHoras < 24) {
-                return redirect()->back()->with('error', "O cancelamento só é permitido com 24h de antecedência. Faltam " . $diffHoras . " horas.");
+            $bloqueio = $agendas->motivoParaNaoCancelar($agenda);
+            if ($bloqueio) {
+                return redirect()->back()->with('error', $bloqueio);
             }
 
             $request->validate([
@@ -501,7 +498,7 @@ class PersonalController extends Controller
         return redirect()->back()->with('success', 'Registro removido.');
     }
 
-    public function cancelarDia(Request $request)
+    public function cancelarDia(Request $request, \App\Services\AgendaService $agendas)
     {
         $request->validate([
             'data' => 'required|date',
@@ -518,12 +515,7 @@ class PersonalController extends Controller
 
         $cancelados = 0;
         foreach ($agendamentos as $ag) {
-            $dataStr = $ag->data instanceof \Carbon\Carbon ?
-                $ag->data->format('Y-m-d') :
-                $ag->data;
-
-            $dataAula = Carbon::parse($dataStr . ' ' . $ag->hora_inicio);
-            if (Carbon::now()->diffInHours($dataAula) >= 24) {
+            if ($agendas->podeCancelar($ag)) {
                 $ag->delete();
                 $cancelados++;
             }

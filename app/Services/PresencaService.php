@@ -22,6 +22,10 @@ use Illuminate\Support\Collection;
  */
 class PresencaService
 {
+    public function __construct(private AgendaService $agendas)
+    {
+    }
+
     /** Aula mais cedo do dia (a presença é uma por dia, não por aula). */
     public function aulaDoDia(int $personalId, int $clienteId, string $data): ?Agenda
     {
@@ -34,27 +38,16 @@ class PresencaService
             ->first();
     }
 
-    /**
-     * Momento em que a aula começa, no fuso do negócio.
-     *
-     * `hora_inicio` é hora de parede (coluna TIME, sem fuso), então precisa ser
-     * interpretada no fuso do negócio — e não no `app.timezone`, que é UTC.
-     * Aula sem horário definido libera desde o início do dia.
-     */
+    /** Momento em que a aula começa, no fuso do negócio. */
     public function inicioDaAula(Agenda $aula): Carbon
     {
-        $tz = $this->fuso();
-        $dia = $aula->data instanceof Carbon ? $aula->data->format('Y-m-d') : (string) $aula->data;
-
-        return $aula->hora_inicio
-            ? Carbon::parse($dia . ' ' . $aula->hora_inicio, $tz)
-            : Carbon::parse($dia, $tz)->startOfDay();
+        return $this->agendas->inicioDaAula($aula);
     }
 
     /** "Agora" no mesmo fuso das aulas, para a comparação ser válida. */
     public function agora(): Carbon
     {
-        return Carbon::now($this->fuso());
+        return $this->agendas->agora();
     }
 
     /**
@@ -112,10 +105,5 @@ class PresencaService
             })
             ->sortBy('data')
             ->values();
-    }
-
-    private function fuso(): string
-    {
-        return config('app.timezone_negocio', 'America/Sao_Paulo');
     }
 }
