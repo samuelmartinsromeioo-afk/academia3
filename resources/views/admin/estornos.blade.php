@@ -36,6 +36,7 @@
         .b-pendente { background: rgba(255,176,32,0.15); color: #ffb020; }
         .b-devolvido { background: rgba(0,255,136,0.13); color: #00ff88; }
         .b-recusado { background: rgba(255,68,68,0.13); color: #ff4444; }
+        .b-remarcado { background: rgba(124,255,0,0.13); color: #7cff00; }
         .aviso { background: rgba(255,176,32,0.1); border: 1px solid rgba(255,176,32,0.3); color: #ffb020; padding: 8px 12px; border-radius: 9px; font-size: 0.74rem; margin-top: 10px; }
 
         form.acoes { display: flex; gap: 8px; margin-top: 14px; flex-wrap: wrap; align-items: center; }
@@ -69,7 +70,7 @@
     </div>
 
     <div class="filtros">
-        @foreach(['pendente' => 'Pendentes', 'devolvido' => 'Devolvidos', 'recusado' => 'Recusados', 'todos' => 'Todos'] as $chave => $rotulo)
+        @foreach(['pendente' => 'Pendentes', 'devolvido' => 'Devolvidos', 'remarcado' => 'Remarcados', 'recusado' => 'Recusados', 'todos' => 'Todos'] as $chave => $rotulo)
             <a href="{{ route('admin.estornos', ['status' => $chave]) }}" class="{{ $status === $chave ? 'on' : '' }}">{{ $rotulo }}</a>
         @endforeach
     </div>

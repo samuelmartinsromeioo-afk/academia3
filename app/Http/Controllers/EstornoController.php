@@ -19,7 +19,14 @@ class EstornoController extends Controller
     public function index(Request $request)
     {
         $status = $request->query('status', Estorno::STATUS_PENDENTE);
-        if (! in_array($status, [Estorno::STATUS_PENDENTE, Estorno::STATUS_DEVOLVIDO, Estorno::STATUS_RECUSADO, 'todos'], true)) {
+        $validos = [
+            Estorno::STATUS_PENDENTE,
+            Estorno::STATUS_DEVOLVIDO,
+            Estorno::STATUS_RECUSADO,
+            Estorno::STATUS_REMARCADO,
+            'todos',
+        ];
+        if (! in_array($status, $validos, true)) {
             $status = Estorno::STATUS_PENDENTE;
         }
 

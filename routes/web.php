@@ -268,6 +268,7 @@ Route::middleware('check.login')->group(function () {
     Route::get('/personal/reposicoes', [\App\Http\Controllers\ReposicaoController::class, 'index'])->name('personal.reposicoes');
     Route::post('/personal/reposicoes/{id}/aceitar', [\App\Http\Controllers\ReposicaoController::class, 'aceitar'])->name('personal.reposicoes.aceitar');
     Route::post('/personal/reposicoes/{id}/recusar', [\App\Http\Controllers\ReposicaoController::class, 'recusar'])->name('personal.reposicoes.recusar');
+    Route::post('/personal/faltas/{id}/remarcar', [\App\Http\Controllers\ReposicaoController::class, 'remarcarAvulsa'])->name('personal.faltas.remarcar');
 
     // Aluno agindo sobre a própria aula (janela de 24h no AgendaService)
     Route::post('/aluno/aulas/{id}/cancelar', [\App\Http\Controllers\AulaAlunoController::class, 'cancelar'])->name('aluno.aula.cancelar');

@@ -32,6 +32,7 @@
         .aviso { border-radius: 10px; padding: 11px 14px; margin-top: 12px; font-size: 0.8rem; line-height: 1.55; }
         .aviso.ok { background: rgba(0,255,136,0.08); border: 1px solid rgba(0,255,136,0.25); color: #00ff88; }
         .aviso.neutro { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.09); color: #cfd3da; }
+        .aviso.alerta { background: rgba(255,176,32,0.1); border: 1px solid rgba(255,176,32,0.35); color: #ffb020; }
 
         form { margin-top: 14px; }
         .campos { display: flex; gap: 8px; flex-wrap: wrap; align-items: end; }
@@ -149,17 +150,49 @@
                     Você recusou a reposição. “{{ $pedido->resposta }}”
                 </div>
 
-            {{-- AVULSA: o dinheiro voltou, então não há aula a repor --}}
+            {{-- AVULSA: pode remarcar, mas tem dinheiro no meio --}}
             @else
-                <div class="aviso neutro">
-                    <i class="ph ph-info"></i>
-                    Aula avulsa cancelada dentro do prazo.
+                @php $jaDevolvido = $estorno && $estorno->status === \App\Models\Estorno::STATUS_DEVOLVIDO; @endphp
+
+                <div class="aviso {{ $jaDevolvido ? 'alerta' : 'neutro' }}">
+                    <i class="ph {{ $jaDevolvido ? 'ph-warning' : 'ph-info' }}"></i>
                     @if($estorno)
-                        O valor de <b>R$ {{ number_format((float) $estorno->valor, 2, ',', '.') }}</b>
-                        {{ $estorno->status === 'devolvido' ? 'foi devolvido ao aluno.' : 'está para ser devolvido ao aluno.' }}
+                        Valor de <b>R$ {{ number_format((float) $estorno->valor, 2, ',', '.') }}</b>.
+                        @if($jaDevolvido)
+                            <b>Já foi devolvido ao aluno</b> — se você remarcar, essa aula não será paga.
+                        @else
+                            Se você remarcar, a devolução é cancelada e o aluno recebe a aula no lugar do valor.
+                        @endif
+                    @else
+                        Aula avulsa cancelada dentro do prazo, sem pagamento localizado.
                     @endif
-                    Não há aula a repor — se ele quiser voltar, precisa marcar uma nova.
                 </div>
+
+                <form method="POST" action="{{ route('personal.faltas.remarcar', $falta->id) }}">
+                    @csrf
+                    <div class="campos">
+                        <div class="campo">
+                            <label>Remarcar para</label>
+                            <input type="date" name="data" required min="{{ now()->format('Y-m-d') }}">
+                        </div>
+                        <div class="campo">
+                            <label>Início</label>
+                            <input type="time" name="hora_inicio" required>
+                        </div>
+                        <div class="campo">
+                            <label>Fim</label>
+                            <input type="time" name="hora_fim" required>
+                        </div>
+                        <button class="b-ok" type="submit"
+                                @if($jaDevolvido) onclick="return confirm('O valor já foi devolvido ao aluno. Remarcar assim mesmo, sem receber por essa aula?')" @endif>
+                            <i class="ph ph-calendar-plus"></i> Remarcar
+                        </button>
+                    </div>
+                    <div class="campo" style="margin-top:10px;">
+                        <label>Recado para o aluno</label>
+                        <input type="text" name="resposta" placeholder="Opcional.">
+                    </div>
+                </form>
             @endif
         </div>
     @empty

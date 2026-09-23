@@ -144,6 +144,109 @@ class ReposicaoController extends Controller
         return redirect()->back()->with('success', 'Reposição confirmada e lançada na sua agenda.');
     }
 
+    /**
+     * Remarca uma aula AVULSA que o aluno cancelou.
+     *
+     * Diferente do pacote, aqui existe dinheiro no meio: o cancelamento abriu um
+     * pedido de devolução. Se ele ainda está pendente, remarcar o encerra como
+     * `remarcado` — o aluno recebe a aula em vez do valor, e não as duas coisas.
+     * Se o admin já devolveu, a aula sai de graça; a tela avisa o personal disso
+     * antes, e a decisão é dele.
+     */
+    public function remarcarAvulsa(Request $request, $agendaId)
+    {
+        $personalId = $this->personalLogado();
+        if (! $personalId) {
+            return redirect()->route('login.index');
+        }
+
+        $original = Agenda::where('id', $agendaId)
+            ->where('personal_id', $personalId)
+            ->where('cancelado', true)
+            ->firstOrFail();
+
+        if ($original->tipo_aula === 'pacote') {
+            return redirect()->back()->with('error', 'Aula de pacote se remarca pelo pedido de reposição.');
+        }
+
+        if (AulaReposicao::where('agenda_id', $original->id)->exists()) {
+            return redirect()->back()->with('error', 'Essa aula já foi remarcada.');
+        }
+
+        $dados = $request->validate([
+            'data' => 'required|date|after_or_equal:today',
+            'hora_inicio' => 'required|date_format:H:i',
+            'hora_fim' => 'required|date_format:H:i|after:hora_inicio',
+            'resposta' => 'nullable|string|max:500',
+        ]);
+
+        $conflito = Agenda::where('personal_id', $personalId)
+            ->where('data', $dados['data'])
+            ->where('cancelado', false)
+            ->whereRaw('hora_inicio < ? AND hora_fim > ?', [$dados['hora_fim'], $dados['hora_inicio']])
+            ->exists();
+
+        if ($conflito) {
+            return redirect()->back()->with('error', 'Você já tem compromisso nesse horário. Escolha outro para a remarcação.');
+        }
+
+        $estorno = \App\Models\Estorno::where('agenda_id', $original->id)->first();
+
+        DB::transaction(function () use ($original, $dados, $personalId, $estorno) {
+            $nova = Agenda::create([
+                'cliente_id' => $original->cliente_id,
+                'personal_id' => $personalId,
+                // Segue apontando para o mesmo pagamento: a aula é a que ele já pagou.
+                'payment_id' => $original->payment_id,
+                'academia_id' => $original->academia_id ?? null,
+                'academia_nome' => $original->academia_nome ?? null,
+                'data' => $dados['data'],
+                'hora_inicio' => $dados['hora_inicio'],
+                'hora_fim' => $dados['hora_fim'],
+                'cancelado' => false,
+                'tipo_aula' => 'avulsa',
+                'valor_aula' => $original->valor_aula ?? null,
+                'descricao' => 'Reposição de aula',
+            ]);
+
+            // Registro no mesmo formato do pacote, para o histórico da tela ser
+            // um só independente do tipo da aula.
+            AulaReposicao::create([
+                'agenda_id' => $original->id,
+                'cliente_id' => $original->cliente_id,
+                'personal_id' => $personalId,
+                'agenda_reposta_id' => $nova->id,
+                'resposta' => $dados['resposta'] ?? null,
+                'status' => AulaReposicao::STATUS_ACEITA,
+                'respondido_em' => now(),
+            ]);
+
+            // Aula remarcada não é devolvida: o aluno não fica com as duas coisas.
+            if ($estorno && $estorno->status === \App\Models\Estorno::STATUS_PENDENTE) {
+                $estorno->update([
+                    'status' => \App\Models\Estorno::STATUS_REMARCADO,
+                    'observacao_admin' => 'Aula remarcada pelo personal — não há valor a devolver.',
+                    'resolvido_em' => now(),
+                ]);
+            }
+        });
+
+        $jaDevolvido = $estorno && $estorno->status === \App\Models\Estorno::STATUS_DEVOLVIDO;
+
+        $this->avisarClienteDireto(
+            $original->cliente,
+            'Sua aula foi remarcada',
+            'Sua aula cancelada foi remarcada para ' . \Carbon\Carbon::parse($dados['data'])->format('d/m/Y')
+                . ' às ' . $dados['hora_inicio'] . '.'
+                . ($jaDevolvido ? '' : ' Como a aula será dada, o valor pago não será devolvido.')
+                . ($dados['resposta'] ?? null ? ' ' . $dados['resposta'] : '')
+        );
+
+        return redirect()->back()->with('success', $jaDevolvido
+            ? 'Aula remarcada. Atenção: o valor já havia sido devolvido ao aluno, então essa aula não será paga.'
+            : 'Aula remarcada e devolução cancelada — o aluno recebe a aula no lugar do valor.');
+    }
+
     /** Recusa — normalmente com uma contraproposta de horário no texto. */
     public function recusar(Request $request, $id)
     {
@@ -175,9 +278,14 @@ class ReposicaoController extends Controller
 
     private function avisarAluno(AulaReposicao $pedido, string $assunto, string $texto): void
     {
+        $this->avisarClienteDireto($pedido->cliente, $assunto, $texto);
+    }
+
+    private function avisarClienteDireto($cliente, string $assunto, string $texto): void
+    {
         try {
-            if ($pedido->cliente) {
-                NotificacaoService::cliente($pedido->cliente, $assunto, $texto);
+            if ($cliente) {
+                NotificacaoService::cliente($cliente, $assunto, $texto);
             }
         } catch (\Throwable $e) {
             // Aviso é melhor esforço: não desfaz a resposta já gravada.
