@@ -431,6 +431,7 @@ class PaymentController extends Controller
                         'hora_inicio' => $booking['hora_inicio'],
                         'hora_fim' => $booking['hora_fim'],
                         'academia_nome' => $booking['academia_nome'] ?? null,
+                        'payment_id' => $payment->id, // para o aluno poder pedir estorno depois
                     ]);
                 } catch (\Exception $e) {
                     Log::error('processarPagamentoConfirmado: avulsa falhou', [

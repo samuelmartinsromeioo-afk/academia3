@@ -38,10 +38,28 @@ class ClienteController extends Controller
             ->get();
         $academias = Academia::with(['fotos', 'planos' => fn($q) => $q->where('ativo', true)->orderBy('valor')])->where('status', 'aprovado')->get();
 
+        // Próximas aulas do aluno, já com o estado da janela de 24h resolvido:
+        // a tela é montada em JS e não tem como calcular fuso/prazo sozinha.
+        $agendas = app(\App\Services\AgendaService::class);
         $meusAgendamentos = Agenda::where('cliente_id', $id)
             ->with(['personal', 'academia'])
+            ->where('tipo_aula', '!=', 'bloqueio')
+            ->whereDate('data', '>=', $agendas->agora()->format('Y-m-d'))
             ->orderBy('data', 'asc')
-            ->get();
+            ->orderBy('hora_inicio', 'asc')
+            ->get()
+            ->map(fn ($a) => [
+                'id' => $a->id,
+                'personal' => $a->personal->nome ?? 'Personal',
+                'data' => $a->data->format('d/m/Y'),
+                'hora' => substr($a->hora_inicio ?? '', 0, 5),
+                'tipo' => $a->tipo_aula,
+                'eh_pacote' => $agendas->ehPacote($a),
+                'cancelado' => (bool) $a->cancelado,
+                'pode_agir' => ! $a->cancelado && $agendas->alunoEstaNoPrazo($a),
+                'bloqueio' => $a->cancelado ? null : $agendas->motivoParaAlunoNaoAgir($a),
+            ])
+            ->values();
 
         $historico = Agenda::where('cliente_id', $id)
             ->with(['personal', 'academia'])
@@ -638,6 +656,9 @@ class ClienteController extends Controller
 
         $agenda = Agenda::create([
             'cliente_id'    => $clienteId,
+            // Guarda de qual pagamento essa aula veio: é por aqui que o
+            // cancelamento acha o valor a devolver, sem garimpar booking_data.
+            'payment_id'    => $booking['payment_id'] ?? null,
             'personal_id'   => $personalId,
             'academia_id'   => $cliente->academia_id ?? null,
             'academia_nome' => $academiaNome,

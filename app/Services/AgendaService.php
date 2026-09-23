@@ -77,4 +77,54 @@ class AgendaService
         return 'O cancelamento só é permitido com ' . self::HORAS_ANTECEDENCIA_CANCELAMENTO
             . 'h de antecedência. Faltam ' . $faltam . 'h para essa aula.';
     }
+
+    // ─────────────────────────────────────────────────────────────
+    // LADO DO ALUNO
+    //
+    // Mesma janela de 24h do personal, mas o que acontece ao fim dela é
+    // diferente por tipo de aula:
+    //   • avulsa  — dentro do prazo cancela e o dinheiro volta; fora do prazo
+    //               não cancela e não há devolução.
+    //   • pacote  — não há dinheiro a devolver (o pacote foi pago inteiro);
+    //               dentro do prazo o aluno pode pedir para repor a aula em
+    //               outro horário, fora do prazo a aula é perdida.
+    // ─────────────────────────────────────────────────────────────
+
+    public function ehPacote(Agenda $aula): bool
+    {
+        return $aula->tipo_aula === 'pacote';
+    }
+
+    /**
+     * O aluno ainda está no prazo de agir sobre essa aula? Vale tanto para
+     * cancelar avulsa quanto para pedir reposição de pacote.
+     */
+    public function alunoEstaNoPrazo(Agenda $aula): bool
+    {
+        return $this->podeCancelar($aula);
+    }
+
+    /** Motivo do bloqueio para o aluno, já com a consequência explícita. */
+    public function motivoParaAlunoNaoAgir(Agenda $aula): ?string
+    {
+        if ($this->alunoEstaNoPrazo($aula)) {
+            return null;
+        }
+
+        $inicio = $this->inicioDaAula($aula);
+        $passou = $inicio->lte($this->agora());
+        $horas = self::HORAS_ANTECEDENCIA_CANCELAMENTO;
+
+        if ($this->ehPacote($aula)) {
+            return $passou
+                ? 'Essa aula já começou em ' . $inicio->format('d/m/Y \à\s H:i') . ' — não dá mais para pedir reposição.'
+                : 'A reposição precisa ser pedida com ' . $horas . 'h de antecedência. Faltam apenas '
+                    . $this->horasAteAula($aula) . 'h para essa aula.';
+        }
+
+        return $passou
+            ? 'Essa aula já começou em ' . $inicio->format('d/m/Y \à\s H:i') . ' — não é mais possível cancelar nem pedir devolução.'
+            : 'O cancelamento com devolução só vale até ' . $horas . 'h antes da aula. Faltam apenas '
+                . $this->horasAteAula($aula) . 'h, então essa aula não pode mais ser cancelada.';
+    }
 }

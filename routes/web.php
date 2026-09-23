@@ -85,6 +85,11 @@ Route::middleware('check.admin')->group(function () {
     Route::get('/admin/indicacoes', [IndicacaoController::class, 'adminIndex'])->name('admin.indicacoes');
     Route::post('/admin/indicacoes', [IndicacaoController::class, 'adminStore'])->name('admin.indicacoes.store');
     Route::post('/admin/indicacoes/{id}/toggle', [IndicacaoController::class, 'adminToggle'])->name('admin.indicacoes.toggle');
+
+    // Devoluções de aula cancelada pelo aluno (resolvidas na mão pelo admin)
+    Route::get('/admin/estornos', [\App\Http\Controllers\EstornoController::class, 'index'])->name('admin.estornos');
+    Route::post('/admin/estornos/{id}/devolver', [\App\Http\Controllers\EstornoController::class, 'devolver'])->name('admin.estornos.devolver');
+    Route::post('/admin/estornos/{id}/recusar', [\App\Http\Controllers\EstornoController::class, 'recusar'])->name('admin.estornos.recusar');
  
     // Logout
     Route::post('/admin/logout', [AdminController::class, 'logout'])->name('admin.logout');
@@ -258,6 +263,15 @@ Route::middleware('check.login')->group(function () {
     Route::post('/personal/frequencia/marcar', [PersonalController::class, 'marcarPresenca'])->name('personal.frequencia.marcar');
     Route::delete('/personal/frequencia/registro/{id}', [PersonalController::class, 'removerPresenca'])->name('personal.frequencia.remover');
     Route::get('/personal/frequencia/{clienteId}', [PersonalController::class, 'frequenciaAluno'])->name('personal.frequencia.aluno');
+
+    // Reposição de aula de pacote — aluno pede, personal responde
+    Route::get('/personal/reposicoes', [\App\Http\Controllers\ReposicaoController::class, 'index'])->name('personal.reposicoes');
+    Route::post('/personal/reposicoes/{id}/aceitar', [\App\Http\Controllers\ReposicaoController::class, 'aceitar'])->name('personal.reposicoes.aceitar');
+    Route::post('/personal/reposicoes/{id}/recusar', [\App\Http\Controllers\ReposicaoController::class, 'recusar'])->name('personal.reposicoes.recusar');
+
+    // Aluno agindo sobre a própria aula (janela de 24h no AgendaService)
+    Route::post('/aluno/aulas/{id}/cancelar', [\App\Http\Controllers\AulaAlunoController::class, 'cancelar'])->name('aluno.aula.cancelar');
+    Route::post('/aluno/aulas/{id}/reposicao', [\App\Http\Controllers\AulaAlunoController::class, 'pedirReposicao'])->name('aluno.aula.reposicao');
 
     // Solicitações de Ficha
     Route::get('/personal/solicitacoes-ficha', [PersonalController::class, 'listarSolicitacoesFicha'])->name('personal.solicitacoes-ficha');

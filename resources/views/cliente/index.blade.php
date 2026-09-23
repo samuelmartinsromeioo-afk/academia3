@@ -1725,6 +1725,65 @@
     const itensPorPagina = 5;
     let totalPaginasAgenda = 1;
 
+    // Aulas do aluno com o estado da janela de 24h já resolvido no servidor
+    // (fuso e prazo são calculados lá, não dá para confiar no relógio do browser).
+    window.agendamentosData = {!! json_encode($meusAgendamentos) !!};
+
+    const CSRF_AULA = {!! json_encode(csrf_token()) !!};
+    const URL_CANCELAR = {!! json_encode(url('/aluno/aulas')) !!};
+
+    function escaparHtml(txt) {
+        return String(txt ?? '').replace(/[&<>"']/g, c => ({
+            '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+        })[c]);
+    }
+
+    /** Botões de cancelar (avulsa) ou pedir reposição (pacote). */
+    function montarAcoesAula(a) {
+        if (a.cancelado) return '';
+
+        if (!a.pode_agir) {
+            return `<div style="flex-basis:100%; margin-top:8px; color:var(--text-muted); font-size:0.75rem;">
+                        <i class="ph ph-lock-simple"></i> ${escaparHtml(a.bloqueio || 'Prazo encerrado.')}
+                    </div>`;
+        }
+
+        const acao = a.eh_pacote ? 'reposicao' : 'cancelar';
+        const rotulo = a.eh_pacote ? 'Não vou poder ir' : 'Cancelar aula';
+        const form = `${URL_CANCELAR}/${a.id}/${acao}`;
+
+        const camposPacote = a.eh_pacote ? `
+            <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:8px;">
+                <label style="font-size:0.7rem; color:var(--text-muted);">Sugerir dia
+                    <input type="date" name="data_sugerida" style="display:block; margin-top:4px; background:#0a0b0d; border:1px solid rgba(255,255,255,0.14); color:#fff; padding:7px 9px; border-radius:8px; color-scheme:dark;">
+                </label>
+                <label style="font-size:0.7rem; color:var(--text-muted);">Hora
+                    <input type="time" name="hora_sugerida" style="display:block; margin-top:4px; background:#0a0b0d; border:1px solid rgba(255,255,255,0.14); color:#fff; padding:7px 9px; border-radius:8px; color-scheme:dark;">
+                </label>
+            </div>` : '';
+
+        const aviso = a.eh_pacote
+            ? 'Seu personal confirma o horário da reposição.'
+            : 'Você está dentro do prazo, então o valor pago será devolvido.';
+
+        return `
+            <details style="flex-basis:100%; margin-top:10px;">
+                <summary style="cursor:pointer; color:var(--primary); font-size:0.78rem; font-weight:700;">${rotulo}</summary>
+                <form method="POST" action="${form}" style="margin-top:10px; padding:12px; background:rgba(255,255,255,0.03); border-radius:10px;">
+                    <input type="hidden" name="_token" value="${CSRF_AULA}">
+                    ${camposPacote}
+                    <input type="text" name="motivo" maxlength="500" placeholder="Motivo (opcional)"
+                           style="width:100%; background:#0a0b0d; border:1px solid rgba(255,255,255,0.14); color:#fff; padding:9px 11px; border-radius:8px; font-size:0.8rem; margin-bottom:8px;">
+                    <div style="color:var(--text-muted); font-size:0.72rem; margin-bottom:10px;">
+                        <i class="ph ph-info"></i> ${aviso}
+                    </div>
+                    <button type="submit" style="background:var(--primary); color:#0a0b0d; border:none; padding:9px 16px; border-radius:8px; font-weight:800; font-size:0.76rem; cursor:pointer;">
+                        Confirmar
+                    </button>
+                </form>
+            </details>`;
+    }
+
     function inicializarPaginacaoAgenda() {
         if (window.agendamentosData && window.agendamentosData.length > 0) {
             totalPaginasAgenda = Math.ceil(window.agendamentosData.length / itensPorPagina);
@@ -1743,15 +1802,17 @@
 
         const container = document.getElementById('agendaItems');
         container.innerHTML = itemsVistos.map(agendamento => `
-            <div class="list-item">
+            <div class="list-item" style="flex-wrap: wrap;">
                 <div>
                     <strong style="display: block; font-size: 1rem;">${agendamento.personal}</strong>
                     <span style="color: var(--text-muted); font-size: 0.8rem;">
                         <i class="ph ph-calendar"></i> ${agendamento.data}
                         às ${agendamento.hora}
+                        · ${agendamento.eh_pacote ? 'Pacote' : 'Avulsa'}
                     </span>
                 </div>
-                <div class="badge-status">Confirmado</div>
+                <div class="badge-status">${agendamento.cancelado ? 'Cancelada' : 'Confirmado'}</div>
+                ${montarAcoesAula(agendamento)}
             </div>
         `).join('');
 
