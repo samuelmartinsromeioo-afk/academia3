@@ -69,13 +69,10 @@
                 @if($p->motivo)<br>Motivo: “{{ $p->motivo }}”@endif
             </div>
 
-            @if($p->data_sugerida)
+            @if($p->estaPendente())
                 <div class="sugestao">
-                    <i class="ph ph-lightbulb"></i> Sugestão do aluno:
-                    <b>{{ $p->data_sugerida->format('d/m/Y') }}@if($p->hora_sugerida) às {{ substr($p->hora_sugerida, 0, 5) }}@endif</b>
+                    <i class="ph ph-calendar-plus"></i> Você define o dia e a hora da reposição.
                 </div>
-            @else
-                <div class="sugestao"><i class="ph ph-lightbulb"></i> O aluno não sugeriu horário.</div>
             @endif
 
             @if($p->estaPendente())
@@ -84,13 +81,11 @@
                     <div class="campos">
                         <div class="campo">
                             <label>Data da reposição</label>
-                            <input type="date" name="data" required
-                                   value="{{ $p->data_sugerida?->format('Y-m-d') }}"
-                                   min="{{ now()->format('Y-m-d') }}">
+                            <input type="date" name="data" required min="{{ now()->format('Y-m-d') }}">
                         </div>
                         <div class="campo">
                             <label>Início</label>
-                            <input type="time" name="hora_inicio" required value="{{ $p->hora_sugerida ? substr($p->hora_sugerida, 0, 5) : '' }}">
+                            <input type="time" name="hora_inicio" required>
                         </div>
                         <div class="campo">
                             <label>Fim</label>

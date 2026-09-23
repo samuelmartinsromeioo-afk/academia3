@@ -2028,18 +2028,10 @@
         const rotulo = a.eh_pacote ? 'Não vou poder ir' : 'Cancelar aula';
         const form = `${URL_CANCELAR}/${a.id}/${acao}`;
 
-        const camposPacote = a.eh_pacote ? `
-            <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:8px;">
-                <label style="font-size:0.7rem; color:var(--text-muted);">Sugerir dia
-                    <input type="date" name="data_sugerida" style="display:block; margin-top:4px; background:#0a0b0d; border:1px solid rgba(255,255,255,0.14); color:#fff; padding:7px 9px; border-radius:8px; color-scheme:dark;">
-                </label>
-                <label style="font-size:0.7rem; color:var(--text-muted);">Hora
-                    <input type="time" name="hora_sugerida" style="display:block; margin-top:4px; background:#0a0b0d; border:1px solid rgba(255,255,255,0.14); color:#fff; padding:7px 9px; border-radius:8px; color-scheme:dark;">
-                </label>
-            </div>` : '';
-
+        // O aluno não escolhe dia/hora: quem define a reposição é o personal,
+        // na agenda dele. Aqui ele só avisa a falta e diz o porquê.
         const aviso = a.eh_pacote
-            ? 'Seu personal confirma o horário da reposição.'
+            ? 'Seu personal vai definir o dia e a hora da reposição.'
             : 'Você está dentro do prazo, então o valor pago será devolvido.';
 
         return `
@@ -2047,7 +2039,6 @@
                 <summary style="cursor:pointer; color:var(--primary); font-size:0.78rem; font-weight:700;">${rotulo}</summary>
                 <form method="POST" action="${form}" style="margin-top:10px; padding:12px; background:rgba(255,255,255,0.03); border-radius:10px;">
                     <input type="hidden" name="_token" value="${CSRF_AULA}">
-                    ${camposPacote}
                     <input type="text" name="motivo" maxlength="500" placeholder="Motivo (opcional)"
                            style="width:100%; background:#0a0b0d; border:1px solid rgba(255,255,255,0.14); color:#fff; padding:9px 11px; border-radius:8px; font-size:0.8rem; margin-bottom:8px;">
                     <div style="color:var(--text-muted); font-size:0.72rem; margin-bottom:10px;">

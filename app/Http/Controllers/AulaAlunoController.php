@@ -135,9 +135,9 @@ class AulaAlunoController extends Controller
             return redirect()->back()->with('error', $bloqueio);
         }
 
+        // O aluno só avisa a falta e diz o porquê. Quem marca dia e hora da
+        // reposição é o personal — é a agenda dele que manda.
         $dados = $request->validate([
-            'data_sugerida' => 'nullable|date|after_or_equal:today',
-            'hora_sugerida' => 'nullable|date_format:H:i',
             'motivo' => 'nullable|string|max:500',
         ]);
 
@@ -155,8 +155,6 @@ class AulaAlunoController extends Controller
                 [
                     'cliente_id' => $aula->cliente_id,
                     'personal_id' => $aula->personal_id,
-                    'data_sugerida' => $dados['data_sugerida'] ?? null,
-                    'hora_sugerida' => $dados['hora_sugerida'] ?? null,
                     'motivo' => $dados['motivo'] ?? null,
                     'status' => AulaReposicao::STATUS_PENDENTE,
                     'resposta' => null,
@@ -166,19 +164,15 @@ class AulaAlunoController extends Controller
             );
         });
 
-        $sugestao = ! empty($dados['data_sugerida'])
-            ? ' Ele sugeriu repor em ' . \Carbon\Carbon::parse($dados['data_sugerida'])->format('d/m/Y')
-                . (! empty($dados['hora_sugerida']) ? ' às ' . $dados['hora_sugerida'] : '') . '.'
-            : ' Ele não sugeriu horário — combine um com ele.';
-
         $this->avisarPersonal(
             $aula,
             'Aluno pediu reposição de aula',
-            'O aluno avisou que não vai à aula de ' . $inicio->format('d/m/Y \à\s H:i') . '.' . $sugestao
+            'O aluno avisou que não vai à aula de ' . $inicio->format('d/m/Y \à\s H:i')
+                . '. Defina o dia e a hora da reposição no seu painel.'
                 . ($dados['motivo'] ?? null ? ' Motivo: ' . $dados['motivo'] : '')
         );
 
-        return redirect()->back()->with('success', 'Falta avisada! Seu personal vai confirmar o horário da reposição.');
+        return redirect()->back()->with('success', 'Falta avisada! Seu personal vai definir o dia e a hora da reposição.');
     }
 
     private function avisarPersonal(Agenda $aula, string $assunto, string $texto): void

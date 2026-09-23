@@ -5,8 +5,9 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 
 /**
- * Pedido de reposição: aluno de pacote avisa que não vai à aula e sugere outro
- * horário. Quem decide é o personal — é a agenda dele.
+ * Pedido de reposição: aluno de pacote avisa que não vai à aula e diz o porquê.
+ * Dia e hora da reposição quem define é o PERSONAL, no painel dele — o aluno
+ * não escolhe horário na agenda de outra pessoa.
  */
 class AulaReposicao extends Model
 {
@@ -22,8 +23,6 @@ class AulaReposicao extends Model
         'cliente_id',
         'personal_id',
         'agenda_reposta_id',
-        'data_sugerida',
-        'hora_sugerida',
         'motivo',
         'resposta',
         'status',
@@ -31,7 +30,6 @@ class AulaReposicao extends Model
     ];
 
     protected $casts = [
-        'data_sugerida' => 'date',
         'respondido_em' => 'datetime',
     ];
 
