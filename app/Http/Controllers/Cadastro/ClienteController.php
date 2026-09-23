@@ -134,7 +134,86 @@ class ClienteController extends Controller
                 ];
             });
 
-        return view('cliente.index', compact('cliente', 'personals', 'meusAgendamentos', 'horariosDisponiveis', 'academias', 'historico', 'assinaturas'));
+        // ── Painel de treino ────────────────────────────────────────────
+        // Quem já fechou com alguém vê o treino em primeiro lugar; quem ainda
+        // não fechou continua caindo direto na vitrine de personais/academias.
+        $hoje = $agendas->agora();
+        $treino = $this->painelDeTreino($cliente, $hoje);
+
+        return view('cliente.index', compact(
+            'cliente', 'personals', 'meusAgendamentos', 'horariosDisponiveis',
+            'academias', 'historico', 'assinaturas', 'treino', 'hoje'
+        ));
+    }
+
+    /**
+     * Ficha do dia + dias de aula do mês, para o topo do painel do aluno.
+     *
+     * "Fechou com alguém" é vínculo que realmente existe no banco: academia,
+     * studio, personal gravado no cadastro, ficha ativa ou aula marcada. Sem
+     * nada disso o bloco não aparece — não adianta mostrar um calendário vazio
+     * para quem ainda está escolhendo com quem treinar.
+     */
+    private function painelDeTreino(?Cliente $cliente, \Carbon\Carbon $hoje): array
+    {
+        if (! $cliente) {
+            return ['tem_vinculo' => false];
+        }
+
+        $fichas = \App\Models\Cadastro\FichaTreino::where('cliente_id', $cliente->id)
+            ->where('ativo', true)
+            ->with(['exercicios', 'personal:id,nome'])
+            ->get();
+
+        // Aulas do mês corrente (o calendário é do mês que o aluno está vendo).
+        $aulasDoMes = Agenda::where('cliente_id', $cliente->id)
+            ->where('tipo_aula', '!=', 'bloqueio')
+            ->whereYear('data', $hoje->year)
+            ->whereMonth('data', $hoje->month)
+            ->with('personal:id,nome')
+            ->orderBy('data')
+            ->orderBy('hora_inicio')
+            ->get();
+
+        $temVinculo = $cliente->academia_id
+            || $cliente->studio_id
+            || $cliente->personal_id
+            || $fichas->isNotEmpty()
+            || $aulasDoMes->isNotEmpty();
+
+        if (! $temVinculo) {
+            return ['tem_vinculo' => false];
+        }
+
+        $fichaHoje = $fichas->firstWhere('dia_semana', $hoje->dayOfWeek);
+
+        $feitoHoje = \App\Models\Cadastro\TreinoConcluido::where('cliente_id', $cliente->id)
+            ->whereDate('data_treino', $hoje->format('Y-m-d'))
+            ->where('concluido', true)
+            ->exists();
+
+        // Dias do mês que têm aula, indexados pelo número do dia — o calendário
+        // só precisa perguntar "tem aula no dia X?".
+        $diasComAula = $aulasDoMes->groupBy(fn ($a) => (int) $a->data->day)
+            ->map(fn ($doDia) => [
+                'cancelado' => $doDia->every(fn ($a) => (bool) $a->cancelado),
+                'horas' => $doDia->map(fn ($a) => substr($a->hora_inicio ?? '', 0, 5))->filter()->values()->all(),
+                'personal' => $doDia->first()->personal->nome ?? null,
+            ]);
+
+        return [
+            'tem_vinculo' => true,
+            'ficha_hoje' => $fichaHoje,
+            'feito_hoje' => $feitoHoje,
+            'fichas_por_dia' => $fichas->keyBy('dia_semana'),
+            'dias_com_aula' => $diasComAula,
+            'aulas_no_mes' => $aulasDoMes->where('cancelado', false)->count(),
+            'treinos_no_mes' => \App\Models\Cadastro\TreinoConcluido::where('cliente_id', $cliente->id)
+                ->where('concluido', true)
+                ->whereYear('data_treino', $hoje->year)
+                ->whereMonth('data_treino', $hoje->month)
+                ->count(),
+        ];
     }
 
     public function update(Request $request, $id)

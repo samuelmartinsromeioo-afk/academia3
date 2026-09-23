@@ -49,6 +49,50 @@
         .profile-card { background: var(--card-bg); border-radius: 24px; padding: 35px; border: 1px solid var(--border); position: relative; }
         .close-form { position: absolute; top: 20px; right: 25px; color: var(--text-muted); cursor: pointer; font-size: 1.2rem; transition: 0.2s; }
         .close-form:hover { color: var(--primary); transform: rotate(90deg); }
+        /* ── MEU TREINO (topo do painel de quem já fechou com alguém) ── */
+        .treino-hero { background: linear-gradient(145deg, rgba(124,255,0,0.09), var(--card-bg) 55%); border: 1px solid rgba(124,255,0,0.28); border-radius: 22px; padding: 24px; margin-bottom: 8px; }
+        .treino-hero-topo { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; flex-wrap: wrap; }
+        .treino-eyebrow { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 2px; font-weight: 800; color: var(--primary); }
+        .treino-titulo { margin: 6px 0 4px; font-size: 1.45rem; font-weight: 800; line-height: 1.15; }
+        .treino-sub { margin: 0; color: var(--text-muted); font-size: 0.82rem; }
+        .treino-feito { display: inline-flex; align-items: center; gap: 6px; background: rgba(0,255,136,0.12); border: 1px solid rgba(0,255,136,0.32); color: var(--success); padding: 7px 13px; border-radius: 999px; font-size: 0.72rem; font-weight: 800; white-space: nowrap; }
+
+        .treino-exercicios { margin: 18px 0 16px; display: grid; gap: 7px; }
+        .treino-ex { display: flex; justify-content: space-between; gap: 12px; background: rgba(255,255,255,0.035); border-radius: 10px; padding: 10px 13px; }
+        .treino-ex .ex-nome { font-size: 0.86rem; font-weight: 600; }
+        .treino-ex .ex-meta { font-size: 0.76rem; color: var(--text-muted); white-space: nowrap; }
+        .treino-mais { margin: 2px 0 0; font-size: 0.74rem; color: var(--text-muted); }
+
+        .treino-cta { display: inline-flex; align-items: center; justify-content: center; gap: 8px; background: var(--primary); color: #0a0b0d; text-decoration: none; padding: 13px 26px; border-radius: 13px; font-weight: 800; font-size: 0.87rem; transition: 0.15s; }
+        .treino-cta:hover { transform: translateY(-2px); box-shadow: 0 10px 24px rgba(124,255,0,0.24); }
+        .treino-cta.secundario { background: transparent; color: var(--primary); border: 1px solid rgba(124,255,0,0.4); }
+
+        .semana-strip { display: flex; gap: 7px; margin-top: 20px; flex-wrap: wrap; }
+        .dia-pill { width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; border-radius: 10px; border: 1px solid var(--border); font-size: 0.76rem; font-weight: 800; color: var(--text-muted); cursor: default; }
+        .dia-pill.com-ficha { background: rgba(124,255,0,0.14); border-color: rgba(124,255,0,0.4); color: var(--primary); }
+        .dia-pill.hoje { outline: 2px solid var(--primary); outline-offset: 1px; }
+
+        /* ── CALENDÁRIO DO MÊS ── */
+        .mes-card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 18px; padding: 20px; }
+        .mes-resumo { display: flex; gap: 22px; flex-wrap: wrap; color: var(--text-muted); font-size: 0.8rem; margin-bottom: 16px; }
+        .mes-resumo b { color: var(--text-main); font-size: 1rem; }
+        .mes-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; }
+        .mes-cab { text-align: center; font-size: 0.62rem; text-transform: uppercase; font-weight: 800; color: var(--text-muted); padding-bottom: 6px; }
+        .mes-dia { position: relative; aspect-ratio: 1; display: flex; align-items: center; justify-content: center; border-radius: 9px; font-size: 0.78rem; color: var(--text-muted); border: 1px solid transparent; }
+        .mes-dia.vazio { border: none; }
+        .mes-dia.tem-aula { background: rgba(124,255,0,0.13); border-color: rgba(124,255,0,0.35); color: var(--primary); font-weight: 800; }
+        .mes-dia.cancelada { background: rgba(255,68,68,0.1); border-color: rgba(255,68,68,0.3); color: var(--error); text-decoration: line-through; }
+        .mes-dia.hoje { outline: 2px solid var(--primary); outline-offset: 1px; color: var(--text-main); }
+        .mes-dia .ponto { position: absolute; bottom: 5px; width: 4px; height: 4px; border-radius: 50%; background: var(--primary); }
+        .mes-legenda { display: flex; gap: 16px; margin-top: 14px; font-size: 0.7rem; color: var(--text-muted); flex-wrap: wrap; }
+        .ponto-legenda { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--primary); margin-right: 5px; }
+        .ponto-legenda.cancel { background: var(--error); }
+
+        @media (max-width: 560px) {
+            .treino-titulo { font-size: 1.2rem; }
+            .treino-cta { width: 100%; }
+        }
+
         .section-title { color: var(--primary); font-size: 0.8rem; margin: 30px 0 15px 0; text-transform: uppercase; letter-spacing: 2px; font-weight: 800; display: flex; align-items: center; gap: 10px; }
         .section-title::after { content: ""; flex: 1; height: 1px; background: var(--border); }
         .form-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 15px; }
@@ -633,9 +677,121 @@
         }
     </script>
 
+    @if($treino['tem_vinculo'])
+        {{-- ══ MEU TREINO ══
+             Só aparece para quem já fechou com personal/academia/studio. É o
+             bloco principal: ficha do dia primeiro, depois os dias de aula. --}}
+        @php
+            $fichaHoje = $treino['ficha_hoje'];
+            $diasLabel = ['D', 'S', 'T', 'Q', 'Q', 'S', 'S'];
+            $diasNome  = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
+        @endphp
+
+        <div class="treino-hero">
+            <div class="treino-hero-topo">
+                <div>
+                    <span class="treino-eyebrow">{{ $diasNome[$hoje->dayOfWeek] }}, {{ $hoje->format('d/m') }}</span>
+                    @if($fichaHoje)
+                        <h2 class="treino-titulo">{{ $fichaHoje->nome_treino }}</h2>
+                        <p class="treino-sub">
+                            {{ $fichaHoje->exercicios->count() }} exercício(s)
+                            @if($fichaHoje->personal) · com {{ $fichaHoje->personal->nome }} @endif
+                        </p>
+                    @else
+                        <h2 class="treino-titulo">Hoje é dia de descanso</h2>
+                        <p class="treino-sub">Nenhuma ficha marcada para {{ $diasNome[$hoje->dayOfWeek] }}.</p>
+                    @endif
+                </div>
+
+                @if($treino['feito_hoje'])
+                    <div class="treino-feito"><i class="ph-fill ph-check-circle"></i> Treino concluído</div>
+                @endif
+            </div>
+
+            @if($fichaHoje && $fichaHoje->exercicios->count())
+                <div class="treino-exercicios">
+                    @foreach($fichaHoje->exercicios->take(4) as $ex)
+                        <div class="treino-ex">
+                            <span class="ex-nome">{{ $ex->nome_exercicio }}</span>
+                            <span class="ex-meta">
+                                {{ $ex->series }}x{{ $ex->repeticoes }}@if($ex->peso) · {{ rtrim(rtrim(number_format((float) $ex->peso, 1, ',', '.'), '0'), ',') }}kg @endif
+                            </span>
+                        </div>
+                    @endforeach
+                    @if($fichaHoje->exercicios->count() > 4)
+                        <p class="treino-mais">+{{ $fichaHoje->exercicios->count() - 4 }} exercício(s)</p>
+                    @endif
+                </div>
+
+                <a href="{{ route('fichas-treino.executar', $fichaHoje->id) }}" class="treino-cta">
+                    <i class="ph-fill ph-play"></i>
+                    {{ $treino['feito_hoje'] ? 'Rever treino de hoje' : 'Começar treino' }}
+                </a>
+            @else
+                <a href="{{ route('fichas-treino.minhas') }}" class="treino-cta secundario">
+                    <i class="ph ph-list-checks"></i> Ver minhas fichas
+                </a>
+            @endif
+
+            {{-- Semana: em que dias ele tem ficha --}}
+            <div class="semana-strip">
+                @foreach($diasLabel as $dow => $letra)
+                    @php $temFicha = $treino['fichas_por_dia']->has($dow); @endphp
+                    <div class="dia-pill {{ $temFicha ? 'com-ficha' : '' }} {{ $dow === $hoje->dayOfWeek ? 'hoje' : '' }}"
+                         title="{{ $diasNome[$dow] }}{{ $temFicha ? ' — ' . $treino['fichas_por_dia'][$dow]->nome_treino : ' — sem ficha' }}">
+                        {{ $letra }}
+                    </div>
+                @endforeach
+            </div>
+        </div>
+
+        {{-- ══ DIAS DE AULA NO MÊS ══ --}}
+        @php
+            $meses = ['', 'janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho',
+                      'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
+        @endphp
+        <div class="section-title">Suas aulas em {{ $meses[$hoje->month] }}</div>
+
+        <div class="mes-card">
+            <div class="mes-resumo">
+                <div><b>{{ $treino['aulas_no_mes'] }}</b> aula(s) marcada(s)</div>
+                <div><b>{{ $treino['treinos_no_mes'] }}</b> treino(s) concluído(s)</div>
+            </div>
+
+            <div class="mes-grid">
+                @foreach(['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'] as $cab)
+                    <div class="mes-cab">{{ $cab }}</div>
+                @endforeach
+
+                @php
+                    $inicio = $hoje->copy()->startOfMonth();
+                    $totalDias = $hoje->daysInMonth;
+                @endphp
+
+                @for($i = 0; $i < $inicio->dayOfWeek; $i++)
+                    <div class="mes-dia vazio"></div>
+                @endfor
+
+                @for($dia = 1; $dia <= $totalDias; $dia++)
+                    @php $aula = $treino['dias_com_aula'][$dia] ?? null; @endphp
+                    <div class="mes-dia {{ $aula ? ($aula['cancelado'] ? 'cancelada' : 'tem-aula') : '' }} {{ $dia === $hoje->day ? 'hoje' : '' }}"
+                         @if($aula) title="{{ $aula['cancelado'] ? 'Aula cancelada' : 'Aula às ' . implode(', ', $aula['horas']) }}{{ $aula['personal'] ? ' — ' . $aula['personal'] : '' }}" @endif>
+                        {{ $dia }}
+                        @if($aula && ! $aula['cancelado'])<span class="ponto"></span>@endif
+                    </div>
+                @endfor
+            </div>
+
+            <div class="mes-legenda">
+                <span><i class="ponto-legenda"></i> dia com aula</span>
+                <span><i class="ponto-legenda cancel"></i> cancelada</span>
+            </div>
+        </div>
+    @endif
+
     <div id="dashboardSummary">
         {{-- PERSONALS --}}
-        <div class="section-title">Personals Disponíveis</div>
+        <div class="section-title">{{ $treino['tem_vinculo'] ? 'Explorar outros personais' : 'Personals Disponíveis' }}</div>
         <p style="color: var(--text-muted); font-size: 0.8rem; margin: -10px 0 15px 0;">
             <i class="ph ph-info" style="color: var(--primary);"></i>
             Você pode contratar um personal com ou sem vínculo com academia.
