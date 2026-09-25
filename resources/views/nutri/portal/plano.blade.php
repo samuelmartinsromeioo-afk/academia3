@@ -55,7 +55,7 @@
                                     {{ $it->medida ?: ($it->quantidade_g.' g') }} · {{ number_format($it->kcal,0) }} kcal
                                 </div>
                                 @if($it->opcoes->count())
-                                    <div style="margin-top:6px; padding:8px 10px; background:rgba(212,255,0,.06); border-radius:8px;">
+                                    <div style="margin-top:6px; padding:8px 10px; background:rgba(124,255,0,.06); border-radius:8px;">
                                         <div style="font-size:.68rem; color:var(--primary); font-weight:700; text-transform:uppercase; letter-spacing:.5px;">Pode trocar por</div>
                                         @foreach ($it->opcoes as $op)
                                             <div style="font-size:.75rem; margin-top:3px;">

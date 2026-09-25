@@ -15,8 +15,8 @@
 
     <style>
         :root {
-            --primary: #d4ff00;
-            --primary-hover: #b8de00;
+            --primary: #7cff00;
+            --primary-hover: #6bde00;
             --bg-dark: #0a0b0d;
             --card-bg: #16181d;
             --text-main: #ffffff;
@@ -31,8 +31,8 @@
         body {
             background-color: var(--bg-dark);
             background-image: 
-                radial-gradient(circle at 10% 20%, rgba(212, 255, 0, 0.05) 0%, transparent 20%),
-                radial-gradient(circle at 90% 80%, rgba(212, 255, 0, 0.05) 0%, transparent 20%);
+                radial-gradient(circle at 10% 20%, rgba(124, 255, 0, 0.05) 0%, transparent 20%),
+                radial-gradient(circle at 90% 80%, rgba(124, 255, 0, 0.05) 0%, transparent 20%);
             font-family: 'Inter', sans-serif;
             color: var(--text-main);
             display: flex;
@@ -98,7 +98,7 @@
 
         .input-wrapper:focus-within {
             border-color: var(--primary);
-            background: rgba(212, 255, 0, 0.03);
+            background: rgba(124, 255, 0, 0.03);
         }
 
         .input-wrapper i { color: var(--text-dim); width: 20px; text-align: center; margin-right: 10px; font-size: 0.9rem; }
@@ -145,8 +145,8 @@
             gap: 10px;
             margin: 25px 0;
             padding: 15px;
-            background: rgba(212, 255, 0, 0.03);
-            border: 1px solid rgba(212, 255, 0, 0.2);
+            background: rgba(124, 255, 0, 0.03);
+            border: 1px solid rgba(124, 255, 0, 0.2);
             border-radius: 12px;
         }
 
@@ -339,6 +339,9 @@
                     <textarea name="condicao_clinica" rows="2" placeholder="Ex: Hipertensão, lesão no joelho, etc.">{{ old('condicao_clinica') }}</textarea>
                 </div>
             </div>
+
+            <!-- CUPOM DE INDICAÇÃO -->
+            @include('partials.campo-cupom')
 
             <!-- ✅ NOVO: CHECKBOX TERMOS DE USO -->
             <div class="terms-section">

@@ -12,7 +12,7 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/fill/style.css">
     <style>
         :root {
-            --primary: #d4ff00;
+            --primary: #7cff00;
             --bg-dark: #0a0b0d;
             --card-bg: #16181d;
             --text-main: #ffffff;
@@ -154,15 +154,15 @@
 
         .ficha-card {
             background: var(--card-bg);
-            border: 1px solid rgba(212, 255, 0, 0.2);
+            border: 1px solid rgba(124, 255, 0, 0.2);
             border-radius: 20px;
             padding: 20px;
             transition: 0.3s;
         }
 
         .ficha-card:hover {
-            border-color: rgba(212, 255, 0, 0.5);
-            box-shadow: 0 0 20px rgba(212, 255, 0, 0.1);
+            border-color: rgba(124, 255, 0, 0.5);
+            box-shadow: 0 0 20px rgba(124, 255, 0, 0.1);
         }
 
         .ficha-header {
@@ -197,7 +197,7 @@
         }
 
         .btn-edit {
-            background: rgba(212, 255, 0, 0.1);
+            background: rgba(124, 255, 0, 0.1);
             color: var(--primary);
             border-color: var(--primary);
         }
@@ -299,9 +299,9 @@
 
         .btn-add-ex {
             width: 100%;
-            background: rgba(212, 255, 0, 0.1);
+            background: rgba(124, 255, 0, 0.1);
             color: var(--primary);
-            border: 1px solid rgba(212, 255, 0, 0.3);
+            border: 1px solid rgba(124, 255, 0, 0.3);
             padding: 10px;
             border-radius: 8px;
             cursor: pointer;
@@ -310,7 +310,7 @@
         }
 
         .btn-add-ex:hover {
-            background: rgba(212, 255, 0, 0.2);
+            background: rgba(124, 255, 0, 0.2);
             border-color: var(--primary);
         }
 
@@ -381,7 +381,7 @@
         .form-group textarea:focus {
             outline: none;
             border-color: var(--primary);
-            box-shadow: 0 0 10px rgba(212, 255, 0, 0.2);
+            box-shadow: 0 0 10px rgba(124, 255, 0, 0.2);
         }
 
         .form-group textarea {
@@ -454,9 +454,9 @@
             border: 1px solid rgba(0, 200, 120, 0.3);
         }
         .badge-nivel.avancado {
-            background: rgba(212, 255, 0, 0.12);
+            background: rgba(124, 255, 0, 0.12);
             color: var(--primary);
-            border: 1px solid rgba(212, 255, 0, 0.3);
+            border: 1px solid rgba(124, 255, 0, 0.3);
         }
         .badge-divisao {
             font-size: 0.68rem;
@@ -486,9 +486,9 @@
             transition: 0.2s;
         }
         .nivel-btn.ativo {
-            background: rgba(212, 255, 0, 0.12);
+            background: rgba(124, 255, 0, 0.12);
             color: var(--primary);
-            border-color: rgba(212, 255, 0, 0.4);
+            border-color: rgba(124, 255, 0, 0.4);
         }
 
         /* SELETOR DE EXERCÍCIO */
@@ -536,7 +536,7 @@
             transition: background 0.15s;
         }
         .exercicio-item:hover {
-            background: rgba(212, 255, 0, 0.07);
+            background: rgba(124, 255, 0, 0.07);
         }
         .exercicio-item:last-child {
             border-bottom: none;
@@ -572,15 +572,15 @@
             transition: background 0.15s;
         }
         .exercicio-personalizado:hover {
-            background: rgba(212, 255, 0, 0.07);
+            background: rgba(124, 255, 0, 0.07);
         }
         .exercicio-escolhido {
             display: flex;
             align-items: center;
             gap: 10px;
             padding: 10px 13px;
-            background: rgba(212, 255, 0, 0.08);
-            border: 1px solid rgba(212, 255, 0, 0.25);
+            background: rgba(124, 255, 0, 0.08);
+            border: 1px solid rgba(124, 255, 0, 0.25);
             border-radius: 8px;
         }
         .exercicio-escolhido-nome {
@@ -591,7 +591,7 @@
         .exercicio-escolhido-grupo {
             font-size: 0.72rem;
             color: var(--primary);
-            background: rgba(212,255,0,0.1);
+            background: rgba(124,255,0,0.1);
             padding: 2px 8px;
             border-radius: 10px;
         }
@@ -650,7 +650,7 @@
             </div>
             <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
                 <a href="{{ route('evolucao-carga.aluno', $cliente->id) }}"
-                   style="display:inline-flex; align-items:center; gap:8px; background:var(--primary); color:#000; padding:12px 18px; border-radius:10px; font-weight:900; font-size:0.85rem; text-transform:uppercase; letter-spacing:0.5px; box-shadow:0 0 16px rgba(212,255,0,0.25);">
+                   style="display:inline-flex; align-items:center; gap:8px; background:var(--primary); color:#000; padding:12px 18px; border-radius:10px; font-weight:900; font-size:0.85rem; text-transform:uppercase; letter-spacing:0.5px; box-shadow:0 0 16px rgba(124,255,0,0.25);">
                     <i class="ph ph-lightning"></i> Evolução
                 </a>
                 <a href="{{ route('periodizacao.aluno', $cliente->id) }}"
@@ -700,7 +700,7 @@
                             <div class="ficha-buttons">
                                 <form method="POST" action="{{ route('templates.de-ficha', $ficha->id) }}" style="display:inline;" title="Salvar como template">
                                     @csrf
-                                    <button type="submit" class="btn-icon" style="background:rgba(212,255,0,0.15); color:var(--primary);">
+                                    <button type="submit" class="btn-icon" style="background:rgba(124,255,0,0.15); color:var(--primary);">
                                         <i class="ph ph-copy"></i>
                                     </button>
                                 </form>

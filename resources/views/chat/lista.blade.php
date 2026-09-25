@@ -13,7 +13,7 @@
     <style>
         :root { --primary:var(--snr-lime); --bg-dark:var(--snr-bg); --card-bg:var(--snr-surface); --text-main:var(--snr-text); --text-muted:var(--snr-dim); --green:var(--snr-success); --border:var(--snr-border); }
         * { margin:0; padding:0; box-sizing:border-box; }
-        body { background:var(--bg-dark); font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; color:var(--text-main); min-height:100vh; background-image:radial-gradient(circle at 50% -10%, rgba(212,255,0,0.1), transparent 50%); }
+        body { background:var(--bg-dark); font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; color:var(--text-main); min-height:100vh; background-image:radial-gradient(circle at 50% -10%, rgba(124,255,0,0.1), transparent 50%); }
         a { color:inherit; text-decoration:none; }
         .top-bar { display:flex; align-items:center; gap:15px; padding:15px 40px; background:rgba(0,0,0,0.6); border-bottom:1px solid var(--border); position:sticky; top:0; z-index:100; backdrop-filter:blur(10px); }
         .back-btn { background:var(--card-bg); border:1px solid var(--border); color:var(--primary); width:40px; height:40px; border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:1.1rem; }
@@ -50,7 +50,7 @@
         @else
             @foreach($contatos as $c)
                 <a href="{{ route('chat.conversa', $c->id) }}" class="conv">
-                    <img src="https://ui-avatars.com/api/?name={{ urlencode($c->nome) }}&background=d4ff00&color=0a0b0d" alt="">
+                    <img src="https://ui-avatars.com/api/?name={{ urlencode($c->nome) }}&background=7cff00&color=0a0b0d" alt="">
                     <div class="info">
                         <div class="nome">{{ $c->nome }}</div>
                         <div class="prev">{{ $c->ultima ? ($c->ultima->remetente === $eu ? 'Você: ' : '').\Illuminate\Support\Str::limit($c->ultima->texto, 38) : 'Iniciar conversa' }}</div>

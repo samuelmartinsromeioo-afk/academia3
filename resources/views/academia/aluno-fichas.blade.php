@@ -11,7 +11,7 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/fill/style.css">
     <style>
         :root {
-            --primary: #d4ff00;
+            --primary: #7cff00;
             --bg-dark: #0a0b0d;
             --card-bg: #16181d;
             --text-main: #ffffff;
@@ -25,7 +25,7 @@
 
         .top-bar { display: flex; justify-content: space-between; align-items: center; padding: 15px 40px; background: rgba(0,0,0,0.4); border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 100; backdrop-filter: blur(10px); }
         .logo { font-weight: 900; letter-spacing: 2px; }
-        .logo span { color: var(--primary); }
+        .logo, .logo span { color: var(--primary); }
         .btn-top { background: transparent; border: 1px solid var(--border); color: var(--text-main); padding: 9px 16px; border-radius: 8px; cursor: pointer; font-weight: 700; font-size: 0.78rem; transition: 0.2s; text-decoration: none; display: inline-flex; align-items: center; gap: 6px; }
         .btn-top:hover { border-color: var(--primary); color: var(--primary); }
 
@@ -36,7 +36,7 @@
         header.page-head p { color: var(--text-muted); font-size: 0.85rem; margin-top: 3px; }
 
         .alert { padding: 13px 18px; border-radius: 12px; margin-bottom: 18px; font-size: 0.85rem; }
-        .alert-ok { background: rgba(212,255,0,0.1); border: 1px solid rgba(212,255,0,0.35); color: var(--primary); }
+        .alert-ok { background: rgba(124,255,0,0.1); border: 1px solid rgba(124,255,0,0.35); color: var(--primary); }
         .alert-err { background: rgba(255,68,68,0.1); border: 1px solid rgba(255,68,68,0.35); color: #ff6b6b; }
 
         .card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 16px; padding: 22px; margin-bottom: 20px; }
@@ -55,7 +55,7 @@
         .g4 { grid-template-columns: 2fr 1fr 1fr 1fr; }
 
         .btn { background: var(--primary); color: #000; border: none; border-radius: 10px; padding: 12px 18px; font-weight: 900; font-size: 0.8rem; cursor: pointer; font-family: inherit; display: inline-flex; align-items: center; gap: 8px; }
-        .btn:hover { background: #e8ff40; }
+        .btn:hover { background: #9cff40; }
         .btn-ghost { background: transparent; border: 1px solid var(--border); color: var(--text-muted); }
         .btn-ghost:hover { border-color: var(--error); color: #ff6b6b; }
         .btn-sm { padding: 8px 12px; font-size: 0.72rem; }
@@ -65,7 +65,7 @@
         .ficha-head .dia { color: var(--primary); font-size: 0.7rem; font-weight: 800; text-transform: uppercase; }
         .ficha-head h3 { font-size: 1.05rem; font-weight: 800; }
         .ficha-head .obs { color: var(--text-muted); font-size: 0.8rem; margin-top: 4px; }
-        .tag { display: inline-block; font-size: 0.62rem; font-weight: 800; text-transform: uppercase; padding: 3px 8px; border-radius: 20px; background: rgba(212,255,0,0.1); color: var(--primary); border: 1px solid rgba(212,255,0,0.3); margin-top: 6px; }
+        .tag { display: inline-block; font-size: 0.62rem; font-weight: 800; text-transform: uppercase; padding: 3px 8px; border-radius: 20px; background: rgba(124,255,0,0.1); color: var(--primary); border: 1px solid rgba(124,255,0,0.3); margin-top: 6px; }
 
         table { width: 100%; border-collapse: collapse; margin: 10px 0; }
         th, td { text-align: left; padding: 9px 8px; font-size: 0.8rem; border-bottom: 1px solid var(--border); }
@@ -104,7 +104,7 @@
         @if($cliente->foto)
             <img src="{{ asset('storage/' . $cliente->foto) }}" alt="{{ $cliente->nome }}">
         @else
-            <img src="https://ui-avatars.com/api/?name={{ urlencode($cliente->nome) }}&background=d4ff00&color=000">
+            <img src="https://ui-avatars.com/api/?name={{ urlencode($cliente->nome) }}&background=7cff00&color=000">
         @endif
         <div>
             <h1>Ficha de {{ $cliente->nome }}</h1>
@@ -212,7 +212,7 @@
                                 </tr>
                                 <tr class="edit-ex-row" id="edit-ex-{{ $ex->id }}" style="display:none;">
                                     <td colspan="5">
-                                        <form action="{{ route('academia.fichas.exercicio.editar', $ex->id) }}" method="POST" style="background:rgba(212,255,0,0.04); border:1px solid var(--border); border-radius:12px; padding:14px;" enctype="multipart/form-data" onsubmit="return videoOk(this);">
+                                        <form action="{{ route('academia.fichas.exercicio.editar', $ex->id) }}" method="POST" style="background:rgba(124,255,0,0.04); border:1px solid var(--border); border-radius:12px; padding:14px;" enctype="multipart/form-data" onsubmit="return videoOk(this);">
                                             @csrf @method('PUT')
                                             <div class="grid g4" style="margin-bottom:12px;">
                                                 <div>

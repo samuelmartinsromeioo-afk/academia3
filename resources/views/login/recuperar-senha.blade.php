@@ -15,7 +15,7 @@
  
     <style>
         :root {
-            --primary: #d4ff00;
+            --primary: #7cff00;
             --bg-dark: #0a0b0d;
             --card-bg: #16181d;
             --text-main: #ffffff;
@@ -29,8 +29,8 @@
         body {
             background-color: var(--bg-dark);
             background-image:
-                radial-gradient(circle at 10% 20%, rgba(212, 255, 0, 0.05) 0%, transparent 20%),
-                radial-gradient(circle at 90% 80%, rgba(212, 255, 0, 0.05) 0%, transparent 20%);
+                radial-gradient(circle at 10% 20%, rgba(124, 255, 0, 0.05) 0%, transparent 20%),
+                radial-gradient(circle at 90% 80%, rgba(124, 255, 0, 0.05) 0%, transparent 20%);
             font-family: 'Inter', sans-serif;
             color: var(--text-main);
             display: flex;
@@ -68,7 +68,7 @@
  
         .card:hover {
             border-color: var(--primary);
-            box-shadow: 0 0 25px rgba(212,255,0,0.1);
+            box-shadow: 0 0 25px rgba(124,255,0,0.1);
         }
  
         .card h2 { font-size: 1.8rem; font-weight: 800; margin-bottom: 10px; }
@@ -80,7 +80,7 @@
             justify-content: center;
             width: 60px;
             height: 60px;
-            background: rgba(212,255,0,0.1);
+            background: rgba(124,255,0,0.1);
             border-radius: 16px;
             margin-bottom: 20px;
         }
@@ -109,7 +109,7 @@
  
         .form-control:focus {
             border-color: var(--primary);
-            box-shadow: 0 0 10px rgba(212,255,0,0.2);
+            box-shadow: 0 0 10px rgba(124,255,0,0.2);
         }
  
         .btn-primary {
@@ -127,7 +127,7 @@
  
         .btn-primary:hover {
             transform: translateY(-2px);
-            box-shadow: 0 10px 20px rgba(212,255,0,0.2);
+            box-shadow: 0 10px 20px rgba(124,255,0,0.2);
         }
  
         .back-link {

@@ -11,6 +11,7 @@ use App\Models\Admin;
 use App\Services\Celebracoes;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
 
 class loginController extends Controller
@@ -55,8 +56,7 @@ class loginController extends Controller
         $admin = Admin::where('email', $loginInput)->first();
         if ($admin) {
             if (Hash::check($senha, $admin->senha)) {
-                session(['admin_id' => $admin->id, 'admin_nome' => $admin->nome]);
-                session()->save();
+                $this->abrirSessao(['admin_id' => $admin->id, 'admin_nome' => $admin->nome]);
                 return redirect()->route('admin.dashboard');
             }
         }
@@ -69,8 +69,7 @@ class loginController extends Controller
                 return back()->withErrors(['login' => '⏳ Seu cadastro ainda não foi aprovado pelo administrador. Aguarde a análise.'])->withInput();
             }
             
-            session(['personal_id' => $personal->id]);
-            session()->save();
+            $this->abrirSessao(['personal_id' => $personal->id]);
             $this->marcarPrimeiroLogin($personal, 'personal');
 
             // Nutricionista tem painel próprio; personal trainer segue no dashboard de treino.
@@ -83,8 +82,7 @@ class loginController extends Controller
         // 2. Tentar CLIENTE (continua buscando por email)
         $cliente = ModelsCliente::where('email', $loginInput)->first();
         if ($cliente && Hash::check($senha, $cliente->senha)) {
-            session(['cliente_id' => $cliente->id]);
-            session()->save();
+            $this->abrirSessao(['cliente_id' => $cliente->id]);
             $this->marcarPrimeiroLogin($cliente, 'cliente');
             return redirect()->route('cliente.index');
         }
@@ -116,11 +114,11 @@ class loginController extends Controller
                 }
 
                 session()->forget('filial_id');
-                session(['academia_id' => $academia->id]);
+                $dadosSessao = ['academia_id' => $academia->id];
                 if ($filial) {
-                    session(['filial_id' => $filial->id]); // subconta: acesso restrito a esta filial
+                    $dadosSessao['filial_id'] = $filial->id; // subconta: acesso restrito a esta filial
                 }
-                session()->save();
+                $this->abrirSessao($dadosSessao);
                 $this->marcarPrimeiroLogin($academia, 'academia');
                 return redirect()->route('academia.dashboard');
             }
@@ -137,8 +135,7 @@ class loginController extends Controller
                 return back()->withErrors(['login' => '⏳ Seu cadastro ainda não foi aprovado pelo administrador. Aguarde a análise.'])->withInput();
             }
 
-            session(['studio_id' => $studio->id]);
-            session()->save();
+            $this->abrirSessao(['studio_id' => $studio->id]);
             $this->marcarPrimeiroLogin($studio, 'studio');
             return redirect()->route('studio.dashboard');
         }
@@ -159,16 +156,38 @@ class loginController extends Controller
                 return back()->withErrors(['login' => $msg])->withInput();
             }
 
-            session(['loja_id' => $loja->id]);
-            session()->save();
+            $this->abrirSessao(['loja_id' => $loja->id]);
             $this->marcarPrimeiroLogin($loja, 'loja');
             return redirect()->route('loja.dashboard');
         }
 
         // 6. Se não encontrou em nenhum lugar
+        // A09 — registra a falha para permitir detectar força bruta / credential
+        // stuffing. Nunca logamos a senha, só o identificador tentado.
+        Log::channel('security')->warning('login_falhou', [
+            'login' => $loginInput,
+            'ip'    => $request->ip(),
+            'agent' => substr((string) $request->userAgent(), 0, 180),
+        ]);
+
         return back()->withErrors(['login' => 'E-mail, CNPJ ou senha incorretos.'])->withInput();
     }
-    
+
+    /**
+     * A07 — Abre a sessão autenticada com um ID novo (anti session fixation).
+     *
+     * Sem `regenerate()` um atacante que conheça/fixe o ID de sessão da vítima
+     * antes do login continua dentro da sessão dela depois da autenticação
+     * (CWE-384). `regenerate()` migra os dados para um ID novo e invalida o antigo.
+     */
+    private function abrirSessao(array $dados): void
+    {
+        session()->regenerate();
+        session($dados);
+        session()->save();
+    }
+
+
     /** Enfileira a celebração de boas-vindas no primeiro login e baixa a flag. */
     private function marcarPrimeiroLogin($usuario, string $papel): void
     {
@@ -185,6 +204,12 @@ class loginController extends Controller
     {
         // Limpa todas as possíveis sessões de login
         session()->forget(['admin_id', 'admin_nome', 'personal_id', 'cliente_id', 'academia_id', 'filial_id', 'studio_id', 'loja_id']);
+
+        // A07 — descarta a sessão inteira e emite token CSRF novo. Sem isso o
+        // ID de sessão continua válido após o logout e pode ser reaproveitado.
+        $request->session()->invalidate();
+        $request->session()->regenerateToken();
+
         return redirect()->route('login.index')->with('sucesso', 'Você saiu do sistema.');
     }
 }

@@ -11,7 +11,7 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/fill/style.css">
     <style>
         :root {
-            --primary: #d4ff00; --bg-dark: #0a0b0d; --card-bg: #16181d;
+            --primary: #7cff00; --bg-dark: #0a0b0d; --card-bg: #16181d;
             --text-main: #ffffff; --text-muted: #a0a0a0; --border: rgba(255,255,255,0.08);
             --input-bg: rgba(255,255,255,0.04); --error: #ff4444; --success: #28a745;
         }

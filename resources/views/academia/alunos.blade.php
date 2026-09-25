@@ -11,7 +11,7 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/fill/style.css">
     <style>
         :root {
-            --primary: #d4ff00;
+            --primary: #7cff00;
             --bg-dark: #0a0b0d;
             --card-bg: #16181d;
             --text-main: #ffffff;
@@ -41,7 +41,7 @@
             backdrop-filter: blur(10px);
         }
         .top-bar .logo { font-weight: 900; letter-spacing: 2px; }
-        .top-bar .logo span { color: var(--primary); }
+        .top-bar .logo, .top-bar .logo span { color: var(--primary); }
 
         .btn-top {
             background: transparent;
@@ -121,7 +121,7 @@
             padding: 20px;
             transition: 0.25s;
         }
-        .aluno-card:hover { border-color: rgba(212,255,0,0.3); transform: translateY(-3px); }
+        .aluno-card:hover { border-color: rgba(124,255,0,0.3); transform: translateY(-3px); }
 
         .aluno-head { display: flex; align-items: center; gap: 14px; margin-bottom: 16px; }
         .aluno-head img { width: 48px; height: 48px; border-radius: 50%; flex-shrink: 0; }
@@ -152,13 +152,13 @@
 
         .aluno-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 16px; }
         .btn-ficha { display: flex; align-items: center; justify-content: center; gap: 8px; background: var(--primary); color: #000; border-radius: 10px; padding: 11px; font-weight: 800; font-size: 0.78rem; text-decoration: none; transition: 0.2s; }
-        .btn-ficha:hover { background: #e8ff40; }
-        .btn-periodizacao { display: flex; align-items: center; justify-content: center; gap: 8px; background: transparent; color: var(--primary); border: 1px solid rgba(212,255,0,0.4); border-radius: 10px; padding: 11px; font-weight: 800; font-size: 0.78rem; text-decoration: none; transition: 0.2s; }
-        .btn-periodizacao:hover { background: rgba(212,255,0,0.1); border-color: var(--primary); }
+        .btn-ficha:hover { background: #9cff40; }
+        .btn-periodizacao { display: flex; align-items: center; justify-content: center; gap: 8px; background: transparent; color: var(--primary); border: 1px solid rgba(124,255,0,0.4); border-radius: 10px; padding: 11px; font-weight: 800; font-size: 0.78rem; text-decoration: none; transition: 0.2s; }
+        .btn-periodizacao:hover { background: rgba(124,255,0,0.1); border-color: var(--primary); }
         .btn-avaliacao { grid-column: 1 / -1; display: flex; align-items: center; justify-content: center; gap: 8px; background: transparent; color: var(--text-main); border: 1px solid var(--border); border-radius: 10px; padding: 11px; font-weight: 800; font-size: 0.78rem; text-decoration: none; transition: 0.2s; }
         .btn-avaliacao:hover { border-color: var(--primary); color: var(--primary); }
 
-        .ctx-banner { background: rgba(212,255,0,0.08); border: 1px solid rgba(212,255,0,0.3); color: #cfe88a; border-radius: 12px; padding: 12px 16px; font-size: 0.82rem; margin-bottom: 20px; display: flex; align-items: center; gap: 10px; }
+        .ctx-banner { background: rgba(124,255,0,0.08); border: 1px solid rgba(124,255,0,0.3); color: #cfe88a; border-radius: 12px; padding: 12px 16px; font-size: 0.82rem; margin-bottom: 20px; display: flex; align-items: center; gap: 10px; }
         .ctx-banner i { color: var(--primary); }
         .filial-group { margin-bottom: 30px; }
         .filial-group-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 14px; margin-bottom: 14px; border-left: 3px solid var(--primary); background: rgba(255,255,255,0.03); border-radius: 8px; }
@@ -176,7 +176,6 @@
 <div class="top-bar">
     <div class="logo">SNR<span>FIT</span> <span style="font-family:'Inter'; font-size:0.65rem; color:var(--text-muted); letter-spacing:1px; text-transform:uppercase;">| Alunos</span></div>
     <div class="top-actions">
-        <a href="{{ route('academia.alunos.criar') }}" class="btn-top primary"><i class="ph ph-user-plus"></i> Cadastrar aluno</a>
         <a href="{{ route('academia.dashboard') }}" class="btn-top"><i class="ph ph-arrow-left"></i> Voltar ao painel</a>
     </div>
 </div>
@@ -210,6 +209,12 @@
         <div class="empty-state">
             <i class="ph ph-users"></i>
             <p>Nenhum aluno {{ $filialAtual ? 'nesta filial' : 'vinculado à academia' }} ainda.</p>
+            <p style="font-size:0.85rem; opacity:0.75; margin-top:10px; line-height:1.55;">
+                Os alunos aparecem aqui ao se cadastrarem na SnrFit e contratarem
+                um plano da sua academia pelo app. Compartilhe seu
+                <a href="{{ route('indicacoes.painel') }}" style="color:var(--primary);">código de indicação</a>
+                para trazê-los.
+            </p>
         </div>
     @elseif($alunosPorFilial->isNotEmpty())
         {{-- Conta principal: alunos separados por filial para comparar as unidades. --}}

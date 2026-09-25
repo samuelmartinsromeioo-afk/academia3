@@ -6,7 +6,7 @@
         @if($aluno->foto)
             <img src="{{ asset('storage/' . $aluno->foto) }}" alt="{{ $aluno->nome }}">
         @else
-            <img src="https://ui-avatars.com/api/?name={{ urlencode($aluno->nome) }}&background=d4ff00&color=000">
+            <img src="https://ui-avatars.com/api/?name={{ urlencode($aluno->nome) }}&background=7cff00&color=000">
         @endif
         <div>
             <h3>{{ $aluno->nome }}</h3>

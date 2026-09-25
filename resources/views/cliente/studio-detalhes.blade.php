@@ -13,7 +13,7 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/fill/style.css">
     <style>
         :root {
-            --primary: #d4ff00;
+            --primary: #7cff00;
             --bg-dark: #0a0b0d;
             --card-bg: #16181d;
             --text-main: #ffffff;
@@ -47,7 +47,7 @@
         }
 
         .logo { font-family: 'Syncopate', sans-serif; font-size: 1.1rem; letter-spacing: 3px; }
-        .logo span { color: var(--primary); }
+        .logo, .logo span { color: var(--primary); }
 
         .btn-top {
             background: transparent;
@@ -160,7 +160,7 @@
         .planos-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 16px; }
         .plano-card {
             background: var(--input-bg);
-            border: 1px solid rgba(212,255,0,0.2);
+            border: 1px solid rgba(124,255,0,0.2);
             border-radius: 14px;
             padding: 20px;
             display: flex;
@@ -188,7 +188,7 @@
             gap: 6px;
         }
         .btn-pix { background: var(--primary); color: #000; }
-        .btn-pix:hover { background: #e8ff40; }
+        .btn-pix:hover { background: #9cff40; }
         .btn-cartao { background: rgba(255,255,255,0.08); color: #fff; border: 1px solid rgba(255,255,255,0.2); }
         .btn-cartao:hover { background: rgba(255,255,255,0.15); }
 
@@ -209,8 +209,8 @@
         input[type="date"]:focus { border-color: var(--primary); }
 
         .valor-aula-tag {
-            background: rgba(212,255,0,0.08);
-            border: 1px solid rgba(212,255,0,0.25);
+            background: rgba(124,255,0,0.08);
+            border: 1px solid rgba(124,255,0,0.25);
             color: var(--primary);
             padding: 10px 16px;
             border-radius: 10px;
@@ -234,7 +234,7 @@
             text-align: center;
         }
         .slot-card:hover { border-color: var(--studio-color); }
-        .slot-card.selected { border-color: var(--primary); background: rgba(212,255,0,0.06); }
+        .slot-card.selected { border-color: var(--primary); background: rgba(124,255,0,0.06); }
         .slot-card.lotado { opacity: 0.45; cursor: not-allowed; }
 
         .slot-card .hora { font-weight: 800; font-size: 0.92rem; margin-bottom: 4px; }
@@ -244,8 +244,8 @@
 
         .slot-acao {
             margin-top: 20px;
-            background: rgba(212,255,0,0.05);
-            border: 1px solid rgba(212,255,0,0.2);
+            background: rgba(124,255,0,0.05);
+            border: 1px solid rgba(124,255,0,0.2);
             border-radius: 14px;
             padding: 18px;
             display: none;
@@ -399,7 +399,7 @@
 <div class="container">
 
     @if (session('sucesso'))
-        <div style="background: rgba(212,255,0,0.1); border: 1px solid rgba(212,255,0,0.35); color: var(--primary); padding: 14px 18px; border-radius: 12px; margin-bottom: 20px; font-size: 0.88rem;">
+        <div style="background: rgba(124,255,0,0.1); border: 1px solid rgba(124,255,0,0.35); color: var(--primary); padding: 14px 18px; border-radius: 12px; margin-bottom: 20px; font-size: 0.88rem;">
             <i class="ph ph-check-circle"></i> {{ session('sucesso') }}
         </div>
     @endif
@@ -587,7 +587,7 @@
         <h3><i class="ph ph-qr-code"></i> PAGAMENTO PIX</h3>
         <p class="modal-sub" id="pixDescricao"></p>
         <p class="modal-valor" id="pixValor">Gerando QR Code...</p>
-        <p id="pixRecorrenteNota" style="display:none; color:#d4ff00; font-size:0.78rem; font-weight:700; margin:0 0 12px; background:rgba(212,255,0,0.08); border:1px solid rgba(212,255,0,0.25); border-radius:10px; padding:8px 12px;">
+        <p id="pixRecorrenteNota" style="display:none; color:#7cff00; font-size:0.78rem; font-weight:700; margin:0 0 12px; background:rgba(124,255,0,0.08); border:1px solid rgba(124,255,0,0.25); border-radius:10px; padding:8px 12px;">
             🔁 Assinatura mensal — uma nova cobrança PIX é gerada todo mês.
         </p>
         <img class="pix-qr" id="pixQr" src="" alt="QR Code PIX">

@@ -17,7 +17,7 @@
             --border: var(--snr-border);
         }
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { background-color: var(--bg-dark); font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; color: var(--text-main); min-height: 100vh; background-image: radial-gradient(circle at 12% -10%, rgba(212, 255, 0, 0.10), transparent 45%); }
+        body { background-color: var(--bg-dark); font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; color: var(--text-main); min-height: 100vh; background-image: radial-gradient(circle at 12% -10%, rgba(124, 255, 0, 0.10), transparent 45%); }
         a { color: inherit; text-decoration: none; }
         .top-bar { display: flex; align-items: center; gap: 15px; padding: 15px 40px; background: rgba(0,0,0,0.6); border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 100; backdrop-filter: blur(10px); }
         .back-btn { background: var(--card-bg); border: 1px solid var(--border); color: var(--primary); width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1.1rem; transition: 0.3s; }
@@ -43,7 +43,7 @@
         .tag { font-size: 0.7rem; font-weight: 800; padding: 4px 10px; border-radius: 20px; background: rgba(255,255,255,0.05); border: 1px solid var(--border); color: var(--text-muted); }
         .tag.ativo { background: rgba(0,230,118,0.12); color: var(--green); border-color: rgba(0,230,118,0.4); }
         .tag.venc { background: rgba(255,82,82,0.15); color: var(--red); border-color: var(--red); }
-        .tag.ok { background: rgba(212,255,0,0.12); color: var(--primary); border-color: rgba(212,255,0,0.4); }
+        .tag.ok { background: rgba(124,255,0,0.12); color: var(--primary); border-color: rgba(124,255,0,0.4); }
         .card .acao { display: block; text-align: center; padding: 11px; border-radius: 10px; background: var(--primary); color: #000; font-weight: 900; font-size: 0.82rem; }
         .card .acao:hover { filter: brightness(1.1); }
 
@@ -91,7 +91,7 @@
                     @php $venc = $m->estaVencido(); $dias = $m->diasRestantes(); @endphp
                     <div class="card {{ $venc ? 'venc' : '' }}">
                         <div class="top">
-                            <img src="https://ui-avatars.com/api/?name={{ urlencode($m->cliente?->nome ?? 'Aluno') }}&background=d4ff00&color=0a0b0d" alt="">
+                            <img src="https://ui-avatars.com/api/?name={{ urlencode($m->cliente?->nome ?? 'Aluno') }}&background=7cff00&color=0a0b0d" alt="">
                             <div class="nome">{{ $m->cliente?->nome ?? 'Aluno' }}<small>{{ $m->nome }}</small></div>
                         </div>
                         <div class="tags">

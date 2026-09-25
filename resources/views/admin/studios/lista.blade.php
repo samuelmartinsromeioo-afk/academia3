@@ -11,7 +11,7 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/fill/style.css">
     <style>
         :root {
-            --primary: #d4ff00;
+            --primary: #7cff00;
             --bg-dark: #0a0b0d;
             --card-bg: #16181d;
             --text-main: #ffffff;
@@ -93,7 +93,7 @@
         }
 
         table { width: 100%; border-collapse: collapse; }
-        thead { background: rgba(212, 255, 0, 0.05); border-bottom: 2px solid var(--border); }
+        thead { background: rgba(124, 255, 0, 0.05); border-bottom: 2px solid var(--border); }
         th {
             padding: 16px;
             text-align: left;
@@ -105,7 +105,7 @@
         }
         td { padding: 16px; border-bottom: 1px solid var(--border); }
         tbody tr { transition: 0.2s; }
-        tbody tr:hover { background: rgba(212, 255, 0, 0.02); }
+        tbody tr:hover { background: rgba(124, 255, 0, 0.02); }
         tbody tr:last-child td { border-bottom: none; }
 
         .studio-name { display: flex; align-items: center; gap: 12px; font-weight: 600; }
@@ -113,7 +113,7 @@
             width: 40px;
             height: 40px;
             border-radius: 10px;
-            background: rgba(212, 255, 0, 0.1);
+            background: rgba(124, 255, 0, 0.1);
             border: 1px solid var(--primary);
             display: flex;
             align-items: center;

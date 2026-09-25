@@ -107,7 +107,7 @@ class PersonalGestaoController extends Controller
     }
 
     // POST /api/v1/personal/agenda/{id}/cancelar — regra das 24h + justificativa
-    public function cancelarAula(Request $request, $id)
+    public function cancelarAula(Request $request, $id, \App\Services\AgendaService $agendas)
     {
         $personal = $this->personalAutenticado($request);
 
@@ -117,11 +117,10 @@ class PersonalGestaoController extends Controller
         }
 
         $dataStr = $agenda->data instanceof Carbon ? $agenda->data->format('Y-m-d') : $agenda->data;
-        $dataAula = Carbon::parse($dataStr . ' ' . $agenda->hora_inicio);
-        $diffHoras = Carbon::now()->diffInHours($dataAula);
 
-        if ($diffHoras < 24) {
-            return response()->json(['error' => "O cancelamento só é permitido com 24h de antecedência. Faltam {$diffHoras} horas."], 422);
+        $bloqueio = $agendas->motivoParaNaoCancelar($agenda);
+        if ($bloqueio) {
+            return response()->json(['error' => $bloqueio], 422);
         }
 
         $request->validate(['justificativa' => 'required|string|min:10']);
@@ -153,7 +152,7 @@ class PersonalGestaoController extends Controller
     }
 
     // POST /api/v1/personal/agenda/cancelar-dia
-    public function cancelarDia(Request $request)
+    public function cancelarDia(Request $request, \App\Services\AgendaService $agendas)
     {
         $personal = $this->personalAutenticado($request);
 
@@ -170,8 +169,7 @@ class PersonalGestaoController extends Controller
 
         $cancelados = 0;
         foreach ($agendamentos as $ag) {
-            $dataStr = $ag->data instanceof Carbon ? $ag->data->format('Y-m-d') : $ag->data;
-            if (Carbon::now()->diffInHours(Carbon::parse($dataStr . ' ' . $ag->hora_inicio)) >= 24) {
+            if ($agendas->podeCancelar($ag)) {
                 $ag->delete();
                 $cancelados++;
             }
@@ -300,7 +298,7 @@ class PersonalGestaoController extends Controller
     }
 
     // GET /api/v1/personal/frequencia/{clienteId}?mes=YYYY-MM
-    public function frequenciaAluno(Request $request, $clienteId)
+    public function frequenciaAluno(Request $request, $clienteId, \App\Services\PresencaService $presencas)
     {
         $personal = $this->personalAutenticado($request);
 
@@ -322,15 +320,7 @@ class PersonalGestaoController extends Controller
         $total = $todas->count();
         $presentes = $todas->where('presente', true)->count();
 
-        $diasAgenda = Agenda::where('personal_id', $personal->id)
-            ->where('cliente_id', $clienteId)
-            ->where('cancelado', false)
-            ->where('tipo_aula', '!=', 'bloqueio')
-            ->whereYear('data', substr($mes, 0, 4))
-            ->whereMonth('data', substr($mes, 5, 2))
-            ->get()
-            ->map(fn ($a) => $a->data->format('Y-m-d'))
-            ->unique()->sort()->values();
+        $dias = $presencas->diasDoMes($personal->id, (int) $clienteId, $mes);
 
         return response()->json([
             'cliente' => ['id' => $cliente->id, 'nome' => $cliente->nome],
@@ -339,7 +329,11 @@ class PersonalGestaoController extends Controller
             'faltas' => $total - $presentes,
             'classificacao' => $this->classificarFrequencia($total, $presentes),
             'mes' => $mes,
-            'dias_agenda' => $diasAgenda,
+            // Mantido como lista de datas: o app publicado consome este formato.
+            'dias_agenda' => $dias->pluck('data')->values(),
+            // Novo: mesma lista com hora da aula e se a marcação já liberou, para
+            // o app desabilitar o botão em vez de tomar 422 na cara do personal.
+            'dias_aula' => $dias,
             'registros' => $todas->map(fn ($p) => [
                 'id' => $p->id,
                 'data' => $p->data->format('Y-m-d'),
@@ -349,7 +343,7 @@ class PersonalGestaoController extends Controller
     }
 
     // POST /api/v1/personal/frequencia
-    public function marcarPresenca(Request $request)
+    public function marcarPresenca(Request $request, \App\Services\PresencaService $presencas)
     {
         $personal = $this->personalAutenticado($request);
 
@@ -361,6 +355,12 @@ class PersonalGestaoController extends Controller
 
         if (! $this->alunosDoPersonal($personal->id)->pluck('id')->contains((int) $dados['cliente_id'])) {
             return response()->json(['error' => 'Acesso negado.'], 403);
+        }
+
+        // Mesma regra do site: dia com aula e aula já iniciada.
+        $bloqueio = $presencas->motivoDoBloqueio($personal->id, (int) $dados['cliente_id'], $dados['data']);
+        if ($bloqueio) {
+            return response()->json(['error' => $bloqueio], 422);
         }
 
         Presenca::updateOrCreate(

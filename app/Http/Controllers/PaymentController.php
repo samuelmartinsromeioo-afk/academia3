@@ -101,6 +101,9 @@ class PaymentController extends Controller
         } elseif ($validated['tipo'] === 'ficha') {
             $pacote = null;
             $amount = (float) ($personal->valor_ficha ?? 0);
+            if ($amount <= 0) {
+                return response()->json(['error' => 'Este personal não trabalha com ficha personalizada.'], 422);
+            }
             $description = "Ficha Personalizada — {$personal->nome}";
         } elseif ($validated['tipo'] === 'avaliacao') {
             $pacote = null;
@@ -126,6 +129,9 @@ class PaymentController extends Controller
                 $avaliacaoTipos = [$tipoAv];
             } else {
                 $amount = (float) ($personal->valor_avaliacao ?? 0);
+                if ($amount <= 0) {
+                    return response()->json(['error' => 'Este personal não trabalha com avaliação física.'], 422);
+                }
                 $description = "Avaliação Física — {$personal->nome}";
             }
         } else {
@@ -425,6 +431,7 @@ class PaymentController extends Controller
                         'hora_inicio' => $booking['hora_inicio'],
                         'hora_fim' => $booking['hora_fim'],
                         'academia_nome' => $booking['academia_nome'] ?? null,
+                        'payment_id' => $payment->id, // para o aluno poder pedir estorno depois
                     ]);
                 } catch (\Exception $e) {
                     Log::error('processarPagamentoConfirmado: avulsa falhou', [
@@ -849,11 +856,6 @@ class PaymentController extends Controller
             'paid_at' => now(),
             'next_billing_date' => now()->addDays(30)->toDateString(),
         ]);
-
-        // Programa de indicação: se este profissional entrou pelo código de
-        // alguém e a janela ainda está aberta, credita o indicador com uma fatia
-        // da comissão da plataforma. Best-effort — não derruba o pagamento.
-        app(\App\Services\IndicacaoService::class)->creditarPorPagamento($payment);
 
         // Assinatura: cada pagamento confirmado estende o acesso por 30 dias
         // a partir da data do pagamento.
@@ -1365,6 +1367,9 @@ class PaymentController extends Controller
         } elseif ($validated['tipo'] === 'ficha') {
             $pacote = null;
             $amount = (float) ($personal->valor_ficha ?? 0);
+            if ($amount <= 0) {
+                return response()->json(['error' => 'Este personal não trabalha com ficha personalizada.'], 422);
+            }
             $description = "Ficha Personalizada — {$personal->nome}";
         } elseif ($validated['tipo'] === 'avaliacao') {
             $pacote = null;
@@ -1390,6 +1395,9 @@ class PaymentController extends Controller
                 $avaliacaoTipos = [$tipoAv];
             } else {
                 $amount = (float) ($personal->valor_avaliacao ?? 0);
+                if ($amount <= 0) {
+                    return response()->json(['error' => 'Este personal não trabalha com avaliação física.'], 422);
+                }
                 $description = "Avaliação Física — {$personal->nome}";
             }
         } else {

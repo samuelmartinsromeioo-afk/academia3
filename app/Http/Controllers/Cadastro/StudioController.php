@@ -24,7 +24,7 @@ class StudioController extends Controller
         return view('cadastro.studio');
     }
 
-    public function store(Request $request)
+    public function store(Request $request, \App\Services\CupomService $cupons)
     {
         $dados = $request->validate([
             'nome' => 'required|string|max:255',
@@ -46,6 +46,7 @@ class StudioController extends Controller
             'capacidade_padrao' => 'required|integer|min:1|max:500',
             'latitude' => 'nullable|numeric',
             'longitude' => 'nullable|numeric',
+            'cupom' => $cupons->regraValidacao(),
         ], [
             'cnpj.unique' => 'Este CNPJ já está cadastrado.',
             'email.unique' => 'Este e-mail já está cadastrado.',
@@ -66,24 +67,29 @@ class StudioController extends Controller
             return back()->withErrors(['cnpj' => 'Este CNPJ já está em uso na plataforma.'])->withInput();
         }
 
+        // Fora do create(): `cupom` não é coluna de studios.
+        $codigoCupom = \Illuminate\Support\Arr::pull($dados, 'cupom');
+
         $dados['senha'] = Hash::make($dados['senha']);
         $dados['status'] = 'pendente';
 
         $studio = Studio::create($dados);
 
-        app(\App\Services\IndicacaoService::class)
-            ->vincular($studio, 'studio', $request->input('codigo_indicacao'));
+        // Marca como pioneiro se estiver entre os primeiros do estado.
+        $studio->definirPosicaoPioneiro();
+
+        $cupons->registrarIndicacao($codigoCupom, $studio, $request->ip());
 
         $fb = app(MetaConversionsService::class);
-        return redirect()->route('login.index')
-            ->with('sucesso', 'Cadastro enviado com sucesso! Seu studio será analisado pelo administrador e você poderá acessar após a aprovação.')
+        return redirect()->route('cadastro.sucesso')
+            ->with('cad_tipo', 'studio')
             ->with('fb_event', $fb->track(
                 'CompleteRegistration',
                 ['content_name' => 'Studio', 'status' => 'pendente'],
                 $fb->userDataFromModel($studio),
                 null,
                 null,
-                route('login.index')
+                route('cadastro.sucesso')
             ));
     }
 

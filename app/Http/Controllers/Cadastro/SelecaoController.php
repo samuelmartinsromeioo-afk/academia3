@@ -10,21 +10,20 @@ class SelecaoController extends \App\Http\Controllers\Controller
 
     }
 
-    public function redirecionar($tipo)
+    public function redirecionar($tipo, Request $request)
     {
-        // Código de indicação (?ref=) viaja junto até o formulário — sem isso o
-        // link de convite perderia o código nesta tela intermediária.
-        $ref = request('ref');
-        $extra = $ref ? ['ref' => $ref] : [];
-
-        // Lógica para decidir qual view abrir baseado no clique
-        return match ($tipo) {
-            'personal' => redirect()->route('form.personal', $extra),
-            'cliente' => redirect()->route('form.cliente'),
-            'academia' => redirect()->route('form.academia', $extra),
-            'studio' => redirect()->route('form.studio', $extra),
-            'loja' => redirect()->route('form.loja'),
-            default => abort(404),
+        $rota = match ($tipo) {
+            'personal' => 'form.personal',
+            'cliente'  => 'form.cliente',
+            'academia' => 'form.academia',
+            'studio'   => 'form.studio',
+            'loja'     => 'form.loja',
+            default    => abort(404),
         };
+
+        // Preserva o cupom de indicação vindo do link de convite.
+        $codigo = \App\Models\Cupom::normalizar($request->query('cupom'));
+
+        return redirect()->route($rota, $codigo !== '' ? ['cupom' => $codigo] : []);
     }
 }

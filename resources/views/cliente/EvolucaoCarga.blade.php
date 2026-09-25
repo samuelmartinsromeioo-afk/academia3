@@ -27,7 +27,7 @@
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
             color: var(--text-main);
             min-height: 100vh;
-            background-image: radial-gradient(circle at 15% -10%, rgba(212, 255, 0, 0.10), transparent 45%);
+            background-image: radial-gradient(circle at 15% -10%, rgba(124, 255, 0, 0.10), transparent 45%);
         }
         a { color: inherit; text-decoration: none; }
         button, select, input { font-family: inherit; }
@@ -272,18 +272,18 @@
 
             const ctx = canvas.getContext('2d');
             const grad = ctx.createLinearGradient(0, 0, 0, 360);
-            grad.addColorStop(0, 'rgba(212, 255, 0, 0.35)');
-            grad.addColorStop(1, 'rgba(212, 255, 0, 0)');
+            grad.addColorStop(0, 'rgba(124, 255, 0, 0.35)');
+            grad.addColorStop(1, 'rgba(124, 255, 0, 0)');
 
             const data = {
                 labels: json.labels,
                 datasets: [{
                     label: 'Carga (kg)',
                     data: json.pesos,
-                    borderColor: '#d4ff00',
+                    borderColor: '#7cff00',
                     backgroundColor: grad,
                     borderWidth: 3,
-                    pointBackgroundColor: '#d4ff00',
+                    pointBackgroundColor: '#7cff00',
                     pointBorderColor: '#000',
                     pointRadius: 5,
                     pointHoverRadius: 7,
@@ -299,9 +299,9 @@
                     legend: { display: false },
                     tooltip: {
                         backgroundColor: '#111317',
-                        borderColor: '#d4ff00',
+                        borderColor: '#7cff00',
                         borderWidth: 1,
-                        titleColor: '#d4ff00',
+                        titleColor: '#7cff00',
                         bodyColor: '#fff',
                         padding: 12,
                         callbacks: {

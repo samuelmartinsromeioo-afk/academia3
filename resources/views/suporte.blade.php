@@ -9,7 +9,7 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/regular/style.css">
     <style>
         :root {
-            --primary: #d4ff00;
+            --primary: #7cff00;
             --bg-dark: #0a0b0d;
             --card-bg: #16181d;
             --text-main: #ffffff;
@@ -57,7 +57,7 @@
         }
         .card h2 {
             color: var(--primary); font-size: 1.35rem; margin-bottom: 18px;
-            padding-bottom: 10px; border-bottom: 2px solid rgba(212, 255, 0, 0.2);
+            padding-bottom: 10px; border-bottom: 2px solid rgba(124, 255, 0, 0.2);
             display: flex; align-items: center; gap: 10px;
         }
         .card h3 { color: #fff; font-size: 1.05rem; margin-top: 22px; margin-bottom: 6px; }
@@ -76,18 +76,18 @@
         .cta:hover { filter: brightness(1.08); }
 
         .highlighted {
-            background: rgba(212, 255, 0, 0.08); border-left: 4px solid var(--primary);
+            background: rgba(124, 255, 0, 0.08); border-left: 4px solid var(--primary);
             padding: 15px 20px; border-radius: 8px; margin: 16px 0;
         }
         .highlighted strong { color: var(--primary); }
 
         .doc-links { display: flex; flex-wrap: wrap; gap: 12px; }
         .doc-links a {
-            background: rgba(212, 255, 0, 0.06); border: 1px solid rgba(212, 255, 0, 0.25);
+            background: rgba(124, 255, 0, 0.06); border: 1px solid rgba(124, 255, 0, 0.25);
             color: var(--primary); padding: 10px 16px; border-radius: 999px;
             text-decoration: none; font-size: 0.9rem;
         }
-        .doc-links a:hover { background: rgba(212, 255, 0, 0.12); }
+        .doc-links a:hover { background: rgba(124, 255, 0, 0.12); }
 
         .footer {
             text-align: center; margin-top: 40px; padding-top: 24px;

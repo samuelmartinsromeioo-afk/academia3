@@ -11,7 +11,7 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/fill/style.css">
     <style>
         :root {
-            --primary: #d4ff00;
+            --primary: #7cff00;
             --bg-dark: #0a0b0d;
             --card-bg: #16181d;
             --text-main: #ffffff;
@@ -87,7 +87,7 @@
             width: 150px;
             height: 150px;
             border-radius: 16px;
-            background: rgba(212, 255, 0, 0.1);
+            background: rgba(124, 255, 0, 0.1);
             border: 2px solid var(--primary);
             display: flex;
             align-items: center;
@@ -131,7 +131,7 @@
         .info-icon {
             width: 40px;
             height: 40px;
-            background: rgba(212, 255, 0, 0.1);
+            background: rgba(124, 255, 0, 0.1);
             border-radius: 10px;
             display: flex;
             align-items: center;
@@ -272,28 +272,6 @@
             color: var(--error);
         }
 
-        .btn-view-cert {
-            background: transparent;
-            border: 1px solid var(--primary);
-            color: var(--primary);
-            padding: 10px 16px;
-            border-radius: 8px;
-            font-weight: 700;
-            font-size: 0.8rem;
-            text-transform: uppercase;
-            cursor: pointer;
-            transition: 0.2s;
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            text-decoration: none;
-        }
-
-        .btn-view-cert:hover {
-            background: var(--primary);
-            color: #000;
-        }
-
         /* MODAL REJEIÇÃO */
         .modal {
             display: none;
@@ -407,29 +385,6 @@
         .info-value {
             font-size: 1rem;
             color: var(--text-main);
-        }
-
-        /* CERTIFICADO */
-        .cert-container {
-            background: var(--card-bg);
-            border: 1px solid var(--border);
-            border-radius: 16px;
-            padding: 28px;
-            margin-bottom: 32px;
-        }
-
-        .cert-preview {
-            width: 100%;
-            max-height: 600px;
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            margin-bottom: 16px;
-        }
-
-        .cert-actions {
-            display: flex;
-            gap: 12px;
-            flex-wrap: wrap;
         }
 
         @media (max-width: 768px) {
@@ -548,27 +503,6 @@
         </div>
     </div>
 
-    {{-- CERTIFICADO --}}
-    @if($personal->certificado)
-        <h2 class="section-title">Certificado</h2>
-        <div class="cert-container">
-            @if(str_ends_with(strtolower($personal->certificado), '.pdf'))
-                <iframe src="{{ asset('storage/' . $personal->certificado) }}" class="cert-preview" type="application/pdf"></iframe>
-            @elseif(in_array(strtolower(pathinfo($personal->certificado, PATHINFO_EXTENSION)), ['jpg', 'jpeg', 'png', 'gif']))
-                <img src="{{ asset('storage/' . $personal->certificado) }}" alt="Certificado" class="cert-preview">
-            @endif
-            
-            <div class="cert-actions">
-                <a href="{{ asset('storage/' . $personal->certificado) }}" target="_blank" class="btn-view-cert" download>
-                    <i class="ph ph-download-simple"></i> Baixar Certificado
-                </a>
-                <a href="{{ asset('storage/' . $personal->certificado) }}" target="_blank" class="btn-view-cert">
-                    <i class="ph ph-eye"></i> Abrir em Nova Aba
-                </a>
-            </div>
-        </div>
-    @endif
-
     {{-- STATUS ATUAL --}}
     <h2 class="section-title">Status</h2>
     <div class="status-card">
@@ -652,7 +586,7 @@
 
         {{-- Status da conta Asaas --}}
         @if($personal->asaas_wallet_id)
-            <div style="background: rgba(212, 255, 0, 0.07); padding: 16px 20px; border-radius: 12px; border: 1px solid rgba(212, 255, 0, 0.3); margin-bottom: 16px; display: flex; align-items: center; gap: 12px;">
+            <div style="background: rgba(124, 255, 0, 0.07); padding: 16px 20px; border-radius: 12px; border: 1px solid rgba(124, 255, 0, 0.3); margin-bottom: 16px; display: flex; align-items: center; gap: 12px;">
                 <i class="ph ph-check-circle" style="color: var(--primary); font-size: 1.2rem;"></i>
                 <div>
                     <p style="margin: 0; font-weight: 700; color: #fff; font-size: 0.9rem;">Conta Asaas configurada</p>

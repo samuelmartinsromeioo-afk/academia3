@@ -12,7 +12,7 @@
     <link rel="stylesheet" href="{{ asset('css/snrfit-brand.css') }}">
     <style>
         :root {
-            --primary: #d4ff00;
+            --primary: #7cff00;
             --bg-dark: #0a0b0d;
             --card-bg: #16181d;
             --text-main: #ffffff;
@@ -119,14 +119,14 @@
             content: '';
             position: absolute;
             inset: 0;
-            background: linear-gradient(135deg, rgba(212, 255, 0, 0.05), transparent);
+            background: linear-gradient(135deg, rgba(124, 255, 0, 0.05), transparent);
             opacity: 0;
             transition: 0.3s;
             pointer-events: none;
         }
 
         .stat-card:hover {
-            border-color: rgba(212, 255, 0, 0.3);
+            border-color: rgba(124, 255, 0, 0.3);
             transform: translateY(-4px);
         }
 
@@ -137,7 +137,7 @@
         .stat-card-icon {
             width: 60px;
             height: 60px;
-            background: rgba(212, 255, 0, 0.1);
+            background: rgba(124, 255, 0, 0.1);
             border-radius: 14px;
             display: flex;
             align-items: center;
@@ -203,7 +203,7 @@
         }
 
         .personal-item:hover {
-            background: rgba(212, 255, 0, 0.02);
+            background: rgba(124, 255, 0, 0.02);
         }
 
         .personal-info {
@@ -217,7 +217,7 @@
             width: 50px;
             height: 50px;
             border-radius: 12px;
-            background: rgba(212, 255, 0, 0.1);
+            background: rgba(124, 255, 0, 0.1);
             border: 2px solid var(--primary);
             display: flex;
             align-items: center;
@@ -483,7 +483,7 @@
             font-size: 0.8rem;
             transition: 0.2s;
         "
-        onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 10px 25px rgba(212, 255, 0, 0.2)'"
+        onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 10px 25px rgba(124, 255, 0, 0.2)'"
         onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none'"
         >
             <i class="ph ph-list"></i> Ver Todos os Personals
@@ -504,7 +504,7 @@
             transition: 0.2s;
             margin-left: 12px;
         "
-        onmouseover="this.style.background='rgba(212, 255, 0, 0.1)'"
+        onmouseover="this.style.background='rgba(124, 255, 0, 0.1)'"
         onmouseout="this.style.background='transparent'"
         >
             <i class="ph ph-flower-lotus"></i> Ver Studios
@@ -525,7 +525,7 @@
             transition: 0.2s;
             margin-left: 12px;
         "
-        onmouseover="this.style.background='rgba(212, 255, 0, 0.1)'"
+        onmouseover="this.style.background='rgba(124, 255, 0, 0.1)'"
         onmouseout="this.style.background='transparent'"
         >
             <i class="ph ph-buildings"></i> Ver Academias
@@ -546,10 +546,31 @@
             transition: 0.2s;
             margin-left: 12px;
         "
-        onmouseover="this.style.background='rgba(212, 255, 0, 0.1)'"
+        onmouseover="this.style.background='rgba(124, 255, 0, 0.1)'"
         onmouseout="this.style.background='transparent'"
         >
             <i class="ph ph-storefront"></i> Ver Lojas
+        </a>
+        <a href="{{ route('admin.indicacoes') }}" style="
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: transparent;
+            border: 1px solid var(--primary);
+            color: var(--primary);
+            padding: 12px 24px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 700;
+            text-transform: uppercase;
+            font-size: 0.8rem;
+            transition: 0.2s;
+            margin-left: 12px;
+        "
+        onmouseover="this.style.background='rgba(124, 255, 0, 0.1)'"
+        onmouseout="this.style.background='transparent'"
+        >
+            <i class="ph ph-gift"></i> Cupons e Indicações
         </a>
     </div>
 </div>

@@ -11,7 +11,7 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/fill/style.css">
     <style>
         :root {
-            --primary: #d4ff00;
+            --primary: #7cff00;
             --bg-dark: #0a0b0d;
             --card-bg: #16181d;
             --text-main: #ffffff;
@@ -27,7 +27,7 @@
         .page-title { color: var(--primary); font-size: 1.4rem; font-weight: 900; margin: 0 0 6px; }
         .page-sub { color: var(--text-muted); font-size: 0.85rem; margin: 0 0 30px; }
         .card { background: var(--card-bg); border-radius: 20px; border: 1px solid var(--border); padding: 24px; margin-bottom: 16px; transition: 0.3s; }
-        .card:hover { border-color: rgba(212,255,0,0.2); }
+        .card:hover { border-color: rgba(124,255,0,0.2); }
         .btn-back { background: rgba(255,255,255,0.06); border: 1px solid var(--border); color: var(--text-main); padding: 10px 18px; border-radius: 10px; font-weight: 700; font-size: 0.8rem; cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; gap: 8px; transition: 0.2s; }
         .btn-back:hover { border-color: var(--primary); color: var(--primary); }
         .empty-state { text-align: center; padding: 60px 20px; }
@@ -38,14 +38,14 @@
         .tipo-tab { background: var(--card-bg); border: 1px solid var(--border); border-radius: 14px; padding: 14px 10px; text-align: center; text-decoration: none; color: var(--text-muted); font-size: 0.7rem; font-weight: 800; text-transform: uppercase; transition: 0.2s; }
         .tipo-tab i { display: block; font-size: 1.2rem; margin-bottom: 6px; }
         .tipo-tab:hover { border-color: var(--primary); color: var(--primary); }
-        .tipo-tab.active { background: rgba(212,255,0,0.08); border-color: var(--primary); color: var(--primary); }
+        .tipo-tab.active { background: rgba(124,255,0,0.08); border-color: var(--primary); color: var(--primary); }
 
         .filtro-bar { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin-bottom: 24px; }
         .filtro-bar select { background: var(--card-bg); border: 1px solid var(--border); color: #fff; padding: 11px 14px; border-radius: 10px; font-size: 0.85rem; outline: none; cursor: pointer; }
         .filtro-bar select:focus { border-color: var(--primary); }
 
         .registro-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; margin-bottom: 12px; flex-wrap: wrap; }
-        .tipo-badge { padding: 4px 12px; border-radius: 20px; font-size: 0.65rem; font-weight: 900; text-transform: uppercase; background: rgba(212,255,0,0.1); color: var(--primary); border: 1px solid rgba(212,255,0,0.3); }
+        .tipo-badge { padding: 4px 12px; border-radius: 20px; font-size: 0.65rem; font-weight: 900; text-transform: uppercase; background: rgba(124,255,0,0.1); color: var(--primary); border: 1px solid rgba(124,255,0,0.3); }
         .data-registro { color: var(--text-muted); font-size: 0.75rem; font-weight: 700; }
         .personal-tag { color: var(--text-muted); font-size: 0.72rem; font-weight: 700; }
         .personal-tag i { color: var(--primary); }
@@ -61,7 +61,7 @@
 
         .resumo-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; }
         .resumo-card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 20px; padding: 22px; transition: 0.3s; }
-        .resumo-card:hover { border-color: rgba(212,255,0,0.25); }
+        .resumo-card:hover { border-color: rgba(124,255,0,0.25); }
         .resumo-card .resumo-icon { font-size: 1.3rem; color: var(--primary); margin-bottom: 10px; }
         .resumo-card h3 { margin: 0 0 4px; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); font-weight: 800; }
         .resumo-card .resumo-valor { font-size: 1.3rem; font-weight: 900; color: #fff; margin-bottom: 6px; }
@@ -96,7 +96,7 @@
         @if($cliente->foto)
             <img src="{{ asset('storage/'.$cliente->foto) }}" style="width:38px; height:38px; border-radius:50%; border:2px solid var(--primary); object-fit:cover;">
         @else
-            <img src="https://ui-avatars.com/api/?name={{ urlencode($cliente->nome) }}&background=d4ff00&color=000" style="width:38px; height:38px; border-radius:50%; border:2px solid var(--primary);">
+            <img src="https://ui-avatars.com/api/?name={{ urlencode($cliente->nome) }}&background=7cff00&color=000" style="width:38px; height:38px; border-radius:50%; border:2px solid var(--primary);">
         @endif
         <span style="font-weight:700; font-size:0.9rem;">{{ $cliente->nome }}</span>
     </div>
@@ -110,7 +110,7 @@
         $tipos = \App\Models\AvaliacaoFisica::META;
         $tiposCriaveis = \App\Models\AvaliacaoFisica::TIPOS;
         $classificacoes = [
-            'otimo'   => ['label' => 'Ótimo',   'cor' => '#d4ff00'],
+            'otimo'   => ['label' => 'Ótimo',   'cor' => '#7cff00'],
             'bom'     => ['label' => 'Bom',     'cor' => '#00ff88'],
             'normal'  => ['label' => 'Normal',  'cor' => '#4da6ff'],
             'ruim'    => ['label' => 'Ruim',    'cor' => '#ffaa00'],

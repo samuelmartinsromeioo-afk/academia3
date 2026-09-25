@@ -12,7 +12,7 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/fill/style.css">
     <style>
         :root {
-            --primary: #d4ff00;
+            --primary: #7cff00;
             --bg-dark: #0a0b0d;
             --card-bg: #16181d;
             --text-main: #ffffff;
@@ -169,7 +169,7 @@
             gap: 15px;
             margin-bottom: 20px;
             padding-bottom: 15px;
-            border-bottom: 2px solid rgba(212, 255, 0, 0.3);
+            border-bottom: 2px solid rgba(124, 255, 0, 0.3);
         }
 
         .personal-header img {
@@ -194,7 +194,7 @@
 
         .ficha-card {
             background: var(--card-bg);
-            border: 1px solid rgba(212, 255, 0, 0.2);
+            border: 1px solid rgba(124, 255, 0, 0.2);
             border-radius: 20px;
             padding: 20px;
             transition: 0.3s;
@@ -202,8 +202,8 @@
         }
 
         .ficha-card:hover {
-            border-color: rgba(212, 255, 0, 0.5);
-            box-shadow: 0 0 20px rgba(212, 255, 0, 0.1);
+            border-color: rgba(124, 255, 0, 0.5);
+            box-shadow: 0 0 20px rgba(124, 255, 0, 0.1);
         }
 
         .ficha-header {
@@ -220,7 +220,7 @@
         }
 
         .btn-marcar {
-            background: rgba(212, 255, 0, 0.1);
+            background: rgba(124, 255, 0, 0.1);
             color: var(--primary);
             border: 1px solid var(--primary);
             padding: 8px 15px;
@@ -384,7 +384,7 @@
         .form-group textarea:focus {
             outline: none;
             border-color: var(--primary);
-            box-shadow: 0 0 10px rgba(212, 255, 0, 0.2);
+            box-shadow: 0 0 10px rgba(124, 255, 0, 0.2);
         }
 
         .form-group textarea {

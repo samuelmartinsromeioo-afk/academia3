@@ -13,7 +13,7 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/fill/style.css">
 
     <style>
-        :root { --primary: #d4ff00; --bg-dark: #0a0b0d; --card-bg: #16181d; --text-main: #ffffff; --error: #ff4444; }
+        :root { --primary: #7cff00; --bg-dark: #0a0b0d; --card-bg: #16181d; --text-main: #ffffff; --error: #ff4444; }
         body { background-color: var(--bg-dark); font-family: 'Inter', sans-serif; color: var(--text-main); padding: 40px 20px; }
         .auth-card { background: var(--card-bg); max-width: 800px; margin: 0 auto; padding: 40px; border-radius: 24px; border: 1px solid rgba(255,255,255,0.1); }
         .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
@@ -23,7 +23,7 @@
         .input-wrapper input, .input-wrapper textarea { flex: 1; background: transparent; border: none; padding: 12px 0; color: #fff; outline: none; }
         .input-wrapper i { margin-right: 10px; color: #666; width: 20px; text-align: center; }
         .btn-submit { background: var(--primary); color: #000; width: 100%; padding: 18px; border-radius: 12px; font-weight: 800; cursor: pointer; border: none; margin-top: 20px; text-transform: uppercase; transition: 0.3s; }
-        .btn-submit:hover { transform: translateY(-2px); box-shadow: 0 10px 20px rgba(212, 255, 0, 0.2); }
+        .btn-submit:hover { transform: translateY(-2px); box-shadow: 0 10px 20px rgba(124, 255, 0, 0.2); }
         .loading { font-size: 0.75rem; color: var(--primary); display: none; margin-top: 5px; font-weight: bold; }
         
         /* Alertas */
@@ -173,17 +173,18 @@
             </div>
         </div>
 
+        @include('partials.campo-cupom')
+
         <input type="hidden" name="latitude" id="latitude" value="{{ old('latitude') }}">
         <input type="hidden" name="longitude" id="longitude" value="{{ old('longitude') }}">
 
         <label class="full-width" style="display:flex; align-items:flex-start; gap:10px; color:#cfd3da; font-size:0.88rem; margin:6px 0 4px; line-height:1.5;">
             <input type="checkbox" name="aceita_termos" value="1" required style="margin-top:3px;">
             <span>Declaro ter poderes para representar a academia e li e concordo com os
-                <a href="{{ route('termos.academia') }}" target="_blank" style="color:#d4ff00;">Termos de Uso da Academia</a>
-                e a <a href="{{ route('lgpd.politica') }}" target="_blank" style="color:#d4ff00;">Política de Privacidade</a>.</span>
+                <a href="{{ route('termos.academia') }}" target="_blank" style="color:#7cff00;">Termos de Uso da Academia</a>
+                e a <a href="{{ route('lgpd.politica') }}" target="_blank" style="color:#7cff00;">Política de Privacidade</a>.</span>
         </label>
 
-        @include('cadastro._codigo-indicacao')
 
         <button type="submit" class="btn-submit full-width">
             FINALIZAR CADASTRO <i class="ph ph-paper-plane-tilt" style="margin-left: 10px;"></i>
@@ -218,7 +219,7 @@ document.getElementById('cep').addEventListener('blur', function() {
                             document.getElementById('latitude').value  = results[0].lat;
                             document.getElementById('longitude').value = results[0].lon;
                             document.getElementById('cep-loading').innerHTML =
-                                '<i class="ph ph-check" style="color:#d4ff00"></i> Localização encontrada!';
+                                '<i class="ph ph-check" style="color:#7cff00"></i> Localização encontrada!';
                         }
                     })
                     .catch(() => {})

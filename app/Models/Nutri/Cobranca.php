@@ -39,29 +39,52 @@ class Cobranca extends Model
     }
 
     /**
-     * Cria um Payment Link na subconta Asaas do profissional e guarda o link.
-     * Best-effort: sem subconta, a cobrança fica como controle manual (sem link).
+     * Cria o Payment Link da cobrança e guarda a URL.
+     *
+     * O link nasce na conta da PLATAFORMA com split 90/10 para a carteira do
+     * nutricionista — o mesmo tratamento de personal, academia, studio e loja.
+     * (Antes o link era criado na subconta do próprio nutri, sem split algum,
+     * então 100% do valor ia para ele e a plataforma não recebia comissão.)
+     *
+     * Best-effort: sem carteira no marketplace a cobrança continua existindo
+     * como controle manual, só que sem link de pagamento.
      * Retorna true se gerou o link.
      */
     public function gerarLinkAsaas(): bool
     {
         $nutri = $this->personal ?: Personal::find($this->personal_id);
-        $apiKey = $nutri?->getAsaasApiKeyDecrypted();
-        if (! $apiKey) {
+
+        if (! $nutri?->asaas_wallet_id) {
+            Log::warning('Nutri: cobrança sem link — profissional sem carteira no marketplace', [
+                'cobranca_id' => $this->id,
+                'personal_id' => $this->personal_id,
+            ]);
+
+            return false;
+        }
+
+        // billingType UNDEFINED deixa o pagador escolher Pix, cartão ou boleto.
+        // Passamos 'CREDIT_CARD' ao montar o split porque o cartão é o pior caso
+        // de taxa: garante um split que a Asaas aceita em qualquer meio.
+        $split = app(\App\Services\AsaasService::class)
+            ->splitPersonal($nutri, (float) $this->valor, 'CREDIT_CARD');
+
+        if (! $split) {
             return false;
         }
 
         try {
             $res = Http::withHeaders([
-                'access_token' => $apiKey,
+                'access_token' => config('services.asaas.key'),
                 'Content-Type' => 'application/json',
             ])->post(config('services.asaas.url').'/paymentLinks', [
                 'name' => $this->descricao,
-                'billingType' => 'UNDEFINED', // cliente escolhe Pix, cartão ou boleto
+                'billingType' => 'UNDEFINED',
                 'chargeType' => 'DETACHED',
                 'value' => $this->valor,
                 'dueDateLimitDays' => 7,
                 'externalReference' => 'nutri_cobranca:'.$this->id,
+                'split' => $split,
             ]);
 
             $data = $res->json();

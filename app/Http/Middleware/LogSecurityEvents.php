@@ -13,7 +13,7 @@ use Symfony\Component\HttpFoundation\Response;
  * detecção de abuso (enumeração de IDs, força bruta em rota autenticada, etc.).
  *
  * Não loga corpo nem dados sensíveis — só metadados: método, caminho, IP,
- * usuário autenticado (tipo/id) e status. Aplicado ao grupo de rotas "api".
+ * usuário autenticado (tipo/id) e status. Aplicado aos grupos "web" e "api".
  */
 class LogSecurityEvents
 {

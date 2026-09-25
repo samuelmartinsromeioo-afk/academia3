@@ -11,16 +11,16 @@
         .head .nutri { text-align:right; font-size:.85rem; color:#444; }
         .meta { display:flex; gap:24px; margin-bottom:18px; font-size:.9rem; }
         .meal { border:1px solid #ddd; border-radius:10px; margin-bottom:14px; overflow:hidden; page-break-inside:avoid; }
-        .meal h3 { margin:0; background:#0a0b0d; color:#d4ff00; padding:10px 14px; font-size:1rem; display:flex; justify-content:space-between; }
+        .meal h3 { margin:0; background:#0a0b0d; color:#7cff00; padding:10px 14px; font-size:1rem; display:flex; justify-content:space-between; }
         table { width:100%; border-collapse:collapse; font-size:.85rem; }
         th,td { padding:8px 14px; border-bottom:1px solid #eee; text-align:left; }
         th { background:#f5f5f5; font-size:.7rem; text-transform:uppercase; color:#666; }
         td.n, th.n { text-align:right; }
         .tot { font-weight:700; background:#fafafa; }
-        .day-tot { background:#d4ff00; color:#0a0b0d; padding:14px; border-radius:10px; font-weight:700; display:flex; gap:24px; margin-top:8px; }
+        .day-tot { background:#7cff00; color:#0a0b0d; padding:14px; border-radius:10px; font-weight:700; display:flex; gap:24px; margin-top:8px; }
         .obs { margin-top:16px; font-size:.85rem; color:#333; background:#f8f8f8; padding:12px; border-radius:8px; }
         .subs { color:#777; font-size:.75rem; }
-        .print-btn { position:fixed; top:16px; right:16px; background:#0a0b0d; color:#d4ff00; border:none; padding:10px 16px; border-radius:8px; cursor:pointer; }
+        .print-btn { position:fixed; top:16px; right:16px; background:#0a0b0d; color:#7cff00; border:none; padding:10px 16px; border-radius:8px; cursor:pointer; }
         @media print { .print-btn { display:none; } body { padding:12px; } }
     </style>
 </head>

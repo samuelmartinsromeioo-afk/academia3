@@ -11,20 +11,20 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/regular/style.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/fill/style.css">
     <style>
-        :root { --primary:#d4ff00; --bg-dark:#0a0b0d; --card-bg:#16181d; --text-main:#fff; --text-muted:#a0a0a0; --border:rgba(255,255,255,0.08); }
+        :root { --primary:#7cff00; --bg-dark:#0a0b0d; --card-bg:#16181d; --text-main:#fff; --text-muted:#a0a0a0; --border:rgba(255,255,255,0.08); }
         * { margin:0; padding:0; box-sizing:border-box; }
         body { background:linear-gradient(135deg,var(--bg-dark) 0%,#0f1217 100%); font-family:'Inter',sans-serif; color:var(--text-main); min-height:100vh; }
         a { text-decoration:none; color:inherit; }
         .top-bar { display:flex; justify-content:space-between; align-items:center; padding:18px 40px; background:rgba(0,0,0,0.3); border-bottom:1px solid var(--border); position:sticky; top:0; z-index:100; backdrop-filter:blur(10px); }
         .logo { font-family:'Syncopate',sans-serif; font-size:1.1rem; letter-spacing:3px; }
-        .logo span { color:var(--primary); }
+        .logo, .logo span { color:var(--primary); }
         .btn-top { background:transparent; border:1px solid var(--border); color:var(--text-main); padding:9px 16px; border-radius:8px; font-weight:700; font-size:0.78rem; display:inline-flex; align-items:center; gap:6px; transition:.2s; }
         .btn-top:hover { border-color:var(--primary); color:var(--primary); }
         .container { max-width:820px; margin:0 auto; padding:32px 20px; }
         .hero { display:flex; gap:22px; align-items:center; background:var(--card-bg); border:1px solid var(--border); border-radius:20px; padding:24px; margin-bottom:20px; }
-        .avatar { width:120px; height:120px; border-radius:18px; object-fit:cover; flex:0 0 auto; background:linear-gradient(135deg,rgba(212,255,0,0.18),rgba(212,255,0,0.03)); display:flex; align-items:center; justify-content:center; color:var(--primary); font-size:3rem; }
+        .avatar { width:120px; height:120px; border-radius:18px; object-fit:cover; flex:0 0 auto; background:linear-gradient(135deg,rgba(124,255,0,0.18),rgba(124,255,0,0.03)); display:flex; align-items:center; justify-content:center; color:var(--primary); font-size:3rem; }
         .hero h1 { font-size:1.5rem; font-weight:900; }
-        .badge-tipo { display:inline-flex; align-items:center; gap:6px; background:rgba(212,255,0,0.1); color:var(--primary); border:1px solid rgba(212,255,0,0.3); font-size:0.72rem; font-weight:800; text-transform:uppercase; padding:4px 12px; border-radius:20px; margin-bottom:8px; }
+        .badge-tipo { display:inline-flex; align-items:center; gap:6px; background:rgba(124,255,0,0.1); color:var(--primary); border:1px solid rgba(124,255,0,0.3); font-size:0.72rem; font-weight:800; text-transform:uppercase; padding:4px 12px; border-radius:20px; margin-bottom:8px; }
         .meta { color:var(--text-muted); font-size:0.85rem; margin-top:6px; display:flex; flex-wrap:wrap; gap:14px; }
         .meta i { color:var(--primary); }
         .rating { color:#ffc107; font-size:0.9rem; margin-top:8px; }
@@ -33,13 +33,13 @@
         .card h3 { font-size:0.95rem; margin-bottom:12px; display:flex; align-items:center; gap:8px; }
         .card h3 i { color:var(--primary); }
         .chips { display:flex; flex-wrap:wrap; gap:8px; }
-        .chip { font-size:0.78rem; background:rgba(212,255,0,0.08); color:var(--primary); border:1px solid rgba(212,255,0,0.2); padding:5px 12px; border-radius:20px; }
+        .chip { font-size:0.78rem; background:rgba(124,255,0,0.08); color:var(--primary); border:1px solid rgba(124,255,0,0.2); padding:5px 12px; border-radius:20px; }
         .bio { color:var(--text-muted); font-size:0.92rem; line-height:1.6; white-space:pre-line; }
         .cta { position:sticky; bottom:0; padding:16px 0; }
         .btn-wpp { display:flex; align-items:center; justify-content:center; gap:10px; width:100%; background:#25D366; color:#000; font-weight:800; font-size:0.95rem; padding:16px; border-radius:14px; transition:.2s; }
         .btn-wpp:hover { filter:brightness(1.05); transform:translateY(-1px); }
         .btn-pagar { display:flex; align-items:center; justify-content:center; gap:10px; width:100%; background:var(--primary); color:#000; font-weight:800; font-size:0.95rem; padding:16px; border-radius:14px; border:none; cursor:pointer; font-family:inherit; transition:.2s; }
-        .btn-pagar:hover { filter:brightness(1.05); transform:translateY(-1px); box-shadow:0 8px 22px rgba(212,255,0,0.25); }
+        .btn-pagar:hover { filter:brightness(1.05); transform:translateY(-1px); box-shadow:0 8px 22px rgba(124,255,0,0.25); }
         .aval { padding:12px 0; border-bottom:1px solid var(--border); }
         .aval:last-child { border-bottom:none; }
         .aval .estrelas { color:#ffc107; font-size:0.8rem; }
@@ -66,7 +66,12 @@
         @endif
         <div>
             <span class="badge-tipo"><i class="ph ph-carrot"></i> Nutricionista</span>
-            <h1>{{ $nutri->nome }}</h1>
+            <h1 style="display:flex; align-items:center; gap:7px;">
+                {{ $nutri->nome }}
+                @if ($nutri->eh_pioneiro)
+                    @include('partials.badge-pioneiro', ['posicao' => $nutri->pioneiro_posicao, 'estado' => $nutri->estado, 'tipo' => 'nutricionista', 'tamanho' => 20])
+                @endif
+            </h1>
             <div class="meta">
                 @if ($nutri->cidade)<span><i class="ph ph-map-pin"></i> {{ $nutri->cidade }}{{ $nutri->estado ? ' - ' . $nutri->estado : '' }}</span>@endif
                 @if ($nutri->crn)<span><i class="ph ph-identification-badge"></i> CRN {{ $nutri->crn }}</span>@endif

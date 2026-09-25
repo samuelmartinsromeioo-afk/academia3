@@ -16,8 +16,8 @@
 
     <style>
         :root {
-            --primary: #d4ff00;
-            --primary-soft: rgba(212, 255, 0, 0.12);
+            --primary: #7cff00;
+            --primary-soft: rgba(124, 255, 0, 0.12);
             --bg-dark: #0a0b0d;
             --card-bg: #16181d;
             --text-main: #ffffff;
@@ -33,7 +33,7 @@
         body {
             background-color: var(--bg-dark);
             background-image:
-                radial-gradient(circle at 22% -5%, rgba(212, 255, 0, 0.03) 0%, transparent 30%),
+                radial-gradient(circle at 22% -5%, rgba(124, 255, 0, 0.03) 0%, transparent 30%),
                 radial-gradient(circle at 88% 104%, rgba(255, 255, 255, 0.025) 0%, transparent 38%);
             font-family: 'Inter', sans-serif;
             color: var(--text-main);
@@ -75,7 +75,7 @@
             text-transform: uppercase;
         }
 
-        .logo-name span { color: var(--primary); }
+        .logo-name, .logo-name span { color: var(--primary); }
 
         .btn {
             font-family: inherit;
@@ -99,7 +99,7 @@
 
         .btn-solid:hover {
             transform: translateY(-2px);
-            box-shadow: 0 8px 20px rgba(212, 255, 0, 0.25);
+            box-shadow: 0 8px 20px rgba(124, 255, 0, 0.25);
         }
 
         .btn-lg { padding: 15px 30px; font-size: 1rem; font-weight: 700; gap: 10px; }
@@ -196,7 +196,7 @@
             font-size: 0.82rem;
             background: rgba(10, 11, 13, 0.5);
             backdrop-filter: blur(6px);
-            border: 1px solid rgba(212, 255, 0, 0.25);
+            border: 1px solid rgba(124, 255, 0, 0.25);
             border-radius: 10px;
             padding: 9px 14px;
         }
@@ -215,7 +215,7 @@
 
         .lp-step { background: var(--bg-dark); padding: 30px 24px; transition: 0.25s; }
 
-        .lp-step:hover { background: rgba(212, 255, 0, 0.04); }
+        .lp-step:hover { background: rgba(124, 255, 0, 0.04); }
 
         .lp-step .step-num {
             display: inline-block;
@@ -281,7 +281,7 @@
             position: relative;
             border-radius: 22px;
             overflow: hidden;
-            border: 1px solid rgba(212, 255, 0, 0.25);
+            border: 1px solid rgba(124, 255, 0, 0.25);
             min-height: 520px;
             display: flex;
             flex-direction: column;
@@ -533,7 +533,7 @@
 
         .form-control:focus {
             border-color: var(--primary);
-            box-shadow: 0 0 0 3px rgba(212, 255, 0, 0.12);
+            box-shadow: 0 0 0 3px rgba(124, 255, 0, 0.12);
         }
 
         .input-wrap .has-toggle { padding-right: 44px; }
@@ -579,7 +579,7 @@
 
         .btn-login:hover {
             transform: translateY(-2px);
-            box-shadow: 0 10px 24px rgba(212, 255, 0, 0.25);
+            box-shadow: 0 10px 24px rgba(124, 255, 0, 0.25);
         }
 
         .register-hint {

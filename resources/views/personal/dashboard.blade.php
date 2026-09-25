@@ -13,7 +13,7 @@
     <link rel="stylesheet" href="{{ asset('css/snrfit-brand.css') }}">
     <style>
         :root {
-            --primary: #d4ff00;
+            --primary: #7cff00;
             --bg-dark: #0a0b0d;
             --card-bg: #16181d;
             --text-main: #ffffff;
@@ -84,7 +84,7 @@
 
         .menu-rating-header {
             padding: 20px;
-            background: rgba(212, 255, 0, 0.05);
+            background: rgba(124, 255, 0, 0.05);
             border-bottom: 1px solid var(--border);
             text-align: center;
         }
@@ -210,8 +210,8 @@
         }
 
         .day-col:hover {
-            background: rgba(212, 255, 0, 0.05);
-            border-color: rgba(212, 255, 0, 0.3);
+            background: rgba(124, 255, 0, 0.05);
+            border-color: rgba(124, 255, 0, 0.3);
         }
 
         .day-col.active {
@@ -314,7 +314,7 @@
         }
 
         .finance-card {
-            background: rgba(212, 255, 0, 0.05);
+            background: rgba(124, 255, 0, 0.05);
             border: 1px solid var(--primary);
             border-radius: 16px;
             padding: 20px;
@@ -476,8 +476,8 @@
         .galeria-upload-slot {
             aspect-ratio: 1;
             border-radius: 12px;
-            border: 1px dashed rgba(212, 255, 0, 0.4);
-            background: rgba(212, 255, 0, 0.05);
+            border: 1px dashed rgba(124, 255, 0, 0.4);
+            background: rgba(124, 255, 0, 0.05);
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -492,7 +492,7 @@
         }
 
         .galeria-upload-slot:hover {
-            background: rgba(212, 255, 0, 0.1);
+            background: rgba(124, 255, 0, 0.1);
         }
 
         .galeria-upload-slot i {
@@ -574,7 +574,7 @@
         }
 
         .btn-view {
-            background: rgba(212, 255, 0, 0.1);
+            background: rgba(124, 255, 0, 0.1);
             color: var(--primary);
             border-color: var(--primary);
         }
@@ -616,17 +616,17 @@
                 </div>
                 <button type="button" id="btnOpenUpdate"><i class="ph ph-user-gear"></i> Meu Perfil</button>
                 <button type="button" id="btnOpenPlanos"><i class="ph ph-tag" style="color: var(--primary);"></i> Meus Pacotes</button>
-                <a href="{{ route('personal.avaliacao-fisica.valores') }}" style="display:flex; align-items:center; gap:12px; padding:15px 20px; color:#fff; text-decoration:none; font-size:14px; transition:0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.05)';this.style.color='#d4ff00'" onmouseout="this.style.background='';this.style.color='#fff'">
+                <a href="{{ route('personal.avaliacao-fisica.valores') }}" style="display:flex; align-items:center; gap:12px; padding:15px 20px; color:#fff; text-decoration:none; font-size:14px; transition:0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.05)';this.style.color='#7cff00'" onmouseout="this.style.background='';this.style.color='#fff'">
                     <i class="ph ph-tag" style="color: var(--primary);"></i> Valores Avaliações
                 </a>
                 <button type="button" id="btnOpenFinance"><i class="ph ph-wallet" style="color: var(--success)"></i> Minhas Finanças</button>
                 <button type="button" id="btnOpenCarteira"><i class="ph ph-piggy-bank" style="color: var(--primary)"></i> Minha Carteira</button>
                 <button type="button" id="btnOpenGaleria"><i class="ph ph-images"></i> Minha Galeria</button>
                 <button type="button" id="btnOpenAvaliacoes"><i class="ph-fill ph-star" style="color: var(--primary)"></i> Minhas Avaliações</button>
-                <a href="{{ route('indicacao.painel') }}" style="display:flex; align-items:center; gap:12px; padding:15px 20px; color:#fff; text-decoration:none; font-size:14px; transition:0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.05)';this.style.color='#d4ff00'" onmouseout="this.style.background='';this.style.color='#fff'">
+                <a href="{{ route('indicacoes.painel') }}" style="display:flex; align-items:center; gap:12px; padding:15px 20px; color:#fff; text-decoration:none; font-size:14px; transition:0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.05)';this.style.color='#7cff00'" onmouseout="this.style.background='';this.style.color='#fff'">
                     <i class="ph ph-gift" style="color: var(--primary);"></i> Indique e ganhe
                 </a>
-                <a href="{{ route('lgpd.meus-dados') }}" style="display:flex; align-items:center; gap:12px; padding:15px 20px; color:#fff; text-decoration:none; font-size:14px; transition:0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.05)';this.style.color='#d4ff00'" onmouseout="this.style.background='';this.style.color='#fff'">
+                <a href="{{ route('lgpd.meus-dados') }}" style="display:flex; align-items:center; gap:12px; padding:15px 20px; color:#fff; text-decoration:none; font-size:14px; transition:0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.05)';this.style.color='#7cff00'" onmouseout="this.style.background='';this.style.color='#fff'">
                     <i class="ph ph-shield-check" style="color: var(--primary);"></i> Privacidade e meus dados
                 </a>
                 <form action="{{ route('login.logout') }}" method="POST"> @csrf <button type="submit" style="color: var(--error)"><i class="ph ph-power"></i> Sair</button></form>
@@ -674,6 +674,15 @@
             <a href="{{ route('personal.frequencia') }}" class="qa-item"><span class="qa-ico"><i class="ph ph-user-check"></i></span><span class="qa-lbl">Frequência</span></a>
             <a href="{{ route('personal.avaliacao-fisica') }}" class="qa-item"><span class="qa-ico"><i class="ph ph-heartbeat"></i></span><span class="qa-lbl">Avaliação Física</span></a>
             <a href="{{ route('personal.solicitacoes-ficha') }}" class="qa-item"><span class="qa-ico"><i class="ph ph-clipboard-text"></i></span><span class="qa-lbl">Solicitações</span></a>
+            <a href="{{ route('personal.reposicoes') }}" class="qa-item">
+                <span class="qa-ico" style="position:relative;">
+                    <i class="ph ph-calendar-x"></i>
+                    @if(($reposicoesPendentes ?? 0) > 0)
+                        <span style="position:absolute; top:-4px; right:-4px; background:#ff3b30; color:#fff; font-size:0.6rem; font-weight:900; min-width:16px; height:16px; border-radius:8px; display:flex; align-items:center; justify-content:center; padding:0 4px;">{{ $reposicoesPendentes }}</span>
+                    @endif
+                </span>
+                <span class="qa-lbl">Faltas</span>
+            </a>
         </div>
 
         <div class="ed-eyebrow"><span class="ed-num">01</span> <span id="snrSaud">Olá</span>, {{ explode(' ', trim($personal->nome))[0] }} — bora pra cima</div>
@@ -759,7 +768,7 @@
                 @endphp
                 @forelse($meusAlunos as $agendamento)
                 <div style="background: rgba(255,255,255,0.03); border: 1px solid var(--border); padding: 15px; border-radius: 16px; display: flex; align-items: center; gap: 15px;">
-                    <img src="https://ui-avatars.com/api/?name={{ urlencode($agendamento->cliente?->nome ?? 'Aluno') }}&background=d4ff00&color=000" style="width: 50px; height: 50px; border-radius: 50%;">
+                    <img src="https://ui-avatars.com/api/?name={{ urlencode($agendamento->cliente?->nome ?? 'Aluno') }}&background=7cff00&color=000" style="width: 50px; height: 50px; border-radius: 50%;">
                     <div style="flex: 1;">
                         <h3 style="margin: 0 0 5px 0; font-size: 1.1rem; color: #fff;">{{ $agendamento->cliente?->nome ?? 'Aluno Sem Nome' }}</h3>
                         <p style="margin: 0; font-size: 0.8rem; color: var(--text-muted);">
@@ -767,17 +776,17 @@
                             {{ $agendamento->cliente?->resumo_objetivo ?? 'Objetivo não informado' }}
                         </p>
                     </div>
-                    <button type="button" onclick="abrirDetalhesAluno({{ $agendamento->cliente?->id }})" style="background: rgba(212,255,0,0.15); color: var(--primary); border: 1px solid rgba(212,255,0,0.4); width: 40px; height: 40px; border-radius: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: 0.3s; font-weight: 900;" title="Ver informações do aluno">
+                    <button type="button" onclick="abrirDetalhesAluno({{ $agendamento->cliente?->id }})" style="background: rgba(124,255,0,0.15); color: var(--primary); border: 1px solid rgba(124,255,0,0.4); width: 40px; height: 40px; border-radius: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: 0.3s; font-weight: 900;" title="Ver informações do aluno">
                         <i class="ph ph-user-circle"></i>
                     </button>
-                    <a href="{{ route('fichas-treino.aluno', $agendamento->cliente?->id) }}" style="background: rgba(212,255,0,0.15); color: var(--primary); border: 1px solid rgba(212,255,0,0.4); width: 40px; height: 40px; border-radius: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: 0.3s; font-weight: 900; text-decoration: none;" title="Visualizar fichas">
+                    <a href="{{ route('fichas-treino.aluno', $agendamento->cliente?->id) }}" style="background: rgba(124,255,0,0.15); color: var(--primary); border: 1px solid rgba(124,255,0,0.4); width: 40px; height: 40px; border-radius: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: 0.3s; font-weight: 900; text-decoration: none;" title="Visualizar fichas">
                         <i class="ph ph-eye"></i>
                     </a>
                     <button type="button"
                         data-cliente-id="{{ $agendamento->cliente?->id }}"
                         data-cliente-nome="{{ $agendamento->cliente?->nome }}"
                         onclick="abrirModalCriarFichaAluno(this.dataset.clienteId, this.dataset.clienteNome)"
-                        style="background: rgba(212,255,0,0.2); color: var(--primary); border: 1px solid var(--primary); width: 40px; height: 40px; border-radius: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: 0.3s; font-weight: 900;" title="Criar ficha de treino">
+                        style="background: rgba(124,255,0,0.2); color: var(--primary); border: 1px solid var(--primary); width: 40px; height: 40px; border-radius: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: 0.3s; font-weight: 900;" title="Criar ficha de treino">
                         <i class="ph ph-barbell"></i>
                     </button>
                 </div>
@@ -851,7 +860,7 @@
             </div>
 
             {{-- Pacotes --}}
-            <div class="finance-card" style="background: rgba(212, 255, 0, 0.08); border: 1px solid rgba(212, 255, 0, 0.3);">
+            <div class="finance-card" style="background: rgba(124, 255, 0, 0.08); border: 1px solid rgba(124, 255, 0, 0.3);">
                 <span style="font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase;">
                     <i class="ph ph-barbell"></i> Pacotes Contratados
                 </span>
@@ -896,7 +905,7 @@
             </div>
 
             <div id="carteiraConteudo" style="display:none;">
-                <div style="background:rgba(212,255,0,0.07); border:1px solid rgba(212,255,0,0.3); border-radius:16px; padding:24px; text-align:center; margin-bottom:20px;">
+                <div style="background:rgba(124,255,0,0.07); border:1px solid rgba(124,255,0,0.3); border-radius:16px; padding:24px; text-align:center; margin-bottom:20px;">
                     <p style="margin:0; color:#a0a0a0; font-size:0.75rem; text-transform:uppercase; margin-bottom:8px;">Saldo disponível</p>
                     <p id="carteiraValor" style="margin:0; color:#fff; font-size:2rem; font-weight:900;">R$ 0,00</p>
                 </div>
@@ -968,6 +977,7 @@
                     <div>
                         <label>Valor da Ficha Personalizada (R$)</label>
                         <div class="input-wrapper"><i class="ph ph-clipboard-text"></i><input type="number" step="0.01" name="valor_ficha" value="{{ $personal->valor_ficha }}" placeholder="0.00"></div>
+                        <p style="color: var(--text-muted); font-size: 0.7rem; margin: 5px 0 0;">Deixe em branco (ou 0) se você não trabalha com esse serviço — assim ele não é oferecido ao aluno.</p>
                     </div>
                     <div class="full-width">
                         <label>Chave Pix</label>
@@ -1006,7 +1016,7 @@
                     .vinc-results { position: absolute; left: 0; right: 0; top: calc(100% + 4px); background: #1c1f26; border: 1px solid var(--border); border-radius: 10px; z-index: 50; overflow: hidden; display: none; box-shadow: 0 12px 30px rgba(0,0,0,0.5); }
                     .vinc-results.show { display: block; }
                     .vinc-opt { padding: 11px 14px; cursor: pointer; font-size: 0.85rem; display: flex; justify-content: space-between; gap: 10px; }
-                    .vinc-opt:hover { background: rgba(212,255,0,0.08); }
+                    .vinc-opt:hover { background: rgba(124,255,0,0.08); }
                     .vinc-opt small { color: var(--text-muted); }
                     .vinc-opt.vazio { color: var(--text-muted); cursor: default; }
                     .vinc-opt.vazio:hover { background: none; }
@@ -1296,7 +1306,7 @@
             }
             @endphp
 
-            <div style="display: grid; grid-template-columns: auto 1fr; gap: 25px; align-items: center; background: rgba(212,255,0,0.05); border: 1px solid rgba(212,255,0,0.2); border-radius: 16px; padding: 20px; margin-bottom: 20px;">
+            <div style="display: grid; grid-template-columns: auto 1fr; gap: 25px; align-items: center; background: rgba(124,255,0,0.05); border: 1px solid rgba(124,255,0,0.2); border-radius: 16px; padding: 20px; margin-bottom: 20px;">
 
                 <div style="text-align: center; min-width: 90px;">
                     <span style="font-size: 3rem; font-weight: 900; color: var(--primary); line-height: 1;">{{ number_format($mediaAval, 1) }}</span>
@@ -1334,7 +1344,7 @@
                 <div style="background: rgba(255,255,255,0.03); border: 1px solid var(--border); padding: 15px; border-radius: 16px;">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
                         <div style="display: flex; align-items: center; gap: 10px;">
-                            <img src="https://ui-avatars.com/api/?name={{ urlencode($avaliacao->cliente?->nome ?? 'Cliente') }}&background=d4ff00&color=000"
+                            <img src="https://ui-avatars.com/api/?name={{ urlencode($avaliacao->cliente?->nome ?? 'Cliente') }}&background=7cff00&color=000"
                                 style="width: 38px; height: 38px; border-radius: 50%; flex-shrink:0;">
                             <span style="font-weight: 700; font-size: 0.9rem;">
                                 {{ $avaliacao->cliente?->nome ?? 'Cliente' }}
@@ -1583,12 +1593,12 @@
 
                         content.innerHTML = `
                             <div style="background: rgba(255,255,255,0.03); border: 1px solid var(--border); border-radius: 16px; padding: 20px; text-align: center;">
-                                <img src="https://ui-avatars.com/api/?name=${encodeURIComponent(dados.nome)}&background=d4ff00&color=000"
+                                <img src="https://ui-avatars.com/api/?name=${encodeURIComponent(dados.nome)}&background=7cff00&color=000"
                                     style="width: 80px; height: 80px; border-radius: 50%; margin-bottom: 15px;">
                                 <h3 style="color: var(--primary); font-size: 1.3rem; margin: 0 0 20px 0;">${escHtml(dados.nome)}</h3>
                             </div>
 
-                            <div style="background: rgba(212,255,0,0.05); border: 1px solid var(--primary); border-radius: 16px; padding: 15px;">
+                            <div style="background: rgba(124,255,0,0.05); border: 1px solid var(--primary); border-radius: 16px; padding: 15px;">
                                 <p style="margin: 0 0 12px 0; font-size: 0.9rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;">
                                     <i class="ph ph-cake" style="color: var(--primary);"></i> Idade
                                 </p>
@@ -1597,7 +1607,7 @@
                                 </p>
                             </div>
 
-                            <div style="background: rgba(212,255,0,0.05); border: 1px solid var(--primary); border-radius: 16px; padding: 15px; margin-top: 12px;">
+                            <div style="background: rgba(124,255,0,0.05); border: 1px solid var(--primary); border-radius: 16px; padding: 15px; margin-top: 12px;">
                                 <p style="margin: 0 0 12px 0; font-size: 0.9rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;">
                                     <i class="ph ph-heartbeat" style="color: var(--primary);"></i> Condição Clínica
                                 </p>
@@ -1606,7 +1616,7 @@
                                 </p>
                             </div>
 
-                            <div style="background: rgba(212,255,0,0.05); border: 1px solid var(--primary); border-radius: 16px; padding: 15px; margin-top: 12px;">
+                            <div style="background: rgba(124,255,0,0.05); border: 1px solid var(--primary); border-radius: 16px; padding: 15px; margin-top: 12px;">
                                 <p style="margin: 0 0 12px 0; font-size: 0.9rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;">
                                     <i class="ph ph-barbell" style="color: var(--primary);"></i> Pacote Contratado
                                 </p>

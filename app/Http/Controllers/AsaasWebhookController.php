@@ -34,7 +34,13 @@ class AsaasWebhookController extends Controller
                 return response()->json(['error' => 'Unauthorized'], 401);
             }
 
-            Log::info('Asaas: autorização de saque concedida (token válido)', $request->all());
+            // A02 — não despejamos o corpo inteiro no log: a autorização de saque
+            // carrega valor e identificadores da conta de destino. Só metadados.
+            Log::info('Asaas: autorização de saque concedida (token válido)', [
+                'event' => $event,
+                'transfer_id' => $request->input('transfer.id') ?? $request->input('id'),
+                'ip' => $request->ip(),
+            ]);
 
             // O Asaas aprova o saque quando o status retornado é APPROVED
             // (REFUSED bloquearia). Mantemos também 'authorized' por segurança,
@@ -134,14 +140,6 @@ class AsaasWebhookController extends Controller
                 ], $cobranca->cliente ? app(\App\Services\MetaConversionsService::class)->userDataFromModel($cobranca->cliente) : [], 'nutri_cobranca_'.$cobranca->id);
             } catch (\Throwable $e) {
                 Log::warning('Nutri: falha ao enviar Purchase (consulta)', ['error' => $e->getMessage()]);
-            }
-
-            // Indicação: consulta vendida no marketplace gera comissão à
-            // plataforma, logo rende ao indicador do nutricionista. A cobrança
-            // que o nutri emite ao próprio paciente (paciente_id) vai 100% para
-            // ele, não gera comissão, e por isso fica de fora.
-            if ($cobranca->cliente_id) {
-                app(\App\Services\IndicacaoService::class)->creditarPorConsultaNutri($cobranca);
             }
         }
 

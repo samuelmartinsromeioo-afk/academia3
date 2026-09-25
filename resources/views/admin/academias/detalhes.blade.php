@@ -11,7 +11,7 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/fill/style.css">
     <style>
         :root {
-            --primary: #d4ff00; --bg-dark: #0a0b0d; --card-bg: #16181d;
+            --primary: #7cff00; --bg-dark: #0a0b0d; --card-bg: #16181d;
             --text-main: #ffffff; --text-muted: #a0a0a0; --border: rgba(255,255,255,0.08);
             --input-bg: rgba(255,255,255,0.04); --error: #ff4444; --success: #28a745;
         }
@@ -23,12 +23,12 @@
         .btn-back:hover { background: var(--primary); color: #000; }
         .container { max-width: 1000px; margin: 0 auto; padding: 40px 20px; }
         .header-card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 20px; padding: 40px; margin-bottom: 32px; display: grid; grid-template-columns: auto 1fr; gap: 32px; align-items: start; }
-        .photo-container { width: 150px; height: 150px; border-radius: 16px; background: rgba(212,255,0,0.1); border: 2px solid var(--primary); display: flex; align-items: center; justify-content: center; color: var(--primary); font-size: 3rem; flex-shrink: 0; }
+        .photo-container { width: 150px; height: 150px; border-radius: 16px; background: rgba(124,255,0,0.1); border: 2px solid var(--primary); display: flex; align-items: center; justify-content: center; color: var(--primary); font-size: 3rem; flex-shrink: 0; }
         .header-info h1 { font-size: 1.8rem; margin-bottom: 12px; }
         .header-info p { color: var(--text-muted); margin-bottom: 16px; font-size: 0.95rem; }
         .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 24px; }
         .info-item { display: flex; align-items: center; gap: 12px; }
-        .info-icon { width: 40px; height: 40px; background: rgba(212,255,0,0.1); border-radius: 10px; display: flex; align-items: center; justify-content: center; color: var(--primary); flex-shrink: 0; }
+        .info-icon { width: 40px; height: 40px; background: rgba(124,255,0,0.1); border-radius: 10px; display: flex; align-items: center; justify-content: center; color: var(--primary); flex-shrink: 0; }
         .info-content h3 { font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; font-weight: 800; margin-bottom: 4px; }
         .info-content p { font-size: 1rem; margin: 0; }
         .section-title { font-size: 1.2rem; font-weight: 900; color: var(--primary); margin-bottom: 20px; margin-top: 40px; display: flex; align-items: center; gap: 10px; }

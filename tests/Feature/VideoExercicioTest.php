@@ -39,7 +39,7 @@ class VideoExercicioTest extends TestCase
             'senha' => bcrypt('x'), 'cpf' => '00000000010', 'status' => 'aprovado',
             'cep' => '30000-000', 'rua' => 'R', 'bairro' => 'B', 'cidade' => 'BH',
             'estado' => 'MG', 'complemento' => '-', 'foto' => 'personals/default.jpg',
-            'certificado' => 'certificados/default.pdf', 'idade' => '1990-01-01', 'valor_secao' => 100,
+            'idade' => '1990-01-01', 'valor_secao' => 100,
         ]);
     }
 

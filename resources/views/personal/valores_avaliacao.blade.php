@@ -11,7 +11,7 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/fill/style.css">
     <style>
         :root {
-            --primary: #d4ff00;
+            --primary: #7cff00;
             --bg-dark: #0a0b0d;
             --card-bg: #16181d;
             --text-main: #ffffff;
@@ -27,9 +27,9 @@
         .page-title { color: var(--primary); font-size: 1.4rem; font-weight: 900; margin: 0 0 6px; }
         .page-sub { color: var(--text-muted); font-size: 0.85rem; margin: 0 0 30px; }
         .card { background: var(--card-bg); border-radius: 20px; border: 1px solid var(--border); padding: 24px; margin-bottom: 16px; transition: 0.3s; }
-        .card:hover { border-color: rgba(212,255,0,0.2); }
+        .card:hover { border-color: rgba(124,255,0,0.2); }
         .btn-primary { background: var(--primary); color: #000; border: none; padding: 10px 20px; border-radius: 10px; font-weight: 900; font-size: 0.8rem; cursor: pointer; text-transform: uppercase; transition: 0.3s; text-decoration: none; display: inline-flex; align-items: center; gap: 8px; }
-        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(212,255,0,0.2); }
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(124,255,0,0.2); }
         .btn-back { background: rgba(255,255,255,0.06); border: 1px solid var(--border); color: var(--text-main); padding: 10px 18px; border-radius: 10px; font-weight: 700; font-size: 0.8rem; cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; gap: 8px; transition: 0.2s; }
         .btn-back:hover { border-color: var(--primary); color: var(--primary); }
         .section-label { font-size: 0.7rem; color: var(--primary); text-transform: uppercase; font-weight: 900; letter-spacing: 1px; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
@@ -49,14 +49,14 @@
         .preco-hint { color: var(--text-muted); font-size: 0.72rem; margin: 6px 0 16px; }
 
         /* Pacotes */
-        .btn-outline { background: transparent; border: 1px dashed rgba(212,255,0,0.5); color: var(--primary); padding: 12px 18px; border-radius: 10px; font-weight: 800; font-size: 0.8rem; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; transition: 0.2s; }
-        .btn-outline:hover { background: rgba(212,255,0,0.08); }
+        .btn-outline { background: transparent; border: 1px dashed rgba(124,255,0,0.5); color: var(--primary); padding: 12px 18px; border-radius: 10px; font-weight: 800; font-size: 0.8rem; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; transition: 0.2s; }
+        .btn-outline:hover { background: rgba(124,255,0,0.08); }
         .pacote-card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 16px; padding: 18px 20px; margin-bottom: 12px; }
         .pacote-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; flex-wrap: wrap; }
         .pacote-nome { font-size: 1rem; font-weight: 900; margin: 0; }
         .pacote-valor { color: var(--primary); font-size: 1.1rem; font-weight: 900; }
         .pacote-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
-        .chip { background: rgba(212,255,0,0.08); border: 1px solid rgba(212,255,0,0.25); color: var(--primary); padding: 3px 10px; border-radius: 20px; font-size: 0.68rem; font-weight: 800; }
+        .chip { background: rgba(124,255,0,0.08); border: 1px solid rgba(124,255,0,0.25); color: var(--primary); padding: 3px 10px; border-radius: 20px; font-size: 0.68rem; font-weight: 800; }
         .pacote-actions { display: flex; gap: 8px; }
         .btn-icon { background: rgba(255,255,255,0.05); border: 1px solid var(--border); color: var(--text-main); padding: 7px 12px; border-radius: 8px; font-size: 0.72rem; font-weight: 800; cursor: pointer; text-decoration: none; transition: 0.2s; }
         .btn-icon:hover { border-color: var(--primary); color: var(--primary); }

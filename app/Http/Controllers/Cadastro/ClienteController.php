@@ -38,10 +38,28 @@ class ClienteController extends Controller
             ->get();
         $academias = Academia::with(['fotos', 'planos' => fn($q) => $q->where('ativo', true)->orderBy('valor')])->where('status', 'aprovado')->get();
 
+        // Próximas aulas do aluno, já com o estado da janela de 24h resolvido:
+        // a tela é montada em JS e não tem como calcular fuso/prazo sozinha.
+        $agendas = app(\App\Services\AgendaService::class);
         $meusAgendamentos = Agenda::where('cliente_id', $id)
             ->with(['personal', 'academia'])
+            ->where('tipo_aula', '!=', 'bloqueio')
+            ->whereDate('data', '>=', $agendas->agora()->format('Y-m-d'))
             ->orderBy('data', 'asc')
-            ->get();
+            ->orderBy('hora_inicio', 'asc')
+            ->get()
+            ->map(fn ($a) => [
+                'id' => $a->id,
+                'personal' => $a->personal->nome ?? 'Personal',
+                'data' => $a->data->format('d/m/Y'),
+                'hora' => substr($a->hora_inicio ?? '', 0, 5),
+                'tipo' => $a->tipo_aula,
+                'eh_pacote' => $agendas->ehPacote($a),
+                'cancelado' => (bool) $a->cancelado,
+                'pode_agir' => ! $a->cancelado && $agendas->alunoEstaNoPrazo($a),
+                'bloqueio' => $a->cancelado ? null : $agendas->motivoParaAlunoNaoAgir($a),
+            ])
+            ->values();
 
         $historico = Agenda::where('cliente_id', $id)
             ->with(['personal', 'academia'])
@@ -116,7 +134,156 @@ class ClienteController extends Controller
                 ];
             });
 
-        return view('cliente.index', compact('cliente', 'personals', 'meusAgendamentos', 'horariosDisponiveis', 'academias', 'historico', 'assinaturas'));
+        // ── Painel de treino ────────────────────────────────────────────
+        // Quem já fechou com alguém vê o treino em primeiro lugar; quem ainda
+        // não fechou continua caindo direto na vitrine de personais/academias.
+        $hoje = $agendas->agora();
+        $treino = $this->painelDeTreino($cliente, $hoje, $agendas);
+
+        return view('cliente.index', compact(
+            'cliente', 'personals', 'meusAgendamentos', 'horariosDisponiveis',
+            'academias', 'historico', 'assinaturas', 'treino', 'hoje'
+        ));
+    }
+
+    /**
+     * Ficha do dia + dias de aula do mês, para o topo do painel do aluno.
+     *
+     * "Fechou com alguém" é vínculo que realmente existe no banco: academia,
+     * studio, personal gravado no cadastro, ficha ativa ou aula marcada. Sem
+     * nada disso o bloco não aparece — não adianta mostrar um calendário vazio
+     * para quem ainda está escolhendo com quem treinar.
+     */
+    private function painelDeTreino(?Cliente $cliente, \Carbon\Carbon $hoje, \App\Services\AgendaService $agendas): array
+    {
+        if (! $cliente) {
+            return ['tem_vinculo' => false];
+        }
+
+        $fichas = \App\Models\Cadastro\FichaTreino::where('cliente_id', $cliente->id)
+            ->where('ativo', true)
+            ->with(['exercicios', 'personal:id,nome'])
+            ->get();
+
+        // Aulas do mês corrente (o calendário é do mês que o aluno está vendo).
+        $aulasDoMes = Agenda::where('cliente_id', $cliente->id)
+            ->where('tipo_aula', '!=', 'bloqueio')
+            ->whereYear('data', $hoje->year)
+            ->whereMonth('data', $hoje->month)
+            ->with('personal:id,nome')
+            ->orderBy('data')
+            ->orderBy('hora_inicio')
+            ->get();
+
+        // "Fechou com um personal" é mais estrito que "tem vínculo": quem já tem
+        // profissional não vê mais a vitrine de personais no painel. Academia e
+        // studio não contam aqui — quem treina em academia ainda pode querer um
+        // personal.
+        $temPersonal = (bool) $cliente->personal_id
+            || $fichas->contains(fn ($f) => $f->personal_id !== null)
+            || Agenda::where('cliente_id', $cliente->id)
+                ->whereNotNull('personal_id')
+                ->where('cancelado', false)
+                ->where('tipo_aula', '!=', 'bloqueio')
+                ->exists();
+
+        $temVinculo = $temPersonal
+            || $cliente->academia_id
+            || $cliente->studio_id
+            || $fichas->isNotEmpty()
+            || $aulasDoMes->isNotEmpty();
+
+        if (! $temVinculo) {
+            return ['tem_vinculo' => false, 'tem_personal' => $temPersonal];
+        }
+
+        $fichaHoje = $fichas->firstWhere('dia_semana', $hoje->dayOfWeek);
+
+        $feitoHoje = \App\Models\Cadastro\TreinoConcluido::where('cliente_id', $cliente->id)
+            ->whereDate('data_treino', $hoje->format('Y-m-d'))
+            ->where('concluido', true)
+            ->exists();
+
+        // Dias do mês que têm aula, indexados pelo número do dia — o calendário
+        // só precisa perguntar "tem aula no dia X?".
+        $porDia = $aulasDoMes->groupBy(fn ($a) => (int) $a->data->day);
+
+        $diasComAula = $porDia->map(fn ($doDia) => [
+            'cancelado' => $doDia->every(fn ($a) => (bool) $a->cancelado),
+            'horas' => $doDia->map(fn ($a) => substr($a->hora_inicio ?? '', 0, 5))->filter()->values()->all(),
+            'personal' => $doDia->first()->personal->nome ?? null,
+        ]);
+
+        // Detalhe de TODOS os dias do mês, para o clique no calendário abrir o
+        // dia sem ida ao servidor. Dia sem aula também entra: o aluno clica para
+        // ver qual é a ficha daquele dia da semana.
+        $nomesDow = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
+        $detalheDias = [];
+        for ($d = 1; $d <= $hoje->daysInMonth; $d++) {
+            $dataDia = $hoje->copy()->startOfMonth()->addDays($d - 1);
+            $dow = $dataDia->dayOfWeek;
+            $ficha = $fichas->firstWhere('dia_semana', $dow);
+
+            $detalheDias[$d] = [
+                'dia' => $d,
+                'rotulo' => $nomesDow[$dow] . ', ' . $dataDia->format('d/m'),
+                'eh_hoje' => $dataDia->format('Y-m-d') === $hoje->format('Y-m-d'),
+                'passou' => $dataDia->format('Y-m-d') < $hoje->format('Y-m-d'),
+                'ficha' => $ficha ? [
+                    'nome' => $ficha->nome_treino,
+                    'exercicios' => $ficha->exercicios->count(),
+                    'url' => route('fichas-treino.executar', $ficha->id),
+                ] : null,
+                // `id`, `eh_pacote`, `pode_agir` e `bloqueio` são o que a tela
+                // precisa para montar os botões de cancelar/repor — os mesmos
+                // campos da lista de agendamentos, para reaproveitar a função
+                // que já desenha esses botões.
+                'aulas' => ($porDia[$d] ?? collect())->map(fn ($a) => [
+                    'id' => $a->id,
+                    'hora' => substr($a->hora_inicio ?? '', 0, 5),
+                    'fim' => substr($a->hora_fim ?? '', 0, 5),
+                    'personal' => $a->personal->nome ?? null,
+                    'cancelado' => (bool) $a->cancelado,
+                    'tipo' => $a->tipo_aula === 'pacote' ? 'Pacote' : 'Avulsa',
+                    'eh_pacote' => $agendas->ehPacote($a),
+                    'pode_agir' => ! $a->cancelado && $agendas->alunoEstaNoPrazo($a),
+                    'bloqueio' => $a->cancelado ? null : $agendas->motivoParaAlunoNaoAgir($a),
+                ])->values()->all(),
+            ];
+        }
+
+        // Lista precisa das próximas aulas — o calendário dá a visão do mês, mas
+        // é aqui que o aluno lê dia, hora e com quem, sem passar o mouse em nada.
+        $proximasAulas = $aulasDoMes
+            ->where('cancelado', false)
+            ->filter(fn ($a) => $a->data->format('Y-m-d') >= $hoje->format('Y-m-d'))
+            ->take(5)
+            ->map(fn ($a) => [
+                'dia' => $a->data->day,
+                'dow' => ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'][$a->data->dayOfWeek],
+                'data' => $a->data->format('d/m'),
+                'hora' => substr($a->hora_inicio ?? '', 0, 5),
+                'personal' => $a->personal->nome ?? null,
+                'hoje' => $a->data->format('Y-m-d') === $hoje->format('Y-m-d'),
+            ])
+            ->values();
+
+        return [
+            'tem_vinculo' => true,
+            'tem_personal' => $temPersonal,
+            'ficha_hoje' => $fichaHoje,
+            'feito_hoje' => $feitoHoje,
+            'fichas_por_dia' => $fichas->keyBy('dia_semana'),
+            'dias_com_aula' => $diasComAula,
+            'detalhe_dias' => $detalheDias,
+            'proximas_aulas' => $proximasAulas,
+            'aulas_no_mes' => $aulasDoMes->where('cancelado', false)->count(),
+            'treinos_no_mes' => \App\Models\Cadastro\TreinoConcluido::where('cliente_id', $cliente->id)
+                ->where('concluido', true)
+                ->whereYear('data_treino', $hoje->year)
+                ->whereMonth('data_treino', $hoje->month)
+                ->count(),
+        ];
     }
 
     public function update(Request $request, $id)
@@ -139,6 +306,10 @@ class ClienteController extends Controller
             'estado'      => 'nullable|string|max:255',
             'complemento' => 'nullable|string|max:255',
             'foto'        => 'nullable|file|mimes:jpeg,jpg,png,gif,webp,heic,heif|max:10240',
+            // A07 — a senha era gravada direto de $request->senha, sem passar por
+            // regra nenhuma: dava para trocar por uma senha de 1 caractere aqui,
+            // contornando o mínimo exigido no cadastro.
+            'senha'       => 'nullable|string|min:8|max:255',
         ]);
 
         $data = $validated;
@@ -167,12 +338,12 @@ class ClienteController extends Controller
         return view('cadastro.cliente');
     }
 
-    public function store(Request $request)
+    public function store(Request $request, \App\Services\CupomService $cupons)
     {
         $validated = $request->validate([
             'nome'               => 'required|string|max:255',
             'email'              => 'required|email|max:255|unique:clientes,email',
-            'senha'              => 'required|string|min:6|max:255',
+            'senha'              => 'required|string|min:8|max:255',
             'idade'              => 'required|date',
             'sexo'               => 'required|in:Masculino,Feminino,Outro,masculino,feminino,outro',
             'cep'                => 'required|string|max:9',
@@ -189,10 +360,14 @@ class ClienteController extends Controller
             'latitude'           => 'nullable|numeric',
             'longitude'          => 'nullable|numeric',
             'aceita_termos'      => 'required|accepted',
+            'cupom'              => $cupons->regraValidacao(),
         ], [
             'aceita_termos.required' => 'Você deve concordar com os Termos de Uso',
             'aceita_termos.accepted' => 'Você deve concordar com os Termos de Uso',
         ]);
+
+        // Fora do create(): `cupom` não é coluna de clientes.
+        $codigoCupom = \Illuminate\Support\Arr::pull($validated, 'cupom');
 
         $validated['sexo'] = strtolower($request->sexo);
         $validated['senha'] = Hash::make($validated['senha']);
@@ -201,9 +376,12 @@ class ClienteController extends Controller
         $validated['ip_aceitacao_termos'] = $request->ip();
 
         $cliente = Cliente::create($validated);
+        $cupons->registrarIndicacao($codigoCupom, $cliente, $request->ip());
         $fb = app(MetaConversionsService::class);
+        // A tela de login lê `sucesso`, não `success` — com a chave errada o
+        // aluno voltava ao login sem nenhuma confirmação na tela.
         return redirect()->route('login.index')
-            ->with('success', 'Cliente cadastrado com sucesso!')
+            ->with('sucesso', 'Sua conta está pronta! Faça login e bora começar — você agora é da família SnrFit.')
             ->with('fb_event', $fb->track(
                 'CompleteRegistration',
                 ['content_name' => 'Cliente', 'status' => 'completo'],
@@ -627,6 +805,9 @@ class ClienteController extends Controller
 
         $agenda = Agenda::create([
             'cliente_id'    => $clienteId,
+            // Guarda de qual pagamento essa aula veio: é por aqui que o
+            // cancelamento acha o valor a devolver, sem garimpar booking_data.
+            'payment_id'    => $booking['payment_id'] ?? null,
             'personal_id'   => $personalId,
             'academia_id'   => $cliente->academia_id ?? null,
             'academia_nome' => $academiaNome,

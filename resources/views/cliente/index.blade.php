@@ -13,7 +13,7 @@
     <link rel="stylesheet" href="{{ asset('css/snrfit-brand.css') }}">
     <style>
         :root { 
-            --primary: #d4ff00; 
+            --primary: #7cff00; 
             --bg-dark: #0a0b0d; 
             --card-bg: #16181d; 
             --text-main: #ffffff; 
@@ -37,18 +37,100 @@
         .container { max-width: 900px; margin: 40px auto; padding: 0 20px; }
         .dashboard-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-bottom: 30px; }
         .stat-card { background: var(--card-bg); padding: 25px; border-radius: 20px; border: 1px solid var(--border); text-align: center; transition: 0.3s; }
-        .stat-card:hover { border-color: rgba(212, 255, 0, 0.3); }
+        .stat-card:hover { border-color: rgba(124, 255, 0, 0.3); }
         .stat-card i { color: var(--primary); font-size: 1.5rem; margin-bottom: 10px; display: block; }
         .stat-card span { display: block; color: var(--text-muted); font-size: 0.7rem; text-transform: uppercase; font-weight: 800; }
         .stat-card h2 { margin: 5px 0 0; font-size: 1.5rem; }
         .list-item { background: var(--card-bg); padding: 20px; border-radius: 15px; border-left: 4px solid var(--primary); display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-right: 1px solid var(--border); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
-        .badge-status { background: rgba(212, 255, 0, 0.1); color: var(--primary); padding: 5px 12px; border-radius: 20px; font-size: 0.65rem; font-weight: 800; text-transform: uppercase; }
+        .badge-status { background: rgba(124, 255, 0, 0.1); color: var(--primary); padding: 5px 12px; border-radius: 20px; font-size: 0.65rem; font-weight: 800; text-transform: uppercase; }
         .personal-card { text-align: left; position: relative; overflow: hidden; }
         .personal-card img { width: 50px; height: 50px; border-radius: 12px; border: 1px solid var(--primary); object-fit: cover; }
         #editFormContainer { display: none; animation: fadeIn 0.4s ease; margin-bottom: 50px; }
         .profile-card { background: var(--card-bg); border-radius: 24px; padding: 35px; border: 1px solid var(--border); position: relative; }
         .close-form { position: absolute; top: 20px; right: 25px; color: var(--text-muted); cursor: pointer; font-size: 1.2rem; transition: 0.2s; }
         .close-form:hover { color: var(--primary); transform: rotate(90deg); }
+        /* ── MEU TREINO (topo do painel de quem já fechou com alguém) ── */
+        .treino-hero { background: linear-gradient(145deg, rgba(124,255,0,0.09), var(--card-bg) 55%); border: 1px solid rgba(124,255,0,0.28); border-radius: 22px; padding: 24px; margin-bottom: 8px; }
+        .treino-hero-topo { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; flex-wrap: wrap; }
+        .treino-eyebrow { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 2px; font-weight: 800; color: var(--primary); }
+        .treino-titulo { margin: 6px 0 4px; font-size: 1.45rem; font-weight: 800; line-height: 1.15; }
+        .treino-sub { margin: 0; color: var(--text-muted); font-size: 0.82rem; }
+        .treino-feito { display: inline-flex; align-items: center; gap: 6px; background: rgba(0,255,136,0.12); border: 1px solid rgba(0,255,136,0.32); color: var(--success); padding: 7px 13px; border-radius: 999px; font-size: 0.72rem; font-weight: 800; white-space: nowrap; }
+
+        .treino-exercicios { margin: 18px 0 16px; display: grid; gap: 7px; }
+        .treino-ex { display: flex; justify-content: space-between; gap: 12px; background: rgba(255,255,255,0.035); border-radius: 10px; padding: 10px 13px; }
+        .treino-ex .ex-nome { font-size: 0.86rem; font-weight: 600; }
+        .treino-ex .ex-meta { font-size: 0.76rem; color: var(--text-muted); white-space: nowrap; }
+        .treino-mais { margin: 2px 0 0; font-size: 0.74rem; color: var(--text-muted); }
+
+        .treino-cta { display: inline-flex; align-items: center; justify-content: center; gap: 8px; background: var(--primary); color: #0a0b0d; text-decoration: none; padding: 13px 26px; border-radius: 13px; font-weight: 800; font-size: 0.87rem; transition: 0.15s; }
+        .treino-cta:hover { transform: translateY(-2px); box-shadow: 0 10px 24px rgba(124,255,0,0.24); }
+        .treino-cta.secundario { background: transparent; color: var(--primary); border: 1px solid rgba(124,255,0,0.4); }
+
+        .semana-strip { display: flex; gap: 7px; margin-top: 20px; flex-wrap: wrap; }
+        .dia-pill { width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; border-radius: 10px; border: 1px solid var(--border); font-size: 0.76rem; font-weight: 800; color: var(--text-muted); cursor: default; }
+        .dia-pill.com-ficha { background: rgba(124,255,0,0.14); border-color: rgba(124,255,0,0.4); color: var(--primary); }
+        .dia-pill.hoje { outline: 2px solid var(--primary); outline-offset: 1px; }
+
+        /* ── CALENDÁRIO DO MÊS ──
+           Compacto de proposito: celula de altura fixa (nao aspect-ratio, que
+           esticava o mes inteiro), grade estreita e a HORA impressa no dia em
+           vez de escondida num title. */
+        .mes-card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 16px; padding: 16px 18px; }
+        .mes-topo { display: flex; justify-content: space-between; align-items: center; gap: 14px; flex-wrap: wrap; margin-bottom: 12px; }
+        .mes-resumo { color: var(--text-muted); font-size: 0.76rem; }
+        .mes-resumo b { color: var(--text-main); font-size: 0.9rem; }
+        .mes-legenda { display: flex; gap: 12px; font-size: 0.67rem; color: var(--text-muted); }
+        .mes-legenda .pt { display: inline-block; width: 6px; height: 6px; border-radius: 2px; background: var(--primary); margin-right: 4px; }
+        .mes-legenda .pt.cancel { background: var(--error); }
+
+        .mes-layout { display: grid; grid-template-columns: minmax(0, 430px) minmax(0, 1fr); gap: 24px; align-items: start; }
+        .mes-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
+        .mes-cab { text-align: center; font-size: 0.72rem; font-weight: 800; color: var(--text-muted); padding-bottom: 6px; }
+        .mes-dia { height: 54px; display: flex; flex-direction: column; align-items: center; justify-content: center; line-height: 1.1; border-radius: 10px; border: 1px solid transparent; color: var(--text-muted); background: transparent; font-family: inherit; cursor: pointer; transition: 0.12s; padding: 0; }
+        .mes-dia:hover { background: rgba(255,255,255,0.07); }
+        .mes-dia.tem-aula:hover { background: rgba(124,255,0,0.26); }
+        .mes-dia.selecionado { border-color: var(--primary); box-shadow: 0 0 0 2px rgba(124,255,0,0.25); color: var(--text-main); }
+        .mes-dia.vazio { pointer-events: none; }
+        .mes-dia .num { font-size: 1rem; }
+        .mes-dia .hr { font-size: 0.66rem; margin-top: 3px; opacity: 0.85; }
+        .mes-dia.vazio { border: none; }
+        .mes-dia.tem-aula { background: rgba(124,255,0,0.16); border-color: rgba(124,255,0,0.4); color: var(--primary); font-weight: 800; }
+        .mes-dia.cancelada { background: rgba(255,68,68,0.1); border-color: rgba(255,68,68,0.28); color: var(--error); }
+        .mes-dia.cancelada .num { text-decoration: line-through; }
+        .mes-dia.hoje { outline: 2px solid var(--primary); outline-offset: -1px; color: var(--text-main); }
+
+        /* Detalhe do dia clicado */
+        .dia-detalhe { background: rgba(255,255,255,0.04); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; margin-bottom: 18px; }
+        .dd-tit { font-size: 0.85rem; font-weight: 800; margin-bottom: 10px; }
+        .dd-tit b { color: var(--primary); font-weight: 800; }
+        .dd-aula { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; padding: 7px 0; border-bottom: 1px solid rgba(255,255,255,0.06); font-size: 0.82rem; }
+        .dd-aula:last-of-type { border-bottom: none; }
+        .dd-aula.cancel .dd-hora { text-decoration: line-through; color: var(--error); }
+        .dd-hora { font-weight: 800; color: var(--primary); min-width: 88px; }
+        .dd-quem { color: var(--text-muted); }
+        .dd-tag { font-size: 0.63rem; text-transform: uppercase; font-weight: 800; color: var(--error); background: rgba(255,68,68,0.12); padding: 2px 7px; border-radius: 999px; }
+        .dd-vazio { color: var(--text-muted); font-size: 0.79rem; margin: 4px 0; }
+        .dd-ficha { display: inline-flex; align-items: center; gap: 8px; margin-top: 10px; color: var(--primary); text-decoration: none; font-size: 0.8rem; font-weight: 700; }
+        .dd-ficha:hover { text-decoration: underline; }
+
+        /* Lista precisa ao lado da grade */
+        .proximas-tit { font-size: 0.68rem; text-transform: uppercase; letter-spacing: 1.4px; font-weight: 800; color: var(--text-muted); margin-bottom: 10px; }
+        .prox-item { display: flex; align-items: baseline; gap: 11px; padding: 10px 13px; border-radius: 9px; background: rgba(255,255,255,0.03); margin-bottom: 6px; font-size: 0.87rem; }
+        .prox-item.e-hoje { background: rgba(124,255,0,0.12); border: 1px solid rgba(124,255,0,0.3); }
+        .prox-data { color: var(--text-muted); min-width: 74px; }
+        .prox-hora { font-weight: 800; color: var(--primary); }
+        .prox-quem { color: var(--text-muted); font-size: 0.79rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .prox-vazio { color: var(--text-muted); font-size: 0.82rem; margin: 0; }
+
+        /* A grade sozinha ja pede ~430px; abaixo disso a lista desce. */
+        @media (max-width: 780px) { .mes-layout { grid-template-columns: 1fr; gap: 16px; } }
+
+        @media (max-width: 560px) {
+            .treino-titulo { font-size: 1.2rem; }
+            .treino-cta { width: 100%; }
+        }
+
         .section-title { color: var(--primary); font-size: 0.8rem; margin: 30px 0 15px 0; text-transform: uppercase; letter-spacing: 2px; font-weight: 800; display: flex; align-items: center; gap: 10px; }
         .section-title::after { content: ""; flex: 1; height: 1px; background: var(--border); }
         .form-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 15px; }
@@ -64,7 +146,7 @@
         .btn-action { background: var(--primary); color: #000; width: 100%; padding: 18px; border-radius: 12px; font-weight: 900; border: none; cursor: pointer; text-transform: uppercase; transition: 0.3s; font-size: 0.8rem; margin-top: 20px; }
         .btn-action:disabled { opacity: 0.5; cursor: not-allowed; }
         .btn-outline { background: transparent; border: 1px solid var(--primary); color: var(--primary); }
-        .btn-action:hover:not(:disabled) { transform: translateY(-3px); box-shadow: 0 10px 20px rgba(212, 255, 0, 0.15); }
+        .btn-action:hover:not(:disabled) { transform: translateY(-3px); box-shadow: 0 10px 20px rgba(124, 255, 0, 0.15); }
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 1001; display: none; justify-content: center; align-items: center; backdrop-filter: blur(8px); overflow-y: auto; padding: 40px 0; }
         .horario-item { background: var(--input-bg); padding: 15px; border-radius: 12px; border: 1px solid var(--border); margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
@@ -99,13 +181,13 @@
         }
 
         .dia-calendario.disponivel {
-            background: rgba(212, 255, 0, 0.08);
-            border-color: rgba(212, 255, 0, 0.2);
+            background: rgba(124, 255, 0, 0.08);
+            border-color: rgba(124, 255, 0, 0.2);
             color: var(--primary);
         }
 
         .dia-calendario.disponivel:hover {
-            background: rgba(212, 255, 0, 0.15);
+            background: rgba(124, 255, 0, 0.15);
             border-color: var(--primary);
             transform: scale(1.05);
         }
@@ -137,13 +219,13 @@
         }
 
         .pacote-item:hover {
-            border-color: rgba(212, 255, 0, 0.3);
-            background: rgba(212, 255, 0, 0.05);
+            border-color: rgba(124, 255, 0, 0.3);
+            background: rgba(124, 255, 0, 0.05);
         }
 
         .pacote-item.selecionado {
             border-color: var(--primary);
-            background: rgba(212, 255, 0, 0.1);
+            background: rgba(124, 255, 0, 0.1);
         }
 
         .pacote-freq { color: #fff; font-weight: 800; font-size: 0.8rem; }
@@ -164,7 +246,7 @@
 
         .horario-selecionavel:hover {
             border-color: var(--primary);
-            background: rgba(212, 255, 0, 0.05);
+            background: rgba(124, 255, 0, 0.05);
             transform: translateX(5px);
         }
 
@@ -208,7 +290,7 @@
             height: 100px;
             border-radius: 16px;
             border: 2px solid var(--primary);
-            background: rgba(212, 255, 0, 0.1);
+            background: rgba(124, 255, 0, 0.1);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -286,8 +368,8 @@
         }
 
         .detalhes-academia-item {
-            background: rgba(212, 255, 0, 0.05);
-            border: 1px solid rgba(212, 255, 0, 0.2);
+            background: rgba(124, 255, 0, 0.05);
+            border: 1px solid rgba(124, 255, 0, 0.2);
             padding: 12px;
             border-radius: 10px;
             display: flex;
@@ -378,6 +460,7 @@
             <button type="button" onclick="window.location.href='{{ route('cliente.avaliacao-fisica') }}'"><i class="ph ph-heartbeat"></i> Avaliação Física</button>
             <button type="button" onclick="abrirHistoricoModal()"><i class="ph ph-clock-counter-clockwise"></i> Ver Histórico</button>
             <button type="button" onclick="window.location.href='{{ route('mapa.index') }}'"><i class="ph ph-map-pin-area"></i> Ver Mapa</button>
+            <button type="button" onclick="window.location.href='{{ route('indicacoes.painel') }}'"><i class="ph ph-gift"></i> Indique e ganhe</button>
             <button type="button" onclick="window.location.href='{{ route('lgpd.meus-dados') }}'"><i class="ph ph-shield-check"></i> Privacidade e meus dados</button>
             <form action="{{ route('login.logout') }}" method="POST">
                 @csrf
@@ -390,7 +473,7 @@
         @if($cliente->foto)
             <img src="{{ asset('storage/' . $cliente->foto) }}?t={{ time() }}" class="avatar-img" style="object-fit:cover;">
         @else
-            <img src="https://ui-avatars.com/api/?name={{ urlencode($cliente->nome) }}&background=d4ff00&color=000" class="avatar-img">
+            <img src="https://ui-avatars.com/api/?name={{ urlencode($cliente->nome) }}&background=7cff00&color=000" class="avatar-img">
         @endif
     </div>
 </div>
@@ -560,7 +643,7 @@
                         <img src="{{ asset('storage/' . $cliente->foto) }}?t={{ time() }}"
                             style="width:64px; height:64px; border-radius:50%; object-fit:cover; border:2px solid var(--primary); flex-shrink:0;">
                     @else
-                        <img src="https://ui-avatars.com/api/?name={{ urlencode($cliente->nome) }}&background=d4ff00&color=000"
+                        <img src="https://ui-avatars.com/api/?name={{ urlencode($cliente->nome) }}&background=7cff00&color=000"
                             style="width:64px; height:64px; border-radius:50%; flex-shrink:0;">
                     @endif
                     <div class="input-wrapper" style="flex:1;">
@@ -632,8 +715,201 @@
         }
     </script>
 
+    @if($treino['tem_vinculo'])
+        {{-- ══ MEU TREINO ══
+             Só aparece para quem já fechou com personal/academia/studio. É o
+             bloco principal: ficha do dia primeiro, depois os dias de aula. --}}
+        @php
+            $fichaHoje = $treino['ficha_hoje'];
+            $diasLabel = ['D', 'S', 'T', 'Q', 'Q', 'S', 'S'];
+            $diasNome  = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
+        @endphp
+
+        <div class="treino-hero">
+            <div class="treino-hero-topo">
+                <div>
+                    <span class="treino-eyebrow">{{ $diasNome[$hoje->dayOfWeek] }}, {{ $hoje->format('d/m') }}</span>
+                    @if($fichaHoje)
+                        <h2 class="treino-titulo">{{ $fichaHoje->nome_treino }}</h2>
+                        <p class="treino-sub">
+                            {{ $fichaHoje->exercicios->count() }} exercício(s)
+                            @if($fichaHoje->personal) · com {{ $fichaHoje->personal->nome }} @endif
+                        </p>
+                    @else
+                        <h2 class="treino-titulo">Hoje é dia de descanso</h2>
+                        <p class="treino-sub">Nenhuma ficha marcada para {{ $diasNome[$hoje->dayOfWeek] }}.</p>
+                    @endif
+                </div>
+
+                @if($treino['feito_hoje'])
+                    <div class="treino-feito"><i class="ph-fill ph-check-circle"></i> Treino concluído</div>
+                @endif
+            </div>
+
+            @if($fichaHoje && $fichaHoje->exercicios->count())
+                <div class="treino-exercicios">
+                    @foreach($fichaHoje->exercicios->take(4) as $ex)
+                        <div class="treino-ex">
+                            <span class="ex-nome">{{ $ex->nome_exercicio }}</span>
+                            <span class="ex-meta">
+                                {{ $ex->series }}x{{ $ex->repeticoes }}@if($ex->peso) · {{ rtrim(rtrim(number_format((float) $ex->peso, 1, ',', '.'), '0'), ',') }}kg @endif
+                            </span>
+                        </div>
+                    @endforeach
+                    @if($fichaHoje->exercicios->count() > 4)
+                        <p class="treino-mais">+{{ $fichaHoje->exercicios->count() - 4 }} exercício(s)</p>
+                    @endif
+                </div>
+
+                <a href="{{ route('fichas-treino.executar', $fichaHoje->id) }}" class="treino-cta">
+                    <i class="ph-fill ph-play"></i>
+                    {{ $treino['feito_hoje'] ? 'Rever treino de hoje' : 'Começar treino' }}
+                </a>
+            @else
+                <a href="{{ route('fichas-treino.minhas') }}" class="treino-cta secundario">
+                    <i class="ph ph-list-checks"></i> Ver minhas fichas
+                </a>
+            @endif
+
+            {{-- Semana: em que dias ele tem ficha --}}
+            <div class="semana-strip">
+                @foreach($diasLabel as $dow => $letra)
+                    @php $temFicha = $treino['fichas_por_dia']->has($dow); @endphp
+                    <div class="dia-pill {{ $temFicha ? 'com-ficha' : '' }} {{ $dow === $hoje->dayOfWeek ? 'hoje' : '' }}"
+                         title="{{ $diasNome[$dow] }}{{ $temFicha ? ' — ' . $treino['fichas_por_dia'][$dow]->nome_treino : ' — sem ficha' }}">
+                        {{ $letra }}
+                    </div>
+                @endforeach
+            </div>
+        </div>
+
+        {{-- ══ DIAS DE AULA NO MÊS ══ --}}
+        @php
+            $meses = ['', 'janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho',
+                      'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
+        @endphp
+        <div class="section-title">Suas aulas em {{ $meses[$hoje->month] }}</div>
+
+        <div class="mes-card">
+            <div class="mes-topo">
+                <div class="mes-resumo">
+                    <b>{{ $treino['aulas_no_mes'] }}</b> aula(s) ·
+                    <b>{{ $treino['treinos_no_mes'] }}</b> treino(s) concluído(s)
+                </div>
+                <div class="mes-legenda">
+                    <span><i class="pt"></i> aula</span>
+                    <span><i class="pt cancel"></i> cancelada</span>
+                </div>
+            </div>
+
+            <div class="mes-layout">
+                <div class="mes-grid">
+                    @foreach(['D','S','T','Q','Q','S','S'] as $cab)
+                        <div class="mes-cab">{{ $cab }}</div>
+                    @endforeach
+
+                    @php
+                        $inicio = $hoje->copy()->startOfMonth();
+                        $totalDias = $hoje->daysInMonth;
+                    @endphp
+
+                    @for($i = 0; $i < $inicio->dayOfWeek; $i++)
+                        <div class="mes-dia vazio"></div>
+                    @endfor
+
+                    @for($dia = 1; $dia <= $totalDias; $dia++)
+                        @php $aula = $treino['dias_com_aula'][$dia] ?? null; @endphp
+                        <button type="button"
+                                class="mes-dia {{ $aula ? ($aula['cancelado'] ? 'cancelada' : 'tem-aula') : '' }} {{ $dia === $hoje->day ? 'hoje' : '' }}"
+                                data-dia="{{ $dia }}" onclick="abrirDiaAgenda({{ $dia }})">
+                            <span class="num">{{ $dia }}</span>
+                            @if($aula && ! $aula['cancelado'] && count($aula['horas']))
+                                <span class="hr">{{ $aula['horas'][0] }}</span>
+                            @endif
+                        </button>
+                    @endfor
+                </div>
+
+                <div class="proximas">
+                    {{-- Detalhe do dia clicado; começa no dia de hoje. --}}
+                    <div class="dia-detalhe" id="diaDetalhe"></div>
+
+                    <div class="proximas-tit">Próximas</div>
+                    @forelse($treino['proximas_aulas'] as $a)
+                        <div class="prox-item {{ $a['hoje'] ? 'e-hoje' : '' }}"
+                             onclick="abrirDiaAgenda({{ $a['dia'] }})" style="cursor:pointer;">
+                            <span class="prox-data">{{ $a['dow'] }} {{ $a['data'] }}</span>
+                            <span class="prox-hora">{{ $a['hora'] ?: '--:--' }}</span>
+                            @if($a['personal'])<span class="prox-quem">{{ $a['personal'] }}</span>@endif
+                        </div>
+                    @empty
+                        <p class="prox-vazio">Nenhuma aula marcada daqui para a frente.</p>
+                    @endforelse
+                </div>
+            </div>
+        </div>
+
+        <script>
+            // Detalhe de cada dia do mês já vem pronto do servidor — clicar não
+            // faz requisição nenhuma.
+            window.detalheDias = {!! json_encode($treino['detalhe_dias']) !!};
+
+            function abrirDiaAgenda(dia) {
+                const d = window.detalheDias[dia];
+                const alvo = document.getElementById('diaDetalhe');
+                if (!d || !alvo) return;
+
+                document.querySelectorAll('.mes-dia.selecionado').forEach(el => el.classList.remove('selecionado'));
+                const botao = document.querySelector(`.mes-dia[data-dia="${dia}"]`);
+                if (botao) botao.classList.add('selecionado');
+
+                const esc = t => String(t ?? '').replace(/[&<>"']/g, c => ({
+                    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+                })[c]);
+
+                let corpo = '';
+
+                if (d.aulas.length) {
+                    // Os botões de cancelar/repor saem da MESMA função que
+                    // desenha os da lista de agendamentos — regra e aparência
+                    // num lugar só.
+                    corpo += d.aulas.map(a => `
+                        <div class="dd-aula ${a.cancelado ? 'cancel' : ''}">
+                            <span class="dd-hora">${esc(a.hora)}${a.fim ? '–' + esc(a.fim) : ''}</span>
+                            <span class="dd-quem">${a.personal ? esc(a.personal) : 'Aula'} · ${esc(a.tipo)}</span>
+                            ${a.cancelado ? '<span class="dd-tag">cancelada</span>' : ''}
+                            ${montarAcoesAula(a)}
+                        </div>`).join('');
+                } else {
+                    corpo += `<p class="dd-vazio">Sem aula marcada nesse dia.</p>`;
+                }
+
+                if (d.ficha) {
+                    corpo += `
+                        <a class="dd-ficha" href="${d.ficha.url}">
+                            <i class="ph ph-barbell"></i>
+                            <span>${esc(d.ficha.nome)} · ${d.ficha.exercicios} exercício(s)</span>
+                        </a>`;
+                } else {
+                    corpo += `<p class="dd-vazio">Sem ficha para esse dia da semana.</p>`;
+                }
+
+                alvo.innerHTML = `
+                    <div class="dd-tit">${esc(d.rotulo)}${d.eh_hoje ? ' <b>· hoje</b>' : ''}</div>
+                    ${corpo}`;
+            }
+
+            // Só depois que todos os scripts da página rodaram: montarAcoesAula
+            // é declarada num bloco <script> mais abaixo e ainda não existe aqui.
+            document.addEventListener('DOMContentLoaded', () => abrirDiaAgenda({{ $hoje->day }}));
+        </script>
+    @endif
+
     <div id="dashboardSummary">
-        {{-- PERSONALS --}}
+        {{-- PERSONALS — some para quem já fechou com um profissional. O atalho
+             "Personais" do menu continua levando à busca, então ninguém fica
+             preso caso queira trocar. --}}
+        @unless($treino['tem_personal'] ?? false)
         <div class="section-title">Personals Disponíveis</div>
         <p style="color: var(--text-muted); font-size: 0.8rem; margin: -10px 0 15px 0;">
             <i class="ph ph-info" style="color: var(--primary);"></i>
@@ -642,7 +918,7 @@
 
         <div class="dashboard-grid" style="grid-template-columns: repeat(2, 1fr);">
             @foreach($personals->take(4) as $p)
-            <div class="stat-card personal-card" style="position: relative; padding-top: 14px;{{ $p->eh_pioneiro ? ' border:1px solid rgba(255,210,80,0.4); box-shadow:0 0 9px rgba(255,170,40,0.07);' : '' }}">
+            <div class="stat-card personal-card" style="position: relative; padding-top: 14px;">
 
                 <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 6px; margin-bottom: 12px;">
                 <div onclick="abrirAvaliacao({{ $p->id }}, '{{ addslashes($p->nome) }}')"
@@ -657,20 +933,22 @@
                         <strong style="color: white; font-size: 0.9rem;">{{ $p->media_avaliacao }}</strong>
                     @endif
                 </div>
-                    @if($p->eh_pioneiro)
-                        @include('partials.badge-pioneiro', ['posicao' => $p->pioneiro_posicao, 'estado' => $p->estado])
-                    @endif
                 </div>
 
                 <div style="display: flex; align-items: center; gap: 15px;">
                     @if($p->foto)
                         <img src="{{ asset('storage/' . $p->foto) . '?t=' . time() }}" alt="Foto de {{ $p->nome }}" style="width: 50px; height: 50px; border-radius: 50%; object-fit: cover;">
                     @else
-                        <img src="https://ui-avatars.com/api/?name={{ urlencode($p->nome) }}&background=000&color=d4ff00" alt="Iniciais de {{ $p->nome }}" style="width: 50px; height: 50px; border-radius: 50%;">
+                        <img src="https://ui-avatars.com/api/?name={{ urlencode($p->nome) }}&background=000&color=7cff00" alt="Iniciais de {{ $p->nome }}" style="width: 50px; height: 50px; border-radius: 50%;">
                     @endif
 
                     <div>
-                        <h3 style="margin:0; font-size: 0.9rem;">{{ $p->nome }}</h3>
+                        <h3 style="margin:0; font-size: 0.9rem; display:flex; align-items:center; gap:5px;">
+                            {{ $p->nome }}
+                            @if($p->eh_pioneiro)
+                                @include('partials.badge-pioneiro', ['posicao' => $p->pioneiro_posicao, 'estado' => $p->estado, 'tipo' => 'personal', 'tamanho' => 14])
+                            @endif
+                        </h3>
                         <p style="margin:0; font-size: 0.6rem; color: var(--primary);">Ativo na plataforma</p>
                     </div>
                 </div>
@@ -710,6 +988,7 @@
             </a>
         </div>
         @endif
+        @endunless
 
         {{-- ACADEMIAS --}}
         <div class="section-title">Academias Parceiras (Contratar)</div>
@@ -720,7 +999,7 @@
                     @if($academia->fotos && $academia->fotos->count() > 0)
                         <img src="{{ asset('storage/' . $academia->fotos->first()->path) }}" alt="Foto de {{ $academia->nome }}" style="width: 60px; height: 60px; border-radius: 12px; border: 1px solid var(--primary); object-fit: cover; flex-shrink: 0;">
                     @else
-                        <div style="width: 60px; height: 60px; border-radius: 12px; border: 1px solid var(--primary); background: rgba(212, 255, 0, 0.08); display: flex; align-items: center; justify-content: center; flex-shrink: 0; color: var(--primary); font-size: 1.5rem;">
+                        <div style="width: 60px; height: 60px; border-radius: 12px; border: 1px solid var(--primary); background: rgba(124, 255, 0, 0.08); display: flex; align-items: center; justify-content: center; flex-shrink: 0; color: var(--primary); font-size: 1.5rem;">
                             <i class="ph ph-barbell"></i>
                         </div>
                     @endif
@@ -820,10 +1099,10 @@
             <button onclick="abrirPacoteDoDetalhes()" class="btn-action" style="font-size:0.75rem;">
                 <i class="ph ph-calendar"></i> Contratar Pacote
             </button>
-            <button onclick="abrirFichaDoDetalhes()" class="btn-action" style="font-size:0.75rem; background: rgba(212,255,0,0.12); border:1px solid var(--primary); color: var(--primary);">
+            <button id="btnSolicitarFicha" onclick="abrirFichaDoDetalhes()" class="btn-action" style="font-size:0.75rem; background: rgba(124,255,0,0.12); border:1px solid var(--primary); color: var(--primary);">
                 <i class="ph ph-clipboard-text"></i> Solicitar Ficha
             </button>
-            <button onclick="abrirAvFisicaDoDetalhes()" class="btn-action" style="font-size:0.75rem; background: rgba(212,255,0,0.12); border:1px solid var(--primary); color: var(--primary);">
+            <button id="btnAvaliacaoFisica" onclick="abrirAvFisicaDoDetalhes()" class="btn-action" style="font-size:0.75rem; background: rgba(124,255,0,0.12); border:1px solid var(--primary); color: var(--primary);">
                 <i class="ph ph-heartbeat"></i> Avaliação Física
             </button>
         </div>
@@ -912,7 +1191,7 @@
             <div>
                 <div id="academiaAvulsaContainer" style="margin-bottom: 15px;"></div>
 
-                <div style="background: rgba(212, 255, 0, 0.05); padding: 12px; border-radius: 10px; border: 1px solid var(--border); margin-bottom: 15px;">
+                <div style="background: rgba(124, 255, 0, 0.05); padding: 12px; border-radius: 10px; border: 1px solid var(--border); margin-bottom: 15px;">
                     <p style="margin: 0 0 8px 0; font-size: 0.75rem; color: var(--text-muted);">
                         <i class="ph ph-calendar"></i> Data: <span id="avulsaDataSelecionada" style="color: var(--primary); font-weight: 900;">Nenhuma</span>
                     </p>
@@ -979,7 +1258,7 @@
                 
                 <div id="listaPacotes" style="display: flex; flex-direction: column; gap: 10px; max-height: 150px; overflow-y: auto; padding-right: 10px; margin-bottom: 20px;"></div>
 
-                <div style="background: rgba(212, 255, 0, 0.05); padding: 12px; border-radius: 10px; border: 1px solid var(--border); margin-bottom: 20px;">
+                <div style="background: rgba(124, 255, 0, 0.05); padding: 12px; border-radius: 10px; border: 1px solid var(--border); margin-bottom: 20px;">
                     <p style="margin: 0 0 8px 0; font-size: 0.75rem; color: var(--text-muted);">
                         <i class="ph ph-calendar"></i> <span style="color: var(--primary); font-weight: 900;" id="contadorDias">0</span> dia(s) selecionado(s)
                     </p>
@@ -1054,7 +1333,7 @@
         </p>
 
         {{-- Valor --}}
-        <div style="background: rgba(212,255,0,0.06); border: 1px solid rgba(212,255,0,0.3); border-radius: 12px; padding: 14px 18px; margin-bottom: 20px; display:flex; justify-content:space-between; align-items:center;">
+        <div style="background: rgba(124,255,0,0.06); border: 1px solid rgba(124,255,0,0.3); border-radius: 12px; padding: 14px 18px; margin-bottom: 20px; display:flex; justify-content:space-between; align-items:center;">
             <span style="color: var(--text-muted); font-size: 0.8rem; font-weight: 700;">Valor da Ficha</span>
             <span id="fichaValorDisplay" style="color: var(--primary); font-size: 1.3rem; font-weight: 900;">R$ 0,00</span>
         </div>
@@ -1110,12 +1389,12 @@
     .avf-sec-title { font-size:0.7rem; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-muted); font-weight:800; margin-bottom:8px; }
     .avf-opt { display:flex; align-items:center; gap:12px; justify-content:space-between; background:rgba(255,255,255,0.03); border:1px solid var(--border); border-radius:12px; padding:12px 14px; margin-bottom:8px; cursor:pointer; transition:0.2s; }
     .avf-opt:hover { border-color:var(--primary); }
-    .avf-opt.avf-selected { border-color:var(--primary); background:rgba(212,255,0,0.08); }
+    .avf-opt.avf-selected { border-color:var(--primary); background:rgba(124,255,0,0.08); }
     .avf-opt-nome { font-size:0.88rem; font-weight:800; color:#fff; }
     .avf-opt-nome i { color:var(--primary); margin-right:4px; }
     .avf-opt-valor { color:var(--primary); font-weight:900; font-size:0.95rem; white-space:nowrap; }
     .avf-chips { display:flex; flex-wrap:wrap; gap:5px; margin-top:6px; }
-    .avf-chip { background:rgba(212,255,0,0.08); border:1px solid rgba(212,255,0,0.25); color:var(--primary); padding:2px 8px; border-radius:20px; font-size:0.62rem; font-weight:800; }
+    .avf-chip { background:rgba(124,255,0,0.08); border:1px solid rgba(124,255,0,0.25); color:var(--primary); padding:2px 8px; border-radius:20px; font-size:0.62rem; font-weight:800; }
     .avf-opt.avf-disabled { cursor:not-allowed; opacity:0.5; }
     .avf-opt.avf-disabled:hover { border-color:var(--border); }
     .avf-na { font-size:0.66rem; color:var(--text-muted); font-style:italic; text-align:right; max-width:170px; }
@@ -1250,6 +1529,28 @@
     let personalSelecionadoId = null;
 
     // ============ MODAL DE DETALHES DO PERSONAL ============
+    // Selo de pioneiro ("verificado") para os trechos montados em JS.
+    // Espelha resources/views/partials/badge-pioneiro.blade.php; as cores vêm
+    // do mesmo config('pioneiro.cor') para as duas versões não divergirem.
+    const PIONEIRO_CORES = {!! json_encode(config('pioneiro.cor')) !!};
+    const PIONEIRO_LIMITE = {{ (int) config('pioneiro.limite_por_estado', 100) }};
+    let seloPioneiroSeq = 0;
+
+    function seloPioneiroHTML(estado, posicao, tamanho = 16) {
+        const gid = 'pioJs' + (++seloPioneiroSeq);
+        const titulo = posicao
+            ? `Pioneiro: um dos ${PIONEIRO_LIMITE} primeiros personais${estado ? ' de ' + estado : ''} na plataforma (#${posicao})`
+            : 'Pioneiro: um dos primeiros personais da plataforma';
+        return `<svg viewBox="0 0 24 24" width="${tamanho}" height="${tamanho}" role="img" aria-label="${titulo}" style="display:inline-block; vertical-align:-0.15em; flex:none;">`
+            + `<title>${titulo}</title>`
+            + `<defs><linearGradient id="${gid}" x1="0" y1="0" x2="0" y2="1">`
+            + `<stop offset="0%" stop-color="${PIONEIRO_CORES.clara}"/><stop offset="100%" stop-color="${PIONEIRO_CORES.base}"/>`
+            + `</linearGradient></defs>`
+            + `<path fill="url(#${gid})" d="M12 .7l2.6 2.24 3.4-.5.98 3.3 3.3.98-.5 3.4L24 12l-2.22 2.6.5 3.4-3.3.98-.98 3.3-3.4-.5L12 23.3l-2.6-2.22-3.4.5-.98-3.3-3.3-.98.5-3.4L0 12l2.22-2.58-.5-3.4 3.3-.98.98-3.3 3.4.5z"/>`
+            + `<path fill="none" stroke="${PIONEIRO_CORES.check}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" d="M7.4 12.3l3.1 3.1 6.1-6.5"/>`
+            + `</svg>`;
+    }
+
     function abrirDetalhesPersonal(personalId) {
         const personal = window.personalsData[personalId];
         if (!personal) return;
@@ -1257,6 +1558,7 @@
         personalSelecionadoId = personalId;
 
         // HEADER
+
         const fotoHTML = personal.foto 
             ? `<img src="${personal.foto}" alt="${personal.nome}" class="detalhes-foto">`
             : `<div class="detalhes-foto-placeholder"><i class="ph ph-user"></i></div>`;
@@ -1264,14 +1566,13 @@
         document.getElementById('detalhesHeader').innerHTML = `
             ${fotoHTML}
             <div class="detalhes-info-header">
-                <h2>${personal.nome}</h2>
+                <h2 style="display:flex; align-items:center; gap:6px;">${personal.nome}${personal.pioneiro ? seloPioneiroHTML(personal.estado, personal.pioneiro_posicao, 18) : ''}</h2>
                 <p>Personal Trainer Certificado</p>
                 <div class="detalhes-avaliacao">
                     ${personal.eh_novo
                         ? `<span style="color: var(--primary);"><i class="ph ph-plant"></i> Novo profissional</span>`
                         : `<i class="ph-fill ph-star"></i> ${personal.avaliacao} <span style="color: var(--text-muted); font-size: 0.7rem;">(${personal.total_avaliacoes} avaliações)</span>`}
                 </div>
-                ${personal.pioneiro ? `<div style="margin-top:8px;"><span title="Um dos 100 primeiros personais${personal.estado ? ' de ' + personal.estado : ''} a entrar na plataforma" style="display:inline-flex; align-items:center; gap:6px; background:linear-gradient(135deg,#FFE259,#FFA751); color:#1a1200; font-weight:800; font-size:0.68rem; text-transform:uppercase; letter-spacing:0.5px; padding:5px 12px; border-radius:20px; box-shadow:0 2px 10px rgba(255,170,40,0.35); border:1px solid rgba(255,210,80,0.7);"><i class="ph ph-crown"></i> Pioneiro${personal.pioneiro_posicao ? ' #' + personal.pioneiro_posicao : ''}</span></div>` : ''}
             </div>
         `;
 
@@ -1309,6 +1610,9 @@
         const todosAv = precosAv.concat(pacotesAv);
         const menorAvaliacao = todosAv.length > 0 ? Math.min(...todosAv) : 0;
 
+        // Sem valor definido = o personal não trabalha com esse serviço
+        const valorFicha = parseFloat(personal.valor_ficha) || 0;
+
         document.getElementById('detalhesResumo').innerHTML = `
             <div class="detalhes-resumo-card">
                 <i class="ph ph-currency-dollar"></i>
@@ -1323,14 +1627,18 @@
             <div class="detalhes-resumo-card">
                 <i class="ph ph-clipboard-text"></i>
                 <div class="label">Ficha Personalizada</div>
-                <div class="valor">${parseFloat(personal.valor_ficha) > 0 ? 'R$ ' + parseFloat(personal.valor_ficha).toFixed(2).replace('.', ',') : 'Consulte'}</div>
+                <div class="valor" ${valorFicha > 0 ? '' : 'style="color: var(--text-muted); font-size: 0.8rem;"'}>${valorFicha > 0 ? 'R$ ' + valorFicha.toFixed(2).replace('.', ',') : 'Não oferece'}</div>
             </div>
             <div class="detalhes-resumo-card">
                 <i class="ph ph-heartbeat"></i>
                 <div class="label">Avaliação Física</div>
-                <div class="valor">${menorAvaliacao > 0 ? 'A partir de R$ ' + parseFloat(menorAvaliacao).toFixed(2).replace('.', ',') : 'Consulte'}</div>
+                <div class="valor" ${menorAvaliacao > 0 ? '' : 'style="color: var(--text-muted); font-size: 0.8rem;"'}>${menorAvaliacao > 0 ? 'A partir de R$ ' + parseFloat(menorAvaliacao).toFixed(2).replace('.', ',') : 'Não oferece'}</div>
             </div>
         `;
+
+        // Só oferece os botões dos serviços que o personal realmente precificou
+        document.getElementById('btnSolicitarFicha').style.display = valorFicha > 0 ? '' : 'none';
+        document.getElementById('btnAvaliacaoFisica').style.display = menorAvaliacao > 0 ? '' : 'none';
 
         document.getElementById('detalhesPersonalModal').style.display = 'flex';
     }
@@ -1361,9 +1669,14 @@
     let fichaPersonalId = null;
 
     function abrirFichaModal(id, nome, valorFicha) {
+        const v = parseFloat(valorFicha) || 0;
+        if (v <= 0) {
+            alert('Este personal não trabalha com ficha personalizada.');
+            return;
+        }
+
         fichaPersonalId = id;
         document.getElementById('nomeFichaPersonal').innerText = 'Solicitar Ficha — ' + nome;
-        const v = parseFloat(valorFicha) || 0;
         document.getElementById('fichaValorDisplay').textContent = 'R$ ' + v.toFixed(2).replace('.', ',');
         document.getElementById('fichaObjetivos').value = '';
         document.getElementById('fichaCondicoes').value = '';
@@ -1475,16 +1788,24 @@
         const personal = window.personalsData[id];
         if (!personal) return;
 
+        const precos  = personal.precos_avaliacao || {};
+        const pacotes = personal.pacotes_avaliacao || [];
+        const tipos   = window.avaliacaoTipos || [];
+        const meta    = window.avaliacaoMeta || {};
+
+        // Nenhum preço cadastrado = o personal não trabalha com avaliação física
+        const temAvulsa = Object.values(precos).some(v => (parseFloat(v) || 0) > 0);
+        const temPacote = pacotes.some(p => (parseFloat(p.valor) || 0) > 0);
+        if (!temAvulsa && !temPacote) {
+            alert('Este personal não trabalha com avaliação física.');
+            return;
+        }
+
         avFisicaPersonalId = id;
         avFisicaSelecao = null;
         document.getElementById('nomeAvFisicaPersonal').innerText = 'Avaliação Física — ' + nome;
         document.getElementById('avFisicaObs').value = '';
         document.getElementById('avFisicaFooter').style.display = 'none';
-
-        const precos  = personal.precos_avaliacao || {};
-        const pacotes = personal.pacotes_avaliacao || [];
-        const tipos   = window.avaliacaoTipos || [];
-        const meta    = window.avaliacaoMeta || {};
 
         // tipos que aparecem em algum pacote
         const emPacote = {};
@@ -1680,6 +2001,56 @@
     const itensPorPagina = 5;
     let totalPaginasAgenda = 1;
 
+    // Aulas do aluno com o estado da janela de 24h já resolvido no servidor
+    // (fuso e prazo são calculados lá, não dá para confiar no relógio do browser).
+    window.agendamentosData = {!! json_encode($meusAgendamentos) !!};
+
+    const CSRF_AULA = {!! json_encode(csrf_token()) !!};
+    const URL_CANCELAR = {!! json_encode(url('/aluno/aulas')) !!};
+
+    function escaparHtml(txt) {
+        return String(txt ?? '').replace(/[&<>"']/g, c => ({
+            '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+        })[c]);
+    }
+
+    /** Botões de cancelar (avulsa) ou pedir reposição (pacote). */
+    function montarAcoesAula(a) {
+        if (a.cancelado) return '';
+
+        if (!a.pode_agir) {
+            return `<div style="flex-basis:100%; margin-top:8px; color:var(--text-muted); font-size:0.75rem;">
+                        <i class="ph ph-lock-simple"></i> ${escaparHtml(a.bloqueio || 'Prazo encerrado.')}
+                    </div>`;
+        }
+
+        const acao = a.eh_pacote ? 'reposicao' : 'cancelar';
+        const rotulo = a.eh_pacote ? 'Não vou poder ir' : 'Cancelar aula';
+        const form = `${URL_CANCELAR}/${a.id}/${acao}`;
+
+        // O aluno não escolhe dia/hora: quem define a reposição é o personal,
+        // na agenda dele. Aqui ele só avisa a falta e diz o porquê.
+        const aviso = a.eh_pacote
+            ? 'Seu personal vai definir o dia e a hora da reposição.'
+            : 'Você está dentro do prazo, então o valor pago será devolvido.';
+
+        return `
+            <details style="flex-basis:100%; margin-top:10px;">
+                <summary style="cursor:pointer; color:var(--primary); font-size:0.78rem; font-weight:700;">${rotulo}</summary>
+                <form method="POST" action="${form}" style="margin-top:10px; padding:12px; background:rgba(255,255,255,0.03); border-radius:10px;">
+                    <input type="hidden" name="_token" value="${CSRF_AULA}">
+                    <input type="text" name="motivo" maxlength="500" placeholder="Motivo (opcional)"
+                           style="width:100%; background:#0a0b0d; border:1px solid rgba(255,255,255,0.14); color:#fff; padding:9px 11px; border-radius:8px; font-size:0.8rem; margin-bottom:8px;">
+                    <div style="color:var(--text-muted); font-size:0.72rem; margin-bottom:10px;">
+                        <i class="ph ph-info"></i> ${aviso}
+                    </div>
+                    <button type="submit" style="background:var(--primary); color:#0a0b0d; border:none; padding:9px 16px; border-radius:8px; font-weight:800; font-size:0.76rem; cursor:pointer;">
+                        Confirmar
+                    </button>
+                </form>
+            </details>`;
+    }
+
     function inicializarPaginacaoAgenda() {
         if (window.agendamentosData && window.agendamentosData.length > 0) {
             totalPaginasAgenda = Math.ceil(window.agendamentosData.length / itensPorPagina);
@@ -1698,15 +2069,17 @@
 
         const container = document.getElementById('agendaItems');
         container.innerHTML = itemsVistos.map(agendamento => `
-            <div class="list-item">
+            <div class="list-item" style="flex-wrap: wrap;">
                 <div>
                     <strong style="display: block; font-size: 1rem;">${agendamento.personal}</strong>
                     <span style="color: var(--text-muted); font-size: 0.8rem;">
                         <i class="ph ph-calendar"></i> ${agendamento.data}
                         às ${agendamento.hora}
+                        · ${agendamento.eh_pacote ? 'Pacote' : 'Avulsa'}
                     </span>
                 </div>
-                <div class="badge-status">Confirmado</div>
+                <div class="badge-status">${agendamento.cancelado ? 'Cancelada' : 'Confirmado'}</div>
+                ${montarAcoesAula(agendamento)}
             </div>
         `).join('');
 
@@ -2201,7 +2574,7 @@
             h.querySelector('.ph-check-circle').style.display = 'none';
         });
         el.style.borderColor = 'var(--primary)';
-        el.style.background  = 'rgba(212,255,0,0.08)';
+        el.style.background  = 'rgba(124,255,0,0.08)';
         el.querySelector('.ph-check-circle').style.display = 'block';
     }
 
@@ -2418,7 +2791,7 @@
         <h3 style="color:var(--primary); font-size:1.1rem; font-weight:900; margin:0 0 4px;">PAGAMENTO VIA PIX</h3>
         <p id="pixValor" style="color:#fff; font-size:1.5rem; font-weight:700; margin:0 0 20px;"></p>
 
-        <p id="pixRecorrenteNota" style="display:none; color:#d4ff00; font-size:0.78rem; font-weight:700; margin:-10px 0 16px; background:rgba(212,255,0,0.08); border:1px solid rgba(212,255,0,0.25); border-radius:10px; padding:8px 12px;">
+        <p id="pixRecorrenteNota" style="display:none; color:#7cff00; font-size:0.78rem; font-weight:700; margin:-10px 0 16px; background:rgba(124,255,0,0.08); border:1px solid rgba(124,255,0,0.25); border-radius:10px; padding:8px 12px;">
             🔁 Assinatura mensal — uma nova cobrança PIX é gerada todo mês.
         </p>
 
@@ -2431,7 +2804,7 @@
         </div>
 
         <div style="display:flex; align-items:center; gap:8px; justify-content:center; color:#a0a0a0; font-size:0.8rem; margin-bottom:12px;">
-            <div style="width:10px; height:10px; border:2px solid rgba(212,255,0,0.3); border-top-color:var(--primary); border-radius:50%; animation:spinPix 1s linear infinite;"></div>
+            <div style="width:10px; height:10px; border:2px solid rgba(124,255,0,0.3); border-top-color:var(--primary); border-radius:50%; animation:spinPix 1s linear infinite;"></div>
             Aguardando confirmação do pagamento...
         </div>
 
@@ -2447,7 +2820,7 @@
 <div id="modalPlanosAcademia" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.88); z-index:99998; flex-direction:column; justify-content:center; align-items:center; backdrop-filter:blur(6px); padding:20px;">
     <div style="background:#16181d; border:1px solid rgba(255,255,255,0.08); border-radius:20px; padding:32px; max-width:500px; width:100%; position:relative; max-height:90vh; overflow-y:auto;">
         <button onclick="fecharPlanosAcademia()" style="position:absolute; top:16px; right:16px; background:none; border:none; color:#a0a0a0; font-size:1.2rem; cursor:pointer;">✕</button>
-        <h3 id="planosAcademiaNome" style="color:#d4ff00; font-size:1.1rem; font-weight:900; margin:0 0 6px;"></h3>
+        <h3 id="planosAcademiaNome" style="color:#7cff00; font-size:1.1rem; font-weight:900; margin:0 0 6px;"></h3>
         <p style="color:#a0a0a0; font-size:0.8rem; margin:0 0 20px;">Selecione um plano e pague via PIX para se associar.</p>
         <div id="planosAcademiaLista"></div>
     </div>
@@ -2457,20 +2830,20 @@
 <div id="modalPixAcademia" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.88); z-index:99999; flex-direction:column; justify-content:center; align-items:center; backdrop-filter:blur(6px); padding:20px;">
     <div style="background:#16181d; border:1px solid rgba(255,255,255,0.08); border-radius:20px; padding:32px; max-width:420px; width:100%; text-align:center; position:relative;">
         <button onclick="fecharModalPixAcademia()" style="position:absolute; top:16px; right:16px; background:none; border:none; color:#a0a0a0; font-size:1.2rem; cursor:pointer;">✕</button>
-        <h3 style="color:#d4ff00; font-size:1.1rem; font-weight:900; margin:0 0 4px;">PAGAMENTO VIA PIX</h3>
+        <h3 style="color:#7cff00; font-size:1.1rem; font-weight:900; margin:0 0 4px;">PAGAMENTO VIA PIX</h3>
         <p id="pixAcademiaDescricao" style="color:#a0a0a0; font-size:0.8rem; margin:0 0 8px;"></p>
         <p id="pixAcademiaValor" style="color:#fff; font-size:1.5rem; font-weight:700; margin:0 0 20px;"></p>
-        <p style="color:#d4ff00; font-size:0.78rem; font-weight:700; margin:-10px 0 16px; background:rgba(212,255,0,0.08); border:1px solid rgba(212,255,0,0.25); border-radius:10px; padding:8px 12px;">
+        <p style="color:#7cff00; font-size:0.78rem; font-weight:700; margin:-10px 0 16px; background:rgba(124,255,0,0.08); border:1px solid rgba(124,255,0,0.25); border-radius:10px; padding:8px 12px;">
             🔁 Assinatura mensal — uma nova cobrança PIX é gerada todo mês.
         </p>
         <img id="pixAcademiaQr" src="" alt="QR Code" style="width:200px; height:200px; border-radius:12px; background:#fff; padding:8px; margin-bottom:16px;">
         <p style="color:#a0a0a0; font-size:0.8rem; margin:0 0 8px;">Ou copie o código Pix:</p>
         <div style="display:flex; gap:8px; margin-bottom:16px;">
             <input id="pixAcademiaCopia" type="text" readonly style="flex:1; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); border-radius:8px; padding:8px 12px; color:#fff; font-size:0.75rem; outline:none;">
-            <button onclick="copiarPixAcademia()" style="background:#d4ff00; color:#000; border:none; border-radius:8px; padding:8px 14px; font-weight:700; font-size:0.8rem; cursor:pointer; white-space:nowrap;">Copiar código</button>
+            <button onclick="copiarPixAcademia()" style="background:#7cff00; color:#000; border:none; border-radius:8px; padding:8px 14px; font-weight:700; font-size:0.8rem; cursor:pointer; white-space:nowrap;">Copiar código</button>
         </div>
         <div style="display:flex; align-items:center; gap:8px; justify-content:center; color:#a0a0a0; font-size:0.8rem; margin-bottom:12px;">
-            <div style="width:10px; height:10px; border:2px solid rgba(212,255,0,0.3); border-top-color:#d4ff00; border-radius:50%; animation:spinPix 1s linear infinite;"></div>
+            <div style="width:10px; height:10px; border:2px solid rgba(124,255,0,0.3); border-top-color:#7cff00; border-radius:50%; animation:spinPix 1s linear infinite;"></div>
             Aguardando confirmação do pagamento...
         </div>
         <p id="pixAcademiaStatus" style="display:none; font-weight:700; font-size:0.9rem; margin:0;"></p>
@@ -2489,10 +2862,10 @@
             lista.innerHTML = '<p style="color:#a0a0a0; text-align:center; padding:20px;">Esta academia ainda não possui planos disponíveis.</p>';
         } else {
             lista.innerHTML = planos.map(p => `
-                <div style="background:rgba(255,255,255,0.03); border:1px solid rgba(212,255,0,0.2); border-radius:14px; padding:16px; margin-bottom:12px;">
+                <div style="background:rgba(255,255,255,0.03); border:1px solid rgba(124,255,0,0.2); border-radius:14px; padding:16px; margin-bottom:12px;">
                     <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:10px;">
                         <div>
-                            <div style="font-weight:800; font-size:1rem; color:#d4ff00; margin-bottom:4px;">${p.nome}</div>
+                            <div style="font-weight:800; font-size:1rem; color:#7cff00; margin-bottom:4px;">${p.nome}</div>
                             <div style="font-size:0.8rem; color:#a0a0a0;">
                                 <i class="ph ph-calendar"></i> ${p.duracao} ${p.duracao === 1 ? 'mês' : 'meses'}
                                 ${p.descricao ? `<br><i class="ph ph-list-bullets"></i> ${p.descricao}` : ''}
@@ -2505,8 +2878,8 @@
                     </div>
                     <div style="display:flex; gap:8px; margin-top:12px;">
                         <button onclick="pagarPlanoAcademia(${academiaId}, ${p.id}, '${p.nome}', '${academiaNome}', ${p.valor})"
-                            style="flex:1; background:#d4ff00; color:#000; border:none; border-radius:8px; padding:10px; font-weight:900; font-size:0.8rem; cursor:pointer; transition:0.2s;"
-                            onmouseover="this.style.background='#e8ff40'" onmouseout="this.style.background='#d4ff00'">
+                            style="flex:1; background:#7cff00; color:#000; border:none; border-radius:8px; padding:10px; font-weight:900; font-size:0.8rem; cursor:pointer; transition:0.2s;"
+                            onmouseover="this.style.background='#9cff40'" onmouseout="this.style.background='#7cff00'">
                             <i class="ph ph-qr-code"></i> PIX
                         </button>
                         <button onclick="abrirCartaoAcademia(${academiaId}, ${p.id}, '${p.nome}', '${academiaNome}', ${p.valor})"

@@ -135,7 +135,7 @@ class AuthController extends Controller
         $validated = $request->validate([
             'nome' => 'required|string|max:255',
             'email' => 'required|email|max:255|unique:clientes,email',
-            'senha' => 'required|string|min:6|max:255',
+            'senha' => 'required|string|min:8|max:255',
             'whatsapp' => 'nullable|string|max:20',
             'aceita_termos' => 'required|accepted',
             'device_name' => 'nullable|string|max:100',

@@ -183,10 +183,6 @@ class AdminController extends Controller
             'motivo_rejeicao' => null
         ]);
 
-        // Indicação: o relógio dos 35 dias só começa aqui, porque é a partir da
-        // aprovação que o profissional pode faturar. Idempotente.
-        app(\App\Services\IndicacaoService::class)->iniciarJanela($personal->refresh());
-
         Log::info("Update retornou: " . ($resultado ? 'TRUE' : 'FALSE'));
         
         $personal->refresh();
@@ -266,9 +262,6 @@ class AdminController extends Controller
         // Deletar fotos
         if ($personal->foto) {
             \Illuminate\Support\Facades\Storage::disk('public')->delete($personal->foto);
-        }
-        if ($personal->certificado) {
-            \Illuminate\Support\Facades\Storage::disk('public')->delete($personal->certificado);
         }
 
         // Deletar pacotes
@@ -563,8 +556,6 @@ class AdminController extends Controller
             'motivo_rejeicao' => null,
         ]);
 
-        app(\App\Services\IndicacaoService::class)->iniciarJanela($studio->refresh());
-
         return redirect()->back()->with('success', "Studio '{$studio->nome}' aprovado com sucesso! ✅");
     }
 
@@ -644,8 +635,6 @@ class AdminController extends Controller
             'data_aprovacao'  => now(),
             'motivo_rejeicao' => null,
         ]);
-
-        app(\App\Services\IndicacaoService::class)->iniciarJanela($academia->refresh());
 
         return redirect()->back()->with('success', "Academia '{$academia->nome}' aprovada com sucesso! ✅");
     }

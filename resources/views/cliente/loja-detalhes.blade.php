@@ -13,7 +13,7 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/fill/style.css">
     <style>
         :root {
-            --primary: #d4ff00;
+            --primary: #7cff00;
             --bg-dark: #0a0b0d;
             --card-bg: #16181d;
             --text-main: #ffffff;
@@ -33,7 +33,7 @@
             position: sticky; top: 0; z-index: 100; backdrop-filter: blur(10px);
         }
         .logo { font-family: 'Syncopate', sans-serif; font-size: 1.1rem; letter-spacing: 3px; }
-        .logo span { color: var(--primary); }
+        .logo, .logo span { color: var(--primary); }
         .btn-top {
             background: transparent; border: 1px solid var(--border); color: var(--text-main);
             padding: 9px 16px; border-radius: 8px; cursor: pointer; font-weight: 700; font-size: 0.78rem;
@@ -111,7 +111,7 @@
             font-weight: 800; font-size: 0.8rem; cursor: pointer; transition: 0.2s; font-family: inherit;
             display: inline-flex; align-items: center; justify-content: center; gap: 6px;
         }
-        .btn-add:hover { background: #e8ff40; }
+        .btn-add:hover { background: #9cff40; }
         .btn-add:disabled { background: rgba(255,255,255,0.08); color: var(--text-muted); cursor: not-allowed; }
 
         .empty-state { text-align: center; padding: 70px 20px; color: var(--text-muted); }

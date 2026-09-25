@@ -1,4 +1,4 @@
-﻿@extends('layouts.SelecaoCadastro')
+@extends('layouts.SelecaoCadastro')
 
 @section('estilos')
 <style>
@@ -120,7 +120,7 @@
         border-radius: 13px;
         background: rgba(10, 11, 13, .55);
         backdrop-filter: blur(6px);
-        border: 1px solid rgba(212, 255, 0, .4);
+        border: 1px solid rgba(124, 255, 0, .4);
         color: var(--primary);
         display: flex;
         align-items: center;
@@ -173,15 +173,15 @@
 
     /* Hover: elevar card, aproximar imagem, acender ícone e seta */
     .sel-card:hover {
-        border-color: rgba(212, 255, 0, .5);
+        border-color: rgba(124, 255, 0, .5);
         transform: translateY(-6px);
-        box-shadow: 0 24px 60px rgba(0, 0, 0, .6), 0 0 0 1px rgba(212, 255, 0, .15);
+        box-shadow: 0 24px 60px rgba(0, 0, 0, .6), 0 0 0 1px rgba(124, 255, 0, .15);
     }
     .sel-card:hover .sel-img { transform: scale(1.07); }
     .sel-card:hover .sel-icon {
         background: var(--primary);
         color: var(--bg-dark);
-        box-shadow: 0 0 24px rgba(212, 255, 0, .55);
+        box-shadow: 0 0 24px rgba(124, 255, 0, .55);
     }
     .sel-card:hover .sel-go { color: var(--primary); gap: 14px; }
     .sel-card:hover .sel-go i { transform: translateX(4px); }
@@ -189,14 +189,41 @@
 @endsection
 
 @section('conteudo')
+    @php
+        // Link de convite (/cadastro/selecionar?cupom=XXXX): carrega o código
+        // para o formulário escolhido e mostra quem indicou.
+        $cupomConvite = \App\Models\Cupom::normalizar(request('cupom'));
+        $cupomValido  = $cupomConvite !== ''
+            ? app(\App\Services\CupomService::class)->buscar($cupomConvite)
+            : null;
+        $cupomValido = ($cupomValido && $cupomValido->estaValido()) ? $cupomValido : null;
+        $paramsCupom = $cupomValido ? ['cupom' => $cupomValido->codigo] : [];
+    @endphp
+
     <div class="sel-header">
         <div class="sel-eyebrow"><span class="sel-num">01</span> Comece agora</div>
         <h2>Escolha seu <span>Perfil de Acesso</span></h2>
         <p>Seja qual for o seu lugar no fitness, sua história começa aqui.</p>
     </div>
 
+    @if ($cupomValido)
+        <div style="max-width:720px;margin:0 auto 28px;padding:14px 18px;border-radius:14px;
+                    background:rgba(124,255,0,.08);border:1px solid rgba(124,255,0,.35);
+                    color:#fff;display:flex;align-items:center;gap:12px;font-size:.92rem;">
+            <i class="ph-bold ph-gift" style="color:#7cff00;font-size:1.3rem;"></i>
+            <span>
+                @if ($cupomValido->nomeDono())
+                    Você foi indicado por <strong>{{ strtok(trim($cupomValido->nomeDono()), ' ') }}</strong>.
+                @else
+                    Cupom <strong>{{ $cupomValido->codigo }}</strong> aplicado.
+                @endif
+                O código já vem preenchido no formulário.
+            </span>
+        </div>
+    @endif
+
     <div class="sel-grid">
-        <a href="{{ route('cadastro.ir', array_filter(['tipo' => 'personal', 'ref' => request('ref')])) }}" class="sel-card">
+        <a href="{{ route('cadastro.ir', ['tipo' => 'personal'] + $paramsCupom) }}" class="sel-card">
             <img class="sel-img" src="{{ asset('img/selecao/personal.jpg') }}" alt="Personal trainer">
             <div class="sel-overlay"></div>
             <div class="sel-icon"><i class="ph-bold ph-barbell"></i></div>
@@ -208,7 +235,7 @@
             </div>
         </a>
 
-        <a href="{{ route('cadastro.ir', ['tipo' => 'cliente']) }}" class="sel-card">
+        <a href="{{ route('cadastro.ir', ['tipo' => 'cliente'] + $paramsCupom) }}" class="sel-card">
             <img class="sel-img" src="{{ asset('img/selecao/aluno.jpg') }}" alt="Aluno atleta">
             <div class="sel-overlay"></div>
             <div class="sel-icon"><i class="ph-bold ph-person-simple-run"></i></div>
@@ -220,7 +247,7 @@
             </div>
         </a>
 
-        <a href="{{ route('cadastro.ir', array_filter(['tipo' => 'academia', 'ref' => request('ref')])) }}" class="sel-card">
+        <a href="{{ route('cadastro.ir', ['tipo' => 'academia'] + $paramsCupom) }}" class="sel-card">
             <img class="sel-img" src="{{ asset('img/selecao/academia.jpg') }}" alt="Academia">
             <div class="sel-overlay"></div>
             <div class="sel-icon"><i class="ph-bold ph-buildings"></i></div>
@@ -232,7 +259,7 @@
             </div>
         </a>
 
-        <a href="{{ route('cadastro.ir', array_filter(['tipo' => 'studio', 'ref' => request('ref')])) }}" class="sel-card">
+        <a href="{{ route('cadastro.ir', ['tipo' => 'studio'] + $paramsCupom) }}" class="sel-card">
             <img class="sel-img" src="{{ asset('img/selecao/studio.jpg') }}" alt="Studio fitness">
             <div class="sel-overlay"></div>
             <div class="sel-icon"><i class="ph-bold ph-flower-lotus"></i></div>
@@ -244,7 +271,7 @@
             </div>
         </a>
 
-        <a href="{{ route('cadastro.ir', ['tipo' => 'loja']) }}" class="sel-card sel-card--full">
+        <a href="{{ route('cadastro.ir', ['tipo' => 'loja'] + $paramsCupom) }}" class="sel-card sel-card--full">
             <img class="sel-img" src="{{ asset('img/selecao/loja.jpg') }}" alt="Loja de suplementos">
             <div class="sel-overlay"></div>
             <div class="sel-icon"><i class="ph-bold ph-storefront"></i></div>

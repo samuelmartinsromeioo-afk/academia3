@@ -12,6 +12,8 @@ class Loja extends Authenticatable
 {
     use HasFactory;
     use HasApiTokens;
+    use \App\Models\Concerns\TemCupomIndicacao;
+    use \App\Models\Concerns\TemSeloPioneiro;
 
     protected $table = 'lojas';
 
@@ -45,6 +47,8 @@ class Loja extends Authenticatable
         'data_aprovacao' => 'datetime',
         'latitude'       => 'decimal:7',
         'longitude'      => 'decimal:7',
+        // Fora do $fillable de propósito: quem grava é definirPosicaoPioneiro().
+        'pioneiro_posicao' => 'integer',
     ];
 
     protected $hidden = ['senha'];

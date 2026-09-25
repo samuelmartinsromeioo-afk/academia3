@@ -11,7 +11,7 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/fill/style.css">
     <style>
         :root {
-            --primary: #d4ff00; --bg-dark: #0a0b0d; --card-bg: #16181d;
+            --primary: #7cff00; --bg-dark: #0a0b0d; --card-bg: #16181d;
             --text-main: #fff; --text-muted: #a0a0a0; --border: rgba(255,255,255,0.08);
             --success: #00ff88; --error: #ff4444;
         }
@@ -27,6 +27,7 @@
         .section-label::after { content: ""; flex: 1; height: 1px; background: var(--border); }
         .card { background: var(--card-bg); border-radius: 16px; border: 1px solid var(--border); padding: 20px; }
         .alert-success { background: rgba(0,255,136,0.08); border: 1px solid rgba(0,255,136,0.3); color: var(--success); padding: 12px 16px; border-radius: 12px; margin-bottom: 18px; font-size: 0.85rem; font-weight: 700; }
+        .alert-error { background: rgba(255,68,68,0.08); border: 1px solid rgba(255,68,68,0.3); color: var(--error); padding: 12px 16px; border-radius: 12px; margin-bottom: 18px; font-size: 0.85rem; font-weight: 700; }
 
         .class-hero { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
         .class-badge { display: inline-flex; align-items: center; gap: 8px; padding: 8px 18px; border-radius: 30px; font-size: 0.85rem; font-weight: 900; text-transform: uppercase; }
@@ -48,13 +49,13 @@
         .btn-mark { border: 1px solid var(--border); background: rgba(255,255,255,0.04); color: var(--text-main); padding: 7px 13px; border-radius: 8px; font-size: 0.74rem; font-weight: 800; cursor: pointer; font-family: inherit; display: inline-flex; align-items: center; gap: 6px; transition: 0.15s; }
         .btn-mark.pres:hover, .btn-mark.pres.on { background: rgba(0,255,136,0.15); border-color: var(--success); color: var(--success); }
         .btn-mark.falt:hover, .btn-mark.falt.on { background: rgba(255,68,68,0.15); border-color: var(--error); color: var(--error); }
+        .btn-mark[disabled] { opacity: 0.35; cursor: not-allowed; }
+        .btn-mark[disabled]:hover { background: rgba(255,255,255,0.04); border-color: var(--border); color: var(--text-main); }
+        .aguardando { color: var(--text-muted); font-size: 0.72rem; display: inline-flex; align-items: center; gap: 5px; }
+        .dia-info .hora { color: var(--text-muted); font-size: 0.72rem; }
         .status-badge { padding: 4px 11px; border-radius: 20px; font-size: 0.66rem; font-weight: 900; text-transform: uppercase; }
         .st-pres { background: rgba(0,255,136,0.12); color: var(--success); border: 1px solid rgba(0,255,136,0.3); }
         .st-falt { background: rgba(255,68,68,0.12); color: var(--error); border: 1px solid rgba(255,68,68,0.3); }
-
-        .manual-form { display: flex; gap: 10px; align-items: end; flex-wrap: wrap; }
-        .manual-form input[type=date] { background: var(--card-bg); border: 1px solid var(--border); color: #fff; padding: 10px 12px; border-radius: 10px; outline: none; color-scheme: dark; font-size: 0.88rem; }
-        .manual-form label { display:block; color: var(--text-muted); font-size: 0.62rem; text-transform: uppercase; font-weight: 800; margin-bottom: 6px; }
 
         .btn-del { background: transparent; border: 1px solid rgba(255,68,68,0.35); color: var(--error); padding: 6px 10px; border-radius: 8px; font-size: 0.7rem; font-weight: 800; cursor: pointer; }
         .btn-del:hover { background: rgba(255,68,68,0.12); }
@@ -82,6 +83,10 @@
 
     @if(session('success'))
         <div class="alert-success"><i class="ph ph-check-circle"></i> {{ session('success') }}</div>
+    @endif
+
+    @if(session('error'))
+        <div class="alert-error"><i class="ph ph-warning-circle"></i> {{ session('error') }}</div>
     @endif
 
     {{-- CLASSIFICAÇÃO + RESUMO --}}
@@ -127,47 +132,42 @@
 
     <div class="card" style="padding: 8px 14px;">
         @if($diasAgenda->isEmpty())
-            <p class="empty"><i class="ph ph-info"></i> Nenhuma aula agendada nesse mês. Use a marcação manual abaixo para registrar a frequência.</p>
+            <p class="empty"><i class="ph ph-info"></i> Nenhuma aula agendada nesse mês — não há presença a registrar.</p>
         @else
             @foreach($diasAgenda as $dia)
                 @php
-                    $reg = $presencasPorData->get($dia);
-                    $c = \Carbon\Carbon::parse($dia);
+                    $reg = $presencasPorData->get($dia['data']);
+                    $c = \Carbon\Carbon::parse($dia['data']);
                 @endphp
                 <div class="dia-row">
                     <div class="dia-info">
                         <div class="data">{{ $c->format('d/m/Y') }}</div>
-                        <div class="dow">{{ $diasSemana[$c->dayOfWeek] }}</div>
+                        <div class="dow">
+                            {{ $diasSemana[$c->dayOfWeek] }}
+                            @if($dia['hora'])<span class="hora">· aula às {{ $dia['hora'] }}</span>@endif
+                        </div>
                     </div>
                     <div style="display:flex; align-items:center; gap:12px;">
                         @if($reg)
                             <span class="status-badge {{ $reg->presente ? 'st-pres' : 'st-falt' }}">{{ $reg->presente ? 'Presente' : 'Faltou' }}</span>
                         @endif
+                        {{-- Aula que ainda não começou não pode ser marcada (o servidor também barra). --}}
+                        @unless($dia['liberado'])
+                            <span class="aguardando" title="A presença libera no horário da aula">
+                                <i class="ph ph-clock"></i> libera às {{ $dia['hora'] ?? '00:00' }}
+                            </span>
+                        @endunless
                         <form method="POST" action="{{ route('personal.frequencia.marcar') }}" class="mark-btns">
                             @csrf
                             <input type="hidden" name="cliente_id" value="{{ $cliente->id }}">
-                            <input type="hidden" name="data" value="{{ $dia }}">
-                            <button class="btn-mark pres {{ $reg && $reg->presente ? 'on' : '' }}" name="presente" value="1"><i class="ph ph-check"></i> Foi</button>
-                            <button class="btn-mark falt {{ $reg && !$reg->presente ? 'on' : '' }}" name="presente" value="0"><i class="ph ph-x"></i> Faltou</button>
+                            <input type="hidden" name="data" value="{{ $dia['data'] }}">
+                            <button class="btn-mark pres {{ $reg && $reg->presente ? 'on' : '' }}" name="presente" value="1" @disabled(! $dia['liberado'])><i class="ph ph-check"></i> Foi</button>
+                            <button class="btn-mark falt {{ $reg && !$reg->presente ? 'on' : '' }}" name="presente" value="0" @disabled(! $dia['liberado'])><i class="ph ph-x"></i> Faltou</button>
                         </form>
                     </div>
                 </div>
             @endforeach
         @endif
-    </div>
-
-    {{-- MARCAÇÃO MANUAL --}}
-    <div class="card" style="margin-top:12px;">
-        <form method="POST" action="{{ route('personal.frequencia.marcar') }}" class="manual-form">
-            @csrf
-            <input type="hidden" name="cliente_id" value="{{ $cliente->id }}">
-            <div>
-                <label>Marcar outra data</label>
-                <input type="date" name="data" value="{{ now()->format('Y-m-d') }}" required>
-            </div>
-            <button class="btn-mark pres" name="presente" value="1"><i class="ph ph-check"></i> Presente</button>
-            <button class="btn-mark falt" name="presente" value="0"><i class="ph ph-x"></i> Faltou</button>
-        </form>
     </div>
 
     {{-- FALTAS POR DIA DA SEMANA --}}

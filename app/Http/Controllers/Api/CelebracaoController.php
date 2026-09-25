@@ -52,7 +52,7 @@ class CelebracaoController extends Controller
                 'tipo'     => $c->tipo,
                 'titulo'   => $c->titulo,
                 'mensagem' => $c->mensagem,
-                'cor'      => $c->cor_medalha ?: '#d4ff00',
+                'cor'      => $c->cor_medalha ?: '#7cff00',
                 // Nº da sequência (para as medalhas de streak); null nos outros tipos.
                 'num'      => $c->dados_extras['sequencia_atual'] ?? null,
                 // Dados estruturados (retrospectivas: itens/fotos/treinos etc.).

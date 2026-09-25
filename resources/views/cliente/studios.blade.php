@@ -12,7 +12,7 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/fill/style.css">
     <style>
         :root {
-            --primary: #d4ff00;
+            --primary: #7cff00;
             --bg-dark: #0a0b0d;
             --card-bg: #16181d;
             --text-main: #ffffff;
@@ -48,7 +48,7 @@
             font-size: 1.1rem;
             letter-spacing: 3px;
         }
-        .logo span { color: var(--primary); }
+        .logo, .logo span { color: var(--primary); }
 
         .btn-top {
             background: transparent;
@@ -115,7 +115,7 @@
 
         .card-img {
             height: 160px;
-            background: linear-gradient(135deg, rgba(177,76,255,0.18), rgba(212,255,0,0.06));
+            background: linear-gradient(135deg, rgba(177,76,255,0.18), rgba(124,255,0,0.06));
             display: flex;
             align-items: center;
             justify-content: center;
@@ -125,6 +125,8 @@
             overflow: hidden;
         }
         .card-img img { width: 100%; height: 100%; object-fit: cover; }
+        /* Pioneiro: só o selo ao lado do nome — sem realce no card. */
+        .card.pioneiro .card-body h3 { display: flex; align-items: center; gap: 5px; }
 
         .card-badge {
             position: absolute;
@@ -179,7 +181,7 @@
             align-items: center;
             gap: 6px;
         }
-        .btn-detalhes:hover { transform: translateY(-1px); box-shadow: 0 6px 16px rgba(212,255,0,0.25); }
+        .btn-detalhes:hover { transform: translateY(-1px); box-shadow: 0 6px 16px rgba(124,255,0,0.25); }
 
         .empty-state {
             text-align: center;
@@ -219,7 +221,7 @@
     @else
         <div class="grid" id="gridStudios">
             @foreach ($studios as $studio)
-                <div class="card" data-busca="{{ strtolower($studio->nome . ' ' . ($studio->modalidades ?? '') . ' ' . ($studio->cidade ?? '')) }}">
+                <div class="card {{ $studio->eh_pioneiro ? 'pioneiro' : '' }}" data-busca="{{ strtolower($studio->nome . ' ' . ($studio->modalidades ?? '') . ' ' . ($studio->cidade ?? '')) }}">
                     <div class="card-img">
                         @if ($studio->fotos->isNotEmpty())
                             <img src="{{ asset('storage/' . $studio->fotos->first()->path) }}" alt="{{ $studio->nome }}">
@@ -229,7 +231,12 @@
                         <span class="card-badge"><i class="ph ph-flower-lotus"></i> Studio</span>
                     </div>
                     <div class="card-body">
-                        <h3>{{ $studio->nome }}</h3>
+                        <h3>
+                            {{ $studio->nome }}
+                            @if ($studio->eh_pioneiro)
+                                @include('partials.badge-pioneiro', ['posicao' => $studio->pioneiro_posicao, 'estado' => $studio->estado, 'tipo' => 'studio', 'tamanho' => 15])
+                            @endif
+                        </h3>
                         @if ($studio->modalidades)
                             <div class="card-meta"><i class="ph ph-barbell"></i> {{ $studio->modalidades }}</div>
                         @endif

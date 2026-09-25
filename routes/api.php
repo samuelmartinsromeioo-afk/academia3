@@ -122,8 +122,8 @@ Route::prefix('v1')->group(function () {
             Route::put('/perfil', [\App\Http\Controllers\Api\AcademiaController::class, 'atualizarPerfil']);
             Route::post('/infraestrutura', [\App\Http\Controllers\Api\AcademiaController::class, 'atualizarInfraestrutura']);
 
+            // Sem POST /alunos: a academia não cria contas de aluno (ver web.php).
             Route::get('/alunos', [\App\Http\Controllers\Api\AcademiaController::class, 'alunos']);
-            Route::post('/alunos', [\App\Http\Controllers\Api\AcademiaController::class, 'criarAluno']);
             Route::get('/alunos/{clienteId}/anamnese', [\App\Http\Controllers\Api\AcademiaController::class, 'anamnese'])->whereNumber('clienteId');
             Route::post('/alunos/{clienteId}/anamnese', [\App\Http\Controllers\Api\AcademiaController::class, 'salvarAnamnese'])->whereNumber('clienteId');
 

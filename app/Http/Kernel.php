@@ -37,6 +37,9 @@ class Kernel extends HttpKernel
             \App\Http\Middleware\VerifyCsrfToken::class,
             \Illuminate\Routing\Middleware\SubstituteBindings::class,
             \App\Http\Middleware\SecurityHeaders::class,
+            // A09 — login e painel admin vivem no grupo web; sem isto as negativas
+            // de acesso (401/403/419/429) do lado web não deixavam rastro nenhum.
+            \App\Http\Middleware\LogSecurityEvents::class,
         ],
 
         'api' => [

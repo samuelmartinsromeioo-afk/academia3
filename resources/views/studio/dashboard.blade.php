@@ -13,7 +13,7 @@
     <link rel="stylesheet" href="{{ asset('css/snrfit-brand.css') }}">
     <style>
         :root {
-            --primary: #d4ff00;
+            --primary: #7cff00;
             --bg-dark: #0a0b0d;
             --card-bg: #16181d;
             --text-main: #ffffff;
@@ -54,7 +54,7 @@
             letter-spacing: 3px;
             color: var(--text-main);
         }
-        .logo span { color: var(--primary); }
+        .logo, .logo span { color: var(--primary); }
 
         .top-actions { display: flex; gap: 10px; flex-wrap: wrap; }
 
@@ -113,7 +113,7 @@
 
         .menu-rating-header {
             padding: 20px;
-            background: rgba(212, 255, 0, 0.05);
+            background: rgba(124, 255, 0, 0.05);
             border-bottom: 1px solid var(--border);
             text-align: center;
         }
@@ -168,13 +168,13 @@
             padding: 24px;
             transition: 0.2s;
         }
-        .stat-card:hover { border-color: rgba(212,255,0,0.3); }
+        .stat-card:hover { border-color: rgba(124,255,0,0.3); }
 
         .stat-card .stat-icon {
             width: 44px;
             height: 44px;
             border-radius: 12px;
-            background: rgba(212, 255, 0, 0.1);
+            background: rgba(124, 255, 0, 0.1);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -282,7 +282,7 @@
             transition: 0.2s;
             font-family: inherit;
         }
-        .btn-save:hover { transform: translateY(-1px); box-shadow: 0 8px 20px rgba(212,255,0,0.15); }
+        .btn-save:hover { transform: translateY(-1px); box-shadow: 0 8px 20px rgba(124,255,0,0.15); }
 
         /* PLANOS */
         .plano-card {
@@ -400,7 +400,7 @@
             <button type="button" id="btnOpenGaleria"><i class="ph ph-images"></i> Minha Galeria</button>
             <button type="button" id="btnOpenCarteira"><i class="ph ph-piggy-bank" style="color: var(--primary);"></i> Minha Carteira</button>
             <a href="{{ route('studio.horarios') }}"><i class="ph ph-clock"></i> Meus Horários</a>
-            <a href="{{ route('indicacao.painel') }}"><i class="ph ph-gift" style="color: var(--primary);"></i> Indique e ganhe</a>
+            <a href="{{ route('indicacoes.painel') }}"><i class="ph ph-gift"></i> Indique e ganhe</a>
             <a href="{{ route('lgpd.meus-dados') }}"><i class="ph ph-shield-check"></i> Privacidade e meus dados</a>
             <form action="{{ route('login.logout') }}" method="POST" style="margin:0;">
                 @csrf
@@ -780,7 +780,7 @@
         </div>
 
         <div id="carteiraConteudo" style="display:none;">
-            <div style="background:rgba(212,255,0,0.07); border:1px solid rgba(212,255,0,0.3); border-radius:16px; padding:24px; text-align:center; margin-bottom:20px;">
+            <div style="background:rgba(124,255,0,0.07); border:1px solid rgba(124,255,0,0.3); border-radius:16px; padding:24px; text-align:center; margin-bottom:20px;">
                 <p style="margin:0; color:#a0a0a0; font-size:0.75rem; text-transform:uppercase; margin-bottom:8px;">Saldo disponível</p>
                 <p id="carteiraValor" style="margin:0; color:#fff; font-size:2rem; font-weight:900;">R$ 0,00</p>
             </div>

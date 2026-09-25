@@ -19,7 +19,7 @@
 
     <style>
         :root {
-            --primary: #d4ff00; /* Neon Lime */
+            --primary: #7cff00; /* Neon Lime */
             --bg-dark: #0a0b0d;
             --card-bg: #16181d;
             --text-main: #ffffff;
@@ -35,7 +35,7 @@
         body {
             background-color: var(--bg-dark);
             background-image:
-                radial-gradient(circle at 18% -6%, rgba(212, 255, 0, 0.05) 0%, transparent 30%),
+                radial-gradient(circle at 18% -6%, rgba(124, 255, 0, 0.05) 0%, transparent 30%),
                 radial-gradient(circle at 92% 106%, rgba(255, 255, 255, 0.025) 0%, transparent 38%);
             font-family: 'Inter', sans-serif;
             color: var(--text-main);

@@ -12,7 +12,7 @@
         th,td { padding:7px 12px; border-bottom:1px solid #eee; text-align:left; }
         th { background:#f5f5f5; font-size:.7rem; text-transform:uppercase; color:#666; }
         .grid2 { display:flex; gap:24px; flex-wrap:wrap; font-size:.9rem; }
-        .print-btn { position:fixed; top:16px; right:16px; background:#0a0b0d; color:#d4ff00; border:none; padding:10px 16px; border-radius:8px; cursor:pointer; }
+        .print-btn { position:fixed; top:16px; right:16px; background:#0a0b0d; color:#7cff00; border:none; padding:10px 16px; border-radius:8px; cursor:pointer; }
         .kv b { display:block; color:#666; font-size:.72rem; }
         @media print { .print-btn { display:none; } body { padding:12px; } }
     </style>

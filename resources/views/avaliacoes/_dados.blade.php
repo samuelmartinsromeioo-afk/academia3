@@ -144,7 +144,7 @@
     <div style="margin-top:12px;">
         <div style="display:flex; gap:6px; flex-wrap:wrap;">
             @foreach($r->postural_checklist as $item)
-            <span style="background:rgba(212,255,0,0.08); border:1px solid rgba(212,255,0,0.25); color:var(--primary); padding:3px 10px; border-radius:20px; font-size:0.65rem; font-weight:800;">{{ $item }}</span>
+            <span style="background:rgba(124,255,0,0.08); border:1px solid rgba(124,255,0,0.25); color:var(--primary); padding:3px 10px; border-radius:20px; font-size:0.65rem; font-weight:800;">{{ $item }}</span>
             @endforeach
         </div>
     </div>

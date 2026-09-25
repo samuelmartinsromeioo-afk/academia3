@@ -13,7 +13,7 @@
     <link rel="stylesheet" href="{{ asset('css/snrfit-brand.css') }}">
     <style>
         :root {
-            --primary: #d4ff00;
+            --primary: #7cff00;
             --bg-dark: #0a0b0d;
             --card-bg: #16181d;
             --text-main: #ffffff;
@@ -54,7 +54,7 @@
             letter-spacing: 3px;
             color: var(--text-main);
         }
-        .logo span { color: var(--primary); }
+        .logo, .logo span { color: var(--primary); }
 
         .menu-container { position: relative; display: flex; align-items: center; gap: 14px; }
 
@@ -113,10 +113,10 @@
             margin-bottom: 36px;
         }
         .stat-card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 16px; padding: 24px; transition: 0.2s; }
-        .stat-card:hover { border-color: rgba(212,255,0,0.3); }
+        .stat-card:hover { border-color: rgba(124,255,0,0.3); }
         .stat-card .stat-icon {
             width: 44px; height: 44px; border-radius: 12px;
-            background: rgba(212, 255, 0, 0.1);
+            background: rgba(124, 255, 0, 0.1);
             display: flex; align-items: center; justify-content: center;
             color: var(--primary); font-size: 1.1rem; margin-bottom: 14px;
         }
@@ -148,7 +148,7 @@
         .prod-thumb-placeholder {
             width: 46px; height: 46px; border-radius: 10px;
             display: flex; align-items: center; justify-content: center;
-            border: 1px solid var(--border); background: rgba(212,255,0,0.06); color: var(--primary);
+            border: 1px solid var(--border); background: rgba(124,255,0,0.06); color: var(--primary);
         }
 
         .preco { color: var(--primary); font-weight: 800; white-space: nowrap; }
@@ -196,7 +196,7 @@
             padding: 13px 22px; font-weight: 900; font-size: 0.85rem; text-transform: uppercase; cursor: pointer;
             transition: 0.2s; font-family: inherit;
         }
-        .btn-save:hover { transform: translateY(-1px); box-shadow: 0 8px 20px rgba(212,255,0,0.15); }
+        .btn-save:hover { transform: translateY(-1px); box-shadow: 0 8px 20px rgba(124,255,0,0.15); }
 
         .modal-overlay {
             display: none; position: fixed; inset: 0; background: rgba(0, 0, 0, 0.85);
@@ -229,6 +229,7 @@
             <button type="button" id="btnOpenCarteira"><i class="ph ph-piggy-bank" style="color: var(--primary);"></i> Minha Carteira</button>
             <button type="button" id="btnOpenPerfil"><i class="ph ph-storefront"></i> Editar Loja</button>
             <a href="{{ route('lojas.detalhes', $loja->id) }}" target="_blank"><i class="ph ph-eye"></i> Ver minha vitrine</a>
+            <a href="{{ route('indicacoes.painel') }}"><i class="ph ph-gift"></i> Indique e ganhe</a>
             <a href="{{ route('lgpd.meus-dados') }}"><i class="ph ph-shield-check"></i> Privacidade e meus dados</a>
             <form action="{{ route('login.logout') }}" method="POST" style="margin:0;">
                 @csrf
@@ -515,7 +516,7 @@
                         @if($pedido->status === 'concluido')
                             <span class="badge badge-ok">Concluído</span>
                         @else
-                            <span class="badge" style="background:rgba(212,255,0,0.12); color:var(--primary);">Pago</span>
+                            <span class="badge" style="background:rgba(124,255,0,0.12); color:var(--primary);">Pago</span>
                         @endif
                         <div style="color:var(--text-muted); font-size:0.78rem; margin-top:4px;">
                             <i class="ph ph-user"></i> {{ $pedido->cliente?->nome ?? 'Cliente' }}
@@ -591,7 +592,7 @@
         </div>
 
         <div id="carteiraConteudo" style="display:none;">
-            <div style="background:rgba(212,255,0,0.07); border:1px solid rgba(212,255,0,0.3); border-radius:16px; padding:24px; text-align:center; margin-bottom:20px;">
+            <div style="background:rgba(124,255,0,0.07); border:1px solid rgba(124,255,0,0.3); border-radius:16px; padding:24px; text-align:center; margin-bottom:20px;">
                 <p style="margin:0; color:var(--text-muted); font-size:0.75rem; text-transform:uppercase; margin-bottom:8px;">Saldo disponível</p>
                 <p id="carteiraValor" style="margin:0; color:#fff; font-size:2rem; font-weight:900;">R$ 0,00</p>
             </div>

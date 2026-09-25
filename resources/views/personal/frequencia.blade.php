@@ -11,7 +11,7 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/fill/style.css">
     <style>
         :root {
-            --primary: #d4ff00; --bg-dark: #0a0b0d; --card-bg: #16181d;
+            --primary: #7cff00; --bg-dark: #0a0b0d; --card-bg: #16181d;
             --text-main: #fff; --text-muted: #a0a0a0; --border: rgba(255,255,255,0.08);
             --success: #00ff88; --error: #ff4444;
         }
@@ -24,7 +24,7 @@
         .btn-back { background: rgba(255,255,255,0.06); border: 1px solid var(--border); color: var(--text-main); padding: 10px 18px; border-radius: 10px; font-weight: 700; font-size: 0.8rem; text-decoration: none; display: inline-flex; align-items: center; gap: 8px; transition: 0.2s; }
         .btn-back:hover { border-color: var(--primary); color: var(--primary); }
         .btn-primary { background: var(--primary); color: #000; border: none; padding: 9px 16px; border-radius: 10px; font-weight: 900; font-size: 0.75rem; cursor: pointer; text-transform: uppercase; text-decoration: none; display: inline-flex; align-items: center; gap: 7px; transition: 0.2s; }
-        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(212,255,0,0.2); }
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(124,255,0,0.2); }
         .card { background: var(--card-bg); border-radius: 16px; border: 1px solid var(--border); padding: 18px 20px; margin-bottom: 12px; }
         .aluno-row { display: flex; justify-content: space-between; align-items: center; gap: 14px; flex-wrap: wrap; }
         .aluno-nome { font-size: 1rem; font-weight: 900; margin: 0 0 6px; }

@@ -56,7 +56,7 @@ class Celebracoes
                            . 'mais sozinho(a): aqui a gente cresce junto, comemora cada vitória e não '
                            . 'solta a mão de ninguém. Sua história começa agora — e a gente vai estar do seu lado em cada passo.',
             'icone'       => 'ph-hand-waving',
-            'cor_medalha' => '#d4ff00',
+            'cor_medalha' => '#7cff00',
             'dados_extras'=> ['nome' => $nome],
         ];
     }
@@ -139,7 +139,7 @@ class Celebracoes
             'titulo'      => $titulo,
             'mensagem'    => $mensagem,
             'icone'       => 'ph-trend-up',
-            'cor_medalha' => '#d4ff00',
+            'cor_medalha' => '#7cff00',
             'dados_extras'=> ['exercicio' => $exercicio, 'aumento_kg' => $aumento, 'nova_carga' => $novaCarga],
         ];
     }
@@ -170,7 +170,7 @@ class Celebracoes
             'titulo'      => 'META BATIDA!',
             'mensagem'    => "Você concluiu a meta \"{$titulo}\". Isso é foco e consistência de quem é da família SNR. Bora pra próxima!",
             'icone'       => 'ph-target',
-            'cor_medalha' => '#D4FF00',
+            'cor_medalha' => '#7cff00',
             'dados_extras'=> ['meta' => $titulo],
         ];
     }

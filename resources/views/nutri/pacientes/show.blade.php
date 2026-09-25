@@ -41,7 +41,7 @@
     @endif
 
     <!-- Portal do paciente -->
-    <div class="card" style="margin-bottom:18px; border-color:rgba(212,255,0,.25);">
+    <div class="card" style="margin-bottom:18px; border-color:rgba(124,255,0,.25);">
         <label>Link do portal do paciente (app)</label>
         <div style="display:flex; gap:10px; flex-wrap:wrap;">
             <input id="portalLink" readonly value="{{ route('portal.home',$paciente->portal_token) }}">
@@ -95,7 +95,7 @@
             <p class="muted" style="font-size:.72rem; margin:-6px 0 8px;">Você pode manter várias fichas ativas — ex.: uma por dia da semana. O paciente vê a ficha do dia automaticamente.</p>
             @php $ativasCount = $paciente->planos->where('is_modelo',false)->where('ativo',true)->count(); @endphp
             @if ($paciente->orcamento_mensal)
-                <div class="muted" style="font-size:.72rem; margin-bottom:10px; padding:8px 10px; background:rgba(212,255,0,.05); border-radius:8px;">
+                <div class="muted" style="font-size:.72rem; margin-bottom:10px; padding:8px 10px; background:rgba(124,255,0,.05); border-radius:8px;">
                     <i class="ph ph-wallet"></i> Orçamento R$ {{ number_format($paciente->orcamento_mensal,2,',','.') }}/mês
                     @if ($ativasCount)
                         ÷ {{ $ativasCount }} ficha(s) = <strong>R$ {{ number_format($paciente->cotaMensalPorFicha($ativasCount),2,',','.') }}/ficha</strong> (soma = R$ {{ number_format($paciente->orcamento_mensal,2,',','.') }})

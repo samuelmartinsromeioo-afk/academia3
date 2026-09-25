@@ -5,7 +5,7 @@
   .cin-stage > .cin-root{position:absolute;inset:0;width:100%;height:100%}
 
   @keyframes cinKen{from{transform:scale(1.06)}to{transform:scale(1)}}
-  @keyframes cinBandGlow{0%,100%{box-shadow:0 0 0 rgba(212,255,0,0)}50%{box-shadow:0 0 22px rgba(212,255,0,.5),0 0 7px rgba(212,255,0,.4)}}
+  @keyframes cinBandGlow{0%,100%{box-shadow:0 0 0 rgba(124,255,0,0)}50%{box-shadow:0 0 22px rgba(124,255,0,.5),0 0 7px rgba(124,255,0,.4)}}
   @keyframes cinFloat{0%{transform:translate3d(0,0,0)}50%{transform:translate3d(8px,-16px,0)}100%{transform:translate3d(0,0,0)}}
   @keyframes cinBar{from{transform:scaleX(0)}to{transform:scaleX(1)}}
 
@@ -21,7 +21,7 @@
   .cin-scene.cin-on .cin-sub{animation:cinLineIn .9s cubic-bezier(.2,.75,.2,1) 1.05s forwards}
   .cin-sub{opacity:0;transform:translateY(18px)}
   .cin-band{animation:cinBandGlow 3.4s ease-in-out 1.6s infinite}
-  .cin-particle{position:absolute;border-radius:50%;background:#d4ff00;pointer-events:none;will-change:transform,opacity}
+  .cin-particle{position:absolute;border-radius:50%;background:#7cff00;pointer-events:none;will-change:transform,opacity}
   .cin-dot{cursor:pointer;transition:background .3s ease}
   .cin-scene .cin-img{transition:translate .9s cubic-bezier(.2,.8,.3,1)}
   @keyframes cinWheelHint{0%,100%{transform:translateY(0);opacity:.9}50%{transform:translateY(7px);opacity:.4}}
@@ -39,10 +39,10 @@
   .cin-btn:hover i{transform:translateX(4px)}
 
   /* Hovers (o export usava um runtime; aqui são regras CSS reais) */
-  .cin-nav-ghost:hover{border-color:#d4ff00;color:#d4ff00}
-  .cin-nav-solid:hover{transform:translateY(-2px);box-shadow:0 8px 20px rgba(212,255,0,.25)}
-  .cin-btn:hover{transform:translateY(-2px);box-shadow:0 10px 26px rgba(212,255,0,.3)}
-  .cin-ghostbtn:hover{border-color:#d4ff00;color:#d4ff00}
+  .cin-nav-ghost:hover{border-color:#7cff00;color:#7cff00}
+  .cin-nav-solid:hover{transform:translateY(-2px);box-shadow:0 8px 20px rgba(124,255,0,.25)}
+  .cin-btn:hover{transform:translateY(-2px);box-shadow:0 10px 26px rgba(124,255,0,.3)}
+  .cin-ghostbtn:hover{border-color:#7cff00;color:#7cff00}
 
   /* Ajuste tela cheia em telas menores (o layout base foi desenhado para desktop) */
   @media (max-width:768px){
@@ -77,10 +77,10 @@
     <img class="cin-img" src="{{ asset('images/landing/cinematica/cena1.jpg') }}" alt="Atleta sozinho no escuro da academia" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center 30%;will-change:transform">
     <div style="position:absolute;inset:0;background:linear-gradient(90deg,rgba(10,11,13,.88) 0%,rgba(10,11,13,.45) 42%,rgba(10,11,13,.05) 70%),linear-gradient(180deg,rgba(10,11,13,.55),transparent 26%,transparent 62%,rgba(10,11,13,.92))"></div>
     <div style="position:absolute;left:84px;top:50%;transform:translateY(-50%);max-width:640px;z-index:2">
-      <div class="cin-line" style="font-size:0.72rem;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:#9ca3af;margin-bottom:26px"><span style="color:#0a0b0d;background:#d4ff00;font-family:Syncopate,sans-serif;font-weight:700;padding:2px 8px;letter-spacing:1px;margin-right:12px">01</span>Onde tudo começa</div>
+      <div class="cin-line" style="font-size:0.72rem;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:#9ca3af;margin-bottom:26px"><span style="color:#0a0b0d;background:#7cff00;font-family:Syncopate,sans-serif;font-weight:700;padding:2px 8px;letter-spacing:1px;margin-right:12px">01</span>Onde tudo começa</div>
       <h1 style="font-family:Syncopate,sans-serif;font-weight:700;font-size:3.6rem;line-height:1.06;letter-spacing:-.01em;text-transform:uppercase;margin:0">
         <span class="cin-line">Todo gigante</span>
-        <span class="cin-line">começa no <span class="cin-band" style="background:#d4ff00;color:#0a0b0d;padding:0 .08em">escuro</span>.</span>
+        <span class="cin-line">começa no <span class="cin-band" style="background:#7cff00;color:#0a0b0d;padding:0 .08em">escuro</span>.</span>
       </h1>
       <p class="cin-sub" style="color:#c7ccd4;font-size:1.12rem;line-height:1.7;max-width:480px;margin:26px 0 0;text-shadow:0 1px 14px rgba(0,0,0,.7)">Cada treino registrado. Cada evolução guardada. Nada do que você constrói se perde.</p>
       <div class="cin-spec" style="max-width:440px;margin-top:30px">
@@ -95,10 +95,10 @@
     <img class="cin-img" src="{{ asset('images/landing/cinematica/cena2.jpg') }}" alt="Mãos batendo magnésio sobre a barra" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center 62%;will-change:transform">
     <div style="position:absolute;inset:0;background:linear-gradient(180deg,rgba(10,11,13,.82) 0%,rgba(10,11,13,.28) 38%,rgba(10,11,13,.1) 60%,rgba(10,11,13,.92) 100%)"></div>
     <div style="position:absolute;left:0;right:0;top:118px;text-align:center;z-index:2;padding:0 84px">
-      <div class="cin-line" style="font-size:0.72rem;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:#9ca3af;margin-bottom:26px"><span style="color:#0a0b0d;background:#d4ff00;font-family:Syncopate,sans-serif;font-weight:700;padding:2px 8px;letter-spacing:1px;margin-right:12px">02</span>Sem atalho, sem sorteio</div>
+      <div class="cin-line" style="font-size:0.72rem;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:#9ca3af;margin-bottom:26px"><span style="color:#0a0b0d;background:#7cff00;font-family:Syncopate,sans-serif;font-weight:700;padding:2px 8px;letter-spacing:1px;margin-right:12px">02</span>Sem atalho, sem sorteio</div>
       <h1 style="font-family:Syncopate,sans-serif;font-weight:700;font-size:3.6rem;line-height:1.06;letter-spacing:-.01em;text-transform:uppercase;margin:0">
         <span class="cin-line">Disciplina é</span>
-        <span class="cin-line">a única <span class="cin-band" style="background:#d4ff00;color:#0a0b0d;padding:0 .08em">sorte</span>.</span>
+        <span class="cin-line">a única <span class="cin-band" style="background:#7cff00;color:#0a0b0d;padding:0 .08em">sorte</span>.</span>
       </h1>
       <p class="cin-sub" style="color:#c7ccd4;font-size:1.12rem;line-height:1.7;max-width:520px;margin:26px auto 0;text-shadow:0 1px 14px rgba(0,0,0,.7)">A SnrFit cuida da agenda, do financeiro e dos alunos. Você cuida da próxima repetição.</p>
       <div class="cin-spec" style="max-width:460px;margin:30px auto 0;text-align:left;background:rgba(10,11,13,.45);backdrop-filter:blur(5px);border-radius:8px;padding:2px 16px 6px">
@@ -113,10 +113,10 @@
     <img class="cin-img" src="{{ asset('images/landing/cinematica/cena3.jpg') }}" alt="Atleta em sprint sob luzes verdes" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:28% center;will-change:transform">
     <div style="position:absolute;inset:0;background:linear-gradient(270deg,rgba(10,11,13,.88) 0%,rgba(10,11,13,.45) 42%,rgba(10,11,13,.05) 70%),linear-gradient(180deg,rgba(10,11,13,.5),transparent 26%,transparent 62%,rgba(10,11,13,.92))"></div>
     <div style="position:absolute;right:84px;top:50%;transform:translateY(-50%);max-width:620px;text-align:right;z-index:2">
-      <div class="cin-line" style="font-size:0.72rem;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:#9ca3af;margin-bottom:26px">A plataforma completa do mundo fitness<span style="color:#0a0b0d;background:#d4ff00;font-family:Syncopate,sans-serif;font-weight:700;padding:2px 8px;letter-spacing:1px;margin-left:12px">03</span></div>
+      <div class="cin-line" style="font-size:0.72rem;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:#9ca3af;margin-bottom:26px">A plataforma completa do mundo fitness<span style="color:#0a0b0d;background:#7cff00;font-family:Syncopate,sans-serif;font-weight:700;padding:2px 8px;letter-spacing:1px;margin-left:12px">03</span></div>
       <h1 style="font-family:Syncopate,sans-serif;font-weight:700;font-size:3.6rem;line-height:1.06;letter-spacing:-.01em;text-transform:uppercase;margin:0">
         <span class="cin-line">Treino que</span>
-        <span class="cin-line">vira <span class="cin-band" style="background:#d4ff00;color:#0a0b0d;padding:0 .08em">história</span>.</span>
+        <span class="cin-line">vira <span class="cin-band" style="background:#7cff00;color:#0a0b0d;padding:0 .08em">história</span>.</span>
       </h1>
       <p class="cin-sub" style="color:#c7ccd4;font-size:1.12rem;line-height:1.7;max-width:480px;margin:26px 0 0 auto;text-shadow:0 1px 14px rgba(0,0,0,.7)">Personais, alunos, academias, studios e lojas — todo o seu mundo fitness num só lugar.</p>
       <div class="cin-spec" style="max-width:440px;margin:30px 0 0 auto;text-align:left">
@@ -131,10 +131,10 @@
     <img class="cin-img" src="{{ asset('images/landing/cinematica/cena4.jpg') }}" alt="Personal trainer gerenciando tudo pelo celular" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:72% 30%;will-change:transform">
     <div style="position:absolute;inset:0;background:linear-gradient(90deg,rgba(10,11,13,.88) 0%,rgba(10,11,13,.45) 42%,rgba(10,11,13,.05) 70%),linear-gradient(180deg,rgba(10,11,13,.55),transparent 26%,transparent 62%,rgba(10,11,13,.92))"></div>
     <div style="position:absolute;left:84px;top:50%;transform:translateY(-50%);max-width:640px;z-index:2">
-      <div class="cin-line" style="font-size:0.72rem;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:#9ca3af;margin-bottom:26px"><span style="color:#0a0b0d;background:#d4ff00;font-family:Syncopate,sans-serif;font-weight:700;padding:2px 8px;letter-spacing:1px;margin-right:12px">04</span>Pro personal trainer</div>
+      <div class="cin-line" style="font-size:0.72rem;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:#9ca3af;margin-bottom:26px"><span style="color:#0a0b0d;background:#7cff00;font-family:Syncopate,sans-serif;font-weight:700;padding:2px 8px;letter-spacing:1px;margin-right:12px">04</span>Pro personal trainer</div>
       <h1 style="font-family:Syncopate,sans-serif;font-weight:700;font-size:3.6rem;line-height:1.06;letter-spacing:-.01em;text-transform:uppercase;margin:0">
         <span class="cin-line">Menos planilha.</span>
-        <span class="cin-line">Mais <span class="cin-band" style="background:#d4ff00;color:#0a0b0d;padding:0 .08em">treino</span>.</span>
+        <span class="cin-line">Mais <span class="cin-band" style="background:#7cff00;color:#0a0b0d;padding:0 .08em">treino</span>.</span>
       </h1>
       <p class="cin-sub" style="color:#c7ccd4;font-size:1.12rem;line-height:1.7;max-width:480px;margin:26px 0 0;text-shadow:0 1px 14px rgba(0,0,0,.7)">Agenda, fichas e pagamentos resolvidos em segundos — direto do celular, entre um aluno e outro.</p>
       <div class="cin-spec" style="max-width:440px;margin-top:30px">
@@ -149,10 +149,10 @@
     <img class="cin-img" src="{{ asset('images/landing/cinematica/cena5.jpg') }}" alt="Dono de academia observando o salão do mezanino" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:22% center;will-change:transform">
     <div style="position:absolute;inset:0;background:linear-gradient(270deg,rgba(10,11,13,.88) 0%,rgba(10,11,13,.45) 42%,rgba(10,11,13,.05) 70%),linear-gradient(180deg,rgba(10,11,13,.5),transparent 26%,transparent 62%,rgba(10,11,13,.92))"></div>
     <div style="position:absolute;right:84px;top:50%;transform:translateY(-50%);max-width:640px;text-align:right;z-index:2">
-      <div class="cin-line" style="font-size:0.72rem;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:#9ca3af;margin-bottom:26px">Pro dono de academia<span style="color:#0a0b0d;background:#d4ff00;font-family:Syncopate,sans-serif;font-weight:700;padding:2px 8px;letter-spacing:1px;margin-left:12px">05</span></div>
+      <div class="cin-line" style="font-size:0.72rem;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:#9ca3af;margin-bottom:26px">Pro dono de academia<span style="color:#0a0b0d;background:#7cff00;font-family:Syncopate,sans-serif;font-weight:700;padding:2px 8px;letter-spacing:1px;margin-left:12px">05</span></div>
       <h1 style="font-family:Syncopate,sans-serif;font-weight:700;font-size:3.6rem;line-height:1.06;letter-spacing:-.01em;text-transform:uppercase;margin:0">
         <span class="cin-line">Sua academia</span>
-        <span class="cin-line">na sua <span class="cin-band" style="background:#d4ff00;color:#0a0b0d;padding:0 .08em">mão</span>.</span>
+        <span class="cin-line">na sua <span class="cin-band" style="background:#7cff00;color:#0a0b0d;padding:0 .08em">mão</span>.</span>
       </h1>
       <p class="cin-sub" style="color:#c7ccd4;font-size:1.12rem;line-height:1.7;max-width:490px;margin:26px 0 0 auto;text-shadow:0 1px 14px rgba(0,0,0,.7)">Financeiro, check-in, professores e relatórios num painel só. Controle absoluto, de qualquer lugar.</p>
       <div class="cin-spec" style="max-width:440px;margin:30px 0 0 auto;text-align:left">
@@ -167,10 +167,10 @@
     <img class="cin-img" src="{{ asset('images/landing/cinematica/cena6.jpg') }}" alt="Dona de studio com tablet no studio de pilates" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:32% 30%;will-change:transform">
     <div style="position:absolute;inset:0;background:linear-gradient(270deg,rgba(10,11,13,.88) 0%,rgba(10,11,13,.45) 42%,rgba(10,11,13,.05) 70%),linear-gradient(180deg,rgba(10,11,13,.5),transparent 26%,transparent 62%,rgba(10,11,13,.92))"></div>
     <div style="position:absolute;right:84px;top:50%;transform:translateY(-50%);max-width:640px;text-align:right;z-index:2">
-      <div class="cin-line" style="font-size:0.72rem;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:#9ca3af;margin-bottom:26px">Pro studio fitness<span style="color:#0a0b0d;background:#d4ff00;font-family:Syncopate,sans-serif;font-weight:700;padding:2px 8px;letter-spacing:1px;margin-left:12px">06</span></div>
+      <div class="cin-line" style="font-size:0.72rem;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:#9ca3af;margin-bottom:26px">Pro studio fitness<span style="color:#0a0b0d;background:#7cff00;font-family:Syncopate,sans-serif;font-weight:700;padding:2px 8px;letter-spacing:1px;margin-left:12px">06</span></div>
       <h1 style="font-family:Syncopate,sans-serif;font-weight:700;font-size:3.6rem;line-height:1.06;letter-spacing:-.01em;text-transform:uppercase;margin:0">
         <span class="cin-line">O studio inteiro</span>
-        <span class="cin-line">no <span class="cin-band" style="background:#d4ff00;color:#0a0b0d;padding:0 .08em">automático</span>.</span>
+        <span class="cin-line">no <span class="cin-band" style="background:#7cff00;color:#0a0b0d;padding:0 .08em">automático</span>.</span>
       </h1>
       <p class="cin-sub" style="color:#c7ccd4;font-size:1.12rem;line-height:1.7;max-width:490px;margin:26px 0 0 auto;text-shadow:0 1px 14px rgba(0,0,0,.7)">Planos, horários com vagas e recebimentos online — tudo rodando sozinho enquanto você dá aula.</p>
       <div class="cin-spec" style="max-width:440px;margin:30px 0 0 auto;text-align:left">
@@ -186,33 +186,33 @@
   {{-- ===== Navbar ===== --}}
   <nav style="position:absolute;top:0;left:0;right:0;display:flex;align-items:center;justify-content:space-between;padding:26px 48px;z-index:5">
     <div style="display:flex;align-items:center;gap:12px">
-      <div style="width:38px;height:38px;border-radius:9px;background:#d4ff00;display:flex;align-items:center;justify-content:center;font-family:Syncopate,sans-serif;font-weight:700;font-size:15px;color:#0a0b0d">S</div>
+      <div style="width:38px;height:38px;border-radius:9px;background:#7cff00;display:flex;align-items:center;justify-content:center;font-family:Syncopate,sans-serif;font-weight:700;font-size:15px;color:#0a0b0d">S</div>
       <div style="display:flex;flex-direction:column;gap:3px;line-height:1">
-        <div style="font-family:Syncopate,sans-serif;font-size:1.15rem;letter-spacing:3px;text-transform:uppercase">SNR<span style="color:#d4ff00">FIT</span></div>
+        <div style="font-family:Syncopate,sans-serif;font-size:1.15rem;letter-spacing:3px;text-transform:uppercase">SNR<span style="color:#7cff00">FIT</span></div>
         <span style="font-size:0.58rem;font-weight:600;letter-spacing:2px;color:#9ca3af;text-transform:uppercase">Treino que vira história</span>
       </div>
     </div>
     <div style="display:flex;align-items:center;gap:12px">
       <a href="#" onclick="openModal();return false;" class="cin-nav-ghost" style="font-size:0.9rem;font-weight:600;border-radius:999px;padding:10px 22px;text-decoration:none;background:transparent;border:1px solid rgba(255,255,255,.2);color:#fff;transition:.25s">Entrar</a>
-      <a href="{{ route('cadastro.SelecaoCadastro') }}" class="cin-nav-solid" style="font-size:0.9rem;font-weight:600;border-radius:999px;padding:10px 22px;text-decoration:none;background:#d4ff00;border:1px solid #d4ff00;color:#0a0b0d;transition:.25s">Cadastrar-se</a>
+      <a href="{{ route('cadastro.SelecaoCadastro') }}" class="cin-nav-solid" style="font-size:0.9rem;font-weight:600;border-radius:999px;padding:10px 22px;text-decoration:none;background:#7cff00;border:1px solid #7cff00;color:#0a0b0d;transition:.25s">Cadastrar-se</a>
     </div>
   </nav>
 
   {{-- ===== Rodapé do hero: CTA + navegação de cenas ===== --}}
   <div style="position:absolute;left:48px;right:48px;bottom:34px;display:flex;align-items:flex-end;justify-content:space-between;z-index:5">
     <div style="display:flex;gap:14px;align-items:center">
-      <a href="{{ route('cadastro.SelecaoCadastro') }}" class="cin-btn" style="font-size:1rem;font-weight:700;border-radius:999px;padding:15px 30px;text-decoration:none;display:inline-flex;align-items:center;gap:10px;background:#d4ff00;color:#0a0b0d;transition:.25s">Quero fazer história <i class="ph ph-arrow-right"></i></a>
+      <a href="{{ route('cadastro.SelecaoCadastro') }}" class="cin-btn" style="font-size:1rem;font-weight:700;border-radius:999px;padding:15px 30px;text-decoration:none;display:inline-flex;align-items:center;gap:10px;background:#7cff00;color:#0a0b0d;transition:.25s">Quero fazer história <i class="ph ph-arrow-right"></i></a>
       <a href="#" onclick="openModal();return false;" class="cin-ghostbtn" style="font-size:1rem;font-weight:600;border-radius:999px;padding:15px 30px;text-decoration:none;background:rgba(10,11,13,.4);backdrop-filter:blur(6px);border:1px solid rgba(255,255,255,.2);color:#fff;transition:.25s">Já tenho conta</a>
     </div>
     <div style="display:flex;flex-direction:column;align-items:flex-end;gap:14px">
-      <div style="font-family:Syncopate,sans-serif;font-size:0.78rem;letter-spacing:2px;color:rgba(255,255,255,.65)"><span class="cin-counter" style="color:#d4ff00">01</span> / 06</div>
+      <div style="font-family:Syncopate,sans-serif;font-size:0.78rem;letter-spacing:2px;color:rgba(255,255,255,.65)"><span class="cin-counter" style="color:#7cff00">01</span> / 06</div>
       <div style="display:flex;gap:8px">
-        <div class="cin-dot" data-go="0" style="width:44px;height:3px;background:rgba(255,255,255,.22);position:relative;overflow:hidden"><div class="cin-fill" style="position:absolute;inset:0;background:#d4ff00;transform:scaleX(0);transform-origin:left"></div></div>
-        <div class="cin-dot" data-go="1" style="width:44px;height:3px;background:rgba(255,255,255,.22);position:relative;overflow:hidden"><div class="cin-fill" style="position:absolute;inset:0;background:#d4ff00;transform:scaleX(0);transform-origin:left"></div></div>
-        <div class="cin-dot" data-go="2" style="width:44px;height:3px;background:rgba(255,255,255,.22);position:relative;overflow:hidden"><div class="cin-fill" style="position:absolute;inset:0;background:#d4ff00;transform:scaleX(0);transform-origin:left"></div></div>
-        <div class="cin-dot" data-go="3" style="width:44px;height:3px;background:rgba(255,255,255,.22);position:relative;overflow:hidden"><div class="cin-fill" style="position:absolute;inset:0;background:#d4ff00;transform:scaleX(0);transform-origin:left"></div></div>
-        <div class="cin-dot" data-go="4" style="width:44px;height:3px;background:rgba(255,255,255,.22);position:relative;overflow:hidden"><div class="cin-fill" style="position:absolute;inset:0;background:#d4ff00;transform:scaleX(0);transform-origin:left"></div></div>
-        <div class="cin-dot" data-go="5" style="width:44px;height:3px;background:rgba(255,255,255,.22);position:relative;overflow:hidden"><div class="cin-fill" style="position:absolute;inset:0;background:#d4ff00;transform:scaleX(0);transform-origin:left"></div></div>
+        <div class="cin-dot" data-go="0" style="width:44px;height:3px;background:rgba(255,255,255,.22);position:relative;overflow:hidden"><div class="cin-fill" style="position:absolute;inset:0;background:#7cff00;transform:scaleX(0);transform-origin:left"></div></div>
+        <div class="cin-dot" data-go="1" style="width:44px;height:3px;background:rgba(255,255,255,.22);position:relative;overflow:hidden"><div class="cin-fill" style="position:absolute;inset:0;background:#7cff00;transform:scaleX(0);transform-origin:left"></div></div>
+        <div class="cin-dot" data-go="2" style="width:44px;height:3px;background:rgba(255,255,255,.22);position:relative;overflow:hidden"><div class="cin-fill" style="position:absolute;inset:0;background:#7cff00;transform:scaleX(0);transform-origin:left"></div></div>
+        <div class="cin-dot" data-go="3" style="width:44px;height:3px;background:rgba(255,255,255,.22);position:relative;overflow:hidden"><div class="cin-fill" style="position:absolute;inset:0;background:#7cff00;transform:scaleX(0);transform-origin:left"></div></div>
+        <div class="cin-dot" data-go="4" style="width:44px;height:3px;background:rgba(255,255,255,.22);position:relative;overflow:hidden"><div class="cin-fill" style="position:absolute;inset:0;background:#7cff00;transform:scaleX(0);transform-origin:left"></div></div>
+        <div class="cin-dot" data-go="5" style="width:44px;height:3px;background:rgba(255,255,255,.22);position:relative;overflow:hidden"><div class="cin-fill" style="position:absolute;inset:0;background:#7cff00;transform:scaleX(0);transform-origin:left"></div></div>
       </div>
     </div>
   </div>
@@ -230,12 +230,12 @@
   {{-- ===== Intro: contador ===== --}}
   <div class="cin-intro" style="opacity:0;display:none">
     <span style="font-family:Syncopate,sans-serif;font-size:0.62rem;letter-spacing:3px;color:rgba(255,255,255,.5);text-transform:uppercase">© SnrFit — Treino que vira história</span>
-    <span class="cin-intro-num" style="font-family:Syncopate,sans-serif;font-weight:700;font-size:4.5rem;line-height:1;color:#d4ff00">0</span>
+    <span class="cin-intro-num" style="font-family:Syncopate,sans-serif;font-weight:700;font-size:4.5rem;line-height:1;color:#7cff00">0</span>
   </div>
 
   {{-- ===== Hint de scroll ===== --}}
   <div style="position:absolute;left:50%;bottom:36px;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:8px;z-index:5;pointer-events:none">
-    <div style="width:22px;height:36px;border:1.5px solid rgba(255,255,255,.35);border-radius:12px;display:flex;justify-content:center;padding-top:6px"><div class="cin-wheel" style="width:3px;height:8px;border-radius:2px;background:#d4ff00"></div></div>
+    <div style="width:22px;height:36px;border:1.5px solid rgba(255,255,255,.35);border-radius:12px;display:flex;justify-content:center;padding-top:6px"><div class="cin-wheel" style="width:3px;height:8px;border-radius:2px;background:#7cff00"></div></div>
     <span style="font-family:Syncopate,sans-serif;font-size:0.52rem;letter-spacing:2.5px;color:rgba(255,255,255,.45);text-transform:uppercase">Role ou clique</span>
   </div>
 

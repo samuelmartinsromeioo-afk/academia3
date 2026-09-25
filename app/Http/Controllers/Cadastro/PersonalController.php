@@ -23,7 +23,7 @@ class PersonalController extends Controller
         return view('cadastro.personal');
     }
 
-    public function store(Request $request)
+    public function store(Request $request, \App\Services\CupomService $cupons)
     {
         // Passo 1 define os campos condicionais (CREF x CRN, especialidades).
         $tipo = \App\Enums\ProfessionalType::tryFromDefault($request->input('professional_type'));
@@ -57,6 +57,7 @@ class PersonalController extends Controller
             'especialidades.*' => 'string|max:80',
             'modalidade'    => 'nullable|string|in:Presencial,Online,Híbrido',
             'bio'           => 'nullable|string|max:2000',
+            'cupom'         => $cupons->regraValidacao(),
         ];
 
         if ($ehNutri) {
@@ -72,6 +73,9 @@ class PersonalController extends Controller
         }
 
         $dados = $request->validate($regras);
+
+        // Fora do create(): `cupom` não é coluna de personals.
+        $codigoCupom = \Illuminate\Support\Arr::pull($dados, 'cupom');
 
         if ($request->hasFile('foto')) {
             $path = $request->file('foto')->store('personals', 'public');
@@ -92,23 +96,20 @@ class PersonalController extends Controller
         // Marca o personal como pioneiro se estiver entre os 100 primeiros do estado.
         $personal->definirPosicaoPioneiro();
 
-        // Indicação: vincula a quem indicou. Código inválido é ignorado em
-        // silêncio — não pode barrar um cadastro legítimo.
-        app(\App\Services\IndicacaoService::class)
-            ->vincular($personal, 'personal', $request->input('codigo_indicacao'));
+        $cupons->registrarIndicacao($codigoCupom, $personal, $request->ip());
 
         $this->criarSubcontaAsaas($personal);
 
         $fb = app(MetaConversionsService::class);
-        return redirect()->route('login.index')
-            ->with('sucesso', $tipo->label() . ' cadastrado(a) com sucesso! Aguarde a aprovação do administrador.')
+        return redirect()->route('cadastro.sucesso')
+            ->with('cad_tipo', $ehNutri ? 'nutricionista' : 'personal')
             ->with('fb_event', $fb->track(
                 'CompleteRegistration',
                 ['content_name' => $tipo->label(), 'status' => 'pendente'],
                 $fb->userDataFromModel($personal),
                 null,
                 null,
-                route('login.index')
+                route('cadastro.sucesso')
             ));
     }
 
@@ -137,7 +138,12 @@ class PersonalController extends Controller
 
         $resultado = $this->calcularFinanceiroMes($id);
 
-        return view('personal.dashboard', compact('personal', 'inicioSemana', 'dataRef', 'resultado'));
+        // Badge do atalho "Faltas": pedidos de reposição ainda sem resposta.
+        $reposicoesPendentes = \App\Models\AulaReposicao::where('personal_id', $personal->id)
+            ->pendentes()
+            ->count();
+
+        return view('personal.dashboard', compact('personal', 'inicioSemana', 'dataRef', 'resultado', 'reposicoesPendentes'));
     }
 
     public function storeHorario(Request $request)
@@ -239,7 +245,7 @@ class PersonalController extends Controller
         return redirect()->back()->with('success', 'Perfil atualizado com sucesso!');
     }
 
-    public function cancelarAula(Request $request, $id)
+    public function cancelarAula(Request $request, $id, \App\Services\AgendaService $agendas)
     {
         try {
             $agenda = Agenda::findOrFail($id);
@@ -252,14 +258,11 @@ class PersonalController extends Controller
                 $agenda->data->format('Y-m-d') :
                 $agenda->data;
 
-            $dataAula = Carbon::parse($dataStr . ' ' . $agenda->hora_inicio);
-            $agora = Carbon::now();
-            $diffHoras = $agora->diffInHours($dataAula);
+            Log::info("Cancelamento - ID: $id | Aula: {$agendas->inicioDaAula($agenda)} | Agora: {$agendas->agora()} | Faltam: {$agendas->horasAteAula($agenda)}h");
 
-            Log::info("Cancelamento - ID: $id | Aula: $dataAula | Agora: $agora | Diff: $diffHoras horas");
-
-            if ($diffHoras < 24) {
-                return redirect()->back()->with('error', "O cancelamento só é permitido com 24h de antecedência. Faltam " . $diffHoras . " horas.");
+            $bloqueio = $agendas->motivoParaNaoCancelar($agenda);
+            if ($bloqueio) {
+                return redirect()->back()->with('error', $bloqueio);
             }
 
             $request->validate([
@@ -402,7 +405,7 @@ class PersonalController extends Controller
         return view('personal.frequencia', compact('personal', 'alunos', 'stats'));
     }
 
-    public function frequenciaAluno(Request $request, $clienteId)
+    public function frequenciaAluno(Request $request, $clienteId, \App\Services\PresencaService $presencas)
     {
         $personalId = session('personal_id');
         if (!$personalId) return redirect()->route('login.index');
@@ -443,16 +446,8 @@ class PersonalController extends Controller
             ->filter(fn ($p) => $p->data->format('Y-m') === now()->format('Y-m'))
             ->count();
 
-        // Dias de aula agendados no mês escolhido (para marcação rápida)
-        $diasAgenda = Agenda::where('personal_id', $personalId)
-            ->where('cliente_id', $clienteId)
-            ->where('cancelado', false)
-            ->where('tipo_aula', '!=', 'bloqueio')
-            ->whereYear('data', substr($mes, 0, 4))
-            ->whereMonth('data', substr($mes, 5, 2))
-            ->get()
-            ->map(fn ($a) => $a->data->format('Y-m-d'))
-            ->unique()->sort()->values();
+        // Dias de aula do mês, já com o horário e se a marcação está liberada.
+        $diasAgenda = $presencas->diasDoMes($personalId, (int) $clienteId, $mes);
 
         $presencasPorData = $todas->keyBy(fn ($p) => $p->data->format('Y-m-d'));
 
@@ -467,7 +462,7 @@ class PersonalController extends Controller
         ));
     }
 
-    public function marcarPresenca(Request $request)
+    public function marcarPresenca(Request $request, \App\Services\PresencaService $presencas)
     {
         $personalId = session('personal_id');
         if (!$personalId) return redirect()->route('login.index');
@@ -481,6 +476,13 @@ class PersonalController extends Controller
         $alunoIds = $this->alunosDoPersonal($personalId)->pluck('id');
         if (!$alunoIds->contains((int) $dados['cliente_id'])) {
             abort(403);
+        }
+
+        // Só dia com aula agendada, e só depois de a aula começar. A tela já
+        // desabilita o botão; aqui é o bloqueio que vale (form pode ser forjado).
+        $bloqueio = $presencas->motivoDoBloqueio($personalId, (int) $dados['cliente_id'], $dados['data']);
+        if ($bloqueio) {
+            return redirect()->back()->with('error', $bloqueio);
         }
 
         Presenca::updateOrCreate(
@@ -501,7 +503,7 @@ class PersonalController extends Controller
         return redirect()->back()->with('success', 'Registro removido.');
     }
 
-    public function cancelarDia(Request $request)
+    public function cancelarDia(Request $request, \App\Services\AgendaService $agendas)
     {
         $request->validate([
             'data' => 'required|date',
@@ -518,12 +520,7 @@ class PersonalController extends Controller
 
         $cancelados = 0;
         foreach ($agendamentos as $ag) {
-            $dataStr = $ag->data instanceof \Carbon\Carbon ?
-                $ag->data->format('Y-m-d') :
-                $ag->data;
-
-            $dataAula = Carbon::parse($dataStr . ' ' . $ag->hora_inicio);
-            if (Carbon::now()->diffInHours($dataAula) >= 24) {
+            if ($agendas->podeCancelar($ag)) {
                 $ag->delete();
                 $cancelados++;
             }

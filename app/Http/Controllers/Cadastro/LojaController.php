@@ -26,7 +26,7 @@ class LojaController extends Controller
         return view('cadastro.loja');
     }
 
-    public function store(Request $request)
+    public function store(Request $request, \App\Services\CupomService $cupons)
     {
         $dados = $request->validate([
             'nome'        => 'required|string|max:255',
@@ -44,6 +44,7 @@ class LojaController extends Controller
             'descricao'   => 'nullable|string|max:500',
             'latitude'    => 'nullable|numeric',
             'longitude'   => 'nullable|numeric',
+            'cupom'       => $cupons->regraValidacao(),
         ], [
             'cnpj.unique'     => 'Este CNPJ já está cadastrado.',
             'email.unique'    => 'Este e-mail já está cadastrado.',
@@ -69,21 +70,29 @@ class LojaController extends Controller
             return back()->withErrors(['cnpj' => 'Este CNPJ já está em uso na plataforma.'])->withInput();
         }
 
+        // Fora do create(): `cupom` não é coluna de lojas.
+        $codigoCupom = \Illuminate\Support\Arr::pull($dados, 'cupom');
+
         $dados['senha']  = Hash::make($dados['senha']);
         $dados['status'] = 'pendente'; // precisa de aprovação do administrador
 
         $loja = Loja::create($dados);
 
+        // Marca como pioneira se estiver entre as primeiras do estado.
+        $loja->definirPosicaoPioneiro();
+
+        $cupons->registrarIndicacao($codigoCupom, $loja, $request->ip());
+
         $fb = app(MetaConversionsService::class);
-        return redirect()->route('login.index')
-            ->with('sucesso', 'Cadastro enviado com sucesso! Sua loja será analisada pelo administrador e você poderá acessar após a aprovação.')
+        return redirect()->route('cadastro.sucesso')
+            ->with('cad_tipo', 'loja')
             ->with('fb_event', $fb->track(
                 'CompleteRegistration',
                 ['content_name' => 'Loja', 'status' => 'pendente'],
                 $fb->userDataFromModel($loja),
                 null,
                 null,
-                route('login.index')
+                route('cadastro.sucesso')
             ));
     }
 

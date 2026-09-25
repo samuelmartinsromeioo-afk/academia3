@@ -14,7 +14,7 @@
     <style>
         :root { --primary:var(--snr-lime); --bg-dark:var(--snr-bg); --card-bg:var(--snr-surface); --field:var(--snr-surface-2); --text-main:var(--snr-text); --text-muted:var(--snr-dim); --green:var(--snr-success); --red:var(--snr-error); --border:var(--snr-border); }
         * { margin:0; padding:0; box-sizing:border-box; }
-        body { background:var(--bg-dark); font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; color:var(--text-main); min-height:100vh; background-image:radial-gradient(circle at 50% -10%, rgba(212,255,0,0.12), transparent 50%); }
+        body { background:var(--bg-dark); font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; color:var(--text-main); min-height:100vh; background-image:radial-gradient(circle at 50% -10%, rgba(124,255,0,0.12), transparent 50%); }
         a { color:inherit; text-decoration:none; }
         .top-bar { display:flex; align-items:center; gap:15px; padding:15px 40px; background:rgba(0,0,0,0.6); border-bottom:1px solid var(--border); position:sticky; top:0; z-index:100; backdrop-filter:blur(10px); }
         .back-btn { background:var(--card-bg); border:1px solid var(--border); color:var(--primary); width:40px; height:40px; border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:1.1rem; }
@@ -176,10 +176,10 @@
             const campo = document.getElementById('campoSel').value;
             const ctx = document.getElementById('chartMedidas').getContext('2d');
             const g = ctx.createLinearGradient(0,0,0,300);
-            g.addColorStop(0,'rgba(212,255,0,0.35)'); g.addColorStop(1,'rgba(212,255,0,0)');
+            g.addColorStop(0,'rgba(124,255,0,0.35)'); g.addColorStop(1,'rgba(124,255,0,0)');
             const data = {
                 labels: dadosMedidas.labels,
-                datasets: [{ label: dadosMedidas.rotulos[campo], data: dadosMedidas.campos[campo], borderColor:'#d4ff00', backgroundColor:g, borderWidth:3, pointBackgroundColor:'#d4ff00', pointRadius:4, tension:0.3, fill:true, spanGaps:true }]
+                datasets: [{ label: dadosMedidas.rotulos[campo], data: dadosMedidas.campos[campo], borderColor:'#7cff00', backgroundColor:g, borderWidth:3, pointBackgroundColor:'#7cff00', pointRadius:4, tension:0.3, fill:true, spanGaps:true }]
             };
             const opts = { responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{ y:{ticks:{color:'#9a9a9a'},grid:{color:'rgba(255,255,255,0.06)'}}, x:{ticks:{color:'#9a9a9a',maxTicksLimit:8},grid:{color:'rgba(255,255,255,0.04)'}} } };
             if (chart) { chart.data = data; chart.options = opts; chart.update(); }

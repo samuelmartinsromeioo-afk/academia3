@@ -11,7 +11,7 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/fill/style.css">
     <style>
         :root {
-            --primary: #d4ff00;
+            --primary: #7cff00;
             --bg-dark: #0a0b0d;
             --card-bg: #16181d;
             --text-main: #ffffff;
@@ -25,7 +25,7 @@
 
         .top-bar { display: flex; justify-content: space-between; align-items: center; padding: 15px 40px; background: rgba(0,0,0,0.4); border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 100; backdrop-filter: blur(10px); }
         .logo { font-weight: 900; letter-spacing: 2px; }
-        .logo span { color: var(--primary); }
+        .logo, .logo span { color: var(--primary); }
         .btn-top { background: transparent; border: 1px solid var(--border); color: var(--text-main); padding: 9px 16px; border-radius: 8px; cursor: pointer; font-weight: 700; font-size: 0.78rem; transition: 0.2s; text-decoration: none; display: inline-flex; align-items: center; gap: 6px; }
         .btn-top:hover { border-color: var(--primary); color: var(--primary); }
 
@@ -35,7 +35,7 @@
         header.page-head p { color: var(--text-muted); font-size: 0.85rem; margin-top: 4px; }
 
         .alert { padding: 13px 18px; border-radius: 12px; margin-bottom: 18px; font-size: 0.85rem; }
-        .alert-ok { background: rgba(212,255,0,0.1); border: 1px solid rgba(212,255,0,0.35); color: var(--primary); }
+        .alert-ok { background: rgba(124,255,0,0.1); border: 1px solid rgba(124,255,0,0.35); color: var(--primary); }
         .alert-err { background: rgba(255,68,68,0.1); border: 1px solid rgba(255,68,68,0.35); color: #ff6b6b; }
 
         .card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 16px; padding: 22px; margin-bottom: 20px; }
@@ -54,7 +54,7 @@
         .g4 { grid-template-columns: repeat(4, 1fr); }
 
         .btn { background: var(--primary); color: #000; border: none; border-radius: 10px; padding: 12px 18px; font-weight: 900; font-size: 0.8rem; cursor: pointer; font-family: inherit; display: inline-flex; align-items: center; gap: 8px; }
-        .btn:hover { background: #e8ff40; }
+        .btn:hover { background: #9cff40; }
         .btn-ghost { background: transparent; border: 1px solid var(--border); color: var(--text-muted); }
         .btn-ghost:hover { border-color: var(--error); color: #ff6b6b; }
         .btn-sm { padding: 8px 12px; font-size: 0.72rem; }

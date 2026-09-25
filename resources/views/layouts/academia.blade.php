@@ -44,7 +44,7 @@
                 </li>
 
                 <li class="nav-item">
-                    <a class="nav-link" href="{{ route('indicacao.painel') }}">
+                    <a class="nav-link" href="{{ route('indicacoes.painel') }}">
                         <i class="bi bi-gift me-1"></i>Indique e ganhe
                     </a>
                 </li>

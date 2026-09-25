@@ -11,7 +11,7 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/fill/style.css">
     <style>
         :root {
-            --primary: #d4ff00;
+            --primary: #7cff00;
             --bg-dark: #0a0b0d;
             --card-bg: #16181d;
             --text-main: #ffffff;
@@ -66,12 +66,12 @@
         }
         .filial-card {
             background: var(--card-bg);
-            border: 1px solid rgba(212,255,0,0.15);
+            border: 1px solid rgba(124,255,0,0.15);
             border-radius: 18px;
             padding: 22px;
             transition: 0.3s;
         }
-        .filial-card:hover { border-color: rgba(212,255,0,0.4); }
+        .filial-card:hover { border-color: rgba(124,255,0,0.4); }
         .filial-nome {
             font-size: 1.1rem; font-weight: 800; color: var(--primary);
             margin-bottom: 10px;
@@ -80,7 +80,7 @@
         .filial-info i { width: 16px; color: var(--primary); margin-right: 4px; }
         .filial-actions { display: flex; gap: 10px; margin-top: 16px; }
         .btn-edit {
-            flex: 1; background: rgba(212,255,0,0.1); color: var(--primary);
+            flex: 1; background: rgba(124,255,0,0.1); color: var(--primary);
             border: 1px solid var(--primary); padding: 8px; border-radius: 8px;
             cursor: pointer; font-weight: 700; font-size: 0.78rem; transition: 0.2s;
         }
@@ -94,12 +94,12 @@
 
         .btn-nova-filial {
             display: flex; align-items: center; justify-content: center; gap: 10px;
-            background: rgba(212,255,0,0.05); border: 2px dashed rgba(212,255,0,0.3);
+            background: rgba(124,255,0,0.05); border: 2px dashed rgba(124,255,0,0.3);
             color: var(--primary); border-radius: 18px; padding: 22px;
             cursor: pointer; font-weight: 700; font-size: 0.9rem; transition: 0.3s;
             width: 100%;
         }
-        .btn-nova-filial:hover { background: rgba(212,255,0,0.1); border-color: var(--primary); }
+        .btn-nova-filial:hover { background: rgba(124,255,0,0.1); border-color: var(--primary); }
 
         /* MODAL */
         .modal-overlay {
@@ -144,7 +144,7 @@
             padding: 12px; border-radius: 8px; cursor: pointer;
             font-weight: 900; font-size: 0.85rem; transition: 0.2s;
         }
-        .btn-submit-modal:hover { background: #e8ff40; }
+        .btn-submit-modal:hover { background: #9cff40; }
 
         @media (max-width: 768px) {
             .top-bar { padding: 15px 20px; }
@@ -168,7 +168,7 @@
 <div class="container">
     <h1><i class="ph ph-map-pin"></i> MINHAS FILIAIS</h1>
 
-    <div style="background:rgba(212,255,0,0.07); border:1px solid rgba(212,255,0,0.3); border-radius:12px; padding:13px 16px; margin-bottom:18px; font-size:0.82rem; color:#cfe88a; line-height:1.5;">
+    <div style="background:rgba(124,255,0,0.07); border:1px solid rgba(124,255,0,0.3); border-radius:12px; padding:13px 16px; margin-bottom:18px; font-size:0.82rem; color:#cfe88a; line-height:1.5;">
         <i class="ph ph-info" style="color:var(--primary);"></i>
         Cada filial é uma <strong>subconta</strong>: ela entra com o <strong>mesmo e-mail/CNPJ</strong> da academia ({{ $academia->email }}) e a <strong>senha que você definir</strong> aqui. A subconta vê só os alunos e dados da própria filial; você (conta principal) vê tudo, separado por filial.
     </div>
