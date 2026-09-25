@@ -280,7 +280,18 @@ class AcademiaController extends Controller
         return redirect()->route('academia.dashboard')->with('success', 'Perfil atualizado com sucesso!');
     }
 
-        public function storePlano(Request $request)
+    /**
+     * Os planos são geridos dentro do dashboard da academia — não há tela
+     * própria. A rota GET existe para quem chega por /academia/planos (link
+     * antigo, favorito) cair no lugar certo em vez de tomar erro. Mesmo
+     * arranjo de StudioController::listarPlanos().
+     */
+    public function listarPlanos()
+    {
+        return $this->dashboard();
+    }
+
+    public function storePlano(Request $request)
     {
         $request->validate([
             'nome'          => 'required|string|max:255',

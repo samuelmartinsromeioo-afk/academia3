@@ -46,7 +46,6 @@ Route::middleware('check.admin')->group(function () {
     // Dashboard
     Route::get('/admin/dashboard', [AdminController::class, 'dashboard'])->name('admin.dashboard');
 
-    Route::post('/admin/personals/{id}/teste-aprovar', [AdminController::class, 'testeAprovar'])->name('admin.personals.teste-aprovar')->middleware('check.admin');
     // Gerenciar Personals
     Route::get('/admin/personals', [AdminController::class, 'listarPersonals'])->name('admin.personals.lista');
     Route::get('/admin/personals/{id}/detalhes', [AdminController::class, 'verDetalhes'])->name('admin.personals.detalhes');
@@ -538,7 +537,6 @@ Route::middleware('check.login')->group(function () {
 // API - AULAS
 // ==========================================
 Route::middleware('check.login')->group(function () {
-    Route::post('/aulas/{id}/fechar', [AulaController::class, 'fecharAula'])->name('aulas.fechar');
     Route::post('/aulas/{id}/concluir', [AulaController::class, 'concluirAula'])->name('aulas.api.concluir');
 });
 
