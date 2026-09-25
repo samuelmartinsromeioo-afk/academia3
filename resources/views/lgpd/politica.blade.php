@@ -6,11 +6,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Política de Privacidade — SNR FIT</title>
     <link rel="icon" type="image/png" href="{{ asset('SnrFit.png') }}">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/regular/style.css">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/fill/style.css">
+    @include('partials.brand-head')
     <style>
-        :root { --primary:#F4BE16; --bg:#0a0b0d; --card:#14161a; --text:#e8e8e8; --muted:#9a9a9a; --border:rgba(255,255,255,0.08); }
+        :root { --bg:#0a0b0d; --card:#14161a; --text:#e8e8e8; --muted:#9a9a9a; }
         * { margin:0; padding:0; box-sizing:border-box; }
         body { background:var(--bg); color:var(--text); font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; line-height:1.7; }
         a { color:var(--primary); }

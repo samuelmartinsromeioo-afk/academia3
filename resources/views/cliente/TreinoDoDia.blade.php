@@ -6,21 +6,21 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Treino do Dia</title>
     <link rel="icon" type="image/png" href="{{ asset('SnrFit.png') }}">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/regular/style.css">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/fill/style.css">
+    @include('partials.brand-head')
     <style>
+        /* Paleta vem do snrfit-brand.css (--primary, --bg-dark, --card-bg,
+           --text-main, --text-muted, --border). Aqui só os apelidos locais
+           que a tela usa, apontando para as semânticas da marca. */
         :root {
-            --primary: #F4BE16; --bg-dark: #000000; --card-bg: #111317;
-            --text-main: #ffffff; --text-muted: #9a9a9a; --green: #00e676; --red: #ff5252;
-            --border: rgba(255, 255, 255, 0.08);
+            --green: var(--snr-success);
+            --red: var(--snr-error);
         }
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             background-color: var(--bg-dark);
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
             color: var(--text-main); min-height: 100vh;
-            background-image: radial-gradient(circle at 50% -10%, rgba(244, 190, 22, 0.12), transparent 50%);
+            background-image: radial-gradient(circle at 50% -10%, var(--primary-soft), transparent 50%);
         }
         a { color: inherit; text-decoration: none; }
         .top-bar {
@@ -50,13 +50,13 @@
         .validade.ok { background: rgba(0,230,118,0.12); color: var(--green); border: 1px solid rgba(0,230,118,0.4); }
         .validade.venc { background: rgba(255,82,82,0.15); color: var(--red); border: 1px solid var(--red); }
 
-        .treino-card { background: var(--card-bg); border: 1px solid rgba(244,190,22,0.3); border-radius: 20px; padding: 26px; }
+        .treino-card { background: var(--card-bg); border: 1px solid var(--snr-lime-line); border-radius: 20px; padding: 26px; }
         .treino-head { display: flex; align-items: center; gap: 16px; margin-bottom: 22px; }
         .letra {
             width: 64px; height: 64px; border-radius: 16px; flex-shrink: 0;
-            background: radial-gradient(circle at 35% 30%, #ffe27a, var(--primary)); color: #000;
+            background: radial-gradient(circle at 35% 30%, #c4ff7a, var(--primary)); color: #000;
             display: flex; align-items: center; justify-content: center; font-size: 2rem; font-weight: 900;
-            box-shadow: 0 0 22px rgba(244,190,22,0.35);
+            box-shadow: var(--snr-glow);
         }
         .treino-head .nome { font-size: 1.3rem; font-weight: 900; }
         .treino-head .sub { font-size: 0.78rem; color: var(--text-muted); margin-top: 3px; }
@@ -79,7 +79,7 @@
         .btn-conclude.done { background: rgba(0,230,118,0.15); color: var(--green); border: 1px solid var(--green); cursor: default; }
 
         .proximo { margin-top: 18px; display: flex; align-items: center; gap: 12px; background: var(--card-bg); border: 1px solid var(--border); border-radius: 14px; padding: 14px 18px; }
-        .proximo .mini { width: 38px; height: 38px; border-radius: 10px; background: rgba(244,190,22,0.12); border: 1px solid rgba(244,190,22,0.4); color: var(--primary); display: flex; align-items: center; justify-content: center; font-weight: 900; }
+        .proximo .mini { width: 38px; height: 38px; border-radius: 10px; background: var(--primary-soft); border: 1px solid var(--snr-lime-line); color: var(--primary); display: flex; align-items: center; justify-content: center; font-weight: 900; }
         .proximo .txt { font-size: 0.85rem; } .proximo .txt small { display: block; color: var(--text-muted); font-size: 0.7rem; text-transform: uppercase; font-weight: 800; }
 
         .empty { text-align: center; padding: 70px 20px; color: var(--text-muted); background: var(--card-bg); border: 1px solid var(--border); border-radius: 18px; }

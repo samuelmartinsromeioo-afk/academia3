@@ -6,13 +6,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Notificações</title>
     <link rel="icon" type="image/png" href="{{ asset('SnrFit.png') }}">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/regular/style.css">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/fill/style.css">
+    @include('partials.brand-head')
     <style>
-        :root { --primary:#F4BE16; --bg-dark:#000; --card-bg:#111317; --text-main:#fff; --text-muted:#9a9a9a; --green:#00e676; --border:rgba(255,255,255,0.08); }
+        :root { --green:#00e676; }
         * { margin:0; padding:0; box-sizing:border-box; }
-        body { background:var(--bg-dark); font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; color:var(--text-main); min-height:100vh; background-image:radial-gradient(circle at 50% -10%, rgba(244,190,22,0.1), transparent 50%); }
+        body { background:var(--bg-dark); font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; color:var(--text-main); min-height:100vh; background-image:radial-gradient(circle at 50% -10%, rgba(124, 255, 0,0.1), transparent 50%); }
         a { color:inherit; text-decoration:none; }
         .top-bar { display:flex; align-items:center; gap:15px; padding:15px 40px; background:rgba(0,0,0,0.6); border-bottom:1px solid var(--border); position:sticky; top:0; z-index:100; backdrop-filter:blur(10px); }
         .back-btn { background:var(--card-bg); border:1px solid var(--border); color:var(--primary); width:40px; height:40px; border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:1.1rem; }
@@ -24,8 +22,8 @@
         .btn-todas { background:var(--card-bg); border:1px solid var(--border); color:var(--text-muted); padding:9px 14px; border-radius:9px; font-weight:800; font-size:0.74rem; cursor:pointer; }
         .btn-todas:hover { color:var(--primary); border-color:var(--primary); }
         .n { display:flex; gap:14px; align-items:flex-start; background:var(--card-bg); border:1px solid var(--border); border-radius:14px; padding:16px; margin-bottom:10px; width:100%; text-align:left; cursor:pointer; }
-        .n.unread { border-left:3px solid var(--primary); background:rgba(244,190,22,0.05); }
-        .n .ico { width:38px; height:38px; border-radius:10px; background:rgba(244,190,22,0.14); color:var(--primary); display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+        .n.unread { border-left:3px solid var(--primary); background:rgba(124, 255, 0,0.05); }
+        .n .ico { width:38px; height:38px; border-radius:10px; background:rgba(124, 255, 0,0.14); color:var(--primary); display:flex; align-items:center; justify-content:center; flex-shrink:0; }
         .n .body { flex:1; }
         .n .body .t { font-weight:800; font-size:0.92rem; margin-bottom:3px; }
         .n .body .m { color:var(--text-muted); font-size:0.84rem; line-height:1.5; white-space:pre-line; }

@@ -8,17 +8,9 @@
     @include('partials.meta-pixel', ['fbEvents' => isset($fbEvent) ? [$fbEvent] : []])
     @include('partials.pwa')
     <link href="https://fonts.googleapis.com/css2?family=Syncopate:wght@700&family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/regular/style.css">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/fill/style.css">
+    @include('partials.brand-head')
     <style>
         :root {
-            --primary: #7cff00;
-            --bg-dark: #0a0b0d;
-            --card-bg: #16181d;
-            --text-main: #ffffff;
-            --text-muted: #a0a0a0;
-            --border: rgba(255,255,255,0.08);
             --input-bg: rgba(255,255,255,0.04);
         }
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -50,18 +42,18 @@
         .galeria-grid img { width: 100%; height: 130px; object-fit: cover; border-radius: 12px; border: 1px solid var(--border); cursor: pointer; transition: 0.2s; }
         .galeria-grid img:hover { transform: scale(1.03); border-color: var(--primary); }
 
-        /* PERSONAIS RELACIONADOS — destaque em amarelo #F4BE16 sobre fundo preto */
+        /* PERSONAIS RELACIONADOS — destaque em amarelo var(--primary) sobre fundo preto */
         .pr-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 14px; }
-        .pr-card { background: #0a0b0d; border: 1px solid rgba(244,190,22,0.25); border-radius: 16px; padding: 20px 16px; text-align: center; transition: 0.2s; }
-        .pr-card:hover { border-color: #F4BE16; box-shadow: 0 0 16px rgba(244,190,22,0.12); transform: translateY(-3px); }
-        .pr-foto { width: 76px; height: 76px; border-radius: 50%; object-fit: cover; border: 2px solid #F4BE16; margin: 0 auto 12px; display: block; }
-        .pr-foto-ph { display: flex; align-items: center; justify-content: center; background: rgba(244,190,22,0.1); color: #F4BE16; font-size: 2rem; }
+        .pr-card { background: #0a0b0d; border: 1px solid rgba(124, 255, 0,0.25); border-radius: 16px; padding: 20px 16px; text-align: center; transition: 0.2s; }
+        .pr-card:hover { border-color: var(--primary); box-shadow: 0 0 16px rgba(124, 255, 0,0.12); transform: translateY(-3px); }
+        .pr-foto { width: 76px; height: 76px; border-radius: 50%; object-fit: cover; border: 2px solid var(--primary); margin: 0 auto 12px; display: block; }
+        .pr-foto-ph { display: flex; align-items: center; justify-content: center; background: rgba(124, 255, 0,0.1); color: var(--primary); font-size: 2rem; }
         .pr-nome { font-weight: 800; font-size: 0.95rem; margin-bottom: 4px; }
         .pr-esp { color: var(--text-muted); font-size: 0.75rem; margin-bottom: 8px; display: flex; align-items: center; justify-content: center; gap: 5px; }
-        .pr-esp i { color: #F4BE16; }
+        .pr-esp i { color: var(--primary); }
         .pr-valor { color: #fff; font-weight: 900; font-size: 1rem; margin-bottom: 14px; }
         .pr-valor small { color: var(--text-muted); font-weight: 400; font-size: 0.68rem; }
-        .pr-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; width: 100%; background: #F4BE16; color: #000; border: none; border-radius: 10px; padding: 11px; font-weight: 900; font-size: 0.8rem; text-decoration: none; transition: 0.2s; }
+        .pr-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; width: 100%; background: var(--primary); color: #000; border: none; border-radius: 10px; padding: 11px; font-weight: 900; font-size: 0.8rem; text-decoration: none; transition: 0.2s; }
         .pr-btn:hover { background: #ffcf3a; transform: translateY(-1px); }
 
         .prof-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; }
@@ -232,7 +224,7 @@
     {{-- PERSONAIS RELACIONADOS (vínculo aprovado) --}}
     @if($academia->personaisAprovados->isNotEmpty())
         <div class="section">
-            <div class="section-title" style="color:#F4BE16;"><i class="ph ph-lightning" style="color:#F4BE16;"></i> Personais Relacionados</div>
+            <div class="section-title" style="color:var(--primary);"><i class="ph ph-lightning" style="color:var(--primary);"></i> Personais Relacionados</div>
             <p class="empty" style="margin:-6px 0 18px;">Personais parceiros desta academia. Feche um pacote direto com eles.</p>
             <div class="pr-grid">
                 @foreach($academia->personaisAprovados as $p)

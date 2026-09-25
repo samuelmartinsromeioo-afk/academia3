@@ -6,13 +6,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Executar Treino</title>
     <link rel="icon" type="image/png" href="{{ asset('SnrFit.png') }}">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/regular/style.css">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/fill/style.css">
+    @include('partials.brand-head')
     <style>
-        :root { --primary:#F4BE16; --bg-dark:#000; --card-bg:#111317; --field:#1a1d23; --text-main:#fff; --text-muted:#9a9a9a; --green:#00e676; --red:#ff5252; --border:rgba(255,255,255,0.08); }
+        :root { --field:#1a1d23; --green:#00e676; --red:#ff5252; }
         * { margin:0; padding:0; box-sizing:border-box; }
-        body { background:var(--bg-dark); font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; color:var(--text-main); min-height:100vh; padding-bottom:120px; background-image:radial-gradient(circle at 50% -10%, rgba(244,190,22,0.12), transparent 50%); }
+        body { background:var(--bg-dark); font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; color:var(--text-main); min-height:100vh; padding-bottom:120px; background-image:radial-gradient(circle at 50% -10%, rgba(124, 255, 0,0.12), transparent 50%); }
         a { color:inherit; text-decoration:none; }
         .top-bar { display:flex; align-items:center; gap:15px; padding:14px 22px; background:rgba(0,0,0,0.7); border-bottom:1px solid var(--border); position:sticky; top:0; z-index:50; backdrop-filter:blur(10px); }
         .back-btn { background:var(--card-bg); border:1px solid var(--border); color:var(--primary); width:38px; height:38px; border-radius:10px; display:flex; align-items:center; justify-content:center; }
@@ -46,7 +44,7 @@
         .panel-title { font-size:0.72rem; text-transform:uppercase; letter-spacing:0.5px; color:var(--primary); font-weight:900; margin-bottom:14px; }
         .fb-emojis { display:flex; gap:8px; margin-bottom:14px; }
         .fb-emojis label { flex:1; cursor:pointer; text-align:center; padding:8px 4px; border:1px solid rgba(255,255,255,0.1); border-radius:10px; background:var(--field); }
-        .fb-emojis label:has(input:checked){ border-color:var(--primary); background:rgba(244,190,22,0.14); }
+        .fb-emojis label:has(input:checked){ border-color:var(--primary); background:rgba(124, 255, 0,0.14); }
         .fb-emojis input { display:none; } .fb-emojis .emo { font-size:1.3rem; display:block; } .fb-emojis .cap { font-size:0.56rem; color:var(--text-muted); text-transform:uppercase; font-weight:800; }
         .rpe-chips { display:flex; gap:5px; flex-wrap:wrap; }
         .rpe-chips label { cursor:pointer; width:32px; height:32px; display:flex; align-items:center; justify-content:center; border:1px solid rgba(255,255,255,0.1); border-radius:8px; background:var(--field); font-weight:800; font-size:0.78rem; }
@@ -155,7 +153,7 @@
         <div class="rest-ring">
             <svg width="220" height="220">
                 <circle cx="110" cy="110" r="100" stroke="rgba(255,255,255,0.1)" stroke-width="12" fill="none"></circle>
-                <circle id="restCircle" cx="110" cy="110" r="100" stroke="#F4BE16" stroke-width="12" fill="none" stroke-linecap="round" stroke-dasharray="628" stroke-dashoffset="0"></circle>
+                <circle id="restCircle" cx="110" cy="110" r="100" stroke="var(--primary)" stroke-width="12" fill="none" stroke-linecap="round" stroke-dasharray="628" stroke-dashoffset="0"></circle>
             </svg>
             <div class="num" id="restNum">60</div>
         </div>

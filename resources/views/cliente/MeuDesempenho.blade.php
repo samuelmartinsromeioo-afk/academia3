@@ -6,20 +6,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Meu Desempenho</title>
     <link rel="icon" type="image/png" href="{{ asset('SnrFit.png') }}">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/regular/style.css">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/fill/style.css">
+    @include('partials.brand-head')
     <style>
         :root {
-            --primary: #F4BE16;
-            --bg-dark: #000000;
-            --card-bg: #111317;
-            --text-main: #ffffff;
-            --text-muted: #9a9a9a;
             --green: #00e676;
             --yellow: #ffb300;
             --red: #ff5252;
-            --border: rgba(255, 255, 255, 0.08);
         }
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -27,7 +19,7 @@
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
             color: var(--text-main);
             min-height: 100vh;
-            background-image: radial-gradient(circle at 50% -10%, rgba(244, 190, 22, 0.12), transparent 50%);
+            background-image: radial-gradient(circle at 50% -10%, rgba(124, 255, 0, 0.12), transparent 50%);
         }
         a { color: inherit; text-decoration: none; }
 
@@ -51,8 +43,8 @@
 
         /* HERO STREAK */
         .streak-hero {
-            background: linear-gradient(135deg, rgba(244, 190, 22, 0.16), rgba(244, 190, 22, 0.02));
-            border: 1px solid rgba(244, 190, 22, 0.35);
+            background: linear-gradient(135deg, rgba(124, 255, 0, 0.16), rgba(124, 255, 0, 0.02));
+            border: 1px solid rgba(124, 255, 0, 0.35);
             border-radius: 22px;
             padding: 32px 28px;
             text-align: center;
@@ -61,7 +53,7 @@
             overflow: hidden;
         }
         .streak-hero .bolt-bg {
-            position: absolute; right: -10px; top: -20px; font-size: 9rem; color: rgba(244,190,22,0.08);
+            position: absolute; right: -10px; top: -20px; font-size: 9rem; color: rgba(124, 255, 0,0.08);
         }
         .streak-hero .num { font-size: 4rem; font-weight: 900; color: var(--primary); line-height: 1; }
         .streak-hero .num i { font-size: 2.4rem; vertical-align: middle; margin-right: 6px; }
@@ -102,8 +94,8 @@
         /* NÍVEL */
         .nivel-chip {
             display: inline-flex; align-items: center; gap: 7px;
-            background: rgba(244, 190, 22, 0.15); color: var(--primary);
-            border: 1px solid rgba(244, 190, 22, 0.5); border-radius: 20px;
+            background: rgba(124, 255, 0, 0.15); color: var(--primary);
+            border: 1px solid rgba(124, 255, 0, 0.5); border-radius: 20px;
             padding: 5px 14px; font-size: 0.72rem; font-weight: 900; text-transform: uppercase; letter-spacing: 0.5px;
             margin-bottom: 16px; position: relative; z-index: 1;
         }
@@ -124,7 +116,7 @@
         .meta { display: flex; align-items: center; gap: 14px; }
         .meta .meta-ico {
             width: 46px; height: 46px; border-radius: 12px; flex-shrink: 0;
-            background: rgba(244, 190, 22, 0.12); border: 1px solid rgba(244,190,22,0.4);
+            background: rgba(124, 255, 0, 0.12); border: 1px solid rgba(124, 255, 0,0.4);
             display: flex; align-items: center; justify-content: center; color: var(--primary); font-size: 1.2rem;
         }
         .meta .meta-txt { flex: 1; }
@@ -143,9 +135,9 @@
             background: rgba(255,255,255,0.05); border: 1px solid var(--border); color: var(--text-muted);
         }
         .medalha.on .disco {
-            background: radial-gradient(circle at 35% 30%, #ffe27a, var(--primary));
+            background: radial-gradient(circle at 35% 30%, #c4ff7a, var(--primary));
             border-color: var(--primary); color: #000;
-            box-shadow: 0 0 16px rgba(244, 190, 22, 0.4);
+            box-shadow: 0 0 16px rgba(124, 255, 0, 0.4);
         }
         .medalha .dias { font-size: 0.72rem; font-weight: 900; }
         .medalha .nome { font-size: 0.6rem; color: var(--text-muted); text-transform: uppercase; }
@@ -153,13 +145,13 @@
         /* HEATMAP */
         .heatmap { display: grid; grid-auto-flow: column; grid-template-rows: repeat(7, 1fr); gap: 4px; overflow-x: auto; padding-bottom: 4px; }
         .hm-cell { width: 15px; height: 15px; border-radius: 3px; background: rgba(255,255,255,0.06); }
-        .hm-cell.on { background: var(--primary); box-shadow: 0 0 5px rgba(244,190,22,0.5); }
+        .hm-cell.on { background: var(--primary); box-shadow: 0 0 5px rgba(124, 255, 0,0.5); }
         .hm-cell.futuro { background: transparent; }
         .hm-legenda { display: flex; align-items: center; gap: 8px; margin-top: 12px; font-size: 0.68rem; color: var(--text-muted); }
         .hm-legenda .hm-cell { width: 12px; height: 12px; }
 
         /* RECORDES */
-        .esforco-tag { margin-left: auto; font-size: 0.68rem; color: var(--primary); background: rgba(244,190,22,0.12); border: 1px solid rgba(244,190,22,0.4); padding: 3px 10px; border-radius: 20px; }
+        .esforco-tag { margin-left: auto; font-size: 0.68rem; color: var(--primary); background: rgba(124, 255, 0,0.12); border: 1px solid rgba(124, 255, 0,0.4); padding: 3px 10px; border-radius: 20px; }
         .recordes-list { display: flex; flex-direction: column; }
         .recorde-item { display: flex; justify-content: space-between; align-items: center; padding: 11px 0; border-bottom: 1px solid rgba(255,255,255,0.06); }
         .recorde-item:last-child { border-bottom: none; }

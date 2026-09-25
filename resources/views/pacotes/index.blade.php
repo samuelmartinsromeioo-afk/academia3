@@ -6,9 +6,7 @@
     <title>Planos Disponíveis - SNRFIT</title>
     <link rel="icon" type="image/png" href="{{ asset('SnrFit.png') }}">
     @include('partials.pwa')
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/all.min.css">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/regular/style.css">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/fill/style.css">
+    @include('partials.brand-head')
     <style>
         :root { --primary: #7cff00; --bg: #0a0a0a; --card: #141414; --border: #222; }
         body { background: var(--bg); color: white; font-family: 'Inter', sans-serif; padding: 0; margin: 0; }

@@ -6,13 +6,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Templates de Ficha</title>
     <link rel="icon" type="image/png" href="{{ asset('SnrFit.png') }}">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/regular/style.css">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/fill/style.css">
+    @include('partials.brand-head')
     <style>
-        :root { --primary:#F4BE16; --bg-dark:#000; --card-bg:#111317; --field:#1a1d23; --text-main:#fff; --text-muted:#9a9a9a; --green:#00e676; --red:#ff5252; --border:rgba(255,255,255,0.08); }
+        :root { --field:#1a1d23; --green:#00e676; --red:#ff5252; }
         * { margin:0; padding:0; box-sizing:border-box; }
-        body { background:var(--bg-dark); font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; color:var(--text-main); min-height:100vh; background-image:radial-gradient(circle at 12% -10%, rgba(244,190,22,0.1), transparent 45%); }
+        body { background:var(--bg-dark); font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; color:var(--text-main); min-height:100vh; background-image:radial-gradient(circle at 12% -10%, rgba(124, 255, 0,0.1), transparent 45%); }
         a { color:inherit; text-decoration:none; }
         .top-bar { display:flex; align-items:center; gap:15px; padding:15px 40px; background:rgba(0,0,0,0.6); border-bottom:1px solid var(--border); position:sticky; top:0; z-index:100; backdrop-filter:blur(10px); }
         .back-btn { background:var(--card-bg); border:1px solid var(--border); color:var(--primary); width:40px; height:40px; border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:1.1rem; }
@@ -37,7 +35,7 @@
         .tpl { border:1px solid var(--border); border-radius:14px; padding:16px; margin-bottom:14px; }
         .tpl-head { display:flex; justify-content:space-between; align-items:center; gap:10px; margin-bottom:12px; }
         .tpl-head .nome { font-weight:900; font-size:1.05rem; }
-        .badge { font-size:0.62rem; font-weight:800; padding:3px 9px; border-radius:20px; background:rgba(244,190,22,0.12); color:var(--primary); border:1px solid rgba(244,190,22,0.4); text-transform:uppercase; }
+        .badge { font-size:0.62rem; font-weight:800; padding:3px 9px; border-radius:20px; background:rgba(124, 255, 0,0.12); color:var(--primary); border:1px solid rgba(124, 255, 0,0.4); text-transform:uppercase; }
         table { width:100%; border-collapse:collapse; font-size:0.84rem; margin-bottom:10px; }
         th { text-align:left; padding:7px 6px; color:var(--primary); font-size:0.64rem; text-transform:uppercase; font-weight:900; }
         td { padding:8px 6px; border-bottom:1px solid rgba(255,255,255,0.05); } td.c { text-align:center; }

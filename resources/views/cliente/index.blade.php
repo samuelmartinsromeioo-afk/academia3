@@ -13,15 +13,7 @@
     <link rel="stylesheet" href="{{ asset('css/snrfit-brand.css') }}">
     <style>
         :root { 
-            --primary: #7cff00; 
-            --bg-dark: #0a0b0d; 
-            --card-bg: #16181d; 
-            --text-main: #ffffff; 
-            --text-muted: #a0a0a0;
-            --border: rgba(255,255,255,0.08);
             --input-bg: rgba(255,255,255,0.04);
-            --success: #28a745;
-            --error: #ff4444;
         }
 
         body { background-color: var(--bg-dark); font-family: 'Inter', sans-serif; color: var(--text-main); margin: 0; padding: 0; overflow-x: hidden; }
@@ -510,13 +502,13 @@
     </div>
 
     @if(!$cliente->anamnese)
-        <a href="{{ route('anamnese.form') }}" style="display:flex; align-items:center; gap:14px; background:rgba(244,190,22,0.1); border:1px solid #F4BE16; border-radius:14px; padding:16px 18px; margin-bottom:20px; color:#fff;">
-            <i class="ph ph-first-aid" style="color:#F4BE16; font-size:1.5rem;"></i>
+        <a href="{{ route('anamnese.form') }}" style="display:flex; align-items:center; gap:14px; background:rgba(124, 255, 0,0.1); border:1px solid var(--primary); border-radius:14px; padding:16px 18px; margin-bottom:20px; color:#fff;">
+            <i class="ph ph-first-aid" style="color:var(--primary); font-size:1.5rem;"></i>
             <div style="flex:1;">
                 <div style="font-weight:800;">Complete sua anamnese</div>
                 <div style="font-size:0.8rem; color:#bdbdbd;">Leva 2 minutos e ajuda seu personal a montar um treino seguro pra você.</div>
             </div>
-            <i class="ph ph-caret-right" style="color:#F4BE16;"></i>
+            <i class="ph ph-caret-right" style="color:var(--primary);"></i>
         </a>
     @endif
 

@@ -6,20 +6,10 @@
     <title>Solicitações de personais — {{ $academia->nome }}</title>
     <link rel="icon" type="image/png" href="{{ asset('SnrFit.png') }}">
     @include('partials.pwa')
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/regular/style.css">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/fill/style.css">
+    @include('partials.brand-head')
     <style>
         :root {
-            --primary: #7cff00;
-            --accent: #F4BE16;
-            --bg-dark: #0a0b0d;
-            --card-bg: #16181d;
-            --text-main: #ffffff;
-            --text-muted: #a0a0a0;
-            --error: #ff4444;
-            --success: #00ff88;
-            --border: rgba(255, 255, 255, 0.08);
+            --accent: var(--primary);
         }
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body { background: var(--bg-dark); font-family: 'Inter', sans-serif; color: var(--text-main); }
@@ -57,11 +47,11 @@
             padding: 18px 20px; margin-bottom: 14px;
             display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
         }
-        .card.pendente { border-color: rgba(244,190,22,0.35); }
+        .card.pendente { border-color: rgba(124, 255, 0,0.35); }
         .avatar { width: 54px; height: 54px; border-radius: 14px; object-fit: cover; border: 1px solid var(--border); flex-shrink: 0; }
         .avatar-ph {
             width: 54px; height: 54px; border-radius: 14px; flex-shrink: 0;
-            background: rgba(244,190,22,0.12); color: var(--accent);
+            background: rgba(124, 255, 0,0.12); color: var(--accent);
             display: flex; align-items: center; justify-content: center; font-size: 1.4rem;
         }
         .info { flex: 1; min-width: 180px; }
@@ -69,7 +59,7 @@
         .info .meta { color: var(--text-muted); font-size: 0.8rem; margin-top: 2px; }
 
         .badge { font-size: 0.68rem; font-weight: 800; text-transform: uppercase; padding: 5px 12px; border-radius: 20px; letter-spacing: 0.5px; }
-        .badge-pendente { background: rgba(244,190,22,0.15); color: var(--accent); border: 1px solid rgba(244,190,22,0.4); }
+        .badge-pendente { background: rgba(124, 255, 0,0.15); color: var(--accent); border: 1px solid rgba(124, 255, 0,0.4); }
         .badge-aprovado { background: rgba(0,255,136,0.12); color: var(--success); border: 1px solid rgba(0,255,136,0.35); }
 
         .actions { display: flex; gap: 10px; }

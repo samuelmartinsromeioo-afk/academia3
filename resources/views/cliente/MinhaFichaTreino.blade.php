@@ -7,20 +7,8 @@
     <title>Minhas Fichas de Treino</title>
     <link rel="icon" type="image/png" href="{{ asset('SnrFit.png') }}">
     @include('partials.pwa')
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/regular/style.css">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/fill/style.css">
+    @include('partials.brand-head')
     <style>
-        :root {
-            --primary: #7cff00;
-            --bg-dark: #0a0b0d;
-            --card-bg: #16181d;
-            --text-main: #ffffff;
-            --text-muted: #a0a0a0;
-            --error: #ff4444;
-            --success: #00ff88;
-            --border: rgba(255, 255, 255, 0.08);
-        }
 
         * {
             margin: 0;

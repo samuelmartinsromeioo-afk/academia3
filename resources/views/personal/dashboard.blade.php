@@ -12,16 +12,6 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/fill/style.css">
     <link rel="stylesheet" href="{{ asset('css/snrfit-brand.css') }}">
     <style>
-        :root {
-            --primary: #7cff00;
-            --bg-dark: #0a0b0d;
-            --card-bg: #16181d;
-            --text-main: #ffffff;
-            --text-muted: #a0a0a0;
-            --error: #ff4444;
-            --success: #00ff88;
-            --border: rgba(255, 255, 255, 0.08);
-        }
 
         body {
             background-color: var(--bg-dark);
@@ -1025,7 +1015,7 @@
                     .vinc-item .nome { font-weight: 700; font-size: 0.88rem; flex: 1; }
                     .vinc-item .nome small { display: block; color: var(--text-muted); font-weight: 400; font-size: 0.72rem; }
                     .vinc-badge { font-size: 0.66rem; font-weight: 800; text-transform: uppercase; padding: 5px 11px; border-radius: 20px; letter-spacing: 0.4px; white-space: nowrap; }
-                    .vinc-badge.pendente { background: rgba(244,190,22,0.15); color: #F4BE16; border: 1px solid rgba(244,190,22,0.45); }
+                    .vinc-badge.pendente { background: rgba(124, 255, 0,0.15); color: var(--primary); border: 1px solid rgba(124, 255, 0,0.45); }
                     .vinc-badge.aprovado { background: rgba(0,200,120,0.12); color: #00e08a; border: 1px solid rgba(0,200,120,0.4); }
                     .vinc-badge.rejeitado { background: rgba(160,160,160,0.12); color: #a0a0a0; border: 1px solid rgba(160,160,160,0.35); }
                     .vinc-cancel { background: rgba(255,68,68,0.1); color: #ff6b6b; border: 1px solid rgba(255,68,68,0.3); border-radius: 8px; padding: 7px 12px; font-size: 0.72rem; font-weight: 700; cursor: pointer; white-space: nowrap; }

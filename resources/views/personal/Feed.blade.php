@@ -6,13 +6,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Feed de Atividade</title>
     <link rel="icon" type="image/png" href="{{ asset('SnrFit.png') }}">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/regular/style.css">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/fill/style.css">
+    @include('partials.brand-head')
     <style>
-        :root { --primary:#F4BE16; --bg-dark:#000; --card-bg:#111317; --text-main:#fff; --text-muted:#9a9a9a; --green:#00e676; --red:#ff5252; --border:rgba(255,255,255,0.08); }
+        :root { --green:#00e676; --red:#ff5252; }
         * { margin:0; padding:0; box-sizing:border-box; }
-        body { background:var(--bg-dark); font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; color:var(--text-main); min-height:100vh; background-image:radial-gradient(circle at 12% -10%, rgba(244,190,22,0.1), transparent 45%); }
+        body { background:var(--bg-dark); font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; color:var(--text-main); min-height:100vh; background-image:radial-gradient(circle at 12% -10%, rgba(124, 255, 0,0.1), transparent 45%); }
         a { color:inherit; text-decoration:none; }
         .top-bar { display:flex; align-items:center; gap:15px; padding:15px 40px; background:rgba(0,0,0,0.6); border-bottom:1px solid var(--border); position:sticky; top:0; z-index:100; backdrop-filter:blur(10px); }
         .back-btn { background:var(--card-bg); border:1px solid var(--border); color:var(--primary); width:40px; height:40px; border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:1.1rem; }
@@ -31,7 +29,7 @@
         .panel-title { font-size:0.74rem; text-transform:uppercase; letter-spacing:0.5px; color:var(--primary); font-weight:900; margin-bottom:14px; display:flex; align-items:center; gap:8px; }
         .rec { display:flex; align-items:center; gap:12px; padding:10px 0; border-bottom:1px solid rgba(255,255,255,0.05); }
         .rec:last-child { border-bottom:none; }
-        .rec .ico { width:34px; height:34px; border-radius:9px; background:rgba(244,190,22,0.14); color:var(--primary); display:flex; align-items:center; justify-content:center; }
+        .rec .ico { width:34px; height:34px; border-radius:9px; background:rgba(124, 255, 0,0.14); color:var(--primary); display:flex; align-items:center; justify-content:center; }
         .rec .txt { flex:1; font-size:0.88rem; } .rec .txt small { color:var(--text-muted); display:block; font-size:0.7rem; }
         .rec .peso { font-weight:900; color:var(--primary); }
         .act { display:flex; align-items:center; gap:12px; padding:11px 0; border-bottom:1px solid rgba(255,255,255,0.05); }

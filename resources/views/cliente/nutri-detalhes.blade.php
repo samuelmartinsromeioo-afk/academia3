@@ -47,6 +47,7 @@
         .empty { color:var(--text-muted); font-size:0.88rem; }
         @media (max-width:600px) { .top-bar { padding:14px 20px; } .hero { flex-direction:column; text-align:center; } .meta { justify-content:center; } }
     </style>
+    @include('partials.brand-head')
 </head>
 <body class="ed-page">
 

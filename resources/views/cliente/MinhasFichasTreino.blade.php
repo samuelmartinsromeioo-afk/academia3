@@ -7,20 +7,8 @@
     <title>Minhas Fichas de Treino</title>
     <link rel="icon" type="image/png" href="{{ asset('SnrFit.png') }}">
     @include('partials.pwa')
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/regular/style.css">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/fill/style.css">
+    @include('partials.brand-head')
     <style>
-        :root {
-            --primary: #7cff00;
-            --bg-dark: #0a0b0d;
-            --card-bg: #16181d;
-            --text-main: #ffffff;
-            --text-muted: #a0a0a0;
-            --error: #ff4444;
-            --success: #00ff88;
-            --border: rgba(255, 255, 255, 0.08);
-        }
 
         * {
             margin: 0;
@@ -447,7 +435,7 @@
             display: inline-flex;
             align-items: center;
             gap: 8px;
-            background: #F4BE16;
+            background: var(--primary);
             color: #000;
             border: none;
             padding: 12px 20px;
@@ -459,7 +447,7 @@
             cursor: pointer;
             margin-bottom: 30px;
             transition: 0.2s;
-            box-shadow: 0 0 18px rgba(244, 190, 22, 0.25);
+            box-shadow: 0 0 18px rgba(124, 255, 0, 0.25);
         }
         .btn-evolucao:hover { filter: brightness(1.1); transform: translateY(-1px); }
 
@@ -483,7 +471,7 @@
         .registro-row .reg-nome {
             font-weight: 700;
             font-size: 0.85rem;
-            color: #F4BE16;
+            color: var(--primary);
             margin-bottom: 8px;
         }
         .registro-inputs { display: flex; gap: 8px; }
@@ -507,25 +495,25 @@
         }
         .registro-inputs input:focus {
             outline: none;
-            border-color: #F4BE16;
+            border-color: var(--primary);
         }
 
         /* FEEDBACK PÓS-TREINO */
         .fb-emojis { display: flex; gap: 8px; }
         .fb-emojis label { flex: 1; cursor: pointer; text-align: center; padding: 8px 4px; border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; background: rgba(255,255,255,0.04); transition: 0.15s; }
-        .fb-emojis label:has(input:checked) { border-color: #F4BE16; background: rgba(244,190,22,0.14); }
+        .fb-emojis label:has(input:checked) { border-color: var(--primary); background: rgba(124, 255, 0,0.14); }
         .fb-emojis input { display: none; }
         .fb-emojis .emo { font-size: 1.35rem; display: block; }
         .fb-emojis .cap { font-size: 0.58rem; color: var(--text-muted); margin-top: 2px; text-transform: uppercase; font-weight: 800; }
         .rpe-chips { display: flex; gap: 5px; flex-wrap: wrap; }
         .rpe-chips label { cursor: pointer; width: 34px; height: 34px; display: flex; align-items: center; justify-content: center; border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; background: rgba(255,255,255,0.04); font-size: 0.8rem; font-weight: 800; transition: 0.15s; }
-        .rpe-chips label:has(input:checked) { border-color: #F4BE16; background: #F4BE16; color: #000; }
+        .rpe-chips label:has(input:checked) { border-color: var(--primary); background: var(--primary); color: #000; }
         .rpe-chips input { display: none; }
         .rpe-hint { font-size: 0.62rem; color: var(--text-muted); margin-top: 5px; }
 
         /* BANNER DE RECORDE */
-        .recorde-banner { background: linear-gradient(135deg, rgba(244,190,22,0.18), rgba(244,190,22,0.03)); border: 1px solid #F4BE16; color: #fff; padding: 16px 18px; border-radius: 14px; margin-bottom: 20px; }
-        .recorde-banner .tt { color: #F4BE16; font-weight: 900; display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+        .recorde-banner { background: linear-gradient(135deg, rgba(124, 255, 0,0.18), rgba(124, 255, 0,0.03)); border: 1px solid var(--primary); color: #fff; padding: 16px 18px; border-radius: 14px; margin-bottom: 20px; }
+        .recorde-banner .tt { color: var(--primary); font-weight: 900; display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
         .recorde-banner ul { margin: 0; padding-left: 22px; font-size: 0.9rem; line-height: 1.6; }
 
         @media (max-width: 768px) {
@@ -640,7 +628,7 @@
                                 <div class="ficha-header">
                                     <h3><i class="ph ph-calendar-dot"></i> {{ $dias[$ficha->dia_semana] }}</h3>
                                     <div style="display:flex; gap:6px;">
-                                        <a href="{{ route('fichas-treino.executar', $ficha->id) }}" class="btn-marcar" style="text-decoration:none; background:#F4BE16; color:#000; border-color:#F4BE16;">
+                                        <a href="{{ route('fichas-treino.executar', $ficha->id) }}" class="btn-marcar" style="text-decoration:none; background:var(--primary); color:#000; border-color:var(--primary);">
                                             <i class="ph ph-play"></i> INICIAR
                                         </a>
                                         <button class="btn-marcar {{ $estaConcluido ? 'concluido' : '' }}"

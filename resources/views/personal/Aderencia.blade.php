@@ -6,20 +6,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Frequência e Aderência</title>
     <link rel="icon" type="image/png" href="{{ asset('SnrFit.png') }}">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/regular/style.css">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/fill/style.css">
+    @include('partials.brand-head')
     <style>
         :root {
-            --primary: #F4BE16;
-            --bg-dark: #000000;
-            --card-bg: #111317;
-            --text-main: #ffffff;
-            --text-muted: #9a9a9a;
             --green: #00e676;
             --yellow: #ffb300;
             --red: #ff5252;
-            --border: rgba(255, 255, 255, 0.08);
         }
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -27,7 +19,7 @@
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
             color: var(--text-main);
             min-height: 100vh;
-            background-image: radial-gradient(circle at 12% -10%, rgba(244, 190, 22, 0.10), transparent 45%);
+            background-image: radial-gradient(circle at 12% -10%, rgba(124, 255, 0, 0.10), transparent 45%);
         }
         a { color: inherit; text-decoration: none; }
 
@@ -103,7 +95,7 @@
         .empty p { font-size: 1.05rem; color: var(--text-main); }
 
         .alert-ok { background: rgba(0,230,118,0.1); color: var(--green); border: 1px solid var(--green); padding: 14px; border-radius: 12px; margin-bottom: 18px; font-size: 0.9rem; display: flex; align-items: center; gap: 10px; }
-        .btn-cutucar { width: 100%; margin-top: 10px; padding: 11px; border-radius: 9px; border: 1px solid var(--primary); background: rgba(244,190,22,0.12); color: var(--primary); font-weight: 800; font-size: 0.8rem; cursor: pointer; transition: 0.2s; display: flex; align-items: center; justify-content: center; gap: 8px; }
+        .btn-cutucar { width: 100%; margin-top: 10px; padding: 11px; border-radius: 9px; border: 1px solid var(--primary); background: rgba(124, 255, 0,0.12); color: var(--primary); font-weight: 800; font-size: 0.8rem; cursor: pointer; transition: 0.2s; display: flex; align-items: center; justify-content: center; gap: 8px; }
         .btn-cutucar:hover { background: var(--primary); color: #000; }
 
         @media (max-width: 768px) {
