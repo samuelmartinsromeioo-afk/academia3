@@ -1,5 +1,17 @@
 .env
+.env.backup
+.env.production
 .phpunit.result.cache
 /public/storage
+/public/build
+/public/hot
+/node_modules
+/storage/*.key
 /serve.log
 /serve.err.log
+npm-debug.log
+yarn-error.log
+/.idea
+/.vscode
+/.fleet
+_tmp_*.php
