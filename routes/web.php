@@ -86,6 +86,15 @@ Route::middleware('check.admin')->group(function () {
     Route::post('/admin/indicacoes', [IndicacaoController::class, 'adminStore'])->name('admin.indicacoes.store');
     Route::post('/admin/indicacoes/{id}/toggle', [IndicacaoController::class, 'adminToggle'])->name('admin.indicacoes.toggle');
 
+    // Saques do bônus de indicação. "transferir" dispara o Pix pelo Asaas;
+    // "pagar" só marca como pago (quando a equipe pagou por fora).
+    Route::post('/admin/indicacoes/saques/{id}/transferir', [IndicacaoController::class, 'adminSaqueTransferir'])
+        ->whereNumber('id')->name('admin.indicacoes.saques.transferir');
+    Route::post('/admin/indicacoes/saques/{id}/pagar', [IndicacaoController::class, 'adminSaquePagar'])
+        ->whereNumber('id')->name('admin.indicacoes.saques.pagar');
+    Route::post('/admin/indicacoes/saques/{id}/recusar', [IndicacaoController::class, 'adminSaqueRecusar'])
+        ->whereNumber('id')->name('admin.indicacoes.saques.recusar');
+
     // Devoluções de aula cancelada pelo aluno (resolvidas na mão pelo admin)
     Route::get('/admin/estornos', [\App\Http\Controllers\EstornoController::class, 'index'])->name('admin.estornos');
     Route::post('/admin/estornos/{id}/devolver', [\App\Http\Controllers\EstornoController::class, 'devolver'])->name('admin.estornos.devolver');
@@ -181,6 +190,12 @@ Route::get('/cupom/validar', [IndicacaoController::class, 'validar'])
 Route::get('/indicacoes', [IndicacaoController::class, 'painel'])
     ->name('indicacoes.painel')
     ->middleware('check.login');
+
+// Pedido de saque do bônus liberado. Throttle apertado: é uma ação de dinheiro,
+// feita no máximo uma vez por ciclo, e não há motivo para rajada de requisições.
+Route::post('/indicacoes/saque', [IndicacaoController::class, 'solicitarSaque'])
+    ->name('indicacoes.saque')
+    ->middleware(['check.login', 'throttle:5,1']);
 
 
 // ==========================================

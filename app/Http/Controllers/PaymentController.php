@@ -653,6 +653,16 @@ class PaymentController extends Controller
 
         $apiKey = $personal->getAsaasApiKeyDecrypted();
 
+        // Registra ANTES de chamar o Asaas, para a transferência nascer com um
+        // externalReference verificável: o webhook de validação de saque é
+        // fail-closed e recusa transferência que não casa com registro nosso.
+        $saque = PersonalSaque::create([
+            'personal_id' => $personalId,
+            'value'       => (float) $validated['valor'],
+            'status'      => 'CREATING',
+        ]);
+        $saque->update(['external_reference' => 'personal_saque:'.$saque->id]);
+
         $res = Http::withHeaders([
             'access_token' => $apiKey,
             'Content-Type' => 'application/json',
@@ -662,6 +672,7 @@ class PaymentController extends Controller
             'pixAddressKey' => $personal->chave_pix,
             'pixAddressKeyType' => $this->detectarTipoChavePix($personal->chave_pix),
             'description' => 'Saque SnrFit',
+            'externalReference' => $saque->external_reference,
         ]);
 
         unset($apiKey);
@@ -671,15 +682,23 @@ class PaymentController extends Controller
         if (! empty($data['errors'])) {
             $errMsg = $data['errors'][0]['description'] ?? 'Falha ao processar saque.';
             Log::error('Asaas saque: falha', ['personal_id' => $personalId, 'body' => $data]);
+            $saque->update(['status' => 'FAILED']);
 
             return response()->json(['error' => $errMsg], 422);
         }
 
         if ($res->failed()) {
             Log::error('Asaas saque: http error', ['personal_id' => $personalId, 'body' => $data]);
+            $saque->update(['status' => 'FAILED']);
 
             return response()->json(['error' => 'Falha ao processar saque. Tente novamente.'], 500);
         }
+
+        $saque->update([
+            'asaas_transfer_id'       => $data['id'] ?? null,
+            'status'                  => $data['status'] ?? 'PENDING',
+            'transaction_receipt_url' => $data['transactionReceiptUrl'] ?? null,
+        ]);
 
         TrainerPayout::where('trainer_id', $personalId)
             ->where('status', 'in_wallet')
@@ -738,6 +757,16 @@ class PaymentController extends Controller
             return response()->json(['error' => 'Não foi possível acessar sua conta de recebimento. Contate o suporte.'], 500);
         }
 
+        // Registra ANTES de chamar o Asaas: a transferência precisa nascer com um
+        // externalReference verificável, porque o webhook de validação de saque é
+        // fail-closed e recusa o que não casa com registro nosso.
+        $saque = PersonalSaque::create([
+            'personal_id' => $personalId,
+            'value'       => (float) $validated['value'],
+            'status'      => 'CREATING',
+        ]);
+        $saque->update(['external_reference' => 'personal_saque:'.$saque->id]);
+
         try {
             $res = Http::withHeaders([
                 'access_token' => $apiKey,
@@ -747,10 +776,12 @@ class PaymentController extends Controller
                 'pixAddressKey'     => $validated['pixAddressKey'],
                 'pixAddressKeyType' => $validated['pixAddressKeyType'],
                 'operationType'     => 'PIX',
+                'externalReference' => $saque->external_reference,
             ]);
         } catch (\Throwable $e) {
             unset($apiKey);
             Log::error('Saque subconta: exceção na transferência', ['personal_id' => $personalId, 'error' => $e->getMessage()]);
+            $saque->update(['status' => 'FAILED']);
 
             return response()->json(['error' => 'Erro ao processar o saque. Tente novamente.'], 500);
         }
@@ -759,6 +790,8 @@ class PaymentController extends Controller
 
         // 409 = transferência duplicada (mesmo valor/chave nos últimos 15 min).
         if ($res->status() === 409) {
+            $saque->update(['status' => 'DUPLICATE']);
+
             return response()->json([
                 'error' => 'Já existe um saque idêntico solicitado nos últimos 15 minutos. Aguarde antes de tentar de novo.',
             ], 409);
@@ -775,20 +808,20 @@ class PaymentController extends Controller
                 'status'      => $res->status(),
                 'errors'      => $data['errors'],
             ]);
+            $saque->update(['status' => 'FAILED']);
 
             return response()->json(['error' => $errMsg], 422);
         }
 
         if ($res->failed() || empty($data['id'])) {
             Log::error('Saque subconta: http error', ['personal_id' => $personalId, 'status' => $res->status()]);
+            $saque->update(['status' => 'FAILED']);
 
             return response()->json(['error' => 'Falha ao processar o saque. Tente novamente.'], 500);
         }
 
-        $saque = PersonalSaque::create([
-            'personal_id'             => $personalId,
+        $saque->update([
             'asaas_transfer_id'       => $data['id'] ?? null,
-            'value'                   => (float) $validated['value'],
             'status'                  => $data['status'] ?? 'PENDING',
             'transaction_receipt_url' => $data['transactionReceiptUrl'] ?? null,
         ]);

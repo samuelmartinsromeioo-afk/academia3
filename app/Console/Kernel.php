@@ -29,6 +29,17 @@ class Kernel extends ConsoleKernel
         // Lembra o paciente da consulta nutricional ~24 h antes. A trava de
         // duplicidade é a coluna lembrete_enviado, não o horário da execução.
         $schedule->command('nutri:lembrete-consulta')->everyFifteenMinutes()->withoutOverlapping();
+
+        // Apura o bônus de indicação (10% do faturamento do indicado na janela de
+        // 35 dias) e libera para saque o que fechou a janela com a meta batida.
+        // O painel do indicador também reavalia no acesso, mas sem isto o bônus de
+        // quem não entra no sistema só liberaria no próximo login dele.
+        $schedule->command('indicacoes:reavaliar')->dailyAt('04:00')->withoutOverlapping();
+
+        // Rede de segurança do saque automático: fecha os saques cujo desfecho da
+        // transferência não chegou por webhook. Frequente de propósito — enquanto
+        // um saque fica em `processando`, o bônus do indicador está preso nele.
+        $schedule->command('indicacoes:conciliar-saques')->everyTenMinutes()->withoutOverlapping();
     }
 
     /**

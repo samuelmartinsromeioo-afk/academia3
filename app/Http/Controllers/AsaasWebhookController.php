@@ -2,7 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\IndicacaoSaque;
 use App\Models\Payment;
+use App\Services\IndicacaoSaqueService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 
@@ -18,15 +20,26 @@ class AsaasWebhookController extends Controller
         $tokenValido = $expectedToken
             && hash_equals($expectedToken, (string) $request->header('asaas-access-token'));
 
-        // Autorização de saque (transfer) = operação de SAÍDA de dinheiro da conta.
-        // Só pode ser concedida DEPOIS de validar o token: nunca autorizamos um
-        // saque a partir de uma requisição não autenticada. Sem token configurado/
-        // válido, a autorização é negada (fail-closed).
-        if ($request->has('transfer') || in_array($event, ['TRANSFER_REQUEST', 'TRANSFER_CREATED', 'TRANSFER'])) {
+        // ── Validação de saque (mecanismo de aprovação do Asaas) ──────────────
+        //
+        // Toda operação de SAÍDA de dinheiro fica ~5 s pendente e o Asaas pergunta
+        // aqui se pode liberar. É a nossa SEGUNDA autorização, independente de quem
+        // criou a operação: mesmo que uma transferência seja criada com sucesso na
+        // conta, ela só sai se esta resposta for APPROVED.
+        //
+        // Identificado pelo campo `type` (TRANSFER, BILL, PIX_QR_CODE, PIX_REFUND,
+        // MOBILE_PHONE_RECHARGE, PAYMENT_SPLIT) — diferente dos eventos de status,
+        // que vêm em `event` (TRANSFER_DONE etc.) e são tratados mais abaixo.
+        if ($request->filled('type') && ! $event) {
+            return $this->validarSaque($request, $tokenValido, $expectedToken);
+        }
+
+        // ── Eventos de status de transferência ────────────────────────────────
+        // Exigem token válido como qualquer outro evento (fail-closed).
+        if (is_string($event) && str_starts_with($event, 'TRANSFER_')) {
             if (! $tokenValido) {
-                Log::channel('security')->warning('Asaas: autorização de saque NEGADA — token ausente ou inválido', [
+                Log::channel('security')->warning('Asaas: evento de transferência REJEITADO — token ausente ou inválido', [
                     'event' => $event,
-                    'has_transfer' => $request->has('transfer'),
                     'token_config' => (bool) $expectedToken,
                     'ip' => $request->ip(),
                 ]);
@@ -34,18 +47,7 @@ class AsaasWebhookController extends Controller
                 return response()->json(['error' => 'Unauthorized'], 401);
             }
 
-            // A02 — não despejamos o corpo inteiro no log: a autorização de saque
-            // carrega valor e identificadores da conta de destino. Só metadados.
-            Log::info('Asaas: autorização de saque concedida (token válido)', [
-                'event' => $event,
-                'transfer_id' => $request->input('transfer.id') ?? $request->input('id'),
-                'ip' => $request->ip(),
-            ]);
-
-            // O Asaas aprova o saque quando o status retornado é APPROVED
-            // (REFUSED bloquearia). Mantemos também 'authorized' por segurança,
-            // já que campos extras no JSON não atrapalham a leitura do Asaas.
-            return response()->json(['status' => 'APPROVED', 'authorized' => true]);
+            return $this->conciliarTransferencia($request, $event);
         }
 
         // Eventos de pagamento também exigem token válido (fail-closed): confirmar
@@ -100,6 +102,188 @@ class AsaasWebhookController extends Controller
             // Mensalidade vencida sem pagamento: suspende o acesso até regularizar.
             app(PaymentController::class)->processarVencimentoAssinatura($subscriptionId);
         }
+
+        return response()->json(['received' => true]);
+    }
+
+    /**
+     * Responde ao mecanismo de validação de saque do Asaas.
+     *
+     * FAIL-CLOSED. A resposta precisa ser `{"status":"APPROVED"}` ou
+     * `{"status":"REFUSED","refuseReason":"..."}`; o Asaas cancela a operação se o
+     * webhook falhar 3× ou não devolver status válido, então qualquer problema
+     * nosso resulta em dinheiro NÃO saindo — que é o lado seguro do erro.
+     *
+     * Política por tipo de operação:
+     *  • TRANSFER      — saída para chave/conta externa. Só aprova o que casa com
+     *                    um `indicacao_saques` em `processando`, no valor exato e
+     *                    na chave Pix que o dono cadastrou. É o único tipo que
+     *                    criamos automaticamente, e é o perigoso.
+     *  • PAYMENT_SPLIT — repasse do marketplace para o profissional. APROVADO: o
+     *                    split é definido por nós na criação da cobrança e é o
+     *                    núcleo do modelo 90/10 — recusar aqui pararia todos os
+     *                    repasses da plataforma.
+     *  • o resto       — boleto, recarga, devolução de Pix: não criamos nenhum
+     *                    desses, logo ninguém legítimo os dispara. RECUSADO.
+     */
+    private function validarSaque(Request $request, bool $tokenValido, ?string $expectedToken)
+    {
+        $tipo = (string) $request->input('type');
+
+        // Nunca autorizamos saída de dinheiro a partir de requisição não
+        // autenticada. Sem token configurado/válido, nega.
+        if (! $tokenValido) {
+            Log::channel('security')->warning('Asaas: validação de saque NEGADA — token ausente ou inválido', [
+                'type' => $tipo,
+                'token_config' => (bool) $expectedToken,
+                'ip' => $request->ip(),
+            ]);
+
+            return response()->json([
+                'status' => 'REFUSED',
+                'refuseReason' => 'Origem não autenticada.',
+            ], 401);
+        }
+
+        if ($tipo === 'PAYMENT_SPLIT') {
+            Log::info('Asaas: split aprovado na validação', [
+                'split_id' => $request->input('paymentSplit.id'),
+            ]);
+
+            return response()->json(['status' => 'APPROVED']);
+        }
+
+        if ($tipo !== 'TRANSFER') {
+            Log::channel('security')->warning('Asaas: operação de saída RECUSADA — tipo que a plataforma não emite', [
+                'type' => $tipo,
+                'ip' => $request->ip(),
+            ]);
+
+            return response()->json([
+                'status' => 'REFUSED',
+                'refuseReason' => 'Operação não emitida pela plataforma.',
+            ]);
+        }
+
+        $transfer = (array) $request->input('transfer', []);
+        $ref = (string) ($transfer['externalReference'] ?? '');
+
+        // Saque da subconta do profissional (sacarPersonal/sacarSubconta). Só
+        // chega aqui se o webhook da subconta apontar para nós; aprovamos quando
+        // casa com o registro criado antes da chamada, no valor exato.
+        $decisao = str_starts_with($ref, 'personal_saque:')
+            ? $this->autorizarSaquePersonal($ref, $transfer)
+            : app(IndicacaoSaqueService::class)->autorizarTransferencia($transfer);
+
+        // A02 — só metadados no log: o payload traz chave Pix e dados bancários
+        // do destino. Nunca o corpo inteiro.
+        $contexto = [
+            'transfer_id' => $transfer['id'] ?? null,
+            'external_reference' => $transfer['externalReference'] ?? null,
+            'valor' => $transfer['value'] ?? null,
+            'motivo' => $decisao['motivo'],
+            'ip' => $request->ip(),
+        ];
+
+        if (! $decisao['aprovar']) {
+            Log::channel('security')->warning('Asaas: TRANSFERÊNCIA RECUSADA na validação', $contexto);
+
+            return response()->json([
+                'status' => 'REFUSED',
+                'refuseReason' => $decisao['motivo'],
+            ]);
+        }
+
+        Log::channel('security')->info('Asaas: transferência aprovada na validação', $contexto);
+
+        return response()->json(['status' => 'APPROVED']);
+    }
+
+    /**
+     * Autoriza o saque que o profissional faz da PRÓPRIA subconta.
+     *
+     * Risco menor que o da indicação (o dinheiro é dele e sai do saldo dele, não
+     * da conta da plataforma), mas a conferência é a mesma: tem de existir um
+     * `personal_saques` recém-criado, no valor exato, ainda sem desfecho.
+     *
+     * @return array{aprovar:bool, motivo:string}
+     */
+    private function autorizarSaquePersonal(string $ref, array $transfer): array
+    {
+        $id = (int) substr($ref, strlen('personal_saque:'));
+        $saque = $id > 0 ? \App\Models\PersonalSaque::find($id) : null;
+
+        if (! $saque) {
+            return ['aprovar' => false, 'motivo' => 'Saque não encontrado.'];
+        }
+
+        // CREATING = criado por nós agora e ainda sem resposta do Asaas; PENDING =
+        // o Asaas já devolveu a criação. Qualquer outro estado (FAILED, DONE…)
+        // significa que não há transferência legítima em curso.
+        if (! in_array($saque->status, ['CREATING', 'PENDING'], true)) {
+            return ['aprovar' => false, 'motivo' => 'Saque não está aguardando transferência.'];
+        }
+
+        $valor = isset($transfer['value']) ? round((float) $transfer['value'], 2) : null;
+
+        if ($valor === null || abs($valor - (float) $saque->value) > 0.001) {
+            return ['aprovar' => false, 'motivo' => 'Valor divergente do saque registrado.'];
+        }
+
+        return ['aprovar' => true, 'motivo' => 'Saque de subconta conferido.'];
+    }
+
+    /**
+     * Aplica o desfecho de uma transferência (TRANSFER_DONE/FAILED/CANCELLED…) ao
+     * saque de indicação correspondente. Idempotente pelo serviço.
+     */
+    private function conciliarTransferencia(Request $request, string $event)
+    {
+        $transfer = (array) $request->input('transfer', []);
+        $ref = $transfer['externalReference'] ?? null;
+        $id = IndicacaoSaque::idDaReferencia($ref);
+
+        // Transferência que não é saque de indicação (ex.: saque de subconta do
+        // personal) não tem nada a conciliar aqui.
+        if ($id === null) {
+            Log::info('Asaas: evento de transferência fora do escopo de indicação', [
+                'event' => $event,
+                'transfer_id' => $transfer['id'] ?? null,
+            ]);
+
+            return response()->json(['received' => true]);
+        }
+
+        $saque = IndicacaoSaque::find($id);
+
+        if (! $saque) {
+            Log::channel('security')->warning('Asaas: evento de transferência para saque inexistente', [
+                'event' => $event,
+                'external_reference' => $ref,
+            ]);
+
+            return response()->json(['received' => true]);
+        }
+
+        // Confere o id antes de aplicar: um evento cujo transfer.id não é o que
+        // gravamos não descreve a nossa transferência.
+        if (! empty($transfer['id']) && $saque->asaas_transfer_id
+            && $transfer['id'] !== $saque->asaas_transfer_id) {
+            Log::channel('security')->warning('Asaas: evento de transferência com id divergente', [
+                'event' => $event,
+                'saque_id' => $saque->id,
+                'esperado' => $saque->asaas_transfer_id,
+                'recebido' => $transfer['id'],
+            ]);
+
+            return response()->json(['received' => true]);
+        }
+
+        app(IndicacaoSaqueService::class)->concluirTransferencia(
+            $saque,
+            (string) ($transfer['status'] ?? ''),
+            $transfer['failReason'] ?? null
+        );
 
         return response()->json(['received' => true]);
     }

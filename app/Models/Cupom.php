@@ -16,12 +16,18 @@ class Cupom extends Model
     public const TIPO_INDICACAO   = 'indicacao';
     public const TIPO_PROMOCIONAL = 'promocional';
 
-    /** Bônus por indicação. Só vira resgatável com a meta batida — ver CupomUso. */
-    public const BONUS_PADRAO = 30.00;
+    /**
+     * `bonus_valor` em cupom de INDICAÇÃO é sempre 0: o bônus é percentual do
+     * faturamento do indicado e vive em indicacao_creditos, não num valor fixo
+     * no cupom. A coluna segue existindo para os cupons PROMOCIONAIS do admin,
+     * que continuam valendo um valor fixo.
+     */
+    public const BONUS_INDICACAO_FIXO = 0.00;
 
     /**
-     * Status de `payments`/`subscriptions` que representam dinheiro que entrou —
-     * usado para contar os alunos que liberam o bônus do indicador.
+     * Status de `payments`/`subscriptions` que representam dinheiro que entrou.
+     * Usado em dois lugares: contar os alunos que liberam o saque do indicador e
+     * apurar o faturamento do indicado dentro da janela de 35 dias.
      *
      * A tabela acumulou grafias diferentes ao longo do tempo (pago/paid/
      * succeeded), então a lista é generosa; mas nunca inclui pending/processing/

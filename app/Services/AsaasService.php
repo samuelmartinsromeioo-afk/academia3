@@ -569,4 +569,188 @@ class AsaasService
 
         return $res->failed() ? null : $res->json();
     }
+
+    // ─────────────────────────────────────────────
+    // TRANSFERÊNCIAS (saída de dinheiro da conta da PLATAFORMA)
+    // ─────────────────────────────────────────────
+
+    /**
+     * Saldo disponível na conta da plataforma. Null quando não deu para consultar
+     * — e quem chama DEVE tratar null como "não sei" e abortar, nunca como zero
+     * ou como saldo infinito.
+     */
+    public function saldoPlataforma(): ?float
+    {
+        try {
+            $res = Http::withHeaders($this->asaasHeaders())
+                ->timeout(15)
+                ->get($this->asaas().'/finance/balance');
+
+            if ($res->failed() || ! isset($res->json()['balance'])) {
+                Log::warning('Asaas: falha ao consultar saldo da plataforma', ['status' => $res->status()]);
+
+                return null;
+            }
+
+            return (float) $res->json()['balance'];
+        } catch (\Throwable $e) {
+            Log::warning('Asaas: exceção ao consultar saldo da plataforma', ['erro' => $e->getMessage()]);
+
+            return null;
+        }
+    }
+
+    /**
+     * Transfere por Pix da conta da PLATAFORMA para uma chave externa.
+     *
+     * Usa a access_token raiz: é a conta onde a comissão da plataforma fica, e é
+     * de onde sai o bônus de indicação. Diferente de sacarPersonal/sacarSubconta,
+     * que usam a apiKey da subconta do profissional.
+     *
+     * `$externalReference` não é cosmético: é por ele que o webhook de autorização
+     * de saque reconhece a transferência como nossa e a aprova (qualquer outra é
+     * recusada). Sempre passe um identificador verificável no nosso banco.
+     *
+     * Nunca lança: devolve ['ok' => false, 'erro' => mensagem] para quem chama
+     * decidir. Um throw aqui, no meio de um fluxo de dinheiro, é pior que um
+     * retorno tratável.
+     *
+     * @return array{ok:bool, id?:string, status?:string, authorized?:bool, receipt?:?string, erro?:string, duplicado?:bool}
+     */
+    public function transferirPix(
+        float $valor,
+        string $chavePix,
+        string $tipoChave,
+        string $descricao,
+        string $externalReference
+    ): array {
+        if ($valor <= 0) {
+            return ['ok' => false, 'erro' => 'Valor inválido para transferência.'];
+        }
+
+        try {
+            $res = Http::withHeaders($this->asaasHeaders())
+                ->timeout(30)
+                ->post($this->asaas().'/transfers', [
+                    'operationType'     => 'PIX',
+                    'value'             => round($valor, 2),
+                    'pixAddressKey'     => $chavePix,
+                    'pixAddressKeyType' => $tipoChave,
+                    'description'       => $descricao,
+                    'externalReference' => $externalReference,
+                ]);
+        } catch (\Throwable $e) {
+            // Timeout é o caso perigoso: a transferência PODE ter sido criada.
+            // Sinalizamos indeterminado para quem chama não liberar nova tentativa
+            // automática — a conciliação é pelo externalReference.
+            Log::critical('Asaas transferência: exceção — estado INDETERMINADO, conciliar por externalReference', [
+                'external_reference' => $externalReference,
+                'erro'               => $e->getMessage(),
+            ]);
+
+            return ['ok' => false, 'erro' => 'Falha de comunicação com o Asaas.', 'indeterminado' => true];
+        }
+
+        // 409 = transferência duplicada (mesmo valor/chave nos últimos 15 min).
+        if ($res->status() === 409) {
+            return [
+                'ok'        => false,
+                'duplicado' => true,
+                'erro'      => 'O Asaas recusou como transferência duplicada. Aguarde 15 minutos.',
+            ];
+        }
+
+        $data = $res->json() ?? [];
+
+        // Erros de negócio (saldo insuficiente, chave Pix inválida...) chegam em
+        // data.errors[].description.
+        if (! empty($data['errors'])) {
+            Log::warning('Asaas transferência: erro de negócio', [
+                'external_reference' => $externalReference,
+                'status'             => $res->status(),
+                'errors'             => $data['errors'],
+            ]);
+
+            return ['ok' => false, 'erro' => $data['errors'][0]['description'] ?? 'Falha ao transferir.'];
+        }
+
+        if ($res->failed() || empty($data['id'])) {
+            Log::error('Asaas transferência: falha HTTP', [
+                'external_reference' => $externalReference,
+                'status'             => $res->status(),
+            ]);
+
+            return ['ok' => false, 'erro' => 'Falha ao transferir. Tente novamente.'];
+        }
+
+        // A02 — nunca logamos a chave Pix de destino, só metadados.
+        Log::info('Asaas transferência criada', [
+            'external_reference' => $externalReference,
+            'transfer_id'        => $data['id'],
+            'status'             => $data['status'] ?? null,
+            'authorized'         => $data['authorized'] ?? null,
+            'valor'              => round($valor, 2),
+        ]);
+
+        return [
+            'ok'         => true,
+            'id'         => (string) $data['id'],
+            'status'     => (string) ($data['status'] ?? 'PENDING'),
+            // false = conta exige token SMS; a transferência fica parada até
+            // alguém confirmar no painel do Asaas.
+            'authorized' => (bool) ($data['authorized'] ?? true),
+            'receipt'    => $data['transactionReceiptUrl'] ?? null,
+        ];
+    }
+
+    /** Consulta uma transferência (conciliação). Null em falha HTTP. */
+    public function consultarTransferencia(string $transferId): ?array
+    {
+        try {
+            $res = Http::withHeaders($this->asaasHeaders())
+                ->timeout(15)
+                ->get($this->asaas()."/transfers/{$transferId}");
+
+            return $res->failed() ? null : $res->json();
+        } catch (\Throwable $e) {
+            return null;
+        }
+    }
+
+    /**
+     * Tipo da chave Pix a partir do formato. O Asaas exige `pixAddressKeyType`
+     * junto da chave, e errar o tipo faz a transferência ser recusada.
+     */
+    public static function tipoChavePix(string $chave): string
+    {
+        $chave = trim($chave);
+
+        if (filter_var($chave, FILTER_VALIDATE_EMAIL)) {
+            return 'EMAIL';
+        }
+
+        $digitos = preg_replace('/\D/', '', $chave);
+
+        // Só é documento/telefone se a chave for SÓ dígitos (com pontuação) —
+        // uma chave aleatória (EVP) pode conter 11 dígitos entre letras.
+        if ($digitos !== '' && preg_match('/^[\d.\-\/()+ ]+$/', $chave)) {
+            if (strlen($digitos) === 14) {
+                return 'CNPJ';
+            }
+            // Telefone brasileiro vem com DDI 55 (12-13) ou só DDD (10-11).
+            if (strlen($digitos) >= 12 && strlen($digitos) <= 13) {
+                return 'PHONE';
+            }
+            if (strlen($digitos) === 11) {
+                // 11 dígitos é ambíguo: CPF ou celular com DDD. Celular tem 9 na
+                // terceira posição (DD + 9XXXXXXXX); CPF normalmente não.
+                return $chave[2] === '9' && ! str_contains($chave, '.') ? 'PHONE' : 'CPF';
+            }
+            if (strlen($digitos) === 10) {
+                return 'PHONE';
+            }
+        }
+
+        return 'EVP';
+    }
 }

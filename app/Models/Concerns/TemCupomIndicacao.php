@@ -4,6 +4,7 @@ namespace App\Models\Concerns;
 
 use App\Models\Cupom;
 use App\Models\CupomUso;
+use App\Models\IndicacaoSaque;
 use App\Models\Payment;
 use App\Models\Subscription;
 
@@ -43,13 +44,41 @@ trait TemCupomIndicacao
         return app(\App\Services\CupomService::class)->cupomDe($this)->codigo;
     }
 
-    /** Bônus já resgatável (indicados que bateram a meta). */
+    /** Pedidos de saque do bônus de indicação feitos por este usuário. */
+    public function saquesIndicacao()
+    {
+        return IndicacaoSaque::query()->doUsuario($this);
+    }
+
+    /** Bônus já liberado (janela fechada + meta batida), incluindo o que já foi sacado. */
     public function bonusIndicacao(): float
     {
         return (float) $this->indicacoesFeitas()->liberados()->sum('bonus_valor');
     }
 
-    /** Bônus reservado, esperando o indicado bater a meta. */
+    /**
+     * O que pode ser pedido em saque AGORA: liberado e ainda não amarrado a
+     * nenhum pedido. É esta a conta que o botão de saque usa — nunca um valor
+     * vindo do formulário.
+     */
+    public function saldoDisponivel(): float
+    {
+        return round((float) $this->indicacoesFeitas()->sacaveis()->sum('bonus_valor'), 2);
+    }
+
+    /** Já pedido e aguardando o admin pagar. */
+    public function bonusEmSaque(): float
+    {
+        return round((float) $this->saquesIndicacao()->emAberto()->sum('valor'), 2);
+    }
+
+    /** Total já pago pela equipe. */
+    public function bonusSacado(): float
+    {
+        return round((float) $this->saquesIndicacao()->pagos()->sum('valor'), 2);
+    }
+
+    /** Bônus ainda acumulando na janela ou esperando a meta. */
     public function bonusPendente(): float
     {
         return (float) $this->indicacoesFeitas()->pendentes()->sum('bonus_valor');
@@ -61,21 +90,27 @@ trait TemCupomIndicacao
         return $this->indicacoesFeitas()->liberados()->count();
     }
 
-    /** Quantas indicações estão esperando a meta. */
+    /** Quantas indicações estão acumulando ou esperando a meta. */
     public function indicacoesPendentes(): int
     {
         return $this->indicacoesFeitas()->pendentes()->count();
     }
 
+    /** Tem pedido de saque em análise? (um por vez) */
+    public function temSaqueEmAberto(): bool
+    {
+        return $this->saquesIndicacao()->emAberto()->exists();
+    }
+
     /**
-     * Alunos que ESTE perfil conquistou pela plataforma — a métrica que libera
-     * o bônus de quem o indicou.
+     * Alunos que ESTE perfil conquistou pela plataforma — a métrica que, junto
+     * com o fim da janela de 35 dias, libera o SAQUE do bônus de quem o indicou.
      *
      * Conta cliente distinto com pagamento confirmado na SnrFit para este
      * recebedor. Deliberadamente NÃO conta vínculo criado à mão
      * (`clientes.academia_id`, paciente de nutri, agenda avulsa sem cobrança):
      * esses são gratuitos de criar e transformariam a meta em formalidade —
-     * bastaria vincular 6 contas de amigos para destravar R$ 30 de indicação.
+     * bastaria vincular 6 contas de amigos para destravar o saque.
      *
      * Aluno (Cliente) não conquista aluno: retorna 0.
      */

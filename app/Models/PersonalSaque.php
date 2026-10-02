@@ -14,6 +14,10 @@ class PersonalSaque extends Model
     protected $fillable = [
         'personal_id',
         'asaas_transfer_id',
+        // Identifica a transferência no Asaas ("personal_saque:12"). O webhook de
+        // validação de saque é fail-closed, então toda transferência que criamos
+        // precisa ser reconhecível — ver AsaasWebhookController::validarSaque().
+        'external_reference',
         'value',
         'status',
         'transaction_receipt_url',

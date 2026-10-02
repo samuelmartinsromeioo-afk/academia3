@@ -106,13 +106,72 @@
         .valor-ok { color:var(--primary); font-weight:700; }
         .valor-espera { color:#f0b429; }
 
+        .alerta {
+            padding:13px 18px; border-radius:12px; margin-bottom:20px; font-size:.9rem; line-height:1.5;
+        }
+        .alerta.ok { background:rgba(124,255,0,.1); border:1px solid rgba(124,255,0,.35); color:var(--primary); }
+        .alerta.erro { background:rgba(255,107,107,.1); border:1px solid rgba(255,107,107,.4); color:#ff6b6b; }
+
+        .aviso-saque {
+            display:flex; gap:10px; align-items:flex-start;
+            font-size:.86rem; color:var(--text-dim); line-height:1.55;
+        }
+        .aviso-saque i { color:#f0b429; font-size:1.1rem; flex-shrink:0; margin-top:1px; }
+        .aviso-saque.ok { color:var(--text-main); }
+        .aviso-saque.ok i { color:var(--primary); }
+
+        .form-saque { display:flex; gap:12px; align-items:end; flex-wrap:wrap; margin-top:18px; }
+        .form-saque label {
+            display:block; font-size:.63rem; font-weight:700; color:var(--primary);
+            text-transform:uppercase; letter-spacing:1.1px; margin-bottom:6px;
+        }
+        .form-saque input {
+            width:100%; background:rgba(255,255,255,.05); border:1px solid var(--border);
+            border-radius:10px; padding:12px 14px; color:#fff; font-size:.88rem;
+            outline:none; font-family:inherit;
+        }
+        .form-saque input:focus { border-color:var(--primary); }
+        .nota-pix { font-size:.74rem; color:var(--text-dim); margin-top:10px; line-height:1.5; }
+
+        /* Extrato por indicado: linha expansível sob a linha da indicação. */
+        .linha-extrato > td { padding:0 10px 14px; border-bottom:1px solid var(--border); }
+        .linha-extrato summary {
+            cursor:pointer; display:inline-block; font-size:.74rem; color:var(--text-dim);
+            padding:5px 0; list-style:none; transition:.2s;
+        }
+        .linha-extrato summary::marker, .linha-extrato summary::-webkit-details-marker { display:none; }
+        .linha-extrato summary::before { content:'▸ '; color:var(--primary); }
+        .linha-extrato details[open] summary::before { content:'▾ '; }
+        .linha-extrato summary:hover { color:var(--primary); }
+        /* No celular o extrato rola na horizontal em vez de esticar a página. */
+        .extrato-scroll { overflow-x:auto; margin-top:10px; }
+        table.extrato {
+            background:rgba(255,255,255,.03);
+            border:1px solid var(--border); border-radius:10px; overflow:hidden;
+            min-width:420px;
+        }
+        table.extrato th, table.extrato td {
+            padding:9px 12px; font-size:.78rem; border-bottom:1px solid var(--border);
+            white-space:nowrap;
+        }
+        table.extrato tr:last-child td { border-bottom:none; }
+        table.extrato th { font-size:.62rem; letter-spacing:1.1px; }
+        .extrato-total td { font-weight:700; background:rgba(124,255,0,.04); }
+        .extrato-nota { font-size:.72rem; color:var(--text-dim); margin-top:8px; line-height:1.5; }
+
         .vazio { text-align:center; padding:44px 20px; color:var(--text-dim); }
         .vazio i { font-size:2.4rem; color:rgba(124,255,0,.35); display:block; margin-bottom:14px; }
         .titulo-secao { font-size:.72rem; text-transform:uppercase; letter-spacing:2px; color:var(--text-dim); margin-bottom:18px; }
         .paginacao { margin-top:18px; }
         .paginacao a, .paginacao span { color:var(--text-dim); }
-        /* No celular a data sai primeiro; o progresso até a meta é o que importa. */
-        @media (max-width:560px) { .card { padding:20px; } th:nth-child(4), td:nth-child(4) { display:none; } }
+        /* No celular o rótulo do perfil sai primeiro: janela e bônus é o que importa.
+           Escopado na tabela de indicados para não comer coluna da tabela de saques,
+           e com `>` para não atingir a tabela do extrato, que é aninhada nesta. */
+        @media (max-width:560px) {
+            .card { padding:20px; }
+            .tabela-indicados > thead > tr > th:nth-child(2),
+            .tabela-indicados > tbody > tr > td:nth-child(2) { display:none; }
+        }
     </style>
 </head>
 <body>
@@ -122,8 +181,24 @@
         <a href="{{ $voltar }}" class="btn-voltar"><i class="ph-bold ph-arrow-left"></i> Voltar ao painel</a>
     </div>
 
+    @php
+        // :pct, :dias e :meta vêm de config/indicacao.php — copy nossa, não input.
+        $copy = fn ($chave) => str_replace(
+            [':pct', ':dias', ':meta'],
+            [rtrim(rtrim(number_format($percentual * 100, 1, ',', '.'), '0'), ',') . '%', $janelaDias, $meta],
+            config('indicacao.painel.' . $chave)
+        );
+    @endphp
+
     <h1>{{ config('indicacao.painel.titulo') }}</h1>
-    <p class="sub">{{ str_replace(':meta', $meta, config('indicacao.painel.chamada')) }}</p>
+    <p class="sub">{{ $copy('chamada') }}</p>
+
+    @if (session('sucesso'))
+        <div class="alerta ok">{{ session('sucesso') }}</div>
+    @endif
+    @if ($errors->any())
+        <div class="alerta erro">{{ $errors->first() }}</div>
+    @endif
 
     <div class="card">
         <div class="titulo-secao">Seu código de indicação</div>
@@ -144,28 +219,125 @@
 
     <div class="stats">
         <div class="stat">
-            <div class="stat-label">Bônus liberado</div>
-            <div class="stat-valor">R$ {{ number_format($bonus, 2, ',', '.') }}</div>
-            <div class="stat-nota">{{ $total }} indicação(ões) com meta batida</div>
+            <div class="stat-label">Disponível para saque</div>
+            <div class="stat-valor">R$ {{ number_format($saldo, 2, ',', '.') }}</div>
+            <div class="stat-nota">janela fechada e meta batida</div>
         </div>
         <div class="stat">
-            <div class="stat-label">Aguardando meta</div>
+            <div class="stat-label">Acumulando</div>
             <div class="stat-valor" style="color:#f0b429;">R$ {{ number_format($bonusPendente, 2, ',', '.') }}</div>
-            <div class="stat-nota">{{ $pendentes }} indicação(ões) a caminho</div>
+            <div class="stat-nota">{{ $pendentes }} indicação(ões) na janela ou aguardando meta</div>
         </div>
         <div class="stat">
-            <div class="stat-label">Bônus por indicação</div>
-            <div class="stat-valor">R$ {{ number_format((float) $cupom->bonus_valor, 2, ',', '.') }}</div>
-            <div class="stat-nota">libera com {{ $meta }} alunos do indicado</div>
+            <div class="stat-label">Em análise</div>
+            <div class="stat-valor" style="color:#f0b429;">R$ {{ number_format($emSaque, 2, ',', '.') }}</div>
+            <div class="stat-nota">saque pedido, aguardando o Pix</div>
+        </div>
+        <div class="stat">
+            <div class="stat-label">Já recebido</div>
+            <div class="stat-valor">R$ {{ number_format($sacado, 2, ',', '.') }}</div>
+            <div class="stat-nota">{{ $total }} indicação(ões) liberada(s) no total</div>
         </div>
     </div>
 
     <div class="regra">
         <i class="ph-bold ph-info"></i>
         <div>
-            <p>{{ str_replace(':meta', $meta, config('indicacao.painel.regra')) }}</p>
+            <p>{{ $copy('regra') }}</p>
             <p style="margin-top:8px; opacity:.8;">{{ config('indicacao.painel.aluno') }}</p>
+            <p style="margin-top:8px; opacity:.8;">
+                {{ config('indicacao.painel.saque') }}
+                @if ($saqueAuto)
+                    {{ str_replace(':teto', 'R$ ' . number_format($saqueAutoTeto, 2, ',', '.'), config('indicacao.painel.saque_auto')) }}
+                @else
+                    {{ config('indicacao.painel.saque_manual') }}
+                @endif
+            </p>
         </div>
+    </div>
+
+    <div class="card">
+        <div class="titulo-secao">Sacar bônus</div>
+
+        @if ($temAberto)
+            <p class="aviso-saque">
+                <i class="ph-bold ph-hourglass-medium"></i>
+                Você já tem um pedido de R$ {{ number_format($emSaque, 2, ',', '.') }} em andamento.
+                Assim que ele for concluído você pode pedir o próximo.
+            </p>
+        @elseif ($saldo < $saqueMinimo)
+            <p class="aviso-saque">
+                <i class="ph-bold ph-lock-simple"></i>
+                Saldo disponível de R$ {{ number_format($saldo, 2, ',', '.') }}.
+                O saque abre a partir de R$ {{ number_format($saqueMinimo, 2, ',', '.') }}, e só entra na conta
+                o bônus de indicação cuja janela de {{ $janelaDias }} dias já fechou.
+            </p>
+        @else
+            @php $viraPixNaHora = $saqueAuto && $saldo <= $saqueAutoTeto; @endphp
+            <p class="aviso-saque ok">
+                <i class="ph-bold ph-check-circle"></i>
+                R$ {{ number_format($saldo, 2, ',', '.') }} liberados.
+                @if ($viraPixNaHora)
+                    Confira a chave Pix com atenção — o envio é imediato e não dá para desfazer.
+                @else
+                    Informe a chave Pix para receber.
+                @endif
+            </p>
+            <form method="POST" action="{{ route('indicacoes.saque') }}" class="form-saque">
+                @csrf
+                <div style="flex:1 1 260px;">
+                    <label for="pix_chave">Chave Pix</label>
+                    <input type="text" id="pix_chave" name="pix_chave" maxlength="140" required
+                           autocomplete="off" placeholder="CPF, e-mail, telefone ou chave aleatória"
+                           value="{{ old('pix_chave') }}">
+                </div>
+                <button type="submit" class="btn btn-primary">
+                    <i class="ph-bold ph-hand-coins"></i> Solicitar R$ {{ number_format($saldo, 2, ',', '.') }}
+                </button>
+            </form>
+            <p class="nota-pix">
+                O valor é calculado pelo sistema a partir das indicações já liberadas — não é possível pedir um valor diferente.
+                @unless ($viraPixNaHora)
+                    @if ($saqueAuto)
+                        Como o valor passa de R$ {{ number_format($saqueAutoTeto, 2, ',', '.') }}, a equipe confere antes de pagar.
+                    @endif
+                @endunless
+            </p>
+        @endif
+
+        @if ($meusSaques->isNotEmpty())
+            <div class="titulo-secao" style="margin-top:26px;">Seus pedidos</div>
+            <table>
+                <thead>
+                    <tr><th>Data</th><th>Valor</th><th>Chave Pix</th><th>Situação</th></tr>
+                </thead>
+                <tbody>
+                    @foreach ($meusSaques as $saque)
+                        <tr>
+                            <td>{{ $saque->created_at?->format('d/m/Y') }}</td>
+                            <td>R$ {{ number_format((float) $saque->valor, 2, ',', '.') }}</td>
+                            <td>{{ $saque->pixMascarada() }}</td>
+                            <td>
+                                <span class="badge">{{ $saque->situacao() }}</span>
+                                @if ($saque->receipt_url)
+                                    <div class="prog-txt">
+                                        <a href="{{ $saque->receipt_url }}" target="_blank" rel="noopener"
+                                           style="color:var(--primary);">ver comprovante</a>
+                                    </div>
+                                @endif
+                                @if ($saque->observacao)
+                                    <div class="prog-txt">{{ $saque->observacao }}</div>
+                                @endif
+                                @if ($saque->status === \App\Models\IndicacaoSaque::STATUS_FALHOU && $saque->falha_motivo)
+                                    {{-- Falha devolve o saldo: o motivo é o que o usuário precisa corrigir. --}}
+                                    <div class="prog-txt">{{ $saque->falha_motivo }} O valor voltou para o seu saldo.</div>
+                                @endif
+                            </td>
+                        </tr>
+                    @endforeach
+                </tbody>
+            </table>
+        @endif
     </div>
 
     <div class="card">
@@ -177,36 +349,61 @@
                 Ainda não há indicações. Compartilhe seu código para começar.
             </div>
         @else
-            <table>
+            <table class="tabela-indicados">
                 <thead>
                     <tr>
                         <th>Nome</th>
                         <th>Perfil</th>
-                        <th>Progresso</th>
-                        <th>Data</th>
-                        <th>Bônus</th>
+                        <th>Janela de {{ $janelaDias }} dias</th>
+                        <th>Meta de alunos</th>
+                        <th>Bônus acumulado</th>
                     </tr>
                 </thead>
                 <tbody>
                     @foreach ($indicacoes as $uso)
                         @php
                             $alunos = $uso->geraBonus() ? $uso->alunosDoIndicado() : null;
-                            $pct    = $alunos === null ? 0 : min(100, (int) round($alunos / max($meta, 1) * 100));
+                            $pctMeta = $alunos === null ? 0 : min(100, (int) round($alunos / max($meta, 1) * 100));
+                            // Quanto da janela já correu, para a barra de progresso.
+                            $pctJanela = 0;
+                            if ($uso->janelaIniciada()) {
+                                $total = max(1, $uso->janela_inicio->diffInHours($uso->janela_fim));
+                                $corrido = $uso->janela_inicio->diffInHours(now(), false);
+                                $pctJanela = max(0, min(100, (int) round($corrido / $total * 100)));
+                            }
                         @endphp
                         <tr>
-                            <td>{{ $uso->usuario->nome ?? 'Conta removida' }}</td>
+                            <td>
+                                {{ $uso->usuario->nome ?? 'Conta removida' }}
+                                <div class="prog-txt">entrou em {{ $uso->created_at?->format('d/m/Y') }}</div>
+                            </td>
                             <td><span class="badge">{{ $uso->tipoLabel() }}</span></td>
                             <td>
                                 @if (! $uso->geraBonus())
                                     <span class="prog-txt">—</span>
-                                @elseif ($uso->estaLiberado())
-                                    <span class="prog-txt ok"><i class="ph-bold ph-check-circle"></i> Meta batida</span>
+                                @elseif (! $uso->janelaIniciada())
+                                    <span class="prog-txt">Começa na aprovação</span>
                                 @else
-                                    <div class="prog"><span style="width:{{ $pct }}%"></span></div>
+                                    <div class="prog"><span style="width:{{ $pctJanela }}%"></span></div>
+                                    <span class="prog-txt">
+                                        @if ($uso->janelaAberta())
+                                            faltam {{ $uso->diasRestantes() }}d — até {{ $uso->janela_fim->format('d/m/Y') }}
+                                        @else
+                                            encerrada em {{ $uso->janela_fim->format('d/m/Y') }}
+                                        @endif
+                                    </span>
+                                @endif
+                            </td>
+                            <td>
+                                @if (! $uso->geraBonus())
+                                    <span class="prog-txt">—</span>
+                                @elseif ($uso->estaLiberado())
+                                    <span class="prog-txt ok"><i class="ph-bold ph-check-circle"></i> Batida</span>
+                                @else
+                                    <div class="prog"><span style="width:{{ $pctMeta }}%"></span></div>
                                     <span class="prog-txt">{{ $alunos }} / {{ $meta }} alunos</span>
                                 @endif
                             </td>
-                            <td>{{ $uso->created_at?->format('d/m/Y') }}</td>
                             <td>
                                 @if (! $uso->geraBonus())
                                     <span class="badge">{{ $uso->situacao() }}</span>
@@ -218,6 +415,66 @@
                                 @endif
                             </td>
                         </tr>
+
+                        {{-- Extrato: de quais receitas do indicado saiu o valor.
+                             Sem JS: <details> nativo, uma linha por crédito. --}}
+                        @if ($uso->creditos->isNotEmpty())
+                            <tr class="linha-extrato">
+                                <td colspan="5">
+                                    <details>
+                                        @php
+                                            $qtd = $uso->creditos->count();
+                                            $resumo = 'Ver extrato — ' . $qtd . ' ' . ($qtd === 1 ? 'receita' : 'receitas')
+                                                . ' de ' . ($uso->usuario->nome ?? 'indicado');
+                                        @endphp
+                                        <summary>{{ $resumo }}</summary>
+                                        <div class="extrato-scroll">
+                                        <table class="extrato">
+                                            <thead>
+                                                <tr>
+                                                    <th>Data</th>
+                                                    <th>Origem</th>
+                                                    <th>Faturou</th>
+                                                    <th>Sua parte</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                @foreach ($uso->creditos as $credito)
+                                                    <tr>
+                                                        <td>{{ $credito->ocorreu_em?->format('d/m/Y') ?? '—' }}</td>
+                                                        <td>{{ $credito->origemLabel() }}</td>
+                                                        <td>R$ {{ number_format((float) $credito->base_valor, 2, ',', '.') }}</td>
+                                                        <td>
+                                                            <span class="valor-ok">R$ {{ number_format((float) $credito->valor, 2, ',', '.') }}</span>
+                                                            <span class="prog-txt">
+                                                                ({{ rtrim(rtrim(number_format((float) $credito->percentual * 100, 1, ',', '.'), '0'), ',') }}%)
+                                                            </span>
+                                                        </td>
+                                                    </tr>
+                                                @endforeach
+                                                <tr class="extrato-total">
+                                                    <td colspan="2">Total</td>
+                                                    <td>R$ {{ number_format((float) $uso->creditos->sum('base_valor'), 2, ',', '.') }}</td>
+                                                    <td class="valor-ok">R$ {{ number_format((float) $uso->creditos->sum('valor'), 2, ',', '.') }}</td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                        </div>
+                                        @if ($uso->janelaAberta())
+                                            <p class="extrato-nota">
+                                                A janela fecha em {{ $uso->janela_fim->format('d/m/Y') }} —
+                                                receita nova do indicado até lá ainda entra nesta conta.
+                                            </p>
+                                        @else
+                                            <p class="extrato-nota">
+                                                Janela encerrada em {{ $uso->janela_fim?->format('d/m/Y') }}:
+                                                este valor não muda mais.
+                                            </p>
+                                        @endif
+                                    </details>
+                                </td>
+                            </tr>
+                        @endif
                     @endforeach
                 </tbody>
             </table>

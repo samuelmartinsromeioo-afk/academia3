@@ -95,26 +95,173 @@
     @if (session('sucesso'))
         <div class="alerta">{{ session('sucesso') }}</div>
     @endif
+    @if (session('erro'))
+        <div class="alerta erro">{{ session('erro') }}</div>
+    @endif
     @if ($errors->any())
         <div class="alerta erro">{{ $errors->first() }}</div>
     @endif
 
     <div class="stats">
         <div class="stat">
-            <div class="stat-label">Bônus a pagar (liberado)</div>
+            <div class="stat-label">Bônus liberado (sacável)</div>
             <div class="stat-valor">R$ {{ number_format($bonusTotal, 2, ',', '.') }}</div>
-            <div class="stat-nota">{{ $totalIndicacoes }} indicação(ões) com {{ $meta }}+ alunos</div>
+            <div class="stat-nota">{{ $totalIndicacoes }} indicação(ões) com janela fechada e {{ $meta }}+ alunos</div>
         </div>
         <div class="stat">
-            <div class="stat-label">Reservado (aguardando meta)</div>
+            <div class="stat-label">Acumulando na janela</div>
             <div class="stat-valor" style="color:#f0b429;">R$ {{ number_format($bonusPendente, 2, ',', '.') }}</div>
             <div class="stat-nota">{{ $pendentes }} indicação(ões) pendente(s)</div>
         </div>
         <div class="stat">
-            <div class="stat-label">Cupons cadastrados</div>
-            <div class="stat-valor">{{ $cupons->total() }}</div>
-            <div class="stat-nota">meta atual: {{ $meta }} alunos pela plataforma</div>
+            <div class="stat-label">Saques a conferir</div>
+            <div class="stat-valor" style="color:#f0b429;">R$ {{ number_format($saquesAbertos, 2, ',', '.') }}</div>
+            <div class="stat-nota">
+                R$ {{ number_format($saquesProcessando, 2, ',', '.') }} em processamento ·
+                R$ {{ number_format($saquesPagos, 2, ',', '.') }} pagos
+            </div>
         </div>
+        <div class="stat">
+            <div class="stat-label">Regra atual</div>
+            <div class="stat-valor">{{ rtrim(rtrim(number_format($percentual * 100, 1, ',', '.'), '0'), ',') }}%</div>
+            <div class="stat-nota">do bruto do indicado em {{ $janelaDias }} dias · libera com {{ $meta }} alunos</div>
+        </div>
+    </div>
+
+    {{-- Estado do pagamento automático: é dinheiro saindo sem humano no meio,
+         então os limites vigentes ficam à vista, não só no .env. --}}
+    <div class="card" style="border-color:{{ $saqueAuto ? 'rgba(124,255,0,.3)' : 'var(--border)' }};">
+        <div class="titulo-secao">Pix automático do bônus de indicação</div>
+        @if ($saqueAuto)
+            <p style="font-size:.88rem; line-height:1.6;">
+                <span class="badge on">Ligado</span>
+                Pedido de até <strong>R$ {{ number_format($saqueAutoTeto, 2, ',', '.') }}</strong>
+                sai por Pix automaticamente, com teto de
+                <strong>R$ {{ number_format($saqueAutoTetoDiario, 2, ',', '.') }}</strong> por dia.
+                Acima do teto, o pedido espera aqui.
+            </p>
+            <p style="font-size:.82rem; color:var(--text-dim); margin-top:10px;">
+                Saldo na conta Asaas:
+                @if ($saldoAsaas === null)
+                    <span style="color:var(--danger);">não foi possível consultar agora</span>
+                    — nenhum Pix automático sai sem confirmar saldo.
+                @else
+                    <strong style="color:{{ $saldoAsaas < $saquesAbertos ? 'var(--danger)' : 'var(--primary)' }};">
+                        R$ {{ number_format($saldoAsaas, 2, ',', '.') }}
+                    </strong>
+                @endif
+            </p>
+        @else
+            <p style="font-size:.88rem; line-height:1.6;">
+                <span class="badge off">Desligado</span>
+                Todo pedido de saque cai nesta fila para pagamento manual.
+                Para ligar, defina <code>INDICACAO_SAQUE_AUTO=true</code> e rode <code>php artisan config:clear</code>.
+            </p>
+        @endif
+    </div>
+
+    <div class="card">
+        <div class="titulo-secao">Pedidos de saque</div>
+
+        @if ($saques->isEmpty())
+            <div class="vazio">Nenhum pedido de saque.</div>
+        @else
+            <div class="tabela-scroll">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Data</th>
+                            <th>Indicador</th>
+                            <th>Valor</th>
+                            <th>Chave Pix</th>
+                            <th>Status</th>
+                            <th>Processado</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach ($saques as $saque)
+                            <tr>
+                                <td>{{ $saque->created_at?->format('d/m/Y H:i') }}</td>
+                                <td>
+                                    {{ $saque->usuario->nome ?? 'Conta removida' }}
+                                    <span style="color:var(--text-dim); font-size:.75rem;">
+                                        ({{ class_basename($saque->usuario_type) }})
+                                    </span>
+                                </td>
+                                <td>R$ {{ number_format((float) $saque->valor, 2, ',', '.') }}</td>
+                                {{-- Chave completa só aqui, onde é preciso para pagar. --}}
+                                <td style="user-select:all;">{{ $saque->pix_chave ?: '—' }}</td>
+                                <td>
+                                    @php
+                                        $cls = match ($saque->status) {
+                                            'pago' => 'on',
+                                            'recusado', 'falhou' => 'off',
+                                            default => '',
+                                        };
+                                    @endphp
+                                    <span class="badge {{ $cls }}">{{ $saque->situacao() }}</span>
+                                    @if ($saque->foiAutomatico())
+                                        <div style="color:var(--text-dim); font-size:.68rem; margin-top:4px;">
+                                            Pix automático{{ $saque->asaas_status ? ' · ' . $saque->asaas_status : '' }}
+                                        </div>
+                                    @endif
+                                    @if ($saque->falha_motivo)
+                                        <div style="color:var(--danger); font-size:.68rem; white-space:normal; max-width:200px;">
+                                            {{ $saque->falha_motivo }}
+                                        </div>
+                                    @endif
+                                </td>
+                                <td>
+                                    {{ $saque->processado_em?->format('d/m/Y') ?? '—' }}
+                                    @if ($saque->receipt_url)
+                                        <div style="font-size:.72rem;">
+                                            <a href="{{ $saque->receipt_url }}" target="_blank" rel="noopener"
+                                               style="color:var(--primary);">comprovante</a>
+                                        </div>
+                                    @endif
+                                    @if ($saque->observacao)
+                                        <div style="color:var(--text-dim); font-size:.72rem; white-space:normal; max-width:220px;">
+                                            {{ $saque->observacao }}
+                                        </div>
+                                    @endif
+                                </td>
+                                <td>
+                                    @if ($saque->estaEmAberto())
+                                        <div style="display:flex; gap:8px;">
+                                            @if ($saqueAuto)
+                                                {{-- Dispara o Pix com o valor do registro: o admin autoriza, não digita. --}}
+                                                <form method="POST" action="{{ route('admin.indicacoes.saques.transferir', $saque->id) }}">
+                                                    @csrf
+                                                    <button type="submit" class="btn-mini"
+                                                            style="border-color:rgba(124,255,0,.45); color:var(--primary);">
+                                                        Enviar Pix
+                                                    </button>
+                                                </form>
+                                            @endif
+                                            <form method="POST" action="{{ route('admin.indicacoes.saques.pagar', $saque->id) }}">
+                                                @csrf
+                                                <button type="submit" class="btn-mini">Marcar pago</button>
+                                            </form>
+                                            <form method="POST" action="{{ route('admin.indicacoes.saques.recusar', $saque->id) }}">
+                                                @csrf
+                                                <button type="submit" class="btn-mini">Recusar</button>
+                                            </form>
+                                        </div>
+                                    @elseif ($saque->estaProcessando())
+                                        <span style="color:var(--text-dim); font-size:.72rem;">
+                                            no Asaas — aguardando desfecho
+                                        </span>
+                                    @else
+                                        <span style="color:var(--text-dim); font-size:.75rem;">—</span>
+                                    @endif
+                                </td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+        @endif
     </div>
 
     <div class="card">
@@ -201,7 +348,14 @@
                                     @endif
                                 </td>
                                 <td>{{ $cupom->usos_count }}{{ $cupom->limite_usos ? ' / ' . $cupom->limite_usos : '' }}</td>
-                                <td>R$ {{ number_format((float) $cupom->bonus_valor, 2, ',', '.') }}</td>
+                                <td>
+                                    @if ($cupom->tipo === \App\Models\Cupom::TIPO_INDICACAO)
+                                        {{-- Indicação não tem valor fixo: é % do faturamento do indicado. --}}
+                                        {{ rtrim(rtrim(number_format($percentual * 100, 1, ',', '.'), '0'), ',') }}% / {{ $janelaDias }}d
+                                    @else
+                                        R$ {{ number_format((float) $cupom->bonus_valor, 2, ',', '.') }}
+                                    @endif
+                                </td>
                                 <td>{{ $cupom->expira_em?->format('d/m/Y') ?? '—' }}</td>
                                 <td>
                                     <span class="badge {{ $cupom->estaValido() ? 'on' : 'off' }}">
