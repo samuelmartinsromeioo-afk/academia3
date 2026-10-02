@@ -241,6 +241,19 @@ On the way in, the middleware stores the attempted URL in `session('termos_desti
 
 **Writing tests that log in via session?** Register an acceptance for the fixture account or every HTML GET returns 302 to `termos.aceite`. `IndicacaoRevenueShareTest` calls `registrarAceiteTermos()` in `setUp`; `VinculoAcademiaPersonalTest` (whose accounts are raw `DB::table` inserts, with no model) has an `aceitarTermos()` helper that inserts the row directly. `tests/Feature/ReaceiteTermosTest.php` pins the gate, the exits, idempotency, the append-only history and the open-redirect guard.
 
+### Security invariants (don't regress these)
+
+An OWASP pass audited the whole app. Most of it held up — `whereRaw`/`selectRaw` all use bindings, uploads have mime allowlists, the password-reset token is sha256-hashed + `hash_equals` + 60-min expiry + single use, `MediaController::exercicioVideo` defends traversal with a strict regex allowlist, Ignition runnable solutions are off, `SecurityHeaders` sets HSTS/nosniff/X-Frame-Options/Referrer-Policy. What follows are the things that were **wrong and got fixed**, written down because none of them break a functional test when reintroduced:
+
+- **Never validate an upload with `image`.** Laravel's `image` rule accepts **svg** (`jpg,jpeg,png,gif,bmp,svg,webp`), SVG is XML and can carry `<script>`, and these files land on the **public** disk served from the app's own origin — so an SVG avatar is stored XSS with session theft. Always use the explicit list the rest of the project uses: `file|mimes:jpeg,jpg,png,gif,webp,heic,heif`. This bit `Api\PerfilController@foto` and `Cadastro\ProgressoController@uploadFoto`.
+- **Never compare `fotavel_type` (or any morph type) to a string literal.** `FotoController@destroy` compared against `'App\Models\cadastro\Personal'` and `'...\cadastro\academia'` — lowercase `cadastro`, against the real `App\Models\Cadastro\…`. Those branches never matched, so the legitimate owner got 403 on their own photo. It failed *closed*, but literal-string authz breaks silently on any namespace rename and a future edit could flip it to fail *open*. Derive from `(new $classe)->getMorphClass()`.
+- **`RecuperarSenhaController::PERFIS` is the single source of the five profiles.** The list used to be written twice (once to find the user, once in the `match` that writes the new password) and the two drifted: **Studio and Loja had no password recovery at all**. The `match` also had no `default`, so an unexpected `tipo` threw `UnhandledMatchError` (500). Keep both paths reading `self::PERFIS`.
+- **`json_encode` inside `<script>` needs `JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP`** whenever the payload can contain user text (exercise names, notes, `old()` input). Without them a `</script>` in the data closes the block and the rest becomes executable HTML. Most of `cliente/index.blade.php` already did this; three sites didn't.
+- **Payment/withdrawal routes in `routes/api.php` are deliberately in the `web` group** (they need the session) and are guarded by an in-controller `session()` check returning **401 JSON**. Do **not** "harden" them with `check.login`: that middleware redirects (302 HTML), which would break the AJAX callers. The controller check is the correct layer here.
+- The patient-portal token travels in the URL (`p/{token}`), which is why `Referrer-Policy: strict-origin-when-cross-origin` in `SecurityHeaders` is load-bearing, not decoration.
+
+Production hardening lives in `.env.example` under "ENDURECIMENTO PARA PRODUÇÃO": `APP_DEBUG=false`, `SESSION_SECURE_COOKIE`, `SESSION_ENCRYPT`, `CORS_ALLOWED_ORIGINS` (the default is `*`). `tests/Feature/SegurancaOwaspTest.php` pins all of the above.
+
 ### Frontend
 
 No SPA framework — standard Blade templates with Vite for asset bundling. Views are organized by role: `resources/views/personal/`, `cliente/`, `academia/`, `admin/`, `cadastro/`. Run `npm run dev` for hot-reloading during frontend work.

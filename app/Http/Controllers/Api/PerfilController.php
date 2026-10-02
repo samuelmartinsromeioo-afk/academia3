@@ -40,7 +40,14 @@ class PerfilController extends Controller
     // POST /api/v1/perfil/foto  (multipart: campo "foto")
     public function foto(Request $request)
     {
-        $request->validate(['foto' => 'required|image|max:5120']); // até 5 MB
+        // A03 — allowlist explícita em vez da regra `image`, que ACEITA SVG
+        // (Laravel valida image como jpg/jpeg/png/gif/bmp/svg/webp). SVG é XML e
+        // pode carregar <script>; servido do disco público, no mesmo origin do
+        // app, viraria XSS armazenado com roubo de sessão. Mesma lista usada nos
+        // outros uploads do projeto.
+        $request->validate([
+            'foto' => 'required|file|mimes:jpeg,jpg,png,gif,webp,heic,heif|max:5120',
+        ]); // até 5 MB
 
         $user = $request->user();
         $tipo = $this->tipoDe($user);

@@ -101,15 +101,38 @@ class FotoController extends Controller
     {
         $foto = Foto::findOrFail($id);
 
-        $personalId = session('personal_id');
-        $academiaId = session('academia_id');
-        $studioId   = session('studio_id');
+        /*
+         * A01 — a checagem de dono compara o `fotavel_type` gravado com o
+         * getMorphClass() REAL de cada model, em vez de strings escritas à mão.
+         *
+         * Antes as strings estavam com a caixa errada ('App\Models\cadastro\Personal'
+         * e '...\cadastro\academia', ambas minúsculas, contra o namespace real
+         * 'App\Models\Cadastro\...'), então as comparações de personal e academia
+         * nunca davam verdadeiro: o dono legítimo tomava 403 ao apagar a própria
+         * foto. Falhava fechado, mas authz por string literal quebra em silêncio a
+         * cada renomeação de namespace — e numa próxima edição poderia falhar
+         * ABERTO. Derivar do model elimina a classe de erro.
+         */
+        $donoPorSessao = [
+            'personal_id' => \App\Models\Cadastro\Personal::class,
+            'academia_id' => \App\Models\Cadastro\Academia::class,
+            'studio_id'   => \App\Models\Cadastro\Studio::class,
+            'loja_id'     => \App\Models\Cadastro\Loja::class,
+        ];
 
-        $ehDono = ($personalId && $foto->fotavel_type === 'App\\Models\\cadastro\\Personal' && $foto->fotavel_id == $personalId)
-               || ($academiaId && $foto->fotavel_type === 'App\\Models\\cadastro\\academia' && $foto->fotavel_id == $academiaId)
-               || ($studioId && $foto->fotavel_type === 'App\\Models\\Cadastro\\Studio' && $foto->fotavel_id == $studioId);
+        $ehDono = false;
+        foreach ($donoPorSessao as $chaveSessao => $classe) {
+            $id_ = session($chaveSessao);
 
-        if (!$ehDono) {
+            if ($id_
+                && $foto->fotavel_type === (new $classe)->getMorphClass()
+                && (string) $foto->fotavel_id === (string) $id_) {
+                $ehDono = true;
+                break;
+            }
+        }
+
+        if (! $ehDono) {
             return response()->json(['erro' => 'Ação não permitida.'], 403);
         }
 

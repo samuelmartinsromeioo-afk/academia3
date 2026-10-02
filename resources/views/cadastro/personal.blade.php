@@ -725,12 +725,15 @@
 
 <script>
     // Dados vindos do config/textos.php (memory: usar json_encode em <script>).
+    {{-- Flags HEX em todos: ESP_SELECIONADAS vem de old('especialidades'), ou
+         seja, do próprio formulário. Sem elas um "</script>" reenviado pelo
+         usuário fecharia o bloco e o resto do valor viraria HTML executável. --}}
     const ESPECIALIDADES = {!! json_encode([
         'PERSONAL_TRAINER' => $espPersonal,
         'NUTRITIONIST'     => $espNutri,
-    ]) !!};
-    const TIPOS = {!! json_encode($tipos) !!};
-    const ESP_SELECIONADAS = new Set({!! json_encode($espSel->values()) !!});
+    ], JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP) !!};
+    const TIPOS = {!! json_encode($tipos, JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP) !!};
+    const ESP_SELECIONADAS = new Set({!! json_encode($espSel->values(), JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP) !!});
 
     function renderChips(tipo) {
         const box = document.getElementById('chipsEspecialidades');

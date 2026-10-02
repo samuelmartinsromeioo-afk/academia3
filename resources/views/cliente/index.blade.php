@@ -844,7 +844,10 @@
         <script>
             // Detalhe de cada dia do mês já vem pronto do servidor — clicar não
             // faz requisição nenhuma.
-            window.detalheDias = {!! json_encode($treino['detalhe_dias']) !!};
+            {{-- Flags HEX: o payload carrega nome de exercício e observação escritos
+                 pelo personal. Sem elas, um "</script>" no texto fecharia o bloco
+                 e o resto viraria HTML executável (XSS armazenado). --}}
+            window.detalheDias = {!! json_encode($treino['detalhe_dias'], JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP) !!};
 
             function abrirDiaAgenda(dia) {
                 const d = window.detalheDias[dia];
@@ -1995,7 +1998,7 @@
 
     // Aulas do aluno com o estado da janela de 24h já resolvido no servidor
     // (fuso e prazo são calculados lá, não dá para confiar no relógio do browser).
-    window.agendamentosData = {!! json_encode($meusAgendamentos) !!};
+    window.agendamentosData = {!! json_encode($meusAgendamentos, JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP) !!};
 
     const CSRF_AULA = {!! json_encode(csrf_token()) !!};
     const URL_CANCELAR = {!! json_encode(url('/aluno/aulas')) !!};

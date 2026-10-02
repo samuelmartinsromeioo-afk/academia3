@@ -81,7 +81,11 @@ class ProgressoController extends Controller
 
         $request->validate([
             'data' => 'required|date',
-            'foto' => 'required|image|max:8192',
+            // A03 — allowlist explícita: a regra `image` do Laravel ACEITA SVG,
+            // que é XML e pode carregar <script>. A foto vai para o disco público
+            // e é servida no mesmo origin do app, então um SVG viraria XSS
+            // armazenado. Mesma lista dos outros uploads do projeto.
+            'foto' => 'required|file|mimes:jpeg,jpg,png,gif,webp,heic,heif|max:8192',
             'peso' => 'nullable|numeric|min:0|max:500',
             'observacao' => 'nullable|string|max:255',
         ]);

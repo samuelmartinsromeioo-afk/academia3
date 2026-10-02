@@ -4,15 +4,34 @@ namespace App\Http\Controllers;
  
 use App\Models\Cadastro\Academia;
 use App\Models\Cadastro\Cliente;
+use App\Models\Cadastro\Loja;
 use App\Models\Cadastro\Personal;
+use App\Models\Cadastro\Studio;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
- 
+
 class RecuperarSenhaController extends Controller
 {
+    /**
+     * Perfis que podem recuperar senha, em UM só lugar.
+     *
+     * A07 — antes a lista estava escrita duas vezes (uma para achar o usuário,
+     * outra no `match` que grava a senha nova) e as duas divergiram: Studio e
+     * Loja nunca foram incluídos, então essas contas simplesmente não tinham
+     * como recuperar o acesso. Fonte única evita a divergência voltar.
+     */
+    private const PERFIS = [
+        'personal' => Personal::class,
+        'cliente'  => Cliente::class,
+        'academia' => Academia::class,
+        'studio'   => Studio::class,
+        'loja'     => Loja::class,
+    ];
+
     /**
      * Exibe o formulário de "Esqueci minha senha"
      */
@@ -35,20 +54,19 @@ class RecuperarSenhaController extends Controller
  
         $email = $request->email;
  
-        // Busca o usuário nas 3 tabelas
-        $usuario = Personal::where('email', $email)->first();
-        $tipo    = 'personal';
- 
-        if (!$usuario) {
-            $usuario = Cliente::where('email', $email)->first();
-            $tipo    = 'cliente';
+        // Busca o usuário em todos os perfis (ver self::PERFIS).
+        $usuario = null;
+        $tipo    = null;
+
+        foreach (self::PERFIS as $perfil => $classe) {
+            $usuario = $classe::where('email', $email)->first();
+
+            if ($usuario) {
+                $tipo = $perfil;
+                break;
+            }
         }
- 
-        if (!$usuario) {
-            $usuario = Academia::where('email', $email)->first();
-            $tipo    = 'academia';
-        }
- 
+
         // Sempre retorna a mesma mensagem (evita enumeração de e-mails)
         if (!$usuario) {
             return back()->with('sucesso', 'Se este e-mail estiver cadastrado, você receberá um link em instantes.');
@@ -137,18 +155,33 @@ class RecuperarSenhaController extends Controller
             return back()->withErrors(['token' => 'Este link expirou. Solicite um novo.']);
         }
  
-        // Atualiza a senha na tabela correta
+        // Atualiza a senha na tabela do perfil. `match` sem default lançaria
+        // UnhandledMatchError (500) para um `tipo` inesperado; aqui a ausência é
+        // tratada como falha fechada: nada é gravado e o token é descartado.
+        $classe = self::PERFIS[$registro->tipo] ?? null;
+
+        if (! $classe) {
+            Log::channel('security')->warning('reset_senha_tipo_desconhecido', [
+                'tipo' => $registro->tipo,
+                'ip'   => $request->ip(),
+            ]);
+            DB::table('password_resets_custom')->where('email', $request->email)->delete();
+
+            return back()->withErrors(['email' => 'Não foi possível concluir. Solicite um novo link.']);
+        }
+
         $novaSenha = Hash::make($request->senha);
- 
-        match ($registro->tipo) {
-            'personal' => Personal::where('email', $request->email)->update(['senha' => $novaSenha]),
-            'cliente'  => Cliente::where('email', $request->email)->update(['senha' => $novaSenha]),
-            'academia' => Academia::where('email', $request->email)->update(['senha' => $novaSenha]),
-        };
- 
+        $classe::where('email', $request->email)->update(['senha' => $novaSenha]);
+
         // Remove o token usado
         DB::table('password_resets_custom')->where('email', $request->email)->delete();
- 
+
+        // A09 — troca de senha é evento de segurança; fica na trilha de auditoria.
+        Log::channel('security')->info('senha_redefinida', [
+            'tipo' => $registro->tipo,
+            'ip'   => $request->ip(),
+        ]);
+
         return redirect()->route('login.create')
             ->with('sucesso', 'Senha alterada com sucesso! Faça login com a nova senha.');
     }
