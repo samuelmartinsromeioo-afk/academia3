@@ -154,6 +154,14 @@ class AuthController extends Controller
             'ip_aceitacao_termos' => $request->ip(),
         ]);
 
+        // Aceite versionado, além das colunas legadas acima: é o que permite
+        // provar QUAL versão dos Termos foi aceita quando eles mudarem.
+        $cliente->registrarAceiteTermos(
+            $request->ip(),
+            (string) $request->userAgent(),
+            \App\Models\TermoAceite::ORIGEM_CADASTRO
+        );
+
         return $this->tokenResponse($cliente, 'cliente', $validated['device_name'] ?? 'mobile', 201);
     }
 

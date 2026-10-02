@@ -40,6 +40,10 @@ class Kernel extends HttpKernel
             // A09 — login e painel admin vivem no grupo web; sem isto as negativas
             // de acesso (401/403/419/429) do lado web não deixavam rastro nenhum.
             \App\Http\Middleware\LogSecurityEvents::class,
+            // Reaceite dos Termos quando a versão vigente muda. Fica no grupo web
+            // (e não rota a rota) para não haver página esquecida; só intercepta
+            // GET de HTML e respeita config('termos.rotas_livres').
+            \App\Http\Middleware\VerificaAceiteTermos::class,
         ],
 
         'api' => [

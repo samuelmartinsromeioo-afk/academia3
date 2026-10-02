@@ -220,6 +220,27 @@ OWASP notes for this module (keep them if you touch it): the amount is never acc
 
 Two test files pin all of it: `tests/Feature/IndicacaoRevenueShareTest.php` (accrual, the date gate, "cannot withdraw before the window closes", "a posted `valor` is ignored") and `tests/Feature/IndicacaoSaqueAutomaticoTest.php` (ceilings, balance aborts, and the webhook refusing a tampered value, a changed Pix key, an unknown reference and a replayed transfer — all with `Http::fake`, never the real API).
 
+### Terms of Use — versioning and re-acceptance
+
+`config('termos.versao')` is the **single source of truth** for the current terms version. The six legal blades read it via `@section('doc_versao', config('termos.versao'))` — don't hardcode a version in a view again.
+
+**Bumping `termos.versao` puts every logged-in account behind a wall** on their next page load, until they click accept. So bump it only on a material change, and fill `config('termos.resumo')` with what changed — the re-acceptance screen renders that list, and an acceptance of "something changed" has little evidentiary value.
+
+Acceptance is recorded in `termo_aceites` (polymorphic `usuario`, `versao`, `aceito_em`, `ip`, `user_agent`, `origem` = `cadastro` | `reaceite`), **unique on (usuario_type, usuario_id, versao)** and **append-only**: a new acceptance is a new row, never an UPDATE, so the consent history stays provable (LGPD art. 8º, §1º puts the burden of proving consent on the controller). The legacy columns (`clientes.aceita_termos` + dates, `personals.data_aceicao_termos_atualizacao` — note the typo, it's in the schema) are kept as the record of the original signup acceptance and are **not** rewritten; none of them stored a version, which is why this table exists.
+
+The five account models use `App\Models\Concerns\AceitaTermos`: `aceitouTermos()`, `precisaAceitarTermos()`, `versaoTermosAceita()`, `registrarAceiteTermos()` (idempotent, never throws — failing here would trap the user on the screen). `aceitesTermos()` orders by `aceito_em` **and `id`** desc; the `id` tiebreaker is load-bearing, since two acceptances can land in the same second and `versaoTermosAceita()` would otherwise return the older one.
+
+`App\Http\Middleware\VerificaAceiteTermos` is registered in the **`web` group** (not route by route, so no page is ever forgotten). Three rules keep it from trapping anyone — keep all three if you touch it:
+1. **Only GET requests that accept HTML.** POST/PUT/DELETE, AJAX and JSON pass through: a 302 in the middle of a submit or a `fetch` breaks the flow for no benefit, since every session starts with an HTML GET anyway.
+2. **`config('termos.rotas_livres')` is exempt** — the acceptance screen itself, logout, login, and all legal documents. Without it the user can neither read what they must accept nor leave: a closed loop.
+3. **Admin is never checked** (no account in the five profiles; blocking it would halt operations).
+
+On the way in, the middleware stores the attempted URL in `session('termos_destino')` and `TermoAceiteController::destino()` only honors it if it starts with this host — otherwise a tampered session would turn it into an open redirect.
+
+**Signup already records acceptance** (`ORIGEM_CADASTRO`) in all five cadastro controllers and in `Api\AuthController@register`, right next to `registrarIndicacao` — without that, a brand-new account would hit the wall on its very first page.
+
+**Writing tests that log in via session?** Register an acceptance for the fixture account or every HTML GET returns 302 to `termos.aceite`. `IndicacaoRevenueShareTest` calls `registrarAceiteTermos()` in `setUp`; `VinculoAcademiaPersonalTest` (whose accounts are raw `DB::table` inserts, with no model) has an `aceitarTermos()` helper that inserts the row directly. `tests/Feature/ReaceiteTermosTest.php` pins the gate, the exits, idempotency, the append-only history and the open-redirect guard.
+
 ### Frontend
 
 No SPA framework — standard Blade templates with Vite for asset bundling. Views are organized by role: `resources/views/personal/`, `cliente/`, `academia/`, `admin/`, `cadastro/`. Run `npm run dev` for hot-reloading during frontend work.

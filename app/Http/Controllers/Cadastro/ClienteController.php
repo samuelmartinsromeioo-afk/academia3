@@ -377,6 +377,10 @@ class ClienteController extends Controller
 
         $cliente = Cliente::create($validated);
         $cupons->registrarIndicacao($codigoCupom, $cliente, $request->ip());
+
+        // Aceite dos Termos na versao vigente, registrado no ato do cadastro:
+        // sem isto a conta nova cairia na tela de reaceite no primeiro acesso.
+        $cliente->registrarAceiteTermos($request->ip(), (string) $request->userAgent(), \App\Models\TermoAceite::ORIGEM_CADASTRO);
         $fb = app(MetaConversionsService::class);
         // A tela de login lê `sucesso`, não `success` — com a chave errada o
         // aluno voltava ao login sem nenhuma confirmação na tela.

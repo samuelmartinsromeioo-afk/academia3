@@ -44,6 +44,10 @@ class IndicacaoRevenueShareTest extends TestCase
             'personal_id' => $this->indicado->id, 'frequencia' => 3,
             'valor_mensal' => 300.00, 'created_at' => now(), 'updated_at' => now(),
         ]);
+
+        // Sem isto o middleware VerificaAceiteTermos redireciona qualquer GET de
+        // página para a tela de reaceite, e os testes de painel recebem 302.
+        $this->indicador->registrarAceiteTermos('127.0.0.1', 'phpunit');
     }
 
     private function novoPersonal(string $nome, string $email, string $cpf, string $status, $aprovadoEm): Personal

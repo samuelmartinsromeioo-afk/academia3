@@ -3,7 +3,7 @@
 @section('doc_titulo', 'Termos de Uso — Loja')
 @section('doc_subtitulo', 'Condições para lojistas e vendedores')
 @section('doc_perfil', 'Perfil: Loja')
-@section('doc_versao', '2.1')
+@section('doc_versao', config('termos.versao'))
 @section('nav_loja', 'active')
 
 @section('doc_conteudo')

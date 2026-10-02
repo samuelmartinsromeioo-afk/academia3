@@ -13,6 +13,7 @@ class Cliente extends Authenticatable
 {
     use HasApiTokens;
     use \App\Models\Concerns\TemCupomIndicacao;
+    use \App\Models\Concerns\AceitaTermos;
 
     protected $primaryKey = 'id';
     protected $table = 'clientes';

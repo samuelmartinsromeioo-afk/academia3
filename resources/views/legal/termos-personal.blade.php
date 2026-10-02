@@ -3,7 +3,7 @@
 @section('doc_titulo', 'Termos de Uso — Personal Trainer')
 @section('doc_subtitulo', 'Condições para profissionais de educação física')
 @section('doc_perfil', 'Perfil: Personal Trainer')
-@section('doc_versao', '2.1')
+@section('doc_versao', config('termos.versao'))
 @section('nav_personal', 'active')
 
 @section('doc_conteudo')

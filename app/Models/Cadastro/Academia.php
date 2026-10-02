@@ -15,6 +15,7 @@ class Academia extends Authenticatable
 {
     use HasApiTokens;
     use \App\Models\Concerns\TemCupomIndicacao;
+    use \App\Models\Concerns\AceitaTermos;
     use \App\Models\Concerns\TemSeloPioneiro;
 
     // O nome da tabela deve bater com o banco

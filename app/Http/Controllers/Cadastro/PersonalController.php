@@ -98,6 +98,10 @@ class PersonalController extends Controller
 
         $cupons->registrarIndicacao($codigoCupom, $personal, $request->ip());
 
+        // Aceite dos Termos na versao vigente, registrado no ato do cadastro:
+        // sem isto a conta nova cairia na tela de reaceite no primeiro acesso.
+        $personal->registrarAceiteTermos($request->ip(), (string) $request->userAgent(), \App\Models\TermoAceite::ORIGEM_CADASTRO);
+
         $this->criarSubcontaAsaas($personal);
 
         $fb = app(MetaConversionsService::class);

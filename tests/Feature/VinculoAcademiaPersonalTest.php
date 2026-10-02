@@ -53,12 +53,36 @@ class VinculoAcademiaPersonalTest extends TestCase
 
     private function comoPersonal()
     {
+        $this->aceitarTermos(\App\Models\Cadastro\Personal::class, $this->personalId);
+
         return $this->withSession(['personal_id' => $this->personalId]);
     }
 
     private function comoAcademia(int $id)
     {
+        $this->aceitarTermos(\App\Models\Cadastro\Academia::class, $id);
+
         return $this->withSession(['academia_id' => $id]);
+    }
+
+    /**
+     * Registra o aceite da versão vigente dos Termos para a conta.
+     *
+     * Sem isso o middleware VerificaAceiteTermos redireciona todo GET de página
+     * para a tela de reaceite e os asserts de 200 falham. As contas deste teste
+     * são criadas por DB::table (sem model), então a linha vai direto.
+     */
+    private function aceitarTermos(string $tipo, int $id): void
+    {
+        DB::table('termo_aceites')->insertOrIgnore([
+            'usuario_type' => $tipo,
+            'usuario_id'   => $id,
+            'versao'       => (string) config('termos.versao'),
+            'aceito_em'    => now(),
+            'origem'       => 'cadastro',
+            'created_at'   => now(),
+            'updated_at'   => now(),
+        ]);
     }
 
     public function test_fluxo_completo_solicitar_aprovar_e_pagina_publica(): void

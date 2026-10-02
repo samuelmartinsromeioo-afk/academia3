@@ -66,6 +66,10 @@ class AcademiaController extends Controller
 
         $cupons->registrarIndicacao($codigoCupom, $academia, $request->ip());
 
+        // Aceite dos Termos na versao vigente, registrado no ato do cadastro:
+        // sem isto a conta nova cairia na tela de reaceite no primeiro acesso.
+        $academia->registrarAceiteTermos($request->ip(), (string) $request->userAgent(), \App\Models\TermoAceite::ORIGEM_CADASTRO);
+
         $fb = app(MetaConversionsService::class);
         return redirect()->route('cadastro.sucesso')
             ->with('cad_tipo', 'academia')

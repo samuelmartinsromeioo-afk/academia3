@@ -3,7 +3,7 @@
 @section('doc_titulo', 'Termos de Uso — Academia')
 @section('doc_subtitulo', 'Condições para academias parceiras')
 @section('doc_perfil', 'Perfil: Academia')
-@section('doc_versao', '2.1')
+@section('doc_versao', config('termos.versao'))
 @section('nav_academia', 'active')
 
 @section('doc_conteudo')

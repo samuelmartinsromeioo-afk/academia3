@@ -32,6 +32,7 @@ use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\PersonalAcademiaController;
 use App\Http\Controllers\AcademiaSolicitacaoController;
 use App\Http\Controllers\IndicacaoController;
+use App\Http\Controllers\TermoAceiteController;
 
 /*
 |--------------------------------------------------------------------------
@@ -125,6 +126,15 @@ Route::get('/termos/personal', fn () => view('legal.termos-personal'))->name('te
 Route::get('/termos/academia', fn () => view('legal.termos-academia'))->name('termos.academia');
 Route::get('/termos/studio', fn () => view('legal.termos-studio'))->name('termos.studio');
 Route::get('/termos/loja', fn () => view('legal.termos-loja'))->name('termos.loja');
+
+// Reaceite dos Termos quando a versão vigente muda. Exige login (resolve
+// qualquer um dos cinco perfis dentro do controller) e as duas rotas estão em
+// config('termos.rotas_livres') — sem isso o middleware redirecionaria esta
+// própria tela para si mesma, num laço infinito.
+Route::get('/termos/aceite', [TermoAceiteController::class, 'mostrar'])
+    ->name('termos.aceite')->middleware('check.login');
+Route::post('/termos/aceite', [TermoAceiteController::class, 'registrar'])
+    ->name('termos.aceite.registrar')->middleware(['check.login', 'throttle:10,1']);
 
 // Central de suporte (exigida pela App Store — Guideline 1.5).
 Route::get('/suporte', fn () => view('suporte'))->name('suporte');

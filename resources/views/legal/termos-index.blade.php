@@ -2,7 +2,7 @@
 
 @section('doc_titulo', 'Termos de Uso')
 @section('doc_subtitulo', 'Condições gerais da plataforma SNR FIT')
-@section('doc_versao', '2.1')
+@section('doc_versao', config('termos.versao'))
 @section('nav_index', 'active')
 
 @section('doc_conteudo')

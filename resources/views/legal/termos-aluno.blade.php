@@ -3,7 +3,7 @@
 @section('doc_titulo', 'Termos de Uso — Aluno')
 @section('doc_subtitulo', 'Condições para alunos e usuários da plataforma')
 @section('doc_perfil', 'Perfil: Aluno / Usuário')
-@section('doc_versao', '2.1')
+@section('doc_versao', config('termos.versao'))
 @section('nav_aluno', 'active')
 
 @section('doc_conteudo')
