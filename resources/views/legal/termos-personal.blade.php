@@ -3,7 +3,7 @@
 @section('doc_titulo', 'Termos de Uso — Personal Trainer')
 @section('doc_subtitulo', 'Condições para profissionais de educação física')
 @section('doc_perfil', 'Perfil: Personal Trainer')
-@section('doc_versao', '2.0')
+@section('doc_versao', '2.1')
 @section('nav_personal', 'active')
 
 @section('doc_conteudo')
@@ -25,7 +25,8 @@
             <li><a href="#p8">8. Condutas vedadas</a></li>
             <li><a href="#p9">9. Responsabilidade e indenização</a></li>
             <li><a href="#p10">10. Suspensão e descredenciamento</a></li>
-            <li><a href="#p11">11. Contato</a></li>
+            <li><a href="#p11">11. Programa de indicação</a></li>
+            <li><a href="#p12">12. Contato</a></li>
         </ul>
     </div>
 
@@ -87,7 +88,14 @@
     <h2 id="p10">10. SUSPENSÃO E DESCREDENCIAMENTO</h2>
     <p>Podemos suspender ou descredenciar o seu perfil em caso de violação destes Termos, qualificação irregular, reclamações graves ou reiteradas, fraude ou risco a alunos, sem prejuízo dos valores já devidos e das apurações cabíveis.</p>
 
-    <h2 id="p11">11. CONTATO</h2>
+    <h2 id="p11">11. PROGRAMA DE INDICAÇÃO</h2>
+    <p>Você recebe um código de indicação próprio e pode ganhar um <strong>bônus percentual</strong> sobre o que cada profissional indicado por você faturar na Plataforma durante a janela de apuração. As regras completas, as condições de saque e as vedações estão na <a href="{{ route('termos') }}#s8">cláusula 8 dos Termos gerais</a>, que você declara ter lido.</p>
+    <div class="highlighted warn">
+        <strong>O bônus só vira sacável com duas condições cumulativas:</strong> o encerramento da janela de apuração <strong>e</strong> o atingimento, pela conta indicada, do número mínimo de alunos com pagamento confirmado. Antes disso o valor exibido é <strong>mera expectativa</strong>, não crédito exigível. O bônus é concedido por <strong>liberalidade</strong>, não é remuneração e <strong>não cria vínculo</strong> de qualquer natureza com a Plataforma.
+    </div>
+    <p>Auto-indicação, contas falsas, simulação de alunos ou pagamentos e esquemas coordenados para atingir a meta implicam <strong>cancelamento do bônus, estorno de valores pagos e suspensão das contas envolvidas</strong>, sem prejuízo das medidas legais cabíveis.</p>
+
+    <h2 id="p12">12. CONTATO</h2>
     <p>Suporte e questões de dados: <a href="mailto:suporte@snrfittech.com">suporte@snrfittech.com</a>.</p>
 
     <div class="highlighted">

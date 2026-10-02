@@ -3,7 +3,7 @@
 @section('doc_titulo', 'Termos de Uso — Aluno')
 @section('doc_subtitulo', 'Condições para alunos e usuários da plataforma')
 @section('doc_perfil', 'Perfil: Aluno / Usuário')
-@section('doc_versao', '2.0')
+@section('doc_versao', '2.1')
 @section('nav_aluno', 'active')
 
 @section('doc_conteudo')
@@ -25,7 +25,8 @@
             <li><a href="#a8">8. Suas responsabilidades e condutas vedadas</a></li>
             <li><a href="#a9">9. Riscos, saúde e isenções</a></li>
             <li><a href="#a10">10. Seus dados (LGPD)</a></li>
-            <li><a href="#a11">11. Contato</a></li>
+            <li><a href="#a11">11. Programa de indicação</a></li>
+            <li><a href="#a12">12. Contato</a></li>
         </ul>
     </div>
 
@@ -93,7 +94,14 @@
     <h2 id="a10">10. SEUS DADOS (LGPD)</h2>
     <p>Tratamos seus dados conforme a <a href="{{ route('lgpd.politica') }}">Política de Privacidade</a>. Você pode acessar, corrigir, exportar e excluir seus dados, e revogar consentimentos, pela página <strong>"Privacidade e meus dados"</strong> no app ou pelo contato abaixo.</p>
 
-    <h2 id="a11">11. CONTATO</h2>
+    <h2 id="a11">11. PROGRAMA DE INDICAÇÃO</h2>
+    <p>Você recebe um código de indicação e pode informar o código de quem o indicou no momento do seu cadastro. As regras completas estão na <a href="{{ route('termos') }}#s8">cláusula 8 dos Termos gerais</a>.</p>
+    <div class="highlighted warn">
+        <strong>Atenção:</strong> a indicação de <strong>outro aluno</strong> fica registrada no histórico, mas <strong>não gera bônus</strong>. O Programa remunera apenas a indicação de <strong>profissionais e estabelecimentos</strong> (personal, academia, studio ou loja) que venham a transacionar na Plataforma, e o bônus pertence a quem indicou — não a você, por ter se cadastrado com um código.
+    </div>
+    <p>Informar o código de alguém <strong>não altera nenhum valor que você paga</strong> e não lhe dá desconto, crédito ou benefício financeiro. Ao usar um código, você fica ciente de que <strong>seu nome e a situação da indicação</strong> serão exibidos a quem o indicou, exclusivamente para apuração do bônus dessa pessoa.</p>
+
+    <h2 id="a12">12. CONTATO</h2>
     <p>Suporte e questões de dados: <a href="mailto:suporte@snrfittech.com">suporte@snrfittech.com</a>.</p>
 
     <div class="highlighted">
