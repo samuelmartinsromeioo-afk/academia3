@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers\Cadastro;
 
+use Illuminate\Http\Request;
+
 class SelecaoController extends \App\Http\Controllers\Controller
 {
     public function index()
