@@ -637,36 +637,56 @@
 
 <body class="ed-page">
 
+    @php
+        /*
+         * Chegada pela tela de solicitações de ficha (?origem=solicitacao).
+         * Nesse contexto o personal vem com uma tarefa só — montar a ficha que o
+         * aluno pagou —, então a barra de ações é reduzida ao essencial:
+         * Anamnese (as condições clínicas importam para prescrever) e NOVA FICHA.
+         * Periodização, Progresso, Relatório e Evolução continuam disponíveis no
+         * acesso normal a esta página, pelo painel.
+         */
+        $vindoDaSolicitacao = request('origem') === 'solicitacao';
+    @endphp
+
     <div class="container">
         <div class="page-header">
             <div class="header-left">
-                <a href="{{ route('personal.dashboard') }}" class="back-link">
+                {{-- Voltar para onde a pessoa realmente estava. --}}
+                <a href="{{ $vindoDaSolicitacao ? route('personal.solicitacoes-ficha') : route('personal.dashboard') }}" class="back-link">
                     <i class="ph ph-arrow-left"></i> VOLTAR
                 </a>
                 <div class="ed-eyebrow"><i class="ph ph-barbell"></i> Fichas do aluno</div>
                 <h1 class="ed-h">{{ strtoupper($cliente->nome) }}</h1>
             </div>
             <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
-                <a href="{{ route('evolucao-carga.aluno', $cliente->id) }}"
-                   style="display:inline-flex; align-items:center; gap:8px; background:var(--primary); color:#000; padding:12px 18px; border-radius:10px; font-weight:900; font-size:0.85rem; text-transform:uppercase; letter-spacing:0.5px; box-shadow:0 0 16px rgba(124,255,0,0.25);">
-                    <i class="ph ph-lightning"></i> Evolução
-                </a>
-                <a href="{{ route('periodizacao.aluno', $cliente->id) }}"
-                   style="display:inline-flex; align-items:center; gap:8px; background:transparent; color:var(--primary); border:1px solid var(--primary); padding:12px 18px; border-radius:10px; font-weight:900; font-size:0.85rem; text-transform:uppercase; letter-spacing:0.5px;">
-                    <i class="ph ph-stack"></i> Periodização
-                </a>
+                @unless($vindoDaSolicitacao)
+                    <a href="{{ route('evolucao-carga.aluno', $cliente->id) }}"
+                       style="display:inline-flex; align-items:center; gap:8px; background:var(--primary); color:#000; padding:12px 18px; border-radius:10px; font-weight:900; font-size:0.85rem; text-transform:uppercase; letter-spacing:0.5px; box-shadow:0 0 16px rgba(124,255,0,0.25);">
+                        <i class="ph ph-lightning"></i> Evolução
+                    </a>
+                    <a href="{{ route('periodizacao.aluno', $cliente->id) }}"
+                       style="display:inline-flex; align-items:center; gap:8px; background:transparent; color:var(--primary); border:1px solid var(--primary); padding:12px 18px; border-radius:10px; font-weight:900; font-size:0.85rem; text-transform:uppercase; letter-spacing:0.5px;">
+                        <i class="ph ph-stack"></i> Periodização
+                    </a>
+                @endunless
+                {{-- Anamnese fica mesmo na chegada pela solicitação: as condições
+                     clínicas do aluno são justamente o que se consulta para
+                     prescrever o treino. --}}
                 <a href="{{ route('anamnese.personal', $cliente->id) }}"
                    style="display:inline-flex; align-items:center; gap:8px; background:transparent; color:var(--primary); border:1px solid var(--primary); padding:12px 18px; border-radius:10px; font-weight:900; font-size:0.85rem; text-transform:uppercase; letter-spacing:0.5px;">
                     <i class="ph ph-first-aid"></i> Anamnese
                 </a>
-                <a href="{{ route('progresso.personal', $cliente->id) }}"
-                   style="display:inline-flex; align-items:center; gap:8px; background:transparent; color:var(--primary); border:1px solid var(--primary); padding:12px 18px; border-radius:10px; font-weight:900; font-size:0.85rem; text-transform:uppercase; letter-spacing:0.5px;">
-                    <i class="ph ph-chart-line"></i> Progresso
-                </a>
-                <a href="{{ route('relatorio.aluno', $cliente->id) }}"
-                   style="display:inline-flex; align-items:center; gap:8px; background:transparent; color:var(--primary); border:1px solid var(--primary); padding:12px 18px; border-radius:10px; font-weight:900; font-size:0.85rem; text-transform:uppercase; letter-spacing:0.5px;">
-                    <i class="ph ph-file-text"></i> Relatório
-                </a>
+                @unless($vindoDaSolicitacao)
+                    <a href="{{ route('progresso.personal', $cliente->id) }}"
+                       style="display:inline-flex; align-items:center; gap:8px; background:transparent; color:var(--primary); border:1px solid var(--primary); padding:12px 18px; border-radius:10px; font-weight:900; font-size:0.85rem; text-transform:uppercase; letter-spacing:0.5px;">
+                        <i class="ph ph-chart-line"></i> Progresso
+                    </a>
+                    <a href="{{ route('relatorio.aluno', $cliente->id) }}"
+                       style="display:inline-flex; align-items:center; gap:8px; background:transparent; color:var(--primary); border:1px solid var(--primary); padding:12px 18px; border-radius:10px; font-weight:900; font-size:0.85rem; text-transform:uppercase; letter-spacing:0.5px;">
+                        <i class="ph ph-file-text"></i> Relatório
+                    </a>
+                @endunless
                 <button id="btnNovaFicha" class="btn-nova-ficha">
                     <i class="ph ph-plus"></i> NOVA FICHA
                 </button>

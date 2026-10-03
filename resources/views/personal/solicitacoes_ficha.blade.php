@@ -121,7 +121,11 @@
             </div>
 
             <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
-                <a href="{{ route('fichas-treino.aluno', $s->cliente_id) }}" class="btn-concluir" style="background:rgba(124,255,0,0.1); color:var(--primary); border:1px solid var(--primary);">
+                {{-- `origem=solicitacao` enxuga a tela de destino: quem chega por
+                     aqui vem montar a ficha, então Periodização, Progresso e
+                     Relatório ficam escondidos para não competir pela atenção.
+                     Ver PersonalFichasTreinoLista.blade.php. --}}
+                <a href="{{ route('fichas-treino.aluno', ['clienteId' => $s->cliente_id, 'origem' => 'solicitacao']) }}" class="btn-concluir" style="background:rgba(124,255,0,0.1); color:var(--primary); border:1px solid var(--primary);">
                     <i class="ph ph-plus"></i> Criar Ficha para {{ $s->cliente?->nome ?? 'Aluno' }}
                 </a>
                 <form action="{{ route('personal.solicitacoes-ficha.concluir', $s->id) }}" method="POST" onsubmit="return confirm('Marcar como concluída?')">
