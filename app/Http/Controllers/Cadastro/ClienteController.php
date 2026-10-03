@@ -18,6 +18,7 @@ use Illuminate\Support\Facades\Mail;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Validation\Rule;
 
 class ClienteController extends Controller
 {
@@ -305,6 +306,10 @@ class ClienteController extends Controller
             'cidade'      => 'nullable|string|max:255',
             'estado'      => 'nullable|string|max:255',
             'complemento' => 'nullable|string|max:255',
+            // Editável depois do cadastro: a preferência muda (mudou de cidade,
+            // começou a viajar), e campo que só se escolhe uma vez na vida vira
+            // dado errado com o tempo.
+            'modalidade_preferida' => ['nullable', Rule::in(config('textos.profissional.modalidades_aluno'))],
             'foto'        => 'nullable|file|mimes:jpeg,jpg,png,gif,webp,heic,heif|max:10240',
             // A07 — a senha era gravada direto de $request->senha, sem passar por
             // regra nenhuma: dava para trocar por uma senha de 1 caractere aqui,
@@ -356,6 +361,10 @@ class ClienteController extends Controller
             'peso'               => 'nullable|numeric',
             'resumo_objetivo'    => 'nullable|string',
             'frequencia_semanal' => 'nullable|integer|min:1',
+            // Preferência de atendimento. Vazio = sem preferência (ver
+            // Cliente::modalidadesCompativeis), e "Híbrido" NÃO é opção do aluno:
+            // é oferta do profissional, não desejo de quem procura.
+            'modalidade_preferida' => ['nullable', Rule::in(config('textos.profissional.modalidades_aluno'))],
             'condicao_clinica'   => 'nullable|string',
             'latitude'           => 'nullable|numeric',
             'longitude'          => 'nullable|numeric',
@@ -903,7 +912,27 @@ class ClienteController extends Controller
             ->orderBy('nome')
             ->get();
 
-        return view('cliente.personais', compact('personais', 'nutricionistas', 'cliente'));
+        /*
+         * O filtro já abre na preferência que o aluno declarou no cadastro.
+         *
+         * Isto é o que impede `modalidade_preferida` de virar o que
+         * `personals.modalidade` era: campo coletado que ninguém lê. O valor da
+         * URL tem precedência, para o aluno conseguir contrariar a própria
+         * preferência sem ir ao perfil — e 'todas' é a fuga explícita.
+         */
+        $modalidadeFiltro = request('modalidade');
+
+        if ($modalidadeFiltro === null && $cliente) {
+            $modalidadeFiltro = $cliente->modalidade_preferida;
+        }
+
+        if (! in_array($modalidadeFiltro, config('textos.profissional.modalidades_aluno'), true)) {
+            $modalidadeFiltro = '';
+        }
+
+        return view('cliente.personais', compact('personais', 'nutricionistas', 'cliente') + [
+            'modalidadeFiltro' => $modalidadeFiltro,
+        ]);
     }
 
     /** Perfil público do nutricionista para o cliente (com contato via WhatsApp). */

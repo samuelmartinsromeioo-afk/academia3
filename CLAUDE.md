@@ -220,6 +220,23 @@ OWASP notes for this module (keep them if you touch it): the amount is never acc
 
 Two test files pin all of it: `tests/Feature/IndicacaoRevenueShareTest.php` (accrual, the date gate, "cannot withdraw before the window closes", "a posted `valor` is ignored") and `tests/Feature/IndicacaoSaqueAutomaticoTest.php` (ceilings, balance aborts, and the webhook refusing a tampered value, a changed Pix key, an unknown reference and a replayed transfer — all with `Http::fake`, never the real API).
 
+### Modalidade — the two-sided field (offer vs. want)
+
+Two columns, deliberately **different domains**:
+
+- `personals.modalidade` — what the professional **offers**: `Presencial` | `Online` | `Híbrido` (`config('textos.profissional.modalidades')`).
+- `clientes.modalidade_preferida` — what the student **wants**: `Presencial` | `Online` only (`config('textos.profissional.modalidades_aluno')`), chosen at signup, nullable.
+
+**`Híbrido` is not a want.** Nobody searches for "I want both" — it's an offer meaning "I serve either way". So it is absent from the student's options, and instead a hybrid professional **satisfies both** preferences. That rule lives in two mirrored places and must stay in sync: `Cliente::modalidadesCompativeis()`/`atendidoPor()` on the server, and `atendeModalidade()` in the `cliente/personais` JS. There is deliberately **no "Híbrido" filter pill** — it would isolate the most flexible professional from the very searches he serves.
+
+A professional who left `modalidade` blank is **not** filtered out by a student's preference: the missing data is his omission, not the student's choice, and hiding him would punish an incomplete signup. A student with no preference sees everyone.
+
+**Both fields must stay wired to something.** `personals.modalidade` spent months as write-only data — collected at signup, never editable, never displayed except on the nutri profile. That's the failure mode to avoid: it's now editable in the personal's dashboard and shown on the student's card/detail, and `clientes.modalidade_preferida` pre-applies the vitrine filter in `ClienteController@listarPersonais`. If you remove the read, you recreate the dead field.
+
+Filter precedence on `/personais/explorar`: `?modalidade=` from the URL wins over the stored preference; `?modalidade=todas` is the explicit escape; an unrecognized value falls back to "all" rather than erroring. The server resolves it and ships the answer in `data-inicial` on `#filtrosModalidade`, so the JS starts from the server's decision instead of re-parsing the URL. The "como você escolheu no cadastro" notice shows **only** when the filter came from the stored preference — an explicit click or URL needs no explanation.
+
+Pinned by `tests/Feature/ModalidadePersonalTest.php` and `tests/Feature/PreferenciaModalidadeAlunoTest.php`. When asserting on the cards, note that the filter pills reuse the same icons — count `<div class="card-meta">` + icon, never the bare icon, or you get a false positive (that bit me twice).
+
 ### Terms of Use — versioning and re-acceptance
 
 `config('termos.versao')` is the **single source of truth** for the current terms version. The six legal blades read it via `@section('doc_versao', config('termos.versao'))` — don't hardcode a version in a view again.

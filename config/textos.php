@@ -64,6 +64,18 @@ return [
 
         'modalidades' => ['Presencial', 'Online', 'Híbrido'],
 
+        /*
+         * O que o ALUNO pode querer — deliberadamente diferente do que o
+         * profissional oferece. "Híbrido" é uma oferta (atendo dos dois jeitos),
+         * não um desejo: ninguém procura "quero as duas coisas". Quem não tem
+         * preferência deixa em branco e vê todo mundo.
+         *
+         * Um aluno que escolhe "Online" é atendido tanto por quem é Online
+         * quanto por quem é Híbrido — a compatibilidade vive em
+         * Cliente::modalidadesCompativeis().
+         */
+        'modalidades_aluno' => ['Presencial', 'Online'],
+
         // Mensagem de erro do CRN (formato + região 1–11).
         'crn_erro' => 'Informe um CRN válido, incluindo a região — ex.: 12345/3',
 

@@ -331,6 +331,22 @@
                 </div>
             </div>
 
+            <div class="form-group">
+                <label>Como você quer treinar?</label>
+                <div class="input-wrapper select-wrapper">
+                    <i class="ph ph-devices"></i>
+                    <select name="modalidade_preferida">
+                        <option value="">Tanto faz — quero ver todos</option>
+                        @foreach (config('textos.profissional.modalidades_aluno') as $mod)
+                            <option value="{{ $mod }}" @selected(old('modalidade_preferida') === $mod)>{{ $mod }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <small style="display:block; margin-top:6px; font-size:.75rem; line-height:1.4; color:#9ca3af;">
+                    Usamos isso para já filtrar a vitrine de profissionais do seu jeito. Você muda quando quiser.
+                </small>
+            </div>
+
             <div class="form-group full-width">
                 <label>Condição Clínica</label>
                 <div class="input-wrapper">

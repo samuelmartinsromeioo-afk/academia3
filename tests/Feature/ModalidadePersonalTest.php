@@ -280,14 +280,26 @@ class ModalidadePersonalTest extends TestCase
             ->assertSee("m === modalidadeAtiva || m === 'Híbrido'", false);
     }
 
-    /** O filtro é deep-linkável, como o ?tipo=nutricionistas que já existia. */
+    /**
+     * O filtro é deep-linkável, como o ?tipo=nutricionistas que já existia.
+     *
+     * Afirma o COMPORTAMENTO (a URL define a pílula ativa, resolvida no
+     * servidor), não a linha de JS que faz isso — a versão anterior deste teste
+     * checava `params.get('modalidade')` e quebrou quando a decisão passou para o
+     * controller, mesmo com o deep-link funcionando igual.
+     */
     public function test_filtro_e_deep_linkavel(): void
     {
-        $this->withSession(['cliente_id' => $this->cliente->id])
+        $html = $this->withSession(['cliente_id' => $this->cliente->id])
             ->get(route('personais.explorar', ['modalidade' => 'Online']))
             ->assertOk()
-            ->assertSee("params.get('modalidade')", false)
-            ->assertSee('history.replaceState', false);
+            ->getContent();
+
+        $this->assertStringContainsString('filtro-pill active" data-modalidade="Online"', $html);
+        $this->assertStringContainsString('data-inicial="Online"', $html);
+
+        // E o clique continua escrevendo o filtro na URL, para o link ser copiável.
+        $this->assertStringContainsString('history.replaceState', $html);
     }
 
     /** O nutricionista também declara modalidade: o card dele precisa exibir. */

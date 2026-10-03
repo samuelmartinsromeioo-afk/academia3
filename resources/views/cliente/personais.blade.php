@@ -218,6 +218,15 @@
         .filtro-pill:hover { color: #fff; border-color: rgba(124,255,0,0.4); }
         .filtro-pill.active { background: var(--primary); color: #000; border-color: var(--primary); }
         .filtro-nota { font-size: 0.72rem; color: var(--text-muted); margin-left: 4px; }
+        .aviso-preferencia {
+            display: flex; gap: 10px; align-items: flex-start;
+            background: rgba(124,255,0,0.06); border: 1px solid rgba(124,255,0,0.22);
+            border-radius: 12px; padding: 12px 15px; margin-bottom: 18px;
+            font-size: 0.8rem; color: var(--text-muted); line-height: 1.5;
+        }
+        .aviso-preferencia i { color: var(--primary); font-size: 1rem; flex-shrink: 0; margin-top: 1px; }
+        .aviso-preferencia strong { color: #fff; }
+        .aviso-preferencia a { color: var(--primary); }
 
         @media (max-width: 600px) {
             .top-bar { padding: 14px 20px; }
@@ -252,18 +261,32 @@
          dois formatos, então aparece TANTO em Presencial quanto em Online. Uma
          pílula "Híbrido" separada esconderia esse profissional justamente das
          buscas que ele atende — ver filtrar() no fim do arquivo. --}}
-    <div class="filtros-modalidade" id="filtrosModalidade">
-        <button class="filtro-pill active" data-modalidade="" onclick="filtrarModalidade(this)">
+    @php $modalidadeFiltro = $modalidadeFiltro ?? ''; @endphp
+    <div class="filtros-modalidade" id="filtrosModalidade" data-inicial="{{ $modalidadeFiltro }}">
+        <button class="filtro-pill {{ $modalidadeFiltro === '' ? 'active' : '' }}" data-modalidade="" onclick="filtrarModalidade(this)">
             <i class="ph ph-list"></i> Todas
         </button>
-        <button class="filtro-pill" data-modalidade="Presencial" onclick="filtrarModalidade(this)">
+        <button class="filtro-pill {{ $modalidadeFiltro === 'Presencial' ? 'active' : '' }}" data-modalidade="Presencial" onclick="filtrarModalidade(this)">
             <i class="ph ph-barbell"></i> Presencial
         </button>
-        <button class="filtro-pill" data-modalidade="Online" onclick="filtrarModalidade(this)">
+        <button class="filtro-pill {{ $modalidadeFiltro === 'Online' ? 'active' : '' }}" data-modalidade="Online" onclick="filtrarModalidade(this)">
             <i class="ph ph-monitor-play"></i> Online
         </button>
         <span class="filtro-nota" id="filtroNota"></span>
     </div>
+
+    {{-- Quando o filtro vem da preferência do cadastro (e não de um clique), o
+         aluno precisa saber por que a lista já está reduzida — senão parece que
+         faltam profissionais. --}}
+    @if ($modalidadeFiltro !== '' && ! request()->has('modalidade') && ($cliente->modalidade_preferida ?? null) === $modalidadeFiltro)
+        <div class="aviso-preferencia">
+            <i class="ph ph-info"></i>
+            <span>
+                Mostrando quem atende <strong>{{ $modalidadeFiltro }}</strong>, como você escolheu no cadastro.
+                <a href="{{ route('personais.explorar', ['modalidade' => 'todas']) }}">Ver todos</a>
+            </span>
+        </div>
+    @endif
 
     {{-- ABA: PERSONAIS --}}
     <div class="tab-panel active" id="panel-personais">
@@ -417,7 +440,9 @@
     const inputBusca = document.getElementById('buscaProfissional');
 
     // Modalidade selecionada: '' (todas), 'Presencial' ou 'Online'.
-    let modalidadeAtiva = '';
+    // Começa no que o servidor decidiu — ?modalidade= da URL ou, sem ela, a
+    // preferência que o aluno declarou no cadastro.
+    let modalidadeAtiva = document.getElementById('filtrosModalidade')?.dataset.inicial || '';
 
     /**
      * Quem é Híbrido atende presencial E online, então satisfaz os dois filtros.
@@ -468,15 +493,15 @@
     }
     if (inputBusca) inputBusca.addEventListener('input', filtrar);
 
-    // Estado inicial a partir da URL: ?tipo=nutricionistas e ?modalidade=Online
+    // Estado inicial a partir da URL: ?tipo=nutricionistas
     const params = new URLSearchParams(location.search);
     if (params.get('tipo') === 'nutricionistas') trocarAba('nutricionistas');
 
-    const modUrl = params.get('modalidade');
-    if (modUrl) {
-        const alvo = document.querySelector(`#filtrosModalidade .filtro-pill[data-modalidade="${CSS.escape(modUrl)}"]`);
-        if (alvo) filtrarModalidade(alvo);
-    }
+    // A pílula ativa e `modalidadeAtiva` já vieram marcadas do servidor (atributo
+    // data-inicial), então aqui basta aplicar o filtro uma vez na carga. Não
+    // chamamos filtrarModalidade() para não reescrever a URL do aluno que apenas
+    // abriu a página com a própria preferência.
+    filtrar();
 </script>
 </body>
 </html>

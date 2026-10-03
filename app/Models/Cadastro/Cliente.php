@@ -54,6 +54,7 @@ class Cliente extends Authenticatable
         'idade',
         'sexo',
         'frequencia_semanal',
+        'modalidade_preferida',
         'resumo_objetivo',
         'condicao_clinica',
         'whatsapp',
@@ -68,6 +69,44 @@ class Cliente extends Authenticatable
         'aceita_termos' => 'boolean',
         'data_aceitacao_termos' => 'datetime',
     ];
+
+        /**
+         * Modalidades de profissional que atendem a preferência deste aluno.
+         *
+         * Quem é `Híbrido` atende presencial E online, então entra nas duas
+         * preferências — mesma regra do filtro da vitrine. Sem preferência
+         * declarada devolve lista vazia, que significa "não filtra nada".
+         *
+         * @return array<int, string>
+         */
+        public function modalidadesCompativeis(): array
+        {
+            if (blank($this->modalidade_preferida)) {
+                return [];
+            }
+
+            return [$this->modalidade_preferida, 'Híbrido'];
+        }
+
+        /** Este profissional atende do jeito que o aluno quer? */
+        public function atendidoPor(?string $modalidadeDoProfissional): bool
+        {
+            $compativeis = $this->modalidadesCompativeis();
+
+            // Sem preferência, qualquer um serve.
+            if ($compativeis === []) {
+                return true;
+            }
+
+            // Profissional que não declarou modalidade não é descartado: a
+            // ausência do dado dele não é escolha do aluno, e esconder o
+            // profissional por isso puniria quem só não preencheu o cadastro.
+            if (blank($modalidadeDoProfissional)) {
+                return true;
+            }
+
+            return in_array($modalidadeDoProfissional, $compativeis, true);
+        }
 
         public function personal() {
             return $this->belongsTo(\App\Models\Cadastro\Personal::class, 'personal_id');
