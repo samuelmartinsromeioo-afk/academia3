@@ -254,6 +254,18 @@ An OWASP pass audited the whole app. Most of it held up — `whereRaw`/`selectRa
 
 Production hardening lives in `.env.example` under "ENDURECIMENTO PARA PRODUÇÃO": `APP_DEBUG=false`, `SESSION_SECURE_COOKIE`, `SESSION_ENCRYPT`, `CORS_ALLOWED_ORIGINS` (the default is `*`). `tests/Feature/SegurancaOwaspTest.php` pins all of the above.
 
+#### Content-Security-Policy
+
+`config/csp.php` + `ContentSecurityPolicy` middleware (in the `web` group, kept **separate** from `SecurityHeaders` because CSP is the one header that can break a page, so it needs its own kill switch).
+
+**`script-src` keeps `'unsafe-inline'`, and that is a measured decision, not laziness.** This repo has **527 inline event handlers** (`onclick=`, `onchange=`, …) across 54 views, 77 inline `<script>` blocks and 117 inline `<style>` blocks. Nonces fix inline `<script>` blocks but do **nothing** for event-handler attributes — dropping `'unsafe-inline'` means rewriting all 527 handlers as `addEventListener`, which is its own project. What the policy still blocks, and why it's worth shipping anyway: script from any **unknown host** (the usual stored-XSS payload), `<base href>` hijacking of every relative URL, injected forms exfiltrating credentials (`form-action 'self'`), `<object>`/`<embed>`, framing of the site (`frame-ancestors`), and fetch/XHR to hosts outside `connect-src` (how a payload ships stolen data out). Those six assertions are pinned in `CspTest::test_diretivas_restritivas` — **don't loosen them**.
+
+The host allowlist was **derived from this codebase**, not copied from a template: a sweep of views/js/css for external hosts, cross-checked against the rendered HTML of 17 real pages (public + admin + logged-in). A missing host means a silently blocked resource, so change it with evidence. Specifically: `unpkg.com` is leaflet, `server.arcgisonline.com` is the map tiles, `nominatim.openstreetmap.org` geocodes addresses, `viacep.com.br`/`brasilapi.com.br` look up CEP, `ui-avatars.com` renders initials avatars, `connect.facebook.net` is the Pixel. `config('media.url')` (the optional CDN) is injected into `img-src`/`media-src` — without that, switching the CDN on would break all media.
+
+**Rolling it out:** publish with `CSP_REPORT_ONLY=true` first. Browsers then only *report* violations to `POST /csp-report` (`CspReportController` → `security` log channel, throttled, CSRF-excepted because browsers send no token), so you can see what the policy *would* break before it breaks anything. Watch `storage/logs/security-*.log` for `csp_violacao` for a day or two, fix what shows up, then flip to `false`. `CSP_ENABLED=false` turns the header off entirely without a code deploy. The middleware only marks `text/html` responses — JSON, downloads and video streams have no execution context.
+
+With the policy enforced, a `script-src` violation pointing at an unknown host is a **signal of attempted injection**, not a config mistake.
+
 ### Frontend
 
 No SPA framework — standard Blade templates with Vite for asset bundling. Views are organized by role: `resources/views/personal/`, `cliente/`, `academia/`, `admin/`, `cadastro/`. Run `npm run dev` for hot-reloading during frontend work.

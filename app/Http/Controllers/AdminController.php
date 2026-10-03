@@ -316,7 +316,9 @@ class AdminController extends Controller
             return $b['total'] <=> $a['total'];
         });
 
-        return view('admin.relatorio-financeiro', [
+        // O arquivo é relatorio_financeiro.blade.php (underscore). Com hífen o
+        // Laravel não encontrava a view e a página inteira respondia 500.
+        return view('admin.relatorio_financeiro', [
             'dados' => $dados,
             'totalGeral' => $totalGeral,
             'mes' => $mes,

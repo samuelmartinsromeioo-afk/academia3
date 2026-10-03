@@ -594,10 +594,16 @@ class PersonalController extends Controller
 
     public function configurarPrecos($id = null)
     {
-        $personalId = $id ?? session('personal_id');
+        // A01 — o dono vem SEMPRE da sessão. Antes era `$id ?? session(...)`, ou
+        // seja, o id da URL tinha precedência: bastava trocar o número para abrir
+        // a tabela de preços de outro profissional, e sem sessão nenhuma a
+        // checagem ainda passava (porque `$personalId` vinha preenchido pela URL).
+        // O `{id}` da rota é ignorado de propósito; mantido só para não quebrar
+        // links já publicados.
+        $personalId = session('personal_id');
 
-        if (!$personalId) {
-            return redirect()->route('login')->with('error', 'Sessão expirada ou acesso inválido.');
+        if (! $personalId) {
+            return redirect()->route('login.index')->with('error', 'Sessão expirada ou acesso inválido.');
         }
 
         $personal = Personal::with('pacotes')->findOrFail($personalId);

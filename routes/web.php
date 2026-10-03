@@ -136,6 +136,13 @@ Route::get('/termos/aceite', [TermoAceiteController::class, 'mostrar'])
 Route::post('/termos/aceite', [TermoAceiteController::class, 'registrar'])
     ->name('termos.aceite.registrar')->middleware(['check.login', 'throttle:10,1']);
 
+// Relatório de violação de CSP. Pública por necessidade — o navegador não envia
+// sessão nem token CSRF —, por isso fica fora do VerifyCsrfToken (ver $except) e
+// com throttle: uma página quebrada gera centenas de relatórios por segundo.
+Route::post('/csp-report', [\App\Http\Controllers\CspReportController::class, 'store'])
+    ->name('csp.report')
+    ->middleware('throttle:60,1');
+
 // Central de suporte (exigida pela App Store — Guideline 1.5).
 Route::get('/suporte', fn () => view('suporte'))->name('suporte');
 

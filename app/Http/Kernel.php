@@ -37,6 +37,10 @@ class Kernel extends HttpKernel
             \App\Http\Middleware\VerifyCsrfToken::class,
             \Illuminate\Routing\Middleware\SubstituteBindings::class,
             \App\Http\Middleware\SecurityHeaders::class,
+            // A03 — CSP separado do SecurityHeaders: é a única política que pode
+            // quebrar a página se estiver mal calibrada, então tem interruptor
+            // próprio (csp.enabled) e modo de observação (csp.report_only).
+            \App\Http\Middleware\ContentSecurityPolicy::class,
             // A09 — login e painel admin vivem no grupo web; sem isto as negativas
             // de acesso (401/403/419/429) do lado web não deixavam rastro nenhum.
             \App\Http\Middleware\LogSecurityEvents::class,
