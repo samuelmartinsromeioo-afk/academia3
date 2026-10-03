@@ -249,7 +249,15 @@ The choice must survive the **whole payment**: package classes are created after
 
 In the student's modals the question is rendered by `montarEscolhaModalidade()` **only for `Híbrido`** — a professional with a single modality gets an informational line instead, because asking would be noise. The payment buttons are gated until the choice exists (`atualizarBotao()` for the package, `modalidadeAvulsaPendente()` for the single class — the latter guards inside the entry functions rather than toggling `disabled`, so it covers every caller). The personal's dashboard agenda card shows **AULA ONLINE** in brand color, which is the whole point of collecting it.
 
-Pinned by `tests/Feature/ModalidadePersonalTest.php`, `tests/Feature/PreferenciaModalidadeAlunoTest.php` and `tests/Feature/ModalidadeDaAulaTest.php`. When asserting on the cards, note that the filter pills reuse the same icons — count `<div class="card-meta">` + icon, never the bare icon, or you get a false positive (that bit me twice).
+Pinned by `tests/Feature/ModalidadePersonalTest.php`, `tests/Feature/PreferenciaModalidadeAlunoTest.php` and `tests/Feature/ModalidadeDaAulaTest.php`.
+
+**Known gap: the mobile API has no parity yet** (deliberate — to be done in one pass). The web side is complete; `routes/api.php` still ignores modalidade in four places:
+1. `Api\AuthController@register` — doesn't accept `modalidade_preferida` (student signup).
+2. `Api\RegisterController@personal` — doesn't accept `modalidade` (professional signup).
+3. `Api\PerfilController@update` — neither field is editable from the app.
+4. The app's booking endpoints (single class and package) don't send `modalidade`, so a reservation made in the app lands with it **null** even for a `Híbrido` professional — the exact case the web flow now solves. The server-side rules (`Agenda::modalidadeResolvida`/`modalidadeValida`) already apply there, so nothing breaks; the value just stays unset.
+
+Also missing from the API payloads: `personals.modalidade` isn't in the explore/detail responses, so the app can't show or filter by it. When asserting on the cards, note that the filter pills reuse the same icons — count `<div class="card-meta">` + icon, never the bare icon, or you get a false positive (that bit me twice).
 
 ### Terms of Use — versioning and re-acceptance
 
