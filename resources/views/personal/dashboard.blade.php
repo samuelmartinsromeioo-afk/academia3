@@ -1735,6 +1735,11 @@
                                         <i class="ph ph-barbell"></i>
                                         ${item.academia_nome || (item.academia ? (item.academia.nome || item.academia.name) : 'Local não informado')}
                                     </small>
+                                    ${item.modalidade ? `
+                                    <small style="display:block; margin-top:4px; font-size:0.7rem; font-weight:800; color:${item.modalidade === 'Online' ? '#7cff00' : 'var(--text-muted)'};">
+                                        <i class="ph ${item.modalidade === 'Online' ? 'ph-monitor-play' : 'ph-barbell'}"></i>
+                                        ${item.modalidade === 'Online' ? 'AULA ONLINE' : 'Presencial'}
+                                    </small>` : ''}
                                 </div>
                                 <button type="button" class="btn-delete-agenda"
                                     onclick="cancelarComJustificativa(${item.id})"

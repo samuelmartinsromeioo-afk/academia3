@@ -235,7 +235,21 @@ A professional who left `modalidade` blank is **not** filtered out by a student'
 
 Filter precedence on `/personais/explorar`: `?modalidade=` from the URL wins over the stored preference; `?modalidade=todas` is the explicit escape; an unrecognized value falls back to "all" rather than erroring. The server resolves it and ships the answer in `data-inicial` on `#filtrosModalidade`, so the JS starts from the server's decision instead of re-parsing the URL. The "como você escolheu no cadastro" notice shows **only** when the filter came from the stored preference — an explicit click or URL needs no explanation.
 
-Pinned by `tests/Feature/ModalidadePersonalTest.php` and `tests/Feature/PreferenciaModalidadeAlunoTest.php`. When asserting on the cards, note that the filter pills reuse the same icons — count `<div class="card-meta">` + icon, never the bare icon, or you get a false positive (that bit me twice).
+**Three levels, not two.** `agendas.modalidade` is the third: what **this** class is. The first two don't settle it — a `Híbrido` professional serves both ways, so without a per-booking value the personal receives a reservation not knowing whether to drive to the gym or open a video call.
+
+| Column | Question it answers | Domain |
+|---|---|---|
+| `personals.modalidade` | what the professional offers | Presencial / Online / **Híbrido** |
+| `clientes.modalidade_preferida` | what the student generally wants | Presencial / Online |
+| `agendas.modalidade` | how **this** class happens | Presencial / Online (`Agenda::MODALIDADES`) |
+
+`Agenda::modalidadeResolvida()` is the only place that decides it: the student's choice wins; absent that, it fills in **only when deducible** (professional attends one way); for `Híbrido` with no choice it returns **null** rather than guessing — writing "Presencial" by omission would assert something nobody chose and the personal would plan on a hunch. `Agenda::modalidadeValida()` blocks booking a format the professional doesn't offer (editing the form to pick "Online" with a presencial-only trainer would otherwise only surface on the day of the class).
+
+The choice must survive the **whole payment**: package classes are created after confirmation, in `ClienteController@agendarAulasInterno()`, which reads `booking_data['modalidade']` — so `PaymentController` carries it into `bookingData` on both the PIX and card paths, and `agendarAulasInterno` **revalidates** it (the professional may have changed modalidade between payment and confirmation). Drop it from `booking_data` and the student's choice silently disappears on the paid path.
+
+In the student's modals the question is rendered by `montarEscolhaModalidade()` **only for `Híbrido`** — a professional with a single modality gets an informational line instead, because asking would be noise. The payment buttons are gated until the choice exists (`atualizarBotao()` for the package, `modalidadeAvulsaPendente()` for the single class — the latter guards inside the entry functions rather than toggling `disabled`, so it covers every caller). The personal's dashboard agenda card shows **AULA ONLINE** in brand color, which is the whole point of collecting it.
+
+Pinned by `tests/Feature/ModalidadePersonalTest.php`, `tests/Feature/PreferenciaModalidadeAlunoTest.php` and `tests/Feature/ModalidadeDaAulaTest.php`. When asserting on the cards, note that the filter pills reuse the same icons — count `<div class="card-meta">` + icon, never the bare icon, or you get a false positive (that bit me twice).
 
 ### Terms of Use — versioning and re-acceptance
 

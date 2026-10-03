@@ -31,6 +31,7 @@ class Agenda extends Model
         'data_inicio_pacote',
         'data_fim_pacote',
         'tipo_aula',
+        'modalidade',
         'valor_aula',
         'academia_nome',
     ];
@@ -40,6 +41,64 @@ class Agenda extends Model
         'cancelado_em' => 'datetime',
         'valor_aula' => 'decimal:2',
     ];
+
+    /** Uma aula acontece de um jeito só: `Híbrido` não é opção aqui. */
+    public const MODALIDADES = ['Presencial', 'Online'];
+
+    /**
+     * Modalidades que o aluno pode escolher ao reservar com este profissional.
+     *
+     * Profissional `Híbrido` oferece as duas e por isso a escolha é do aluno;
+     * quem atende de um jeito só não gera escolha — devolve aquele único valor, e
+     * a tela nem pergunta. Quem não declarou nada devolve as duas: sem o dado
+     * dele não há como restringir, e travar a reserva seria pior.
+     *
+     * @return array<int, string>
+     */
+    public static function modalidadesDisponiveis(?string $modalidadeDoProfissional): array
+    {
+        if ($modalidadeDoProfissional === 'Presencial' || $modalidadeDoProfissional === 'Online') {
+            return [$modalidadeDoProfissional];
+        }
+
+        return self::MODALIDADES;
+    }
+
+    /**
+     * A modalidade que deve ser gravada na aula.
+     *
+     * Devolve a escolha do aluno quando houve uma; senão, só preenche se a
+     * resposta for DEDUTÍVEL — profissional que atende de um jeito único. Para
+     * `Híbrido` (ou sem declaração) devolve null em vez de chutar: gravar
+     * "Presencial" por omissão afirmaria algo que ninguém escolheu, e o personal
+     * se programaria com base num palpite.
+     */
+    public static function modalidadeResolvida(?string $escolhida, ?string $modalidadeDoProfissional): ?string
+    {
+        if (filled($escolhida)) {
+            return $escolhida;
+        }
+
+        $opcoes = self::modalidadesDisponiveis($modalidadeDoProfissional);
+
+        return count($opcoes) === 1 ? $opcoes[0] : null;
+    }
+
+    /** O profissional aceita dar a aula nesta modalidade? */
+    public static function modalidadeValida(?string $escolhida, ?string $modalidadeDoProfissional): bool
+    {
+        if (blank($escolhida)) {
+            return true; // não informado continua aceito (histórico e app antigo)
+        }
+
+        return in_array($escolhida, self::modalidadesDisponiveis($modalidadeDoProfissional), true);
+    }
+
+    /** Ícone da modalidade, igual ao usado na vitrine. */
+    public function iconeModalidade(): string
+    {
+        return $this->modalidade === 'Online' ? 'ph-monitor-play' : 'ph-barbell';
+    }
 
     /**
      * Relacionamento: Um horário pertence a um Personal.

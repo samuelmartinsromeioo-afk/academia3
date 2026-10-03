@@ -80,6 +80,10 @@ class PaymentController extends Controller
             'frequencia' => 'nullable|integer|min:1|max:7',
             'valor_pacote' => 'nullable|numeric',
             'dias_selecionados' => 'nullable|string',
+            // Presencial ou Online — escolhido pelo aluno quando o profissional é
+            // Híbrido. A compatibilidade com o que o profissional atende é
+            // checada em agendarAulasInterno(), na hora de criar as aulas.
+            'modalidade' => ['nullable', \Illuminate\Validation\Rule::in(\App\Models\Agenda::MODALIDADES)],
             'hora_inicio' => 'nullable|string|max:10',
             'hora_fim' => 'nullable|string|max:10',
             'academia_nome' => 'nullable|string|max:255',
@@ -153,6 +157,11 @@ class PaymentController extends Controller
             'hora_inicio' => $validated['hora_inicio'] ?? null,
             'hora_fim' => $validated['hora_fim'] ?? null,
             'academia_nome' => $validated['academia_nome'] ?? null,
+            // Modalidade combinada (presencial/online). Precisa atravessar o
+            // pagamento: as aulas do pacote só nascem depois da confirmação, em
+            // agendarAulasInterno(), que lê daqui. Sem isto a escolha do aluno se
+            // perde no caminho e o personal não sabe como atender.
+            'modalidade' => $validated['modalidade'] ?? null,
             'data' => $validated['data'] ?? null,
             'objetivos' => $validated['objetivos'] ?? null,
             'condicoes_clinicas' => $validated['condicoes_clinicas'] ?? null,
@@ -412,6 +421,7 @@ class PaymentController extends Controller
                         'hora_inicio' => $booking['hora_inicio'],
                         'hora_fim' => $booking['hora_fim'],
                         'academia_nome' => $booking['academia_nome'] ?? null,
+                        'modalidade' => $booking['modalidade'] ?? null,
                         'cliente_id' => $booking['cliente_id'] ?? null,
                     ]);
                 } catch (\Exception $e) {
@@ -1371,6 +1381,10 @@ class PaymentController extends Controller
             'frequencia' => 'nullable|integer|min:1|max:7',
             'valor_pacote' => 'nullable|numeric',
             'dias_selecionados' => 'nullable|string',
+            // Presencial ou Online — escolhido pelo aluno quando o profissional é
+            // Híbrido. A compatibilidade com o que o profissional atende é
+            // checada em agendarAulasInterno(), na hora de criar as aulas.
+            'modalidade' => ['nullable', \Illuminate\Validation\Rule::in(\App\Models\Agenda::MODALIDADES)],
             'hora_inicio' => 'nullable|string|max:10',
             'hora_fim' => 'nullable|string|max:10',
             'academia_nome' => 'nullable|string|max:255',
@@ -1452,6 +1466,11 @@ class PaymentController extends Controller
             'hora_inicio' => $validated['hora_inicio'] ?? null,
             'hora_fim' => $validated['hora_fim'] ?? null,
             'academia_nome' => $validated['academia_nome'] ?? null,
+            // Modalidade combinada (presencial/online). Precisa atravessar o
+            // pagamento: as aulas do pacote só nascem depois da confirmação, em
+            // agendarAulasInterno(), que lê daqui. Sem isto a escolha do aluno se
+            // perde no caminho e o personal não sabe como atender.
+            'modalidade' => $validated['modalidade'] ?? null,
             'data' => $validated['data'] ?? null,
             'objetivos' => $validated['objetivos'] ?? null,
             'condicoes_clinicas' => $validated['condicoes_clinicas'] ?? null,

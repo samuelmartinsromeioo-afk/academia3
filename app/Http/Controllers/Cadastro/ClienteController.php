@@ -416,8 +416,18 @@ class ClienteController extends Controller
             'academia_nome'  => 'nullable|string|max:255',
             'data'           => 'required|date',
             'horario_inicio' => 'required',
-            'horario_fim'    => 'required'
+            'horario_fim'    => 'required',
+            'modalidade'     => ['nullable', Rule::in(Agenda::MODALIDADES)],
         ]);
+
+        // Não basta estar na lista: tem de ser algo que ESTE profissional atende.
+        // Sem isto, bastaria editar o formulário para marcar "Online" numa aula
+        // com quem só atende presencial — e o personal descobriria no dia.
+        $personalDaAula = Personal::find($request->personal_id);
+
+        if (! Agenda::modalidadeValida($request->modalidade, $personalDaAula?->modalidade)) {
+            return redirect()->back()->with('error', 'Este profissional não atende nessa modalidade.');
+        }
 
         $conflito = Agenda::where('personal_id', $request->personal_id)
             ->where('data', $request->data)
@@ -442,6 +452,8 @@ class ClienteController extends Controller
             'hora_fim'      => $request->horario_fim,
             'cancelado'     => false,
             'tipo_aula'     => 'avulsa',
+            // Quem atende de um jeito só não precisa escolher: o valor é dedutível.
+            'modalidade'    => Agenda::modalidadeResolvida($request->modalidade, $personalDaAula?->modalidade),
         ]);
 
         $this->notificarPersonalWhatsApp($clienteId, $request->personal_id, 'avulsa', $agenda);
@@ -535,12 +547,21 @@ class ClienteController extends Controller
             'hora_inicio'       => 'required|date_format:H:i',
             'hora_fim'          => 'required|date_format:H:i',
             'academia_nome'     => 'nullable|string|max:255',
+            'modalidade'        => ['nullable', Rule::in(Agenda::MODALIDADES)],
         ]);
 
         $cliente  = Cliente::find($clienteId);
         $personal = Personal::find($request->personal_id);
 
         if (!$cliente || !$personal) return redirect()->back()->with('error', 'Dados inválidos.');
+
+        if (! Agenda::modalidadeValida($request->modalidade, $personal->modalidade)) {
+            return redirect()->back()->with('error', 'Este profissional não atende nessa modalidade.');
+        }
+
+        // Vale para todas as aulas do pacote: o formato é do combinado, não de
+        // cada sessão.
+        $modalidadeDoPacote = Agenda::modalidadeResolvida($request->modalidade, $personal->modalidade);
 
         $diasSelecionados = json_decode($request->dias_selecionados, true);
         if (empty($diasSelecionados)) return redirect()->back()->with('error', 'Selecione pelo menos um dia.');
@@ -601,6 +622,7 @@ class ClienteController extends Controller
                         'data_inicio_pacote' => now()->startOfMonth(),
                         'data_fim_pacote'    => now()->endOfMonth(),
                         'tipo_aula'          => 'pacote',
+                        'modalidade'         => $modalidadeDoPacote,
                     ]);
                     $agendamentosCriados++;
                 }
@@ -664,6 +686,23 @@ class ClienteController extends Controller
 
         $cliente  = Cliente::find($clienteId);
         $personal = Personal::find($personalId);
+
+        /*
+         * Modalidade combinada, trazida no booking_data desde a criação do
+         * pagamento. Este é o caminho PAGO (chamado após a confirmação no Asaas),
+         * então a escolha do aluno precisa atravessar o pagamento inteiro — se
+         * `modalidade` não estiver no booking_data, a aula nasce sem ela e o
+         * personal volta a não saber se é presencial ou online.
+         *
+         * Revalidado aqui porque o booking_data é persistido: o profissional pode
+         * ter mudado de modalidade entre o pagamento e a confirmação.
+         */
+        $modalidadeDoPacote = Agenda::modalidadeResolvida(
+            Agenda::modalidadeValida($booking['modalidade'] ?? null, $personal?->modalidade)
+                ? ($booking['modalidade'] ?? null)
+                : null,
+            $personal?->modalidade
+        );
 
         // Normaliza para itens {dia (do mês), hora_inicio, hora_fim}. Se vier
         // `dias_horarios` (horário por dia — app novo), usa o horário de cada dia;
@@ -748,6 +787,7 @@ class ClienteController extends Controller
                         'data_inicio_pacote' => now()->startOfMonth(),
                         'data_fim_pacote'    => now()->endOfMonth(),
                         'tipo_aula'          => 'pacote',
+                        'modalidade'         => $modalidadeDoPacote,
                     ]);
                     $agendamentosCriados++;
                 }

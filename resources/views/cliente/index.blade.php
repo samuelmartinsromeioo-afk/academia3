@@ -1179,11 +1179,15 @@
 
         {{-- Input oculto mantido para compatibilidade com pagarPixAvulsa / abrirCartaoAvulsa --}}
         <input type="hidden" class="academia-nome-avulsa" id="avulsaAcademiaNomeInput" value="">
+        <input type="hidden" id="avulsa_modalidade" value="">
 
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
 
             {{-- COLUNA ESQUERDA: resumo + pagamento --}}
             <div>
+                {{-- Igual ao pacote: só pergunta quando o profissional é Híbrido. --}}
+                <div id="avulsaModalidadeContainer" style="margin-bottom: 15px;"></div>
+
                 <div id="academiaAvulsaContainer" style="margin-bottom: 15px;"></div>
 
                 <div style="background: rgba(124, 255, 0, 0.05); padding: 12px; border-radius: 10px; border: 1px solid var(--border); margin-bottom: 15px;">
@@ -1272,6 +1276,12 @@
                     <input type="hidden" id="pacote_hora_fim" name="hora_fim" value="">
                     <input type="hidden" id="pacote_id" name="pacote_id" value="">
                     <input type="hidden" id="pacote_academia_nome" name="academia_nome" value="">
+                    <input type="hidden" id="pacote_modalidade" name="modalidade" value="">
+
+                    {{-- Escolha de modalidade. Só é renderizada pelo JS quando o
+                         profissional é Híbrido: quem atende de um jeito só não
+                         tem o que escolher, e perguntar seria ruído. --}}
+                    <div id="pacoteModalidadeContainer" style="margin-bottom: 15px;"></div>
 
                     <div id="pacoteAcademiaContainer" style="margin-bottom: 15px;"></div>
 
@@ -2210,6 +2220,8 @@
                 </p>`;
         }
 
+        montarEscolhaModalidade(personal);
+
         carregarPacotes(personalId);
         atualizarCalendario();
         atualizarBotao();
@@ -2404,9 +2416,92 @@
         const precisaAcademia = container.dataset.temAcademias === 'true';
         const temAcademia     = !precisaAcademia || document.getElementById('pacote_academia_nome').value.trim() !== '';
 
-        const habilitado = temPacote && temDias && temHorario && temAcademia;
+        // Profissional Híbrido: só libera o pagamento depois de o aluno dizer se
+        // quer presencial ou online. Deixar passar em branco gravaria a aula sem
+        // modalidade e devolveria o problema original — o personal sem saber.
+        const contModalidade  = document.getElementById('pacoteModalidadeContainer');
+        const precisaEscolher = contModalidade?.dataset.precisaEscolher === 'true';
+        const temModalidade   = !precisaEscolher || document.getElementById('pacote_modalidade').value !== '';
+
+        const habilitado = temPacote && temDias && temHorario && temAcademia && temModalidade;
         btn.disabled       = !habilitado;
         btnCartao.disabled = !habilitado;
+    }
+
+    /**
+     * Escolha de presencial x online dentro do modal de pacote.
+     *
+     * Só aparece quando o profissional é Híbrido — aí sim existe decisão a tomar.
+     * Quem atende de um jeito único não gera pergunta: o campo vai preenchido e o
+     * aluno só é informado do formato, sem ter de clicar em nada.
+     *
+     * O hidden começa vazio para o Híbrido de propósito: enquanto o aluno não
+     * escolher, nada é enviado, e o servidor não inventa um valor
+     * (Agenda::modalidadeResolvida devolve null). Daí o botão ficar travado até a
+     * escolha — ver atualizarBotao().
+     */
+    function montarEscolhaModalidade(personal, containerId = 'pacoteModalidadeContainer', hiddenId = 'pacote_modalidade', rotulo = 'essas aulas') {
+        const container = document.getElementById(containerId);
+        const hidden    = document.getElementById(hiddenId);
+        if (!container || !hidden) return;
+
+        const oferta = (personal && personal.modalidade) || '';
+
+        // Atende de um jeito só: informa e preenche, sem perguntar.
+        if (oferta === 'Presencial' || oferta === 'Online') {
+            hidden.value = oferta;
+            container.dataset.precisaEscolher = 'false';
+            container.innerHTML = `
+                <p style="color:var(--text-muted); font-size:0.78rem; padding:10px 12px; background:rgba(255,255,255,0.04); border-radius:10px; border:1px solid var(--border,#333); margin:0;">
+                    <i class="ph ${oferta === 'Online' ? 'ph-monitor-play' : 'ph-barbell'}"></i>
+                    Este profissional atende <strong style="color:#fff;">${oferta}</strong>.
+                </p>`;
+            return;
+        }
+
+        // Não declarou modalidade: não há o que escolher nem o que afirmar.
+        if (!oferta) {
+            hidden.value = '';
+            container.dataset.precisaEscolher = 'false';
+            container.innerHTML = '';
+            return;
+        }
+
+        // Híbrido: a escolha é do aluno.
+        hidden.value = '';
+        container.dataset.precisaEscolher = 'true';
+        container.innerHTML = `
+            <label style="display:block; color:var(--primary); font-weight:900; text-transform:uppercase; font-size:0.7rem; margin-bottom:6px;">
+                <i class="ph ph-devices"></i> Como você quer ${rotulo}?
+            </label>
+            <div style="display:flex; gap:8px;">
+                <button type="button" class="opcao-modalidade" data-valor="Presencial" data-hidden="${hiddenId}" onclick="escolherModalidade(this)"
+                        style="flex:1; display:inline-flex; align-items:center; justify-content:center; gap:7px; cursor:pointer; background:transparent; color:var(--text-muted); border:1px solid var(--border,#333); border-radius:10px; padding:10px; font-family:inherit; font-size:0.8rem; font-weight:800;">
+                    <i class="ph ph-barbell"></i> Na academia
+                </button>
+                <button type="button" class="opcao-modalidade" data-valor="Online" data-hidden="${hiddenId}" onclick="escolherModalidade(this)"
+                        style="flex:1; display:inline-flex; align-items:center; justify-content:center; gap:7px; cursor:pointer; background:transparent; color:var(--text-muted); border:1px solid var(--border,#333); border-radius:10px; padding:10px; font-family:inherit; font-size:0.8rem; font-weight:800;">
+                    <i class="ph ph-monitor-play"></i> Online
+                </button>
+            </div>
+            <small style="display:block; margin-top:6px; font-size:0.7rem; color:var(--text-muted);">
+                Este profissional atende dos dois jeitos — escolha como prefere.
+            </small>`;
+    }
+
+    function escolherModalidade(botao) {
+        document.getElementById(botao.dataset.hidden).value = botao.dataset.valor;
+
+        // Marca só os botões do MESMO grupo (o modal de pacote e o de avulsa
+        // coexistem no DOM).
+        botao.parentElement.querySelectorAll('.opcao-modalidade').forEach(b => {
+            const ativo = b === botao;
+            b.style.background  = ativo ? 'var(--primary)' : 'transparent';
+            b.style.color       = ativo ? '#000' : 'var(--text-muted)';
+            b.style.borderColor = ativo ? 'var(--primary)' : 'var(--border,#333)';
+        });
+
+        if (typeof atualizarBotao === 'function') atualizarBotao();
     }
 
     function mesAnterior() {
@@ -2485,6 +2580,13 @@
                 </p>`;
             document.getElementById('avulsaAcademiaNomeInput').value = '';
         }
+
+        montarEscolhaModalidade(
+            window.personalsData[id],
+            'avulsaModalidadeContainer',
+            'avulsa_modalidade',
+            'essa aula'
+        );
 
         renderAvulsaCalendar();
         document.getElementById('agendaModal').style.display = 'flex';
@@ -2591,13 +2693,33 @@
         renderAvulsaCalendar();
     }
 
+    /**
+     * Com profissional Híbrido, o aluno precisa dizer se a aula é na academia ou
+     * online antes de pagar. O guard fica aqui, nas duas portas de entrada do
+     * pagamento, em vez de no estado `disabled` dos botões: assim vale para
+     * qualquer caminho que chame estas funções.
+     */
+    function modalidadeAvulsaPendente() {
+        const cont = document.getElementById('avulsaModalidadeContainer');
+        if (cont?.dataset.precisaEscolher !== 'true') return false;
+
+        if (document.getElementById('avulsa_modalidade').value === '') {
+            alert('Escolha antes se a aula será na academia ou online.');
+            return true;
+        }
+
+        return false;
+    }
+
     function pagarPixAvulsaNovo() {
         if (!avulsaSelData || !avulsaSelHoraInicio || !avulsaSelHoraFim) return;
+        if (modalidadeAvulsaPendente()) return;
         pagarPixAvulsa(avulsaPersonalId, avulsaSelData, avulsaSelHoraInicio, avulsaSelHoraFim);
     }
 
     function pagarCartaoAvulsaNovo() {
         if (!avulsaSelData || !avulsaSelHoraInicio || !avulsaSelHoraFim) return;
+        if (modalidadeAvulsaPendente()) return;
         abrirCartaoAvulsa(avulsaPersonalId, avulsaSelData, avulsaSelHoraInicio, avulsaSelHoraFim);
     }
 
@@ -2725,6 +2847,9 @@
             hora_inicio:       document.getElementById('pacote_hora_inicio').value,
             hora_fim:          document.getElementById('pacote_hora_fim').value,
             academia_nome:     document.getElementById('pacote_academia_nome').value,
+            // Vai no booking_data e sobrevive até a confirmação do pagamento, que
+            // é quando as aulas do pacote são criadas.
+            modalidade:        document.getElementById('pacote_modalidade').value,
         };
 
         try {
@@ -3071,6 +3196,9 @@
                 hora_inicio:       document.getElementById('pacote_hora_inicio').value,
                 hora_fim:          document.getElementById('pacote_hora_fim').value,
                 academia_nome:     document.getElementById('pacote_academia_nome').value,
+            // Vai no booking_data e sobrevive até a confirmação do pagamento, que
+            // é quando as aulas do pacote são criadas.
+            modalidade:        document.getElementById('pacote_modalidade').value,
             }
         };
 
@@ -3212,6 +3340,7 @@
     // ============ PAGAMENTO AVULSA — PIX ============
     async function pagarPixAvulsa(personalId, data, horaInicio, horaFim) {
         const academiaNome = document.querySelector('.academia-nome-avulsa')?.value || '';
+        const modalidade   = document.getElementById('avulsa_modalidade')?.value || '';
         const valorSecao   = window.personalsData[personalId]?.valor_secao || 0;
 
         document.getElementById('pixQrCodeImg').src = '';
@@ -3232,6 +3361,7 @@
                     hora_inicio:  horaInicio,
                     hora_fim:     horaFim,
                     academia_nome: academiaNome,
+                    modalidade:   modalidade,
                 }),
             });
             const pix = await res.json();
@@ -3278,6 +3408,7 @@
                 hora_inicio:  horaInicio,
                 hora_fim:     horaFim,
                 academia_nome: academiaNome,
+                modalidade:   document.getElementById('avulsa_modalidade')?.value || '',
             }
         };
 
