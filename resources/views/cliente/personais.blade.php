@@ -206,6 +206,19 @@
         .chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0 4px; }
         .chip { font-size: 0.68rem; background: rgba(124,255,0,0.08); color: var(--primary); border: 1px solid rgba(124,255,0,0.2); padding: 3px 9px; border-radius: 20px; }
 
+        /* Filtro por modalidade de atendimento */
+        .filtros-modalidade { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 18px; }
+        .filtro-pill {
+            display: inline-flex; align-items: center; gap: 7px; cursor: pointer;
+            background: transparent; color: var(--text-muted);
+            border: 1px solid rgba(255,255,255,0.12); border-radius: 999px;
+            padding: 8px 15px; font-family: inherit; font-size: 0.78rem; font-weight: 700;
+            transition: 0.2s;
+        }
+        .filtro-pill:hover { color: #fff; border-color: rgba(124,255,0,0.4); }
+        .filtro-pill.active { background: var(--primary); color: #000; border-color: var(--primary); }
+        .filtro-nota { font-size: 0.72rem; color: var(--text-muted); margin-left: 4px; }
+
         @media (max-width: 600px) {
             .top-bar { padding: 14px 20px; }
         }
@@ -234,6 +247,24 @@
         <input type="text" id="buscaProfissional" placeholder="Buscar por nome ou cidade...">
     </div>
 
+    {{-- Filtro por modalidade de atendimento.
+         Só duas opções além de "Todas", de propósito: quem é Híbrido atende nos
+         dois formatos, então aparece TANTO em Presencial quanto em Online. Uma
+         pílula "Híbrido" separada esconderia esse profissional justamente das
+         buscas que ele atende — ver filtrar() no fim do arquivo. --}}
+    <div class="filtros-modalidade" id="filtrosModalidade">
+        <button class="filtro-pill active" data-modalidade="" onclick="filtrarModalidade(this)">
+            <i class="ph ph-list"></i> Todas
+        </button>
+        <button class="filtro-pill" data-modalidade="Presencial" onclick="filtrarModalidade(this)">
+            <i class="ph ph-barbell"></i> Presencial
+        </button>
+        <button class="filtro-pill" data-modalidade="Online" onclick="filtrarModalidade(this)">
+            <i class="ph ph-monitor-play"></i> Online
+        </button>
+        <span class="filtro-nota" id="filtroNota"></span>
+    </div>
+
     {{-- ABA: PERSONAIS --}}
     <div class="tab-panel active" id="panel-personais">
         @if ($personais->isEmpty())
@@ -241,7 +272,9 @@
         @else
             <div class="grid grid-prof">
                 @foreach ($personais as $personal)
-                    <div class="card {{ $personal->eh_pioneiro ? 'pioneiro' : '' }}" data-busca="{{ strtolower($personal->nome . ' ' . ($personal->cidade ?? '')) }}">
+                    <div class="card {{ $personal->eh_pioneiro ? 'pioneiro' : '' }}"
+                         data-busca="{{ strtolower($personal->nome . ' ' . ($personal->cidade ?? '')) }}"
+                         data-modalidade="{{ $personal->modalidade ?? '' }}">
                         <div class="card-img">
                             @if ($personal->foto)
                                 <img src="{{ asset('storage/' . $personal->foto) }}" alt="{{ $personal->nome }}">
@@ -303,7 +336,9 @@
         @else
             <div class="grid grid-prof">
                 @foreach ($nutricionistas as $nutri)
-                    <div class="card nutri {{ $nutri->eh_pioneiro ? 'pioneiro' : '' }}" data-busca="{{ strtolower($nutri->nome . ' ' . ($nutri->cidade ?? '')) }}">
+                    <div class="card nutri {{ $nutri->eh_pioneiro ? 'pioneiro' : '' }}"
+                         data-busca="{{ strtolower($nutri->nome . ' ' . ($nutri->cidade ?? '')) }}"
+                         data-modalidade="{{ $nutri->modalidade ?? '' }}">
                         <div class="card-img">
                             @if ($nutri->foto)
                                 <img src="{{ asset('storage/' . $nutri->foto) }}" alt="{{ $nutri->nome }}">
@@ -326,6 +361,18 @@
                             @endif
                             @if ($nutri->crn)
                                 <div class="card-meta"><i class="ph ph-identification-badge"></i> CRN {{ $nutri->crn }}</div>
+                            @endif
+                            {{-- O nutricionista também declara modalidade no cadastro, e o
+                                 filtro vale para esta aba: sem exibir, o card filtrado não
+                                 explicaria por que apareceu. --}}
+                            @if ($nutri->modalidade)
+                                <div class="card-meta">
+                                    <i class="ph {{ match ($nutri->modalidade) {
+                                        'Online'  => 'ph-monitor-play',
+                                        'Híbrido' => 'ph-arrows-left-right',
+                                        default   => 'ph-barbell',
+                                    } }}"></i> {{ $nutri->modalidade }}
+                                </div>
                             @endif
                             @if (!empty($nutri->especialidades))
                                 <div class="chips">
@@ -368,22 +415,68 @@
     }
 
     const inputBusca = document.getElementById('buscaProfissional');
+
+    // Modalidade selecionada: '' (todas), 'Presencial' ou 'Online'.
+    let modalidadeAtiva = '';
+
+    /**
+     * Quem é Híbrido atende presencial E online, então satisfaz os dois filtros.
+     * Sem isso, o profissional mais flexível seria escondido justamente das
+     * buscas que ele atende — o oposto do que o aluno espera.
+     */
+    function atendeModalidade(card) {
+        if (!modalidadeAtiva) return true;
+        const m = card.dataset.modalidade || '';
+        return m === modalidadeAtiva || m === 'Híbrido';
+    }
+
     function filtrar() {
         const termo = (inputBusca?.value || '').toLowerCase().trim();
         const panel = document.querySelector('.tab-panel.active');
         let visiveis = 0;
         panel?.querySelectorAll('.card').forEach(card => {
-            const ok = !termo || card.dataset.busca.includes(termo);
+            const ok = (!termo || card.dataset.busca.includes(termo)) && atendeModalidade(card);
             card.style.display = ok ? '' : 'none';
             if (ok) visiveis++;
         });
+
         const vazio = document.getElementById('semResultados');
         if (vazio) vazio.style.display = (visiveis === 0 && panel && panel.querySelectorAll('.card').length) ? '' : 'none';
+
+        // Deixa explícito que o híbrido entra na conta, senão o aluno estranha
+        // ver "Híbrido" num card filtrado por "Online".
+        const nota = document.getElementById('filtroNota');
+        if (nota) {
+            nota.textContent = modalidadeAtiva
+                ? `${visiveis} profissional(is) — inclui quem atende em formato híbrido`
+                : '';
+        }
+    }
+
+    function filtrarModalidade(botao) {
+        modalidadeAtiva = botao.dataset.modalidade || '';
+        document.querySelectorAll('#filtrosModalidade .filtro-pill')
+            .forEach(b => b.classList.toggle('active', b === botao));
+
+        // Mantém o filtro na URL para o link ser compartilhável e sobreviver ao
+        // recarregar, igual ao ?tipo=nutricionistas que já existia.
+        const url = new URLSearchParams(location.search);
+        modalidadeAtiva ? url.set('modalidade', modalidadeAtiva) : url.delete('modalidade');
+        history.replaceState(null, '', location.pathname + (url.toString() ? '?' + url : ''));
+
+        filtrar();
     }
     if (inputBusca) inputBusca.addEventListener('input', filtrar);
 
-    // Abre direto na aba de nutricionistas via ?tipo=nutricionistas
-    if (new URLSearchParams(location.search).get('tipo') === 'nutricionistas') trocarAba('nutricionistas');
+    // Estado inicial a partir da URL: ?tipo=nutricionistas e ?modalidade=Online
+    const params = new URLSearchParams(location.search);
+    if (params.get('tipo') === 'nutricionistas') trocarAba('nutricionistas');
+
+    const modUrl = params.get('modalidade');
+    if (modUrl) {
+        const alvo = document.querySelector(`#filtrosModalidade .filtro-pill[data-modalidade="${CSS.escape(modUrl)}"]`);
+        if (alvo) filtrarModalidade(alvo);
+    }
 </script>
 </body>
 </html>

@@ -170,7 +170,22 @@ class ModalidadePersonalTest extends TestCase
             ->assertSee('Presencial');
     }
 
-    /** Sem modalidade declarada, nada é inventado na vitrine. */
+    /**
+     * Quantas linhas de modalidade aparecem DENTRO de card (não nas pílulas).
+     *
+     * As pílulas do filtro usam os mesmos ícones de propósito, então contar o
+     * ícone solto daria falso positivo. O que distingue é o container: card usa
+     * `<div class="card-meta">`, pílula usa `<button class="filtro-pill">`.
+     */
+    private function linhasDeModalidadeEmCards(string $html): int
+    {
+        return preg_match_all(
+            '/<div class="card-meta">\s*<i class="ph ph-(?:monitor-play|arrows-left-right|barbell)"/s',
+            $html
+        );
+    }
+
+    /** Sem modalidade declarada, nada é inventado no card. */
     public function test_vitrine_nao_inventa_modalidade_quando_nula(): void
     {
         $this->personal->forceFill(['modalidade' => null])->save();
@@ -180,8 +195,20 @@ class ModalidadePersonalTest extends TestCase
             ->assertOk()
             ->getContent();
 
-        // O ícone de modalidade não deve aparecer para este card.
-        $this->assertStringNotContainsString('ph-monitor-play', $html);
+        $this->assertSame(0, $this->linhasDeModalidadeEmCards($html));
+        $this->assertStringContainsString('data-modalidade=""', $html);
+    }
+
+    /** Com modalidade declarada, a linha aparece no card. */
+    public function test_card_mostra_a_linha_de_modalidade(): void
+    {
+        $html = $this->withSession(['cliente_id' => $this->cliente->id])
+            ->get(route('personais.explorar'))
+            ->assertOk()
+            ->getContent();
+
+        // O personal do setUp é Presencial.
+        $this->assertSame(1, $this->linhasDeModalidadeEmCards($html));
     }
 
     /** O detalhe que o aluno abre carrega a modalidade no payload. */
@@ -192,5 +219,97 @@ class ModalidadePersonalTest extends TestCase
             ->assertOk()
             ->assertSee('modalidade:', false)
             ->assertSee('iconeModalidade', false);
+    }
+
+    // ── Filtro por modalidade na vitrine ─────────────────────────────────
+
+    /** As pílulas existem e são só três — Híbrido não tem pílula própria. */
+    public function test_vitrine_tem_as_pilulas_de_filtro(): void
+    {
+        $html = $this->withSession(['cliente_id' => $this->cliente->id])
+            ->get(route('personais.explorar'))
+            ->assertOk()
+            ->assertSee('filtrosModalidade', false)
+            ->assertSee('data-modalidade="Presencial"', false)
+            ->assertSee('data-modalidade="Online"', false)
+            ->getContent();
+
+        // Uma pílula "Híbrido" esconderia o profissional mais flexível das buscas
+        // que ele atende; ele entra em Presencial e em Online (ver atendeModalidade).
+        $this->assertStringNotContainsString('data-modalidade="Híbrido"', $html);
+    }
+
+    /** Cada card carrega a própria modalidade, que é o que o filtro lê. */
+    public function test_card_carrega_data_modalidade(): void
+    {
+        $html = $this->withSession(['cliente_id' => $this->cliente->id])
+            ->get(route('personais.explorar'))
+            ->assertOk()
+            ->getContent();
+
+        // O personal do setUp é Presencial.
+        $this->assertMatchesRegularExpression(
+            '/<div class="card[^"]*"\s+data-busca="[^"]*"\s+data-modalidade="Presencial"/',
+            $html
+        );
+    }
+
+    /** Sem modalidade o card vem com o atributo vazio — e fica fora dos filtros. */
+    public function test_card_sem_modalidade_tem_atributo_vazio(): void
+    {
+        $this->personal->forceFill(['modalidade' => null])->save();
+
+        $this->withSession(['cliente_id' => $this->cliente->id])
+            ->get(route('personais.explorar'))
+            ->assertOk()
+            ->assertSee('data-modalidade=""', false);
+    }
+
+    /**
+     * A regra que faz o filtro valer a pena: quem é Híbrido atende os dois
+     * formatos e precisa aparecer nas duas buscas. Verificada por execução em
+     * node (ver scratchpad), e fixada aqui para o dia em que alguém "simplificar"
+     * a função e tirar a cláusula do híbrido.
+     */
+    public function test_regra_do_hibrido_esta_na_funcao_de_filtro(): void
+    {
+        $this->withSession(['cliente_id' => $this->cliente->id])
+            ->get(route('personais.explorar'))
+            ->assertOk()
+            ->assertSee('function atendeModalidade', false)
+            ->assertSee("m === modalidadeAtiva || m === 'Híbrido'", false);
+    }
+
+    /** O filtro é deep-linkável, como o ?tipo=nutricionistas que já existia. */
+    public function test_filtro_e_deep_linkavel(): void
+    {
+        $this->withSession(['cliente_id' => $this->cliente->id])
+            ->get(route('personais.explorar', ['modalidade' => 'Online']))
+            ->assertOk()
+            ->assertSee("params.get('modalidade')", false)
+            ->assertSee('history.replaceState', false);
+    }
+
+    /** O nutricionista também declara modalidade: o card dele precisa exibir. */
+    public function test_card_do_nutricionista_mostra_a_modalidade(): void
+    {
+        $nutri = Personal::create([
+            'nome' => 'Nutri Modalidade', 'email' => 'nm@mod.teste', 'cpf' => '443',
+            'senha' => bcrypt('x'), 'cep' => '30130-000', 'rua' => 'R', 'bairro' => 'B',
+            'cidade' => 'BH', 'estado' => 'MG', 'complemento' => '-', 'foto' => '',
+            'idade' => '1990-01-01', 'valor_secao' => 0, 'crn' => 'CRN-9 12345',
+            'professional_type' => 'NUTRITIONIST', 'modalidade' => 'Online',
+            'status' => 'aprovado', 'data_aprovacao' => now()->subYear(),
+        ]);
+
+        $html = $this->withSession(['cliente_id' => $this->cliente->id])
+            ->get(route('personais.explorar'))
+            ->assertOk()
+            ->assertSee('Nutri Modalidade')
+            ->getContent();
+
+        // O card do nutri carrega o atributo que o filtro lê.
+        $this->assertStringContainsString('data-modalidade="Online"', $html);
+        $this->assertTrue($nutri->isNutricionista());
     }
 }
