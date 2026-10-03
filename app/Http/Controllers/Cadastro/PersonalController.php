@@ -333,26 +333,11 @@ class PersonalController extends Controller
         return response()->json($agendas);
     }
 
-    public function listarAlunos()
-    {
-        $personal = Personal::findOrFail(session('personal_id'));
-        $alunos = Cliente::where('personal_id', $personal->id)->get();
-
-        return view('personal.clientes', compact('personal', 'alunos'));
-    }
-
-    public function meusAlunos()
-    {
-        $personalId = session('personal_id');
-
-        $meusAlunos = Agenda::with('cliente')
-            ->where('personal_id', $personalId)
-            ->where('cancelado', false)
-            ->get()
-            ->unique('cliente_id');
-
-        return view('personal.meus-alunos', compact('meusAlunos'));
-    }
+    // Removidos: listarAlunos() e meusAlunos(). Ambos renderizavam views que não
+    // existem ('personal.clientes', 'personal.meus-alunos'), então listarAlunos
+    // nunca teve rota e meusAlunos respondia 500 em GET /personal/alunos. A lista
+    // de alunos do personal vive em FichaTreinoController@meusAlunos
+    // (GET /personal/fichas-treino), que é a tela de fato usada.
 
     // ==========================================
     // FREQUÊNCIA DOS ALUNOS
@@ -592,48 +577,17 @@ class PersonalController extends Controller
         return redirect()->back()->with('success', $msg);
     }
 
-    public function configurarPrecos($id = null)
-    {
-        // A01 — o dono vem SEMPRE da sessão. Antes era `$id ?? session(...)`, ou
-        // seja, o id da URL tinha precedência: bastava trocar o número para abrir
-        // a tabela de preços de outro profissional, e sem sessão nenhuma a
-        // checagem ainda passava (porque `$personalId` vinha preenchido pela URL).
-        // O `{id}` da rota é ignorado de propósito; mantido só para não quebrar
-        // links já publicados.
-        $personalId = session('personal_id');
-
-        if (! $personalId) {
-            return redirect()->route('login.index')->with('error', 'Sessão expirada ou acesso inválido.');
-        }
-
-        $personal = Personal::with('pacotes')->findOrFail($personalId);
-        $precosSalvos = $personal->pacotes->pluck('valor_mensal', 'frequencia')->toArray();
-
-        if (session()->has('aluno_id') || (auth()->check() && auth()->user()->tipo === 'aluno')) {
-            return view('personal.exibir-precos', compact('precosSalvos', 'personal'));
-        }
-
-        return view('personal.configurar-precos', compact('precosSalvos', 'personal'));
-    }
-
-    public function storePrecos(Request $request)
-    {
-        $request->validate([
-            'precos' => 'required|array',
-            'precos.*' => 'nullable|numeric|min:0',
-        ]);
-
-        foreach ($request->precos as $frequencia => $valor) {
-            if ($valor) {
-                \App\Models\Cadastro\Pacote::updateOrCreate(
-                    ['personal_id' => session('personal_id'), 'frequencia' => $frequencia],
-                    ['valor_mensal' => $valor]
-                );
-            }
-        }
-
-        return redirect()->back()->with('success', 'Tabela de preços atualizada com sucesso!');
-    }
+    // Removidos: configurarPrecos() e storePrecos().
+    //
+    // configurarPrecos renderizava 'personal.configurar-precos' / 'personal
+    // .exibir-precos', views que não existem — a rota respondia 500. Além disso
+    // resolvia o dono como `$id ?? session('personal_id')`, dando precedência ao
+    // id da URL (forma clássica de IDOR).
+    //
+    // storePrecos era o handler do formulário daquela tela inexistente, portanto
+    // inalcançável. Preço de pacote é gravado por PacoteController@store
+    // (POST pacotes/salvar), que é o caminho usado pelo dashboard do personal, e
+    // pela API em POST /api/v1/personal/precos.
 
     // ✅ NOVO: Busca detalhes do aluno com pacote
     public function detalhesAluno($clienteId)

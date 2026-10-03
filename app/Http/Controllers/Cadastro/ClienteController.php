@@ -508,12 +508,10 @@ class ClienteController extends Controller
             ));
     }
 
-    public function verPrecos($id)
-    {
-        $personal = \App\Models\User::findOrFail($id);
-        $precos   = \App\Models\Cadastro\Pacote::where('personal_id', $id)->get();
-        return view('cliente.precos', compact('personal', 'precos'));
-    }
+    // Removido: verPrecos(). Renderizava 'cliente.precos', view que não existe, e
+    // nunca teve rota. Também buscava o personal em App\Models\User, que não é a
+    // tabela de personais (seria sempre o registro errado ou 404). O aluno vê os
+    // pacotes na página de detalhe do personal.
 
     public function contratarPacote(Request $request)
     {

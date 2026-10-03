@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use Illuminate\Support\Facades\View;
 use Tests\TestCase;
 
 /**
@@ -65,5 +66,45 @@ class SelecaoCadastroTest extends TestCase
     {
         $this->get(route('cadastro.SelecaoCadastro'))->assertOk();
         $this->get(route('cadastro.SelecaoCadastro', ['cupom' => 'MARIA7F3K']))->assertOk();
+    }
+
+    /**
+     * Toda view referenciada por `view('...')` no app tem de existir.
+     *
+     * Nome de view errado não aparece em lint nem na compilação de Blade: a
+     * página simplesmente responde 500 quando alguém a abre. Foi assim que
+     * /admin/relatorio-financeiro (hífen em vez de underscore) e quatro rotas do
+     * personal ficaram quebradas sem ninguém notar. Esta varredura é barata e
+     * pega a classe inteira de uma vez.
+     */
+    public function test_toda_view_referenciada_existe(): void
+    {
+        $faltando = [];
+        $total = 0;
+
+        $it = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator(app_path()));
+
+        foreach ($it as $arquivo) {
+            if ($arquivo->getExtension() !== 'php') {
+                continue;
+            }
+
+            preg_match_all(
+                "/(?:\bview|View::make)\(\s*'([a-zA-Z0-9_.\-\/]+)'/",
+                file_get_contents($arquivo->getPathname()),
+                $m
+            );
+
+            foreach ($m[1] as $nome) {
+                $total++;
+
+                if (! View::exists($nome)) {
+                    $faltando[] = $nome . ' (em ' . $arquivo->getFilename() . ')';
+                }
+            }
+        }
+
+        $this->assertGreaterThan(50, $total, 'a varredura deveria encontrar as referências a view');
+        $this->assertSame([], array_values(array_unique($faltando)), 'view referenciada que não existe');
     }
 }

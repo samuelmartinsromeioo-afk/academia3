@@ -269,13 +269,17 @@ Route::middleware('check.login')->group(function () {
     Route::get('/personal/dashboard', [PersonalController::class, 'index'])->name('personal.dashboard');
     Route::put('/personal/update/{id}', [PersonalController::class, 'update'])->name('personal.update');
 
-    // Configurar pacotes/preços
-    Route::get('/personal/configurar-precos/{id}', [PersonalController::class, 'configurarPrecos'])->name('personal.configurarPrecos');
-    Route::post('/personal/store-precos', [PersonalController::class, 'storePrecos'])->name('personal.storePrecos');
-
-    // Gestão de Alunos do Personal
-    Route::get('/personal/alunos', [PersonalController::class, 'meusAlunos'])->name('personal.alunos');
-    Route::get('/personal/clientes', [PersonalController::class, 'listarAlunos'])->name('personal.clientes.listar');
+    // Removidas 4 rotas que apontavam para views inexistentes e respondiam 500:
+    //   GET  /personal/configurar-precos/{id}  (personal.configurar-precos / exibir-precos)
+    //   POST /personal/store-precos            (handler do form daquela tela)
+    //   GET  /personal/alunos                  (personal.meus-alunos)
+    //   GET  /personal/clientes                (personal.clientes)
+    // Nenhuma era referenciada por view alguma. O que elas pretendiam fazer já
+    // existe e funciona: preço de pacote em POST pacotes/salvar
+    // (PacoteController@store, usado pelo dashboard) e lista de alunos em
+    // GET /personal/fichas-treino (FichaTreinoController@meusAlunos).
+    // Não confundir com as rotas de API homônimas (/api/v1/personal/clientes,
+    // /api/v1/personal/precos), que seguem ativas em outros controllers.
 
     // ✅ GESTÃO DE AGENDA DO PERSONAL
     Route::post('/agenda/store', [PersonalController::class, 'storeHorario'])->name('agenda.store');
