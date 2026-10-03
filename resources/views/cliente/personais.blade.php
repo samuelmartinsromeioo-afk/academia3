@@ -262,6 +262,18 @@
                             @if ($personal->cidade)
                                 <div class="card-meta"><i class="ph ph-map-pin"></i> {{ $personal->cidade }}{{ $personal->estado ? ' - ' . $personal->estado : '' }}</div>
                             @endif
+                            {{-- Modalidade de atendimento: o aluno precisa saber se o
+                                 profissional atende presencialmente antes de se
+                                 interessar. O ícone muda conforme o formato. --}}
+                            @if ($personal->modalidade)
+                                <div class="card-meta">
+                                    <i class="ph {{ match ($personal->modalidade) {
+                                        'Online'  => 'ph-monitor-play',
+                                        'Híbrido' => 'ph-arrows-left-right',
+                                        default   => 'ph-barbell',
+                                    } }}"></i> {{ $personal->modalidade }}
+                                </div>
+                            @endif
                             <div class="rating">
                                 @if($personal->eh_novo_profissional)
                                     <span class="num" style="color: var(--primary);"><i class="ph ph-plant"></i> Novo profissional</span>

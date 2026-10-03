@@ -969,6 +969,18 @@
                         <div class="input-wrapper"><i class="ph ph-clipboard-text"></i><input type="number" step="0.01" name="valor_ficha" value="{{ $personal->valor_ficha }}" placeholder="0.00"></div>
                         <p style="color: var(--text-muted); font-size: 0.7rem; margin: 5px 0 0;">Deixe em branco (ou 0) se você não trabalha com esse serviço — assim ele não é oferecido ao aluno.</p>
                     </div>
+                    <div>
+                        <label>Modalidade de Atendimento</label>
+                        <div class="input-wrapper"><i class="ph ph-devices"></i>
+                            <select name="modalidade" style="background:transparent; border:none; color:#fff; outline:none; flex:1; font-size:0.9rem; font-family:inherit; cursor:pointer;">
+                                <option value="">Não informar</option>
+                                @foreach (config('textos.profissional.modalidades') as $mod)
+                                    <option value="{{ $mod }}" @selected($personal->modalidade === $mod)>{{ $mod }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <p style="color: var(--text-muted); font-size: 0.7rem; margin: 5px 0 0;">Aparece no seu perfil para o aluno saber se você atende presencialmente, online ou nos dois formatos.</p>
+                    </div>
                     <div class="full-width">
                         <label>Chave Pix</label>
                         <div class="input-wrapper"><i class="ph ph-key"></i><input type="text" name="chave_pix" value="{{ $personal->chave_pix }}" placeholder="CPF, e-mail, telefone ou chave aleatória"></div>

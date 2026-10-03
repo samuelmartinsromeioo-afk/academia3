@@ -1495,6 +1495,7 @@
             precos_avaliacao: {!! json_encode($p->precos_avaliacao ?: (object)[], JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP) !!},
             pacotes_avaliacao: {!! json_encode($p->pacotesAvaliacao->map(fn($pa) => ['id' => $pa->id, 'nome' => $pa->nome, 'valor' => (float) $pa->valor, 'tipos' => $pa->tipos]), JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP) !!},
             academias: {!! json_encode($p->academias ?? '', JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP) !!},
+            modalidade: {!! json_encode($p->modalidade ?? '', JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP) !!},
             fotos: [
                 @foreach($p->fotos ?? [] as $foto)
                 { url: '{{ asset("storage/" . $foto->path) }}', legenda: '{{ addslashes($foto->legenda ?? "") }}' },
@@ -1552,6 +1553,13 @@
 
         personalSelecionadoId = personalId;
 
+        // Ícone da modalidade de atendimento (Presencial / Online / Híbrido).
+        function iconeModalidade(m) {
+            if (m === 'Online')  return '<i class="ph ph-monitor-play"></i>';
+            if (m === 'Híbrido') return '<i class="ph ph-arrows-left-right"></i>';
+            return '<i class="ph ph-barbell"></i>';
+        }
+
         // HEADER
 
         const fotoHTML = personal.foto 
@@ -1562,7 +1570,7 @@
             ${fotoHTML}
             <div class="detalhes-info-header">
                 <h2 style="display:flex; align-items:center; gap:6px;">${personal.nome}${personal.pioneiro ? seloPioneiroHTML(personal.estado, personal.pioneiro_posicao, 18) : ''}</h2>
-                <p>Personal Trainer Certificado</p>
+                <p>Personal Trainer Certificado${personal.modalidade ? ` · <span style="color:var(--primary);">${iconeModalidade(personal.modalidade)} ${personal.modalidade}</span>` : ''}</p>
                 <div class="detalhes-avaliacao">
                     ${personal.eh_novo
                         ? `<span style="color: var(--primary);"><i class="ph ph-plant"></i> Novo profissional</span>`

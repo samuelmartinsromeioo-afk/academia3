@@ -15,6 +15,7 @@ use Illuminate\Support\Facades\Mail;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Validation\Rule;
 
 class PersonalController extends Controller
 {
@@ -218,6 +219,10 @@ class PersonalController extends Controller
             'aceita_termos_update' => 'required|accepted',
             'valor_secao'  => 'required|numeric',
             'valor_ficha'  => 'nullable|numeric|min:0',
+            // Modalidade de atendimento. Era escolhida no cadastro e depois
+            // ficava congelada: não havia como o profissional mudar de
+            // presencial para híbrido/online sem mexer no banco.
+            'modalidade'   => ['nullable', 'string', Rule::in(config('textos.profissional.modalidades'))],
             'avaliacao'    => 'nullable|string',
             'foto'         => 'nullable|file|mimes:jpeg,jpg,png,gif,webp,heic,heif|max:10240',
             'senha'        => 'nullable|string|min:8|confirmed',
