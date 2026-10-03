@@ -12,6 +12,37 @@
 
 @import url('https://fonts.googleapis.com/css2?family=Syncopate:wght@400;700&family=Inter:wght@300;400;500;600;700;800&display=swap');
 
+/* ----------------------------------------------------------------------------
+   0. Controles de formulário em tema escuro
+   ----------------------------------------------------------------------------
+   O app é escuro e os <select> costumam ser declarados com
+   `background: transparent; color: #fff`, o que funciona para a caixa fechada —
+   mas a LISTA aberta é desenhada pelo navegador, e os <option> herdam fundo
+   branco do sistema. Resultado: letra branca em fundo branco, ilegível.
+
+   `color-scheme: dark` é o que realmente resolve: faz o navegador desenhar o
+   popup nativo (e a setinha) na variante escura. O par `option {}` abaixo cobre
+   navegador que ainda não respeita color-scheme no popup.
+
+   Regra global de propósito — é correção de legibilidade, não decoração, e tinha
+   de valer para os 44 <select> espalhados por 25 telas sem depender de cada uma
+   lembrar de repetir o estilo.
+   ---------------------------------------------------------------------------- */
+select,
+input[type="date"],
+input[type="time"],
+input[type="datetime-local"],
+input[type="month"],
+input[type="week"] {
+    color-scheme: dark;
+}
+
+select option,
+select optgroup {
+    background-color: #16181d;  /* --snr-surface */
+    color: #ffffff;
+}
+
 /* Ícones Phosphor: animação de giro (substitui fa-spin) e alinhamento padrão */
 .ph, [class^="ph-"], [class*=" ph-"] { vertical-align: -0.075em; }
 .ph-spin { animation: snrSpin 0.9s linear infinite; display: inline-block; }

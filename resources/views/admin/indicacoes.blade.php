@@ -9,6 +9,8 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/regular/style.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/bold/style.css">
     <link href="https://fonts.googleapis.com/css2?family=Syncopate:wght@700&family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
+    {{-- Correção dos <select> em tema escuro (option branco em fundo branco). --}}
+    <link rel="stylesheet" href="{{ asset('css/snrfit-brand.css') }}">
     <style>
         :root {
             --primary: #7cff00;

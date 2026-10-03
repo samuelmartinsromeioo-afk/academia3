@@ -7,6 +7,9 @@
     <link rel="icon" type="image/png" href="{{ asset('SnrFit.png') }}">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/regular/style.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    {{-- Correção dos <select> em tema escuro (option branco em fundo branco);
+         o arquivo é escopado por classe e não muda o visual do portal. --}}
+    <link rel="stylesheet" href="{{ asset('css/snrfit-brand.css') }}">
     <style>
         :root { --primary:#7cff00; --bg:#0a0b0d; --card:#16181d; --card2:#1e2127; --dim:#9ca3af; --border:rgba(255,255,255,.08); }
         * { margin:0; padding:0; box-sizing:border-box; }
