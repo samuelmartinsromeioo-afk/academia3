@@ -78,11 +78,23 @@ class IndicacaoSaqueAutomaticoTest extends TestCase
     }
 
     /**
-     * Deixa um bônus liberado para o indicador, de valor controlado.
-     * 6 alunos pagantes batem a meta; o valor por aluno define o bônus (10%).
+     * Deixa um bônus liberado para o indicador, DE VALOR EXATO, e devolve o saldo.
+     *
+     * Recebe o bônus desejado — é ele que os tetos e o webhook comparam — e
+     * calcula para trás quanto os 6 alunos (que também batem a meta) precisam
+     * faturar: o bônus é `percentual` da comissão, e a comissão é `feeRate()` do
+     * bruto. Antes esta função recebia o BRUTO e cada chamada trazia o bônus
+     * calculado à mão no comentário; quando a base de cálculo mudou de bruto
+     * para comissão, os 20 números espalhados pelo arquivo ficaram 10x errados
+     * de uma vez. Com o bônus como entrada, outra mudança de base não mexe em
+     * nenhuma asserção.
      */
-    private function comBonusLiberado(float $brutoPorAluno): float
+    private function comBonusLiberado(float $bonusDesejado): float
     {
+        $porAluno = $bonusDesejado / 6
+            / (float) config('indicacao.percentual')
+            / AsaasService::feeRate();
+
         $cupom = $this->cupons->cupomDe($this->indicador);
         $uso = $this->cupons->registrarIndicacao($cupom->codigo, $this->indicado, '127.0.0.1');
 
@@ -90,8 +102,9 @@ class IndicacaoSaqueAutomaticoTest extends TestCase
             Payment::create([
                 'user_id' => $this->novoCliente("sq{$i}." . uniqid() . '@t.teste'),
                 'trainer_id' => $this->indicado->id, 'membership_id' => $this->pacoteId,
-                'amount_total' => $brutoPorAluno, 'company_fee' => $brutoPorAluno * 0.1,
-                'trainer_amount' => $brutoPorAluno * 0.9,
+                'amount_total' => $porAluno,
+                'company_fee' => round($porAluno * AsaasService::feeRate(), 2),
+                'trainer_amount' => round($porAluno * AsaasService::SPLIT_RATE, 2),
                 'status' => 'succeeded', 'paid_at' => now()->subDays(30),
             ]);
         }
@@ -120,7 +133,7 @@ class IndicacaoSaqueAutomaticoTest extends TestCase
     public function test_abaixo_do_teto_dispara_pix_automatico(): void
     {
         $this->fakeTransferenciaOk();
-        $saldo = $this->comBonusLiberado(200.00);   // 10% de 1200 = R$ 120
+        $saldo = $this->comBonusLiberado(120.00);   // abaixo do teto de 300
         $this->assertEquals(120.00, $saldo);
 
         $r = $this->saques->solicitar($this->indicador, 'destino@pix.teste', '127.0.0.1');
@@ -143,7 +156,7 @@ class IndicacaoSaqueAutomaticoTest extends TestCase
     public function test_acima_do_teto_nao_transfere_e_vai_para_a_fila_do_admin(): void
     {
         $this->fakeTransferenciaOk();
-        $saldo = $this->comBonusLiberado(1000.00);  // 10% de 6000 = R$ 600 > teto 300
+        $saldo = $this->comBonusLiberado(600.00);   // acima do teto de 300
         $this->assertEquals(600.00, $saldo);
 
         $r = $this->saques->solicitar($this->indicador, 'destino@pix.teste');
@@ -161,7 +174,7 @@ class IndicacaoSaqueAutomaticoTest extends TestCase
         $this->fakeTransferenciaOk();
         config(['indicacao.saque_auto_teto_diario' => 100.00]);
 
-        $this->comBonusLiberado(200.00);            // R$ 120 > teto diário 100
+        $this->comBonusLiberado(120.00);            // acima do teto diário 100
         $r = $this->saques->solicitar($this->indicador, 'destino@pix.teste');
 
         $this->assertSame(IndicacaoSaque::STATUS_SOLICITADO, $r['saque']->status);
@@ -173,7 +186,7 @@ class IndicacaoSaqueAutomaticoTest extends TestCase
         $this->fakeTransferenciaOk();
         config(['indicacao.saque_automatico' => false]);
 
-        $this->comBonusLiberado(200.00);
+        $this->comBonusLiberado(120.00);
         $r = $this->saques->solicitar($this->indicador, 'destino@pix.teste');
 
         $this->assertSame(IndicacaoSaque::STATUS_SOLICITADO, $r['saque']->status);
@@ -188,7 +201,7 @@ class IndicacaoSaqueAutomaticoTest extends TestCase
             '*/transfers' => Http::response(['id' => 'tr_x', 'status' => 'PENDING'], 200),
         ]);
 
-        $this->comBonusLiberado(200.00);
+        $this->comBonusLiberado(120.00);
         $r = $this->saques->solicitar($this->indicador, 'destino@pix.teste');
 
         $this->assertSame(IndicacaoSaque::STATUS_SOLICITADO, $r['saque']->status);
@@ -202,7 +215,7 @@ class IndicacaoSaqueAutomaticoTest extends TestCase
             '*/transfers' => Http::response(['id' => 'tr_x', 'status' => 'PENDING'], 200),
         ]);
 
-        $this->comBonusLiberado(200.00);
+        $this->comBonusLiberado(120.00);
         $r = $this->saques->solicitar($this->indicador, 'destino@pix.teste');
 
         $this->assertSame(IndicacaoSaque::STATUS_SOLICITADO, $r['saque']->status);
@@ -219,7 +232,7 @@ class IndicacaoSaqueAutomaticoTest extends TestCase
             ], 400),
         ]);
 
-        $saldo = $this->comBonusLiberado(200.00);
+        $saldo = $this->comBonusLiberado(120.00);
         $r = $this->saques->solicitar($this->indicador, 'ruim@pix.teste');
 
         $saque = $r['saque'];
@@ -244,10 +257,10 @@ class IndicacaoSaqueAutomaticoTest extends TestCase
             ->postJson('/api/asaas-webhook', $payload);
     }
 
-    private function saqueProcessando(float $brutoPorAluno = 200.00): IndicacaoSaque
+    private function saqueProcessando(float $bonus = 120.00): IndicacaoSaque
     {
         $this->fakeTransferenciaOk();
-        $this->comBonusLiberado($brutoPorAluno);
+        $this->comBonusLiberado($bonus);
 
         return $this->saques->solicitar($this->indicador, 'destino@pix.teste')['saque'];
     }
@@ -505,7 +518,7 @@ class IndicacaoSaqueAutomaticoTest extends TestCase
     public function test_admin_transfere_pedido_da_fila_com_o_valor_do_registro(): void
     {
         $this->fakeTransferenciaOk('tr_admin');
-        $saldo = $this->comBonusLiberado(1000.00);  // R$ 600, acima do teto
+        $saldo = $this->comBonusLiberado(600.00);   // acima do teto
         $saque = $this->saques->solicitar($this->indicador, 'destino@pix.teste')['saque'];
         $this->assertSame(IndicacaoSaque::STATUS_SOLICITADO, $saque->status);
 
@@ -524,7 +537,7 @@ class IndicacaoSaqueAutomaticoTest extends TestCase
     public function test_rota_de_transferencia_exige_admin(): void
     {
         $this->fakeTransferenciaOk();
-        $this->comBonusLiberado(1000.00);
+        $this->comBonusLiberado(600.00);
         $saque = $this->saques->solicitar($this->indicador, 'destino@pix.teste')['saque'];
 
         $this->post(route('admin.indicacoes.saques.transferir', $saque->id))

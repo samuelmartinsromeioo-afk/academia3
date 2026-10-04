@@ -16,10 +16,14 @@ use Illuminate\Support\Facades\Log;
  * Regras do cupom de indicação: validar o código digitado no cadastro, registrar
  * a indicação, emitir o código pessoal de cada usuário e APURAR o revenue share.
  *
- * O bônus é `config('indicacao.percentual')` (10%) de tudo o que o indicado
- * faturar na plataforma durante `config('indicacao.janela_dias')` (35) dias
+ * O bônus é `config('indicacao.percentual')` (10%) da COMISSÃO QUE A PLATAFORMA
+ * GANHOU com o indicado durante `config('indicacao.janela_dias')` (35) dias
  * contados da APROVAÇÃO dele, e só pode ser sacado depois que essa janela fecha —
  * com a meta de alunos também batida.
+ *
+ * É 10% dos 10%, não 10% do bruto: numa venda de R$ 2.500 a plataforma ganha
+ * R$ 250 e o indicador leva R$ 25 disso. O bônus sai sempre de dentro da
+ * comissão, nunca do repasse do profissional nem de dinheiro que não entrou.
  *
  * A apuração é por VARREDURA, não por gancho no fluxo de pagamento. Isso é
  * deliberado: a receita entra por muitos caminhos (pagarSucesso, webhook do
@@ -225,7 +229,10 @@ class CupomService
                     ['origem' => $receita['origem']],
                     [
                         'cupom_uso_id' => $uso->id,
+                        // base_valor = comissão da plataforma (o que rende o bônus);
+                        // bruto_valor = o que o indicado faturou, só para o extrato.
                         'base_valor'   => $receita['base'],
+                        'bruto_valor'  => $receita['bruto'],
                         'percentual'   => $percentual,
                         'valor'        => $valor,
                         'ocorreu_em'   => $receita['em'],
@@ -253,12 +260,16 @@ class CupomService
 
     /**
      * As receitas do indicado dentro da janela, normalizadas em
-     * ['origem' => chave idempotente, 'base' => bruto, 'em' => quando].
+     * ['origem' => chave idempotente, 'base' => comissão, 'bruto' => bruto, 'em' => quando].
      *
-     * A base é o FATURAMENTO BRUTO (`payments.amount_total`), não a comissão da
-     * plataforma — ver a nota em config/indicacao.php sobre o que isso custa.
+     * A BASE é a COMISSÃO DA PLATAFORMA (`payments.company_fee`), não o
+     * faturamento bruto do indicado. O bônus é um percentual do que a SnrFit
+     * ganhou, então ele nunca pode passar do que entrou — ver config/indicacao.php.
      *
-     * @return array<int, array{origem:string, base:float, em:mixed}>
+     * `bruto` acompanha só para o extrato poder mostrar a conta inteira
+     * (faturou → comissão → sua parte); não entra em nenhum cálculo.
+     *
+     * @return array<int, array{origem:string, base:float, bruto:float, em:mixed}>
      */
     private function receitasNaJanela(CupomUso $uso, Model $indicado): array
     {
@@ -285,12 +296,15 @@ class CupomService
             ->where($coluna, $indicado->getKey())
             ->whereIn('status', Cupom::STATUS_PAGAMENTO_VALIDO)
             ->whereRaw('COALESCE(paid_at, created_at) BETWEEN ? AND ?', [$inicio, $fim])
-            ->get(['id', 'amount_total', 'paid_at', 'created_at']);
+            ->get(['id', 'amount_total', 'company_fee', 'paid_at', 'created_at']);
 
         foreach ($pagamentos as $pagamento) {
+            $bruto = (float) $pagamento->amount_total;
+
             $receitas[] = [
                 'origem' => 'payment:' . $pagamento->id,
-                'base'   => (float) $pagamento->amount_total,
+                'base'   => $this->comissao($bruto, $pagamento->company_fee),
+                'bruto'  => $bruto,
                 'em'     => $pagamento->paid_at ?? $pagamento->created_at,
             ];
         }
@@ -304,9 +318,14 @@ class CupomService
                 ->get(['id', 'valor', 'pago_em']);
 
             foreach ($cobrancas as $cobranca) {
+                $bruto = (float) $cobranca->valor;
+
                 $receitas[] = [
                     'origem' => 'nutri_cobranca:' . $cobranca->id,
-                    'base'   => (float) $cobranca->valor,
+                    // nutri_cobrancas não tem coluna de comissão: aqui a comissão
+                    // é sempre derivada da taxa do split.
+                    'base'   => $this->comissao($bruto, null),
+                    'bruto'  => $bruto,
                     'em'     => $cobranca->pago_em,
                 ];
             }
@@ -315,7 +334,32 @@ class CupomService
         return $receitas;
     }
 
-    /** Percentual vigente, preso em [0, 1] para um config errado não virar bônus absurdo. */
+    /**
+     * A comissão da plataforma naquela receita — a base do bônus.
+     *
+     * Prefere o valor REGISTRADO (`payments.company_fee`), que é o que a
+     * plataforma de fato apurou naquela cobrança. Só deriva da taxa do split
+     * quando não há registro (nutri_cobrancas, que não tem a coluna) ou quando o
+     * registrado é absurdo — zero/negativo com bruto positivo, ou maior que o
+     * próprio bruto, sinal de linha legada ou erro operacional. Derivar é
+     * preferível a creditar zero: zero apagaria silenciosamente o bônus de
+     * alguém, e um valor acima do bruto pagaria mais do que entrou.
+     */
+    private function comissao(float $bruto, $comissaoRegistrada): float
+    {
+        $registrada = $comissaoRegistrada === null ? null : (float) $comissaoRegistrada;
+
+        if ($registrada !== null && $registrada > 0 && $registrada <= $bruto) {
+            return round($registrada, 2);
+        }
+
+        return round($bruto * AsaasService::feeRate(), 2);
+    }
+
+    /**
+     * Percentual vigente, preso em [0, 1] para um config errado não virar bônus
+     * absurdo. Incide sobre a COMISSÃO, não sobre o bruto (ver config/indicacao.php).
+     */
     private function percentual(): float
     {
         return max(0.0, min(1.0, (float) config('indicacao.percentual', 0.10)));

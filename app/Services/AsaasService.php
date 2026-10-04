@@ -29,6 +29,18 @@ class AsaasService
     public const SPLIT_RATE = 0.90;
 
     /**
+     * Fração do bruto que FICA com a plataforma (a comissão). É derivada de
+     * SPLIT_RATE, não um segundo número: mexer no split move as duas pontas
+     * juntas e nenhuma cópia fica para trás.
+     *
+     * O `round` existe porque 1 - 0.90 em ponto flutuante dá 0.09999999999999998.
+     */
+    public static function feeRate(): float
+    {
+        return round(1 - self::SPLIT_RATE, 6);
+    }
+
+    /**
      * Valor bruto mínimo de uma cobrança. Abaixo disso o split por fixedValue
      * (90% do bruto) pode superar o líquido (bruto − taxa Asaas) e a Asaas
      * recusaria a cobrança. Ver garantirValorMinimo() e montarSplit().
@@ -128,8 +140,12 @@ class AsaasService
     }
 
     /** Valores gravados localmente na tabela payments (bruto, comissão, repasse). */
-    public function calculateSplit(float $amountTotal, float $feeRate = 0.10): array
+    public function calculateSplit(float $amountTotal, ?float $feeRate = null): array
     {
+        // Sem argumento, usa a taxa derivada de SPLIT_RATE — antes havia aqui um
+        // 0.10 literal, que era a segunda cópia da mesma regra.
+        $feeRate ??= self::feeRate();
+
         $companyFee = round($amountTotal * $feeRate, 2);
         $trainerAmount = round($amountTotal - $companyFee, 2);
 

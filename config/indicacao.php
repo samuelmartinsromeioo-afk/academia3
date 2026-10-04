@@ -11,33 +11,32 @@
  *
  * ─── A BASE DE CÁLCULO (leia antes de mexer em `percentual`) ────────────────
  *
- * A base é o VALOR BRUTO GERADO pela conta indicada na plataforma — o que os
- * alunos dela pagaram, `payments.amount_total`, antes de qualquer split. NÃO é
- * o que o profissional leva para casa, e NÃO é a comissão da plataforma.
+ * A base é a COMISSÃO QUE A PLATAFORMA GANHOU com a conta indicada
+ * (`payments.company_fee`) — ou seja, são 10% DOS 10%, não 10% do valor cheio.
+ *
+ * A base NÃO é o faturamento bruto do indicado, NÃO é o que o profissional
+ * leva para casa, e o bônus NUNCA sai do repasse dele.
  *
  * Com os números de hoje (split 90/10, `percentual` 0.10), uma conta indicada
- * que gera R$ 2.500,00 na janela:
+ * que fatura R$ 2.500,00 na janela:
  *
- *   Bruto gerado pelo indicado ....... R$ 2.500,00   <- a BASE do cálculo
- *   Vai para o profissional (90%) .... R$ 2.250,00   (split do marketplace, intacto)
- *   Comissão da plataforma (10%) ..... R$   250,00
- *   Bônus de quem indicou (10%) ...... R$   250,00
+ *   Bruto faturado pelo indicado ..... R$ 2.500,00   (não é a base)
+ *   Vai para o profissional (90%) .... R$ 2.250,00   (split intacto, nada sai daqui)
+ *   Comissão da plataforma (10%) ..... R$   250,00   <- a BASE do cálculo
+ *   Bônus de quem indicou (10% dela) . R$    25,00
+ *   Fica com a plataforma ............ R$   225,00
  *
- * ATENÇÃO: os dois últimos R$ 250,00 são O MESMO DINHEIRO, não duas quantias.
- * O bônus sai de dentro da comissão: com `percentual` igual aos 10% do split, a
- * plataforma arrecada R$ 250 e repassa R$ 250 ao indicador, ficando com LÍQUIDO
- * ZERO naquela conta durante os 35 dias. Ela não guarda R$ 250 E paga outros
- * R$ 250 — para isso acontecer o `percentual` teria de ser menor que 0.10 (ex.:
- * 0.05 deixaria R$ 125 para cada lado).
+ * Então o bônus equivale a 1% do bruto (10% de 10%), e a plataforma segue
+ * ganhando 9% do bruto na janela. Teto estrutural: como o bônus sai de dentro
+ * da comissão, ele não pode passar do que entrou — `percentual` em 1.0 seria o
+ * limite (comissão inteira), e é por isso que percentual() trava em [0, 1].
  *
- * Isso foi uma decisão de aquisição (o custo de trazer a conta é toda a margem
- * dos primeiros 35 dias, e depois da janela a comissão volta inteira), não um
- * descuido. `percentual` é o único número a mexer se a conta apertar — e mexer
- * nele muda quanto sobra para a plataforma na mesma proporção.
+ * `percentual` é o único número a mexer para alterar a divisão: 0.10 = R$ 25
+ * para o indicador e R$ 225 para a plataforma; 0.50 = R$ 125 para cada lado.
  */
 return [
-    // Fração do VALOR BRUTO gerado pelo indicado que vira bônus do indicador.
-    // Igual aos 10% do split = a plataforma fica no zero a zero na janela.
+    // Fração da COMISSÃO DA PLATAFORMA que vira bônus do indicador.
+    // 0.10 = 10% dos nossos 10% = 1% do bruto do indicado.
     'percentual' => (float) env('INDICACAO_PERCENTUAL', 0.10),
 
     // Tamanho da janela de apuração, em dias, a partir da aprovação do indicado.
@@ -51,6 +50,8 @@ return [
     'meta_alunos' => (int) env('INDICACAO_META_ALUNOS', 6),
 
     // Piso para pedir saque. Evita um pedido manual de centavos para o admin.
+    // Atenção à ordem de grandeza: como o bônus é 1% do bruto do indicado,
+    // R$ 20 aqui equivalem a R$ 2.000 faturados por ele dentro da janela.
     'saque_minimo' => (float) env('INDICACAO_SAQUE_MINIMO', 20.00),
 
     /*
@@ -81,18 +82,18 @@ return [
     // percentual mudar.
     'exemplo_base' => (float) env('INDICACAO_EXEMPLO_BASE', 2500.00),
 
-    // Copy do painel "Minhas indicações". :pct, :dias, :meta, :base e :bonus
-    // são substituídos.
+    // Copy do painel "Minhas indicações". :pct, :dias, :meta, :taxa, :base,
+    // :comissao e :bonus são substituídos.
     'painel' => [
         'titulo'  => 'Indique e ganhe',
-        'chamada' => 'Compartilhe seu código. Você recebe :pct de tudo o que cada profissional, academia, studio ou loja faturar na SnrFit nos primeiros :dias dias.',
+        'chamada' => 'Compartilhe seu código. Você recebe :pct da comissão que a SnrFit ganhar com cada profissional, academia, studio ou loja que entrar pelo seu código, nos primeiros :dias dias.',
 
-        // Explica SOBRE O QUE incidem os 10%. É a dúvida que mais aparece:
-        // o percentual é do valor cheio gerado, não do que o indicado leva.
+        // Explica SOBRE O QUE incidem os 10% — é a dúvida que mais aparece.
+        // O percentual é da comissão da plataforma, não do valor cheio.
         'base_titulo'   => 'Sobre qual valor incidem os :pct',
-        'base'          => 'Os :pct incidem sobre o valor CHEIO que a conta indicada gera na SnrFit — tudo o que os alunos dela pagaram pela plataforma, antes de qualquer repasse ou desconto. Não é :pct do que o profissional recebe no fim do mês, nem :pct do lucro da SnrFit.',
-        'base_exemplo'  => 'Um profissional que você indicou gera :base em pagamentos dentro da janela de :dias dias. O seu bônus é :bonus.',
-        'base_rodape'   => 'Mais abaixo, o extrato de cada indicação abre receita por receita: quanto o indicado faturou e quanto virou seu.',
+        'base'          => 'Os :pct incidem sobre a COMISSÃO DA SNRFIT, não sobre o valor cheio que o indicado fatura. De cada pagamento feito pela plataforma, :taxa fica com a SnrFit e o resto vai para o profissional — e é desses :taxa que sai o seu bônus. Nada do que você recebe sai do bolso de quem você indicou.',
+        'base_exemplo'  => 'Um profissional que entrou pelo seu código fatura :base na janela de :dias dias. A comissão da SnrFit nisso é :comissao, e o seu bônus é :bonus.',
+        'base_rodape'   => 'Mais abaixo, o extrato de cada indicação abre receita por receita: quanto o indicado faturou, quanto foi de comissão e quanto virou seu.',
         'regra'   => 'O bônus acumula durante os :dias dias seguintes à aprovação do indicado e fica disponível para saque quando a janela fecha — e desde que o indicado tenha :meta alunos com pagamento confirmado. Uma vez liberado, não volta atrás.',
         'aluno'   => 'Indicação de aluno entra no seu histórico, mas não gera bônus — o prêmio é por trazer profissionais e negócios.',
         'saque'   => 'O saque cai na chave Pix que você informar. Nada é liberado antes de a janela do indicado fechar.',

@@ -126,7 +126,10 @@
         <div class="stat">
             <div class="stat-label">Regra atual</div>
             <div class="stat-valor">{{ rtrim(rtrim(number_format($percentual * 100, 1, ',', '.'), '0'), ',') }}%</div>
-            <div class="stat-nota">do bruto do indicado em {{ $janelaDias }} dias · libera com {{ $meta }} alunos</div>
+            <div class="stat-nota">
+                da COMISSÃO da plataforma em {{ $janelaDias }} dias · libera com {{ $meta }} alunos
+                <br>≈ {{ rtrim(rtrim(number_format($percentual * \App\Services\AsaasService::feeRate() * 100, 2, ',', '.'), '0'), ',') }}% do bruto do indicado
+            </div>
         </div>
     </div>
 

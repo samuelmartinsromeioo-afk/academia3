@@ -112,7 +112,7 @@
         <li>Cada conta recebe um <strong>código de indicação próprio</strong>, pessoal e intransferível.</li>
         <li>Quem está se cadastrando pode informar o código de quem o indicou <strong>exclusivamente no momento do seu cadastro</strong>. Não há inclusão, troca ou retroação de código depois do cadastro concluído.</li>
         <li>Cada conta pode ser indicada <strong>uma única vez</strong>, de forma definitiva.</li>
-        <li>O bônus corresponde a um <strong>percentual do valor bruto</strong> efetivamente transacionado pela conta indicada na Plataforma durante uma <strong>janela de apuração</strong> contada a partir da <strong>aprovação do cadastro da conta indicada</strong> — vale dizer, um percentual do <strong>valor cheio gerado</strong> por essa conta na Plataforma, conforme definido e exemplificado na cláusula 8.5.</li>
+        <li>O bônus corresponde a um <strong>percentual da comissão auferida pela Plataforma</strong> nas transações realizadas pela conta indicada durante uma <strong>janela de apuração</strong> contada a partir da <strong>aprovação do cadastro da conta indicada</strong>. O bônus <strong>não</strong> é percentual do valor bruto transacionado e <strong>nada</strong> é descontado do valor repassado à conta indicada, conforme definido e exemplificado na cláusula 8.5.</li>
         <li>O percentual e o prazo da janela são os <strong>vigentes e informados na Plataforma na data da aprovação da conta indicada</strong>. Alterações posteriores aplicam-se apenas a indicações futuras e <strong>não retroagem</strong>.</li>
         <li>Encerrada a janela, o valor apurado é <strong>definitivo</strong>: receita gerada pela conta indicada após esse prazo não acresce o bônus.</li>
     </ul>
@@ -132,18 +132,25 @@
 
     <h3>8.5. Base de cálculo e ajustes</h3>
     @php
-        /* Percentual e exemplo saem do config (mesma fonte do painel), para o
-           texto legal não divergir da regra efetivamente aplicada no sistema. */
-        $pctIndic = (float) config('indicacao.percentual', 0.10);
-        $pctLabel = rtrim(rtrim(number_format($pctIndic * 100, 1, ',', '.'), '0'), ',') . '%';
-        $exBaseLegal = (float) config('indicacao.exemplo_base', 2500.00);
-        $exBonusLegal = round($exBaseLegal * $pctIndic, 2);
+        /* Percentual, taxa e exemplo saem do config e do AsaasService (mesma
+           fonte do painel), para o texto legal não divergir da regra que o
+           sistema efetivamente aplica. */
+        $pctIndic  = (float) config('indicacao.percentual', 0.10);
+        $taxaPlat  = \App\Services\AsaasService::feeRate();
+        $pctRotulo = fn ($f) => rtrim(rtrim(number_format($f * 100, 1, ',', '.'), '0'), ',') . '%';
+        $pctLabel  = $pctRotulo($pctIndic);
+        $taxaLabel = $pctRotulo($taxaPlat);
+
+        $exBaseLegal     = (float) config('indicacao.exemplo_base', 2500.00);
+        $exComissaoLegal = round($exBaseLegal * $taxaPlat, 2);
+        $exBonusLegal    = round($exComissaoLegal * $pctIndic, 2);
         $reais = fn ($v) => 'R$ ' . number_format((float) $v, 2, ',', '.');
     @endphp
     <div class="highlighted">
-        <p><strong>Definição da base.</strong> O percentual do bônus incide sobre o <strong>valor bruto total efetivamente pago</strong> pelos alunos, clientes ou pacientes da conta indicada, por meio da Plataforma, dentro da janela de apuração — isto é, sobre o <strong>valor cheio da transação, antes de qualquer repasse, split, comissão, taxa de meio de pagamento, desconto ou dedução</strong>.</p>
-        <p>Para afastar qualquer dúvida, a base de cálculo <strong>não é</strong>: (i) o valor líquido recebido pela conta indicada após o repasse; (ii) a comissão, margem ou receita da Plataforma; (iii) o faturamento da conta indicada obtido <strong>fora</strong> da Plataforma, por meio próprio ou de terceiros, que <strong>em nenhuma hipótese</strong> compõe a base.</p>
-        <p><strong>Exemplo meramente ilustrativo</strong>, considerando o percentual de {{ $pctLabel }} vigente nesta data: se a conta indicada receber, por meio da Plataforma e dentro da janela de apuração, o total de {{ $reais($exBaseLegal) }} em pagamentos confirmados, o bônus do participante que a indicou será de <strong>{{ $reais($exBonusLegal) }}</strong> ({{ $pctLabel }} de {{ $reais($exBaseLegal) }}). O exemplo não constitui promessa, estimativa ou garantia de ganho, observada a cláusula 8.10.</p>
+        <p><strong>Definição da base.</strong> O percentual do bônus incide <strong>exclusivamente sobre a comissão da Plataforma</strong> — isto é, sobre a parcela que remanesce para a Plataforma, a título de remuneração pela intermediação, em cada pagamento confirmado da conta indicada realizado por meio da Plataforma dentro da janela de apuração.</p>
+        <p>Para afastar qualquer dúvida, a base de cálculo <strong>não é</strong>: (i) o valor bruto ou cheio da transação; (ii) o faturamento da conta indicada; (iii) o valor repassado à conta indicada, do qual <strong>nada</strong> é deduzido para o pagamento do bônus; (iv) o faturamento da conta indicada obtido <strong>fora</strong> da Plataforma, por meio próprio ou de terceiros, que <strong>em nenhuma hipótese</strong> compõe a base.</p>
+        <p>Por decorrência, o bônus está <strong>estruturalmente limitado à comissão efetivamente auferida</strong> pela Plataforma na respectiva transação, não podendo em nenhuma hipótese excedê-la.</p>
+        <p><strong>Exemplo meramente ilustrativo</strong>, considerando o percentual de {{ $pctLabel }} e a comissão de intermediação de {{ $taxaLabel }} vigentes nesta data: se a conta indicada receber, por meio da Plataforma e dentro da janela de apuração, o total de {{ $reais($exBaseLegal) }} em pagamentos confirmados, a comissão da Plataforma será de {{ $reais($exComissaoLegal) }} e o bônus do participante que a indicou será de <strong>{{ $reais($exBonusLegal) }}</strong> ({{ $pctLabel }} de {{ $reais($exComissaoLegal) }}). O exemplo não constitui promessa, estimativa ou garantia de ganho, observada a cláusula 8.10.</p>
     </div>
     <ul>
         <li>A apuração é feita <strong>exclusivamente com base nos registros da Plataforma</strong>, que prevalecem para todos os efeitos em caso de divergência.</li>

@@ -274,10 +274,16 @@
          * `percentual` vigente — nunca escritos à mão aqui — para o exemplo não
          * passar a mentir no dia em que o percentual mudar.
          */
-        $exBase  = (float) config('indicacao.exemplo_base', 2500.00);
-        $exBonus = round($exBase * $percentual, 2);
+        $taxaPlataforma = \App\Services\AsaasService::feeRate();
+
+        $exBase     = (float) config('indicacao.exemplo_base', 2500.00);
+        $exComissao = round($exBase * $taxaPlataforma, 2);
+        $exBonus    = round($exComissao * $percentual, 2);
+
         $dinheiro = fn ($v) => 'R$ ' . number_format((float) $v, 2, ',', '.');
-        $pctTexto = rtrim(rtrim(number_format($percentual * 100, 1, ',', '.'), '0'), ',') . '%';
+        $pcts = fn ($f) => rtrim(rtrim(number_format($f * 100, 1, ',', '.'), '0'), ',') . '%';
+        $pctTexto  = $pcts($percentual);
+        $taxaTexto = $pcts($taxaPlataforma);
     @endphp
 
     <div class="base-calculo">
@@ -286,23 +292,27 @@
             {{ str_replace(':pct', $pctTexto, config('indicacao.painel.base_titulo')) }}
         </div>
 
-        <p>{{ str_replace(':pct', $pctTexto, config('indicacao.painel.base')) }}</p>
+        <p>{{ str_replace([':pct', ':taxa'], [$pctTexto, $taxaTexto], config('indicacao.painel.base')) }}</p>
 
         <div class="bc-exemplo">
             <div class="bc-cenario">
                 {{ str_replace(
-                    [':base', ':bonus', ':dias'],
-                    [$dinheiro($exBase), $dinheiro($exBonus), $janelaDias],
+                    [':base', ':comissao', ':bonus', ':dias'],
+                    [$dinheiro($exBase), $dinheiro($exComissao), $dinheiro($exBonus), $janelaDias],
                     config('indicacao.painel.base_exemplo')
                 ) }}
             </div>
             <ul class="bc-linhas">
                 <li>
-                    <span class="bc-rotulo">Os alunos dele pagaram, no total</span>
+                    <span class="bc-rotulo">O indicado faturou</span>
                     <span class="bc-valor">{{ $dinheiro($exBase) }}</span>
                 </li>
+                <li>
+                    <span class="bc-rotulo">Comissão da SnrFit ({{ $taxaTexto }} disso)</span>
+                    <span class="bc-valor">{{ $dinheiro($exComissao) }}</span>
+                </li>
                 <li class="bc-destaque">
-                    <span class="bc-rotulo">Seu bônus — {{ $pctTexto }} desse valor</span>
+                    <span class="bc-rotulo">Seu bônus — {{ $pctTexto }} da comissão</span>
                     <span class="bc-valor">{{ $dinheiro($exBonus) }}</span>
                 </li>
             </ul>
@@ -505,7 +515,8 @@
                                                 <tr>
                                                     <th>Data</th>
                                                     <th>Origem</th>
-                                                    <th>Faturou</th>
+                                                    <th>Indicado faturou</th>
+                                                    <th>Comissão SnrFit</th>
                                                     <th>Sua parte</th>
                                                 </tr>
                                             </thead>
@@ -514,17 +525,20 @@
                                                     <tr>
                                                         <td>{{ $credito->ocorreu_em?->format('d/m/Y') ?? '—' }}</td>
                                                         <td>{{ $credito->origemLabel() }}</td>
+                                                        {{-- Crédito anterior à coluna não tem o bruto guardado. --}}
+                                                        <td>{{ $credito->bruto_valor === null ? '—' : 'R$ ' . number_format((float) $credito->bruto_valor, 2, ',', '.') }}</td>
                                                         <td>R$ {{ number_format((float) $credito->base_valor, 2, ',', '.') }}</td>
                                                         <td>
                                                             <span class="valor-ok">R$ {{ number_format((float) $credito->valor, 2, ',', '.') }}</span>
                                                             <span class="prog-txt">
-                                                                ({{ rtrim(rtrim(number_format((float) $credito->percentual * 100, 1, ',', '.'), '0'), ',') }}%)
+                                                                ({{ $pcts((float) $credito->percentual) }} da comissão)
                                                             </span>
                                                         </td>
                                                     </tr>
                                                 @endforeach
                                                 <tr class="extrato-total">
                                                     <td colspan="2">Total</td>
+                                                    <td>R$ {{ number_format((float) $uso->creditos->sum('bruto_valor'), 2, ',', '.') }}</td>
                                                     <td>R$ {{ number_format((float) $uso->creditos->sum('base_valor'), 2, ',', '.') }}</td>
                                                     <td class="valor-ok">R$ {{ number_format((float) $uso->creditos->sum('valor'), 2, ',', '.') }}</td>
                                                 </tr>

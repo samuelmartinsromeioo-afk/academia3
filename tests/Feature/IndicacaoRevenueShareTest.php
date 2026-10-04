@@ -13,8 +13,9 @@ use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
 /**
- * Revenue share da indicação: 10% do que o indicado faturar em 35 dias contados
- * da aprovação, sacável só depois que a janela fecha e a meta de alunos é batida.
+ * Revenue share da indicação: 10% da COMISSÃO que a plataforma ganhar com o
+ * indicado em 35 dias contados da aprovação (10% dos 10%, não 10% do bruto),
+ * sacável só depois que a janela fecha e a meta de alunos é batida.
  *
  * O foco é o que dói se quebrar: o GATE DE DATA (não pagar antes da hora), a
  * IDEMPOTÊNCIA da apuração (não pagar duas vezes) e as travas do saque (não
@@ -141,7 +142,11 @@ class IndicacaoRevenueShareTest extends TestCase
         $this->assertTrue($uso->fresh()->janela_inicio->eq($inicioOriginal));
     }
 
-    public function test_apura_10_porcento_do_bruto_so_do_que_entrou_na_janela(): void
+    /**
+     * A conta inteira: de R$ 1.000 faturados, a comissão da plataforma é R$ 100
+     * e o indicador leva 10% DELA — R$ 10. É 10% dos 10%, não 10% do cheio.
+     */
+    public function test_apura_10_porcento_da_comissao_so_do_que_entrou_na_janela(): void
     {
         $uso = $this->aprovarHa(10);
 
@@ -157,8 +162,48 @@ class IndicacaoRevenueShareTest extends TestCase
             'status' => 'pending', 'paid_at' => now()->subDays(3),
         ]);
 
-        $this->assertEquals(100.00, $this->cupons->apurar($uso));
+        $this->assertEquals(10.00, $this->cupons->apurar($uso));
         $this->assertSame(1, $uso->fresh()->creditos()->count());
+
+        // O crédito guarda as duas pontas: a comissão (base) e o bruto (extrato).
+        $credito = $uso->fresh()->creditos()->first();
+        $this->assertEquals(100.00, $credito->base_valor, 'a base deve ser a comissão');
+        $this->assertEquals(1000.00, $credito->bruto_valor, 'o bruto acompanha só para exibir');
+    }
+
+    /**
+     * O bônus nunca pode passar da comissão: ele sai de dentro dela. Com o
+     * percentual no teto (1.0) o indicador leva a comissão inteira e nada além.
+     */
+    public function test_bonus_nunca_passa_da_comissao_da_plataforma(): void
+    {
+        config(['indicacao.percentual' => 1.0]);
+
+        $uso = $this->aprovarHa(10);
+        $this->faturar(1000.00, now()->subDays(5));
+
+        // 100% da comissão = R$ 100, e não R$ 1.000 do bruto.
+        $this->assertEquals(100.00, $this->cupons->apurar($uso));
+    }
+
+    /**
+     * Receita sem comissão registrada (nutri_cobrancas não tem a coluna, e linhas
+     * legadas podem ter zero) deriva a comissão da taxa do split em vez de
+     * creditar zero — zero apagaria o bônus de alguém silenciosamente.
+     */
+    public function test_comissao_ausente_e_derivada_em_vez_de_virar_zero(): void
+    {
+        $uso = $this->aprovarHa(10);
+
+        Payment::create([
+            'user_id' => $this->novoCliente('semfee@t.teste'),
+            'trainer_id' => $this->indicado->id, 'membership_id' => $this->pacoteId,
+            'amount_total' => 1000.00, 'company_fee' => 0, 'trainer_amount' => 1000.00,
+            'status' => 'succeeded', 'paid_at' => now()->subDays(3),
+        ]);
+
+        // Deriva 10% de 1.000 = 100 de comissão -> 10% dela = 10.
+        $this->assertEquals(10.00, $this->cupons->apurar($uso));
     }
 
     /** Reentrega de webhook / reapuração não pode creditar duas vezes. */
@@ -172,7 +217,7 @@ class IndicacaoRevenueShareTest extends TestCase
         $this->cupons->apurar($this->recarregar($uso));
 
         $this->assertSame(1, $uso->fresh()->creditos()->count());
-        $this->assertEquals(100.00, $uso->fresh()->bonus_valor);
+        $this->assertEquals(10.00, $uso->fresh()->bonus_valor);
     }
 
     // ── O gate de data ───────────────────────────────────────────────────
@@ -218,8 +263,8 @@ class IndicacaoRevenueShareTest extends TestCase
         $uso = $uso->fresh();
         $this->assertSame(CupomUso::STATUS_LIBERADO, $uso->status);
         $this->assertNotNull($uso->liberado_em);
-        // 6 alunos x R$ 1.000 = R$ 6.000 brutos -> 10% = R$ 600.
-        $this->assertEquals(600.00, $uso->bonus_valor);
+        // 6 alunos x R$ 1.000 = R$ 6.000 brutos -> comissão R$ 600 -> 10% = R$ 60.
+        $this->assertEquals(60.00, $uso->bonus_valor);
     }
 
     // ── Saque ────────────────────────────────────────────────────────────
@@ -339,7 +384,8 @@ class IndicacaoRevenueShareTest extends TestCase
             ->assertOk()
             ->assertSee('Indique e ganhe')
             ->assertSee('Janela de 35 dias')
-            ->assertSee('R$ 100,00');   // 10% do faturamento acumulado
+            // R$ 1.000 faturados -> comissão R$ 100 -> bônus acumulado R$ 10.
+            ->assertSee('R$ 10,00');
 
         // Agora com bônus liberado: aparece o formulário de saque.
         $this->indicado->update(['data_aprovacao' => now()->subDays(40)]);
@@ -373,19 +419,26 @@ class IndicacaoRevenueShareTest extends TestCase
             ->assertSee('Ver extrato')
             ->assertSee('2 receitas')
             ->assertSee('Pagamento na plataforma')
-            // Base de cada receita e a parte do indicador (10%).
-            ->assertSee('R$ 1.000,00')
-            ->assertSee('R$ 100,00')
+            // As três colunas abrem a conta inteira, receita por receita:
+            // faturado -> comissão da plataforma -> parte do indicador.
+            ->assertSee('Indicado faturou')
+            ->assertSee('Comissão SnrFit')
+            ->assertSee('Sua parte')
+            ->assertSee('R$ 1.000,00')  // faturou
+            ->assertSee('R$ 100,00')    // comissão
+            ->assertSee('R$ 10,00')     // 10% da comissão
             ->assertSee('R$ 250,50')
             ->assertSee('R$ 25,05')
-            // Totais: 1250,50 faturado -> 125,05 de bônus.
+            ->assertSee('R$ 2,51')
+            // Totais: 1.250,50 faturado -> 125,05 de comissão -> 12,51 de bônus.
             ->assertSee('R$ 1.250,50')
-            ->assertSee('R$ 125,05');
+            ->assertSee('R$ 125,05')
+            ->assertSee('R$ 12,51');
 
         // Janela aberta: o extrato avisa que o valor ainda pode crescer.
         $resp->assertSee('receita nova do indicado até lá ainda entra', false);
 
-        $this->assertEquals(125.05, $uso->fresh()->bonus_valor);
+        $this->assertEquals(12.51, $uso->fresh()->bonus_valor);
     }
 
     /** Indicação sem receita apurada não mostra extrato vazio. */
@@ -402,12 +455,12 @@ class IndicacaoRevenueShareTest extends TestCase
     // ── Sobre QUAL valor incidem os 10% ─────────────────────────────────
 
     /**
-     * A dúvida que o programa inteiro depende de não gerar: o percentual é do
-     * valor CHEIO que o indicado gera, não do que ele leva para casa nem da
-     * comissão da plataforma. Sem o exemplo numérico, "10% do que ele faturar"
-     * é lido de três maneiras diferentes.
+     * A dúvida que o programa inteiro depende de não gerar: o percentual é da
+     * COMISSÃO da plataforma, não do valor cheio que o indicado fatura. Sem a
+     * conta aberta, "10% do que ele faturar" é lido de três maneiras — e duas
+     * delas prometem dez vezes mais do que o programa paga.
      */
-    public function test_painel_explica_sobre_qual_valor_incide_o_percentual(): void
+    public function test_painel_explica_que_o_percentual_incide_na_comissao(): void
     {
         $this->aprovarHa(10);
 
@@ -415,32 +468,38 @@ class IndicacaoRevenueShareTest extends TestCase
             ->get(route('indicacoes.painel'))
             ->assertOk()
             ->assertSee('Sobre qual valor incidem os 10%')
-            // O que a base É.
-            ->assertSee('valor CHEIO que a conta indicada gera')
-            // E o que ela NÃO é — as duas leituras erradas, ditas de letra.
-            ->assertSee('do que o profissional recebe no fim do mês')
-            ->assertSee('do lucro da SnrFit')
-            // A conta fechada: 2.500 gerados -> 250 de bônus.
+            // O que a base É, e o que ela NÃO é.
+            ->assertSee('incidem sobre a COMISSÃO DA SNRFIT')
+            ->assertSee('não sobre o valor cheio que o indicado fatura')
+            // Ninguém paga o bônus do próprio bolso.
+            ->assertSee('Nada do que você recebe sai do bolso de quem você indicou')
+            // A conta inteira, nas três linhas: 2.500 -> 250 -> 25.
+            ->assertSee('O indicado faturou')
             ->assertSee('R$ 2.500,00')
-            ->assertSee('R$ 250,00');
+            ->assertSee('Comissão da SnrFit (10% disso)')
+            ->assertSee('R$ 250,00')
+            ->assertSee('Seu bônus — 10% da comissão')
+            ->assertSee('R$ 25,00');
     }
 
     /**
-     * O exemplo é calculado a partir do config, não escrito à mão na view. Se
-     * alguém baixar o percentual, um "R$ 250,00" fixo passaria a mentir para
-     * todo mundo no painel — e ninguém olha a view ao mexer no config.
+     * O exemplo é calculado de config x taxa do split, não escrito à mão na
+     * view. Um "R$ 25,00" fixo passaria a mentir para todo mundo no painel no
+     * dia em que alguém mexesse no percentual — e ninguém abre a view ao editar
+     * o config.
      */
     public function test_exemplo_do_painel_acompanha_o_percentual(): void
     {
-        config(['indicacao.percentual' => 0.05]);
+        config(['indicacao.percentual' => 0.50]);
         $this->aprovarHa(10);
 
         $this->withSession(['personal_id' => $this->indicador->id])
             ->get(route('indicacoes.painel'))
             ->assertOk()
-            ->assertSee('Sobre qual valor incidem os 5%')
-            ->assertSee('R$ 2.500,00')      // a base do exemplo não mudou
-            ->assertSee('R$ 125,00');       // 5% dela, recalculado
+            ->assertSee('Sobre qual valor incidem os 50%')
+            ->assertSee('R$ 2.500,00')      // o bruto do exemplo não mudou
+            ->assertSee('R$ 250,00')        // nem a comissão
+            ->assertSee('R$ 125,00');       // metade da comissão, recalculado
     }
 
     /** A mesma conta precisa estar no texto legal, não só no painel. */
@@ -449,14 +508,17 @@ class IndicacaoRevenueShareTest extends TestCase
         $this->get(route('termos'))
             ->assertOk()
             ->assertSee('8.5. Base de cálculo e ajustes')
-            ->assertSee('valor bruto total efetivamente pago')
-            ->assertSee('antes de qualquer repasse, split, comissão')
-            // Exclui explicitamente as duas leituras erradas.
-            ->assertSee('o valor líquido recebido pela conta indicada após o repasse')
-            ->assertSee('a comissão, margem ou receita da Plataforma')
-            // E traz o exemplo com os mesmos números do painel.
+            // A base, dita de forma juridicamente fechada.
+            ->assertSee('exclusivamente sobre a comissão da Plataforma')
+            ->assertSee('estruturalmente limitado à comissão efetivamente auferida')
+            // E as leituras erradas, excluídas uma a uma.
+            ->assertSee('o valor bruto ou cheio da transação')
+            ->assertSee('do qual')
+            ->assertSee('é deduzido para o pagamento do bônus')
+            // O exemplo com os mesmos números do painel.
             ->assertSee('R$ 2.500,00')
-            ->assertSee('R$ 250,00');
+            ->assertSee('R$ 250,00')
+            ->assertSee('R$ 25,00');
     }
 
     public function test_admin_de_saques_exige_sessao_de_admin(): void

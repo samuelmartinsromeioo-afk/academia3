@@ -89,7 +89,7 @@
     <p>Podemos suspender ou descredenciar o seu perfil em caso de violação destes Termos, qualificação irregular, reclamações graves ou reiteradas, fraude ou risco a alunos, sem prejuízo dos valores já devidos e das apurações cabíveis.</p>
 
     <h2 id="p11">11. PROGRAMA DE INDICAÇÃO</h2>
-    <p>Você recebe um código de indicação próprio e pode ganhar um <strong>bônus percentual</strong> sobre o que cada profissional indicado por você faturar na Plataforma durante a janela de apuração. As regras completas, as condições de saque e as vedações estão na <a href="{{ route('termos') }}#s8">cláusula 8 dos Termos gerais</a>, que você declara ter lido.</p>
+    <p>Você recebe um código de indicação próprio e pode ganhar um <strong>bônus percentual sobre a comissão da Plataforma</strong> nas transações de cada profissional indicado por você, durante a janela de apuração. O bônus <strong>não</strong> incide sobre o valor bruto transacionado e <strong>nada</strong> é descontado do valor repassado a quem você indicou. As regras completas, a definição exata da base de cálculo, as condições de saque e as vedações estão na <a href="{{ route('termos') }}#s8">cláusula 8 dos Termos gerais</a>, que você declara ter lido.</p>
     <div class="highlighted warn">
         <strong>O bônus só vira sacável com duas condições cumulativas:</strong> o encerramento da janela de apuração <strong>e</strong> o atingimento, pela conta indicada, do número mínimo de alunos com pagamento confirmado. Antes disso o valor exibido é <strong>mera expectativa</strong>, não crédito exigível. O bônus é concedido por <strong>liberalidade</strong>, não é remuneração e <strong>não cria vínculo</strong> de qualquer natureza com a Plataforma.
     </div>

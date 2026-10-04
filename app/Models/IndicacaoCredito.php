@@ -5,8 +5,14 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 
 /**
- * Uma linha do livro-caixa da indicação: `percentual` do faturamento de UMA
- * receita do indicado (um pagamento, uma consulta) que caiu dentro da janela.
+ * Uma linha do livro-caixa da indicação: `percentual` da COMISSÃO que a
+ * plataforma ganhou em UMA receita do indicado (um pagamento, uma consulta) que
+ * caiu dentro da janela.
+ *
+ * `base_valor` é a comissão da plataforma naquela receita — é sobre ela que o
+ * percentual incide. `bruto_valor` é o que o indicado faturou, guardado apenas
+ * para o extrato mostrar a conta inteira (faturou → comissão → sua parte); não
+ * entra em cálculo nenhum e é nulo nos créditos anteriores à coluna.
  *
  * Append-only de propósito. `origem` ("payment:123") é unique no banco e serve
  * de chave de idempotência: reapurar a mesma indicação, ou o Asaas reentregar o
@@ -22,16 +28,18 @@ class IndicacaoCredito extends Model
         'cupom_uso_id',
         'origem',
         'base_valor',
+        'bruto_valor',
         'percentual',
         'valor',
         'ocorreu_em',
     ];
 
     protected $casts = [
-        'base_valor' => 'decimal:2',
-        'percentual' => 'decimal:4',
-        'valor'      => 'decimal:2',
-        'ocorreu_em' => 'datetime',
+        'base_valor'  => 'decimal:2',
+        'bruto_valor' => 'decimal:2',
+        'percentual'  => 'decimal:4',
+        'valor'       => 'decimal:2',
+        'ocorreu_em'  => 'datetime',
     ];
 
     public function uso()
