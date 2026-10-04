@@ -96,6 +96,34 @@
         }
         .regra i { color:var(--primary); font-size:1.1rem; flex-shrink:0; margin-top:1px; }
 
+        /* "Sobre qual valor incidem os 10%" — a dúvida que mais aparece. */
+        .base-calculo {
+            background:rgba(124,255,0,.045); border:1px solid rgba(124,255,0,.28);
+            border-radius:14px; padding:16px 18px; margin-bottom:22px;
+        }
+        .base-calculo .bc-titulo {
+            display:flex; align-items:center; gap:9px;
+            font-size:.72rem; font-weight:700; text-transform:uppercase; letter-spacing:1.1px;
+            color:var(--primary); margin-bottom:11px;
+        }
+        .base-calculo p { font-size:.84rem; color:var(--text-dim); line-height:1.6; margin:0; }
+        .base-calculo .bc-rodape { font-size:.74rem; margin-top:11px; opacity:.75; }
+        .bc-exemplo {
+            margin-top:13px; padding:13px 15px; border-radius:11px;
+            background:rgba(0,0,0,.25); border:1px solid var(--border);
+        }
+        .bc-exemplo .bc-cenario { font-size:.78rem; color:var(--text-dim); line-height:1.55; }
+        .bc-linhas { list-style:none; margin:11px 0 0; padding:0; }
+        .bc-linhas li {
+            display:flex; justify-content:space-between; align-items:baseline; gap:14px;
+            font-size:.82rem; padding:6px 0; border-bottom:1px solid var(--border);
+        }
+        .bc-linhas li:last-child { border-bottom:none; }
+        .bc-linhas .bc-rotulo { color:var(--text-dim); }
+        .bc-linhas .bc-valor { font-weight:700; white-space:nowrap; }
+        .bc-linhas li.bc-destaque .bc-rotulo { color:var(--text-main); }
+        .bc-linhas li.bc-destaque .bc-valor { color:var(--primary); }
+
         .prog {
             width:92px; height:5px; border-radius:99px; overflow:hidden;
             background:rgba(255,255,255,.1); margin-bottom:5px;
@@ -238,6 +266,49 @@
             <div class="stat-valor">R$ {{ number_format($sacado, 2, ',', '.') }}</div>
             <div class="stat-nota">{{ $total }} indicação(ões) liberada(s) no total</div>
         </div>
+    </div>
+
+    @php
+        /*
+         * Exemplo numérico da base de cálculo. Os valores saem do config e do
+         * `percentual` vigente — nunca escritos à mão aqui — para o exemplo não
+         * passar a mentir no dia em que o percentual mudar.
+         */
+        $exBase  = (float) config('indicacao.exemplo_base', 2500.00);
+        $exBonus = round($exBase * $percentual, 2);
+        $dinheiro = fn ($v) => 'R$ ' . number_format((float) $v, 2, ',', '.');
+        $pctTexto = rtrim(rtrim(number_format($percentual * 100, 1, ',', '.'), '0'), ',') . '%';
+    @endphp
+
+    <div class="base-calculo">
+        <div class="bc-titulo">
+            <i class="ph-bold ph-calculator"></i>
+            {{ str_replace(':pct', $pctTexto, config('indicacao.painel.base_titulo')) }}
+        </div>
+
+        <p>{{ str_replace(':pct', $pctTexto, config('indicacao.painel.base')) }}</p>
+
+        <div class="bc-exemplo">
+            <div class="bc-cenario">
+                {{ str_replace(
+                    [':base', ':bonus', ':dias'],
+                    [$dinheiro($exBase), $dinheiro($exBonus), $janelaDias],
+                    config('indicacao.painel.base_exemplo')
+                ) }}
+            </div>
+            <ul class="bc-linhas">
+                <li>
+                    <span class="bc-rotulo">Os alunos dele pagaram, no total</span>
+                    <span class="bc-valor">{{ $dinheiro($exBase) }}</span>
+                </li>
+                <li class="bc-destaque">
+                    <span class="bc-rotulo">Seu bônus — {{ $pctTexto }} desse valor</span>
+                    <span class="bc-valor">{{ $dinheiro($exBonus) }}</span>
+                </li>
+            </ul>
+        </div>
+
+        <p class="bc-rodape">{{ config('indicacao.painel.base_rodape') }}</p>
     </div>
 
     <div class="regra">

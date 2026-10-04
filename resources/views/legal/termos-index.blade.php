@@ -112,7 +112,7 @@
         <li>Cada conta recebe um <strong>código de indicação próprio</strong>, pessoal e intransferível.</li>
         <li>Quem está se cadastrando pode informar o código de quem o indicou <strong>exclusivamente no momento do seu cadastro</strong>. Não há inclusão, troca ou retroação de código depois do cadastro concluído.</li>
         <li>Cada conta pode ser indicada <strong>uma única vez</strong>, de forma definitiva.</li>
-        <li>O bônus corresponde a um <strong>percentual do valor bruto</strong> efetivamente transacionado pela conta indicada na Plataforma durante uma <strong>janela de apuração</strong> contada a partir da <strong>aprovação do cadastro da conta indicada</strong>.</li>
+        <li>O bônus corresponde a um <strong>percentual do valor bruto</strong> efetivamente transacionado pela conta indicada na Plataforma durante uma <strong>janela de apuração</strong> contada a partir da <strong>aprovação do cadastro da conta indicada</strong> — vale dizer, um percentual do <strong>valor cheio gerado</strong> por essa conta na Plataforma, conforme definido e exemplificado na cláusula 8.5.</li>
         <li>O percentual e o prazo da janela são os <strong>vigentes e informados na Plataforma na data da aprovação da conta indicada</strong>. Alterações posteriores aplicam-se apenas a indicações futuras e <strong>não retroagem</strong>.</li>
         <li>Encerrada a janela, o valor apurado é <strong>definitivo</strong>: receita gerada pela conta indicada após esse prazo não acresce o bônus.</li>
     </ul>
@@ -131,6 +131,20 @@
     <p>A indicação de contas de <strong>Aluno/Usuário</strong> é registrada apenas como histórico e <strong>não gera bônus algum</strong>, por não haver, nesse perfil, receita intermediada nem conquista de alunos. O Programa remunera exclusivamente a indicação de <strong>profissionais e estabelecimentos</strong> que venham a transacionar na Plataforma.</p>
 
     <h3>8.5. Base de cálculo e ajustes</h3>
+    @php
+        /* Percentual e exemplo saem do config (mesma fonte do painel), para o
+           texto legal não divergir da regra efetivamente aplicada no sistema. */
+        $pctIndic = (float) config('indicacao.percentual', 0.10);
+        $pctLabel = rtrim(rtrim(number_format($pctIndic * 100, 1, ',', '.'), '0'), ',') . '%';
+        $exBaseLegal = (float) config('indicacao.exemplo_base', 2500.00);
+        $exBonusLegal = round($exBaseLegal * $pctIndic, 2);
+        $reais = fn ($v) => 'R$ ' . number_format((float) $v, 2, ',', '.');
+    @endphp
+    <div class="highlighted">
+        <p><strong>Definição da base.</strong> O percentual do bônus incide sobre o <strong>valor bruto total efetivamente pago</strong> pelos alunos, clientes ou pacientes da conta indicada, por meio da Plataforma, dentro da janela de apuração — isto é, sobre o <strong>valor cheio da transação, antes de qualquer repasse, split, comissão, taxa de meio de pagamento, desconto ou dedução</strong>.</p>
+        <p>Para afastar qualquer dúvida, a base de cálculo <strong>não é</strong>: (i) o valor líquido recebido pela conta indicada após o repasse; (ii) a comissão, margem ou receita da Plataforma; (iii) o faturamento da conta indicada obtido <strong>fora</strong> da Plataforma, por meio próprio ou de terceiros, que <strong>em nenhuma hipótese</strong> compõe a base.</p>
+        <p><strong>Exemplo meramente ilustrativo</strong>, considerando o percentual de {{ $pctLabel }} vigente nesta data: se a conta indicada receber, por meio da Plataforma e dentro da janela de apuração, o total de {{ $reais($exBaseLegal) }} em pagamentos confirmados, o bônus do participante que a indicou será de <strong>{{ $reais($exBonusLegal) }}</strong> ({{ $pctLabel }} de {{ $reais($exBaseLegal) }}). O exemplo não constitui promessa, estimativa ou garantia de ganho, observada a cláusula 8.10.</p>
+    </div>
     <ul>
         <li>A apuração é feita <strong>exclusivamente com base nos registros da Plataforma</strong>, que prevalecem para todos os efeitos em caso de divergência.</li>
         <li>Compõem a base apenas os pagamentos <strong>efetivamente confirmados</strong> dentro da janela. <strong>Não</strong> compõem: valores pendentes, recusados, cancelados, estornados, em disputa, nem vínculos ou cadastros criados manualmente sem pagamento correspondente.</li>

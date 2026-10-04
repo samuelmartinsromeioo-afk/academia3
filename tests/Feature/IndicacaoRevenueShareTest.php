@@ -399,6 +399,66 @@ class IndicacaoRevenueShareTest extends TestCase
             ->assertDontSee('Ver extrato');
     }
 
+    // ── Sobre QUAL valor incidem os 10% ─────────────────────────────────
+
+    /**
+     * A dúvida que o programa inteiro depende de não gerar: o percentual é do
+     * valor CHEIO que o indicado gera, não do que ele leva para casa nem da
+     * comissão da plataforma. Sem o exemplo numérico, "10% do que ele faturar"
+     * é lido de três maneiras diferentes.
+     */
+    public function test_painel_explica_sobre_qual_valor_incide_o_percentual(): void
+    {
+        $this->aprovarHa(10);
+
+        $this->withSession(['personal_id' => $this->indicador->id])
+            ->get(route('indicacoes.painel'))
+            ->assertOk()
+            ->assertSee('Sobre qual valor incidem os 10%')
+            // O que a base É.
+            ->assertSee('valor CHEIO que a conta indicada gera')
+            // E o que ela NÃO é — as duas leituras erradas, ditas de letra.
+            ->assertSee('do que o profissional recebe no fim do mês')
+            ->assertSee('do lucro da SnrFit')
+            // A conta fechada: 2.500 gerados -> 250 de bônus.
+            ->assertSee('R$ 2.500,00')
+            ->assertSee('R$ 250,00');
+    }
+
+    /**
+     * O exemplo é calculado a partir do config, não escrito à mão na view. Se
+     * alguém baixar o percentual, um "R$ 250,00" fixo passaria a mentir para
+     * todo mundo no painel — e ninguém olha a view ao mexer no config.
+     */
+    public function test_exemplo_do_painel_acompanha_o_percentual(): void
+    {
+        config(['indicacao.percentual' => 0.05]);
+        $this->aprovarHa(10);
+
+        $this->withSession(['personal_id' => $this->indicador->id])
+            ->get(route('indicacoes.painel'))
+            ->assertOk()
+            ->assertSee('Sobre qual valor incidem os 5%')
+            ->assertSee('R$ 2.500,00')      // a base do exemplo não mudou
+            ->assertSee('R$ 125,00');       // 5% dela, recalculado
+    }
+
+    /** A mesma conta precisa estar no texto legal, não só no painel. */
+    public function test_termos_definem_e_exemplificam_a_base_de_calculo(): void
+    {
+        $this->get(route('termos'))
+            ->assertOk()
+            ->assertSee('8.5. Base de cálculo e ajustes')
+            ->assertSee('valor bruto total efetivamente pago')
+            ->assertSee('antes de qualquer repasse, split, comissão')
+            // Exclui explicitamente as duas leituras erradas.
+            ->assertSee('o valor líquido recebido pela conta indicada após o repasse')
+            ->assertSee('a comissão, margem ou receita da Plataforma')
+            // E traz o exemplo com os mesmos números do painel.
+            ->assertSee('R$ 2.500,00')
+            ->assertSee('R$ 250,00');
+    }
+
     public function test_admin_de_saques_exige_sessao_de_admin(): void
     {
         $this->comBonusLiberado();
