@@ -17,6 +17,7 @@ use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\Rule;
 
 /**
  * Exploração e contratação pelo ALUNO — espelha Cadastro\ClienteController
@@ -144,6 +145,9 @@ class ExplorarController extends Controller
             'cidade' => $p->cidade,
             'estado' => $p->estado,
             'cref' => $p->cref,
+            // Presencial / Online / Híbrido — o app precisa para exibir e filtrar,
+            // como a vitrine web já faz.
+            'modalidade' => $p->modalidade,
             'valor_secao' => $p->valor_secao !== null ? (float) $p->valor_secao : null,
             'media_avaliacao' => $p->avaliacoes->avg('nota') ? round($p->avaliacoes->avg('nota'), 1) : null,
             'total_avaliacoes' => $p->avaliacoes->count(),
@@ -440,6 +444,11 @@ class ExplorarController extends Controller
                 'id' => $personal->id,
                 'nome' => $personal->nome,
                 'foto' => $this->urlPublica($personal->foto),
+                'modalidade' => $personal->modalidade,
+                // Quais modalidades o app deve oferecer na reserva: uma só quando
+                // o profissional atende de um jeito (não pergunte), duas quando é
+                // Híbrido. Mesma regra do servidor, para o app não reimplementar.
+                'modalidades_disponiveis' => Agenda::modalidadesDisponiveis($personal->modalidade),
                 'valor_secao' => $personal->valor_secao !== null ? (float) $personal->valor_secao : null,
             ], $this->blocoAvaliacoes('personal', $personal, $cliente)),
             'pacotes' => $pacotes->map(fn ($p) => [
@@ -518,7 +527,19 @@ class ExplorarController extends Controller
             'data' => 'required|date',
             'horario_inicio' => 'required',
             'horario_fim' => 'required',
+            // A04 — allowlist em vez de string livre: nunca deixar o cliente
+            // escrever direto numa coluna de regra de negócio.
+            'modalidade' => ['nullable', Rule::in(Agenda::MODALIDADES)],
         ]);
+
+        // A compatibilidade com o que o profissional atende é regra de negócio e
+        // é checada no servidor: um app alterado não consegue marcar "Online"
+        // com quem só atende presencial.
+        $personalDaAula = Personal::find($request->personal_id);
+
+        if (! Agenda::modalidadeValida($request->modalidade, $personalDaAula?->modalidade)) {
+            return response()->json(['error' => 'Este profissional não atende nessa modalidade.'], 422);
+        }
 
         $conflito = Agenda::where('personal_id', $request->personal_id)
             ->where('data', $request->data)
@@ -541,6 +562,7 @@ class ExplorarController extends Controller
             'hora_inicio' => $request->horario_inicio,
             'hora_fim' => $request->horario_fim,
             'academia_nome' => $request->academia_nome,
+            'modalidade' => $request->modalidade,
         ]);
 
         return response()->json(['success' => true, 'message' => 'Horário agendado com sucesso!'], 201);
@@ -560,7 +582,14 @@ class ExplorarController extends Controller
             'hora_inicio' => 'required|date_format:H:i',
             'hora_fim' => 'required|date_format:H:i',
             'academia_nome' => 'nullable|string|max:255',
+            'modalidade' => ['nullable', Rule::in(Agenda::MODALIDADES)],
         ]);
+
+        $personalDoPacote = Personal::find($request->personal_id);
+
+        if (! Agenda::modalidadeValida($request->modalidade, $personalDoPacote?->modalidade)) {
+            return response()->json(['error' => 'Este profissional não atende nessa modalidade.'], 422);
+        }
 
         $dias = $request->dias_selecionados;
         if (count($dias) > (int) $request->frequencia_pacote) {
@@ -579,6 +608,7 @@ class ExplorarController extends Controller
             'dias_selecionados' => json_encode($dias),
             'academia_nome' => $request->academia_nome,
             'valor_pacote' => $request->valor_pacote,
+            'modalidade' => $request->modalidade,
         ]);
 
         return response()->json(['success' => true, 'message' => 'Pacote contratado! Suas aulas foram agendadas. 🎉'], 201);

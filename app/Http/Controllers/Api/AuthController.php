@@ -137,6 +137,9 @@ class AuthController extends Controller
             'email' => 'required|email|max:255|unique:clientes,email',
             'senha' => 'required|string|min:8|max:255',
             'whatsapp' => 'nullable|string|max:20',
+            // Preferência de atendimento do aluno. Allowlist (A04): "Híbrido" é
+            // oferta do profissional, não desejo de quem procura, então não entra.
+            'modalidade_preferida' => ['nullable', \Illuminate\Validation\Rule::in(config('textos.profissional.modalidades_aluno'))],
             'aceita_termos' => 'required|accepted',
             'device_name' => 'nullable|string|max:100',
         ], [
@@ -149,6 +152,7 @@ class AuthController extends Controller
             'email' => $validated['email'],
             'senha' => Hash::make($validated['senha']),
             'whatsapp' => $validated['whatsapp'] ?? null,
+            'modalidade_preferida' => $validated['modalidade_preferida'] ?? null,
             'aceita_termos' => true,
             'data_aceitacao_termos' => now(),
             'ip_aceitacao_termos' => $request->ip(),

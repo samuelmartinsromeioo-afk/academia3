@@ -220,7 +220,7 @@ OWASP notes for this module (keep them if you touch it): the amount is never acc
 
 Two test files pin all of it: `tests/Feature/IndicacaoRevenueShareTest.php` (accrual, the date gate, "cannot withdraw before the window closes", "a posted `valor` is ignored") and `tests/Feature/IndicacaoSaqueAutomaticoTest.php` (ceilings, balance aborts, and the webhook refusing a tampered value, a changed Pix key, an unknown reference and a replayed transfer — all with `Http::fake`, never the real API).
 
-### Modalidade — the two-sided field (offer vs. want)
+### Modalidade — offer vs. want vs. this class
 
 Two columns, deliberately **different domains**:
 
@@ -249,15 +249,17 @@ The choice must survive the **whole payment**: package classes are created after
 
 In the student's modals the question is rendered by `montarEscolhaModalidade()` **only for `Híbrido`** — a professional with a single modality gets an informational line instead, because asking would be noise. The payment buttons are gated until the choice exists (`atualizarBotao()` for the package, `modalidadeAvulsaPendente()` for the single class — the latter guards inside the entry functions rather than toggling `disabled`, so it covers every caller). The personal's dashboard agenda card shows **AULA ONLINE** in brand color, which is the whole point of collecting it.
 
-Pinned by `tests/Feature/ModalidadePersonalTest.php`, `tests/Feature/PreferenciaModalidadeAlunoTest.php` and `tests/Feature/ModalidadeDaAulaTest.php`.
+Pinned by `tests/Feature/ModalidadePersonalTest.php`, `tests/Feature/PreferenciaModalidadeAlunoTest.php` and `tests/Feature/ModalidadeDaAulaTest.php`. When asserting on the vitrine cards, note that the filter pills reuse the same icons — count `<div class="card-meta">` + icon, never the bare icon, or you get a false positive (that bit me twice).
 
-**Known gap: the mobile API has no parity yet** (deliberate — to be done in one pass). The web side is complete; `routes/api.php` still ignores modalidade in four places:
-1. `Api\AuthController@register` — doesn't accept `modalidade_preferida` (student signup).
-2. `Api\RegisterController@personal` — doesn't accept `modalidade` (professional signup).
-3. `Api\PerfilController@update` — neither field is editable from the app.
-4. The app's booking endpoints (single class and package) don't send `modalidade`, so a reservation made in the app lands with it **null** even for a `Híbrido` professional — the exact case the web flow now solves. The server-side rules (`Agenda::modalidadeResolvida`/`modalidadeValida`) already apply there, so nothing breaks; the value just stays unset.
+#### Mobile API parity
 
-Also missing from the API payloads: `personals.modalidade` isn't in the explore/detail responses, so the app can't show or filter by it. When asserting on the cards, note that the filter pills reuse the same icons — count `<div class="card-meta">` + icon, never the bare icon, or you get a false positive (that bit me twice).
+The app reaches all three levels (it used to reach none): `Api\AuthController@register` takes `modalidade_preferida`, `Api\RegisterController@personal` takes `modalidade`, `Api\PerfilController@update` edits both (the personal's rules allow `Híbrido`, the cliente's don't — the two `Rule::in()` allowlists read the same two configs as the web), and `Api\ExplorarController`'s `agendar`/`pacotes/contratar` accept `modalidade` and refuse an incompatible one with **422**. `personals.modalidade` is in the explore payload, and `pacotesDoPersonal` also ships `modalidades_disponiveis` (`Agenda::modalidadesDisponiveis()`) so the app asks the question only when there is one, without reimplementing the rule.
+
+`PerfilController@show` derives its field list from `array_keys($regras)`, so adding a rule exposes the field in the GET automatically — that's why the new fields appear in both without a second edit.
+
+**`ClienteController@agendarAulaAvulsaInterno()` is the shared door** of the web's **paid** single-class path (`PaymentController`, after confirmation) and the app's booking endpoint. The resolution lives *there*, not only in `reservarHorario()`: when it didn't, the paid avulsa was silently dropping the student's choice on the web too — the API work is what surfaced it. Anything added to one of those two callers must pass `modalidade` in the booking array, and the method revalidates it against the professional's current offer, discarding an incompatible value to `null` with a `Log::warning` rather than writing it.
+
+Pinned by `tests/Feature/ModalidadeApiTest.php`, including the shared-door case.
 
 ### Terms of Use — versioning and re-acceptance
 

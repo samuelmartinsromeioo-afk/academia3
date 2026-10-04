@@ -842,6 +842,30 @@ class ClienteController extends Controller
             return;
         }
 
+        /*
+         * Modalidade da aula. Este método é a porta comum do caminho PAGO do web
+         * (PaymentController, após a confirmação) e do app, por isso a resolução
+         * vive aqui e não só em reservarHorario() — senão a aula avulsa paga nasce
+         * sem modalidade e o personal volta a não saber como atender.
+         *
+         * Revalidado contra a oferta atual do profissional: o booking_data é
+         * persistido e ele pode ter mudado de modalidade entre o pagamento e a
+         * confirmação. Valor incompatível é descartado (vira null) em vez de
+         * gravado — melhor "não informado" que uma afirmação errada.
+         */
+        $modalidadePedida = $booking['modalidade'] ?? null;
+
+        if (! Agenda::modalidadeValida($modalidadePedida, $personal->modalidade)) {
+            Log::warning('agendarAulaAvulsaInterno: modalidade incompatível, gravando sem ela', [
+                'personal_id' => $personalId,
+                'pedida'      => $modalidadePedida,
+                'oferta'      => $personal->modalidade,
+            ]);
+            $modalidadePedida = null;
+        }
+
+        $modalidade = Agenda::modalidadeResolvida($modalidadePedida, $personal->modalidade);
+
         $temConflito = Agenda::where('personal_id', $personalId)
             ->where('data', $data)
             ->where('cancelado', false)
@@ -868,6 +892,7 @@ class ClienteController extends Controller
             'cancelado'     => false,
             'descricao'     => "Aula avulsa - {$cliente->nome}",
             'tipo_aula'     => 'avulsa',
+            'modalidade'    => $modalidade,
         ]);
 
         $this->notificarPersonalWhatsApp($clienteId, $personalId, 'avulsa', $agenda);

@@ -160,6 +160,10 @@ class PerfilController extends Controller
             'personal' => array_merge([
                 'nome' => 'required|string|max:255',
                 'whatsapp' => 'nullable|string|max:20',
+                // Modalidade de atendimento — editável pelo app, como no painel
+                // web. Allowlist a partir do config, nunca string livre (A04).
+                // Aqui "Híbrido" vale: é o profissional declarando os dois formatos.
+                'modalidade' => ['nullable', \Illuminate\Validation\Rule::in(config('textos.profissional.modalidades'))],
             ], $endereco),
 
             'academia' => array_merge([
@@ -192,6 +196,9 @@ class PerfilController extends Controller
                 'nome' => 'required|string|max:255',
                 'whatsapp' => 'nullable|string|max:20',
                 'resumo_objetivo' => 'nullable|string|max:500',
+                // Preferência do ALUNO: domínio menor que o do profissional —
+                // "Híbrido" é oferta, não desejo (ver Cliente::modalidadesCompativeis).
+                'modalidade_preferida' => ['nullable', \Illuminate\Validation\Rule::in(config('textos.profissional.modalidades_aluno'))],
             ], $endereco),
         };
 

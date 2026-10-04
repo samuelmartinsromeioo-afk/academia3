@@ -11,6 +11,7 @@ use App\Models\Cadastro\Studio;
 use App\Support\CadastroHelper;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\Rule;
 
 /**
  * Cadastros pela API mobile — espelham as regras dos controllers web
@@ -44,6 +45,9 @@ class RegisterController extends Controller
             'senha'         => 'required|string|min:8|confirmed',
             'idade'         => 'required|date',
             'whatsapp'      => 'nullable|string|max:20',
+            // Modalidade de atendimento. Aqui "Híbrido" É opção: é o profissional
+            // declarando que atende dos dois jeitos (ver config textos.profissional).
+            'modalidade'    => ['nullable', Rule::in(config('textos.profissional.modalidades'))],
             'latitude'      => 'nullable|numeric',
             'longitude'     => 'nullable|numeric',
             'academias'     => 'nullable|string|max:1000',
