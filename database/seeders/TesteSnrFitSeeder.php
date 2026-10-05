@@ -4,6 +4,7 @@ namespace Database\Seeders;
 
 use App\Models\Agenda;
 use App\Models\Anamnese;
+use App\Models\AulaReposicao;
 use App\Models\Cadastro\Cliente;
 use App\Models\Cadastro\ExercicioFicha;
 use App\Models\Cadastro\FichaTreino;
@@ -13,8 +14,11 @@ use App\Models\Cadastro\MesocicloTreino;
 use App\Models\Cadastro\Personal;
 use App\Models\Cadastro\RegistroExercicio;
 use App\Models\Cadastro\TreinoConcluido;
+use App\Models\Estorno;
 use App\Models\MedidaCorporal;
 use App\Models\Meta;
+use App\Models\SolicitacaoAvaliacao;
+use App\Models\SolicitacaoFicha;
 use Carbon\Carbon;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
@@ -23,6 +27,11 @@ use Illuminate\Support\Facades\Hash;
  * Dados de teste das 5 features de treino: 1 personal + 4 alunos com cenários
  * variados (aderência alta/média, aluno sumido, aluno novo). Idempotente:
  * apaga e recria os registros de teste a cada execução.
+ *
+ * Inclui a rotina completa do Prof. Diego Ramos — agenda da semana (pacote,
+ * avulsa online e bloqueio próprio), fila de solicitações de ficha nos três
+ * estados, os três caminhos de cancelamento (reposição pendente, reposição
+ * aceita, estorno de avulsa) e pedidos de avaliação física pago/pendente.
  *
  *   php artisan db:seed --class=TesteSnrFitSeeder
  */
@@ -44,10 +53,6 @@ class TesteSnrFitSeeder extends Seeder
         $bruno = $this->criarAluno('Bruno Lima',  'bruno@snrfit.com', '11999990002');
         $carla = $this->criarAluno('Carla Dias',  'carla@snrfit.com', '11999990003');
         $diego = $this->criarAluno('Diego Nunes', 'diego@snrfit.com', '11999990004');
-
-        foreach ([$ana, $bruno, $carla, $diego] as $aluno) {
-            $this->criarAgendaPacote($personal->id, $aluno->id);
-        }
 
         $hoje = Carbon::today();
 
@@ -164,9 +169,16 @@ class TesteSnrFitSeeder extends Seeder
             ['Puxada frente', 3, 15, 35], ['Rosca direta', 3, 15, 12],
         ]);
 
+        // ───────── simulação da rotina do Prof. Diego Ramos ─────────
+        $this->agendaDaSemana($personal, $ana, $bruno, $carla, $diego);
+        $this->solicitacoesDeFicha($personal, $bruno, $carla, $diego);
+        $this->cancelamentos($personal, $bruno, $carla, $diego);
+        $this->pedidosDeAvaliacao($personal, $ana, $diego);
+
         $this->command?->info('Seed concluído.');
         $this->command?->info('Personal:  ' . self::PERSONAL_EMAIL . ' / ' . self::SENHA);
         $this->command?->info('Alunos:    ana@ / bruno@ / carla@ / diego@ snrfit.com  (senha: ' . self::SENHA . ')');
+        $this->command?->info('Simulação: agenda da semana, 3 solicitações de ficha, 3 cancelamentos, 2 pedidos de avaliação.');
     }
 
     // ───────── helpers de criação ─────────
@@ -179,6 +191,9 @@ class TesteSnrFitSeeder extends Seeder
             'cep' => '01001000', 'rua' => 'Av. Paulista', 'bairro' => 'Bela Vista',
             'cidade' => 'São Paulo', 'estado' => 'SP', 'complemento' => 'Sala 10',
             'foto' => '', 'cref' => '012345-G/SP',
+            // Híbrido: ele dá aula presencial e online, e é o que permite a aula
+            // avulsa online do Diego Nunes conviver com o pacote presencial.
+            'modalidade' => 'Híbrido',
             'idade' => '1988-03-15', 'valor_secao' => 90.00,
             'whatsapp' => '11988887777', 'status' => 'aprovado', 'data_aprovacao' => now(),
         ]);
@@ -192,12 +207,210 @@ class TesteSnrFitSeeder extends Seeder
         ]);
     }
 
-    private function criarAgendaPacote(int $personalId, int $clienteId): void
+    // ───────── simulação: agenda, solicitações, cancelamentos, avaliações ─────────
+
+    /**
+     * O painel do personal mostra a semana corrente de DOMINGO a SÁBADO
+     * (`startOfWeek(Carbon::SUNDAY)` em PersonalController@index), filtrando
+     * `cancelado = false`. Tudo que precisa aparecer na grade nasce ancorado
+     * nesse domingo, com o dia da semana como deslocamento (0=dom … 6=sáb).
+     */
+    private function diaDaSemana(int $dow, int $semanasAFrente = 0): Carbon
     {
-        Agenda::create([
-            'personal_id' => $personalId, 'cliente_id' => $clienteId,
-            'data' => Carbon::today()->toDateString(), 'hora_inicio' => '07:00', 'hora_fim' => '08:00',
-            'cancelado' => false, 'frequencia_pacote' => 3, 'tipo_aula' => 'pacote', 'valor_aula' => 90.00,
+        return Carbon::today()->startOfWeek(Carbon::SUNDAY)
+            ->addWeeks($semanasAFrente)
+            ->addDays($dow);
+    }
+
+    private function agenda(int $personalId, ?int $clienteId, Carbon $data, string $inicio, string $fim, array $extra = []): Agenda
+    {
+        return Agenda::create(array_merge([
+            'personal_id' => $personalId,
+            'cliente_id' => $clienteId,
+            'data' => $data->toDateString(),
+            'hora_inicio' => $inicio,
+            'hora_fim' => $fim,
+            'cancelado' => false,
+            'tipo_aula' => 'pacote',
+            'frequencia_pacote' => 3,
+            'modalidade' => 'Presencial',
+            'valor_aula' => 90.00,
+        ], $extra));
+    }
+
+    /**
+     * Grade da semana. Os horários não se sobrepõem porque
+     * PersonalController@storeHorario recusa conflito — uma agenda semeada com
+     * choque deixaria o painel num estado que a própria tela não produz.
+     */
+    private function agendaDaSemana(Personal $p, Cliente $ana, Cliente $bruno, Cliente $carla, Cliente $diego): void
+    {
+        // Ana — pacote 3x, Seg/Qua/Sex de manhã.
+        foreach ([1, 3, 5] as $dow) {
+            $this->agenda($p->id, $ana->id, $this->diaDaSemana($dow), '07:00', '08:00');
+        }
+
+        // Bruno — pacote 2x, Ter/Qui à noite.
+        foreach ([2, 4] as $dow) {
+            $this->agenda($p->id, $bruno->id, $this->diaDaSemana($dow), '18:00', '19:00', [
+                'frequencia_pacote' => 2,
+            ]);
+        }
+
+        // Carla — pacote 1x, Seg de manhã (depois da Ana).
+        $this->agenda($p->id, $carla->id, $this->diaDaSemana(1), '09:00', '10:00', [
+            'frequencia_pacote' => 1,
+        ]);
+
+        // Diego Nunes — avulsa online, Qua à noite. Avulsa carrega valor próprio
+        // e não tem frequência de pacote.
+        $this->agenda($p->id, $diego->id, $this->diaDaSemana(3), '20:00', '21:00', [
+            'tipo_aula' => 'avulsa',
+            'modalidade' => 'Online',
+            'frequencia_pacote' => null,
+            'valor_aula' => 90.00,
+        ]);
+
+        // Compromisso do próprio personal: sem cliente, tipo `bloqueio` — é o que
+        // storeHorario grava quando ele reserva um horário para si.
+        $this->agenda($p->id, null, $this->diaDaSemana(6), '10:00', '12:00', [
+            'tipo_aula' => 'bloqueio',
+            'frequencia_pacote' => null,
+            'valor_aula' => null,
+            'descricao' => 'Curso de reciclagem CREF',
+        ]);
+
+        // Semana seguinte, para a navegação `?data=` ter o que mostrar.
+        foreach ([1, 3, 5] as $dow) {
+            $this->agenda($p->id, $ana->id, $this->diaDaSemana($dow, 1), '07:00', '08:00');
+        }
+    }
+
+    /**
+     * Fila de solicitações de ficha. A tela ordena `pendente` antes de
+     * `concluida` (FIELD(status,...) em listarSolicitacoesFicha) e mostra tudo,
+     * paga ou não — por isso os três estados aparecem aqui.
+     */
+    private function solicitacoesDeFicha(Personal $p, Cliente $bruno, Cliente $carla, Cliente $diego): void
+    {
+        // Pendente e paga: o caso que o personal precisa atender.
+        SolicitacaoFicha::create([
+            'personal_id' => $p->id, 'cliente_id' => $diego->id,
+            'objetivos' => 'Ganhar massa muscular nas pernas e corrigir postura no agachamento.',
+            'condicoes_clinicas' => 'Condromalácia leve no joelho esquerdo, liberado pelo ortopedista.',
+            'nivel_experiencia' => 'iniciante',
+            'observacoes' => 'Treina de manhã, antes do trabalho. Só tem 45 min.',
+            'valor' => 120.00, 'status' => 'pendente', 'payment_status' => 'pago',
+            'asaas_payment_id' => 'pay_sim_ficha_diego',
+        ]);
+
+        // Pendente e NÃO paga: fica na fila, mas sem dinheiro confirmado.
+        SolicitacaoFicha::create([
+            'personal_id' => $p->id, 'cliente_id' => $carla->id,
+            'objetivos' => 'Voltar a treinar depois de 3 meses parada.',
+            'condicoes_clinicas' => null,
+            'nivel_experiencia' => 'intermediario',
+            'observacoes' => 'Prefere treino curto, 3x na semana.',
+            'valor' => 120.00, 'status' => 'pendente', 'payment_status' => 'pendente',
+        ]);
+
+        // Já atendida: histórico.
+        SolicitacaoFicha::create([
+            'personal_id' => $p->id, 'cliente_id' => $bruno->id,
+            'objetivos' => 'Emagrecer 8 kg até o fim do ano.',
+            'condicoes_clinicas' => 'Hipertensão controlada com medicação.',
+            'nivel_experiencia' => 'iniciante',
+            'observacoes' => null,
+            'valor' => 120.00, 'status' => 'concluida', 'payment_status' => 'pago',
+            'asaas_payment_id' => 'pay_sim_ficha_bruno',
+        ]);
+    }
+
+    /**
+     * Três cancelamentos, um por caminho que o código tem:
+     *
+     * - pacote → `aula_reposicoes` pendente (alimenta o badge "Faltas");
+     * - pacote → reposição já aceita, com a aula nova apontada por
+     *   `agenda_reposta_id`;
+     * - avulsa → `estornos` pendente, porque aí houve dinheiro.
+     *
+     * A aula cancelada fica com `cancelado = true` + `cancelado_em` +
+     * `justificativa_cancelamento`, igual ao que AulaAlunoController grava.
+     */
+    private function cancelamentos(Personal $p, Cliente $bruno, Cliente $carla, Cliente $diego): void
+    {
+        // 1) Carla faltou ontem e pediu reposição — ainda sem resposta.
+        $aulaCarla = $this->agenda($p->id, $carla->id, Carbon::yesterday(), '09:00', '10:00', [
+            'frequencia_pacote' => 1,
+            'cancelado' => true,
+            'cancelado_em' => Carbon::yesterday()->setTime(7, 20),
+            'justificativa_cancelamento' => 'Falta avisada pelo aluno. Imprevisto no trabalho.',
+        ]);
+        AulaReposicao::create([
+            'agenda_id' => $aulaCarla->id, 'cliente_id' => $carla->id, 'personal_id' => $p->id,
+            'motivo' => 'Imprevisto no trabalho, não consigo chegar no horário.',
+            'status' => AulaReposicao::STATUS_PENDENTE,
+        ]);
+
+        // 2) Bruno faltou na semana passada; o personal já marcou a reposição.
+        $aulaBruno = $this->agenda($p->id, $bruno->id, $this->diaDaSemana(2, -1), '18:00', '19:00', [
+            'frequencia_pacote' => 2,
+            'cancelado' => true,
+            'cancelado_em' => $this->diaDaSemana(2, -1)->setTime(9, 0),
+            'justificativa_cancelamento' => 'Falta avisada pelo aluno. Viagem de trabalho.',
+        ]);
+        $reposta = $this->agenda($p->id, $bruno->id, $this->diaDaSemana(6), '08:00', '09:00', [
+            'frequencia_pacote' => 2,
+            'descricao' => 'Reposição da aula de ' . $this->diaDaSemana(2, -1)->format('d/m'),
+        ]);
+        AulaReposicao::create([
+            'agenda_id' => $aulaBruno->id, 'cliente_id' => $bruno->id, 'personal_id' => $p->id,
+            'agenda_reposta_id' => $reposta->id,
+            'motivo' => 'Viagem de trabalho de última hora.',
+            'resposta' => 'Sem problema. Marquei sábado às 08:00.',
+            'status' => AulaReposicao::STATUS_ACEITA,
+            'respondido_em' => $this->diaDaSemana(2, -1)->setTime(12, 30),
+        ]);
+
+        // 3) Diego cancelou uma avulsa paga → pedido de devolução em aberto.
+        // `payment_id` fica nulo: a migration o criou nullable justamente para a
+        // aula sem pagamento localizado, e aqui não há `payments` semeado.
+        $aulaDiego = $this->agenda($p->id, $diego->id, $this->diaDaSemana(5, -1), '20:00', '21:00', [
+            'tipo_aula' => 'avulsa', 'modalidade' => 'Online', 'frequencia_pacote' => null,
+            'cancelado' => true,
+            'cancelado_em' => $this->diaDaSemana(4, -1)->setTime(21, 10),
+            'justificativa_cancelamento' => 'Cancelada pelo aluno. Ficou doente.',
+        ]);
+        Estorno::create([
+            'payment_id' => null, 'agenda_id' => $aulaDiego->id,
+            'cliente_id' => $diego->id, 'personal_id' => $p->id,
+            'valor' => 90.00, 'motivo' => 'Ficou doente.',
+            'status' => Estorno::STATUS_PENDENTE,
+        ]);
+    }
+
+    /**
+     * Pedidos de avaliação física.
+     *
+     * Só o pedido PAGO habilita o aluno na tela de avaliação
+     * (AvaliacaoFisicaController@index filtra `payment_status = 'pago'`), então
+     * os dois estados existem de propósito: o da Ana aparece, o do Diego não.
+     */
+    private function pedidosDeAvaliacao(Personal $p, Cliente $ana, Cliente $diego): void
+    {
+        SolicitacaoAvaliacao::create([
+            'personal_id' => $p->id, 'cliente_id' => $ana->id,
+            'observacoes' => 'Quer medir evolução antes de fechar o próximo bloco de hipertrofia.',
+            'tipos' => ['antropometrica', 'dobras'],
+            'valor' => 150.00, 'payment_status' => 'pago',
+            'asaas_payment_id' => 'pay_sim_aval_ana',
+        ]);
+
+        SolicitacaoAvaliacao::create([
+            'personal_id' => $p->id, 'cliente_id' => $diego->id,
+            'observacoes' => 'Primeira avaliação, nunca fez.',
+            'tipos' => ['antropometrica', 'bioimpedancia', 'postural'],
+            'valor' => 150.00, 'payment_status' => 'pendente',
         ]);
     }
 
@@ -281,6 +494,19 @@ class TesteSnrFitSeeder extends Seeder
         $personal = Personal::where('email', self::PERSONAL_EMAIL)->first();
         $cids = Cliente::whereIn('email', self::EMAILS_ALUNOS)->pluck('id')->all();
 
+        // `aula_reposicoes` e `estornos` guardam os ids em colunas cruas, sem
+        // foreign key — apagar agenda/cliente NÃO leva essas linhas embora. Elas
+        // têm de cair primeiro, senão sobram apontando para agendas que não
+        // existem mais (e a unique em `agenda_id` tranca a próxima execução).
+        if ($personal) {
+            AulaReposicao::where('personal_id', $personal->id)->delete();
+            Estorno::where('personal_id', $personal->id)->delete();
+        }
+        if (! empty($cids)) {
+            AulaReposicao::whereIn('cliente_id', $cids)->delete();
+            Estorno::whereIn('cliente_id', $cids)->delete();
+        }
+
         if ($personal || ! empty($cids)) {
             Agenda::where(function ($q) use ($personal, $cids) {
                 if ($personal) { $q->where('personal_id', $personal->id); }
@@ -288,7 +514,8 @@ class TesteSnrFitSeeder extends Seeder
             })->delete();
         }
 
-        // FKs em cascata removem fichas, treinos, registros, mesociclos e anamnese.
+        // FKs em cascata removem fichas, treinos, registros, mesociclos, anamnese
+        // e as solicitações de ficha/avaliação (ambas com onDelete('cascade')).
         if (! empty($cids)) {
             Cliente::whereIn('id', $cids)->delete();
         }
