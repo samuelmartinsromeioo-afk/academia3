@@ -686,7 +686,7 @@
 
         <div class="calendar-nav">
             <a href="?data={{ $inicioSemana->copy()->subWeek()->format('Y-m-d') }}" class="nav-link"><i class="ph ph-caret-left"></i> Semana Anterior</a>
-            <span style="font-weight: 800; font-size: 0.9rem; color: var(--primary);">{{ $inicioSemana->format('d/m') }} até {{ $inicioSemana->copy()->endOfWeek()->format('d/m') }}</span>
+            <span style="font-weight: 800; font-size: 0.9rem; color: var(--primary);">{{ $inicioSemana->format('d/m') }} até {{ $fimSemana->format('d/m') }}</span>
             <div class="nav-buttons-group">
                 <a href="?data={{ now()->format('Y-m-d') }}" class="nav-link" title="Voltar para a semana atual">
                     <i class="ph ph-calendar-check"></i> Hoje

@@ -131,8 +131,11 @@ class PersonalController extends Controller
         }
 
         $dataRef = $request->query('data') ? Carbon::parse($request->query('data')) : now();
+        // Domingo a sábado, as 7 colunas que a grade desenha. `endOfWeek(SUNDAY)`
+        // não quer dizer "semana que começa no domingo": quer dizer "semana que
+        // TERMINA no domingo", e devolvia o domingo seguinte.
         $inicioSemana = $dataRef->copy()->startOfWeek(Carbon::SUNDAY);
-        $fimSemana = $dataRef->copy()->endOfWeek(Carbon::SUNDAY);
+        $fimSemana = $dataRef->copy()->endOfWeek(Carbon::SATURDAY);
 
         $personal = Personal::with(['fotos', 'agendas' => function ($query) use ($inicioSemana, $fimSemana) {
             $query->whereRaw("DATE_FORMAT(data, '%Y-%m-%d') BETWEEN ? AND ?", [
@@ -148,7 +151,7 @@ class PersonalController extends Controller
             ->pendentes()
             ->count();
 
-        return view('personal.dashboard', compact('personal', 'inicioSemana', 'dataRef', 'resultado', 'reposicoesPendentes'));
+        return view('personal.dashboard', compact('personal', 'inicioSemana', 'fimSemana', 'dataRef', 'resultado', 'reposicoesPendentes'));
     }
 
     public function storeHorario(Request $request)
