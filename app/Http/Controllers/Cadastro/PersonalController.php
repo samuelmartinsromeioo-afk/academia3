@@ -137,12 +137,10 @@ class PersonalController extends Controller
         $inicioSemana = $dataRef->copy()->startOfWeek(Carbon::SUNDAY);
         $fimSemana = $dataRef->copy()->endOfWeek(Carbon::SATURDAY);
 
-        $personal = Personal::with(['fotos', 'agendas' => function ($query) use ($inicioSemana, $fimSemana) {
-            $query->whereRaw("DATE_FORMAT(data, '%Y-%m-%d') BETWEEN ? AND ?", [
-                $inicioSemana->format('Y-m-d'),
-                $fimSemana->format('Y-m-d')
-            ])->where('cancelado', false)->orderBy('hora_inicio');
-        }])->find($id);
+        // Só a galeria de fotos vem daqui. As aulas do dia são carregadas sob
+        // demanda pelo endpoint /personal/agenda/{dia} quando o personal clica
+        // num dia da grade — a view nunca leu `$personal->agendas`.
+        $personal->load('fotos');
 
         $resultado = $this->calcularFinanceiroMes($id);
 
