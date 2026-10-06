@@ -38,99 +38,135 @@
         .alert-ok { background:rgba(0,230,118,0.1); color:var(--green); border:1px solid var(--green); padding:14px; border-radius:12px; margin-bottom:16px; display:flex; gap:10px; align-items:center; font-size:0.9rem; }
         .muted { color:var(--text-muted); font-size:0.85rem; }
         @media (max-width:600px){ .top-bar{padding:15px 20px;} }
-        /* Blocos que existem só para a folha impressa: timbre, legenda,
-           assinatura, rodapé e marca d'água. Ficam fora da tela para o
-           relatório continuar exatamente como era. */
+        /* A folha impressa tem MARCAÇÃO PRÓPRIA, aqui embaixo, e não aparece
+           na tela. A primeira tentativa foi reestilizar a marcação da tela com
+           `!important` — card virando linha, barra de progresso escondida — e
+           isso produziu o resultado simples e com defeito: fio sobrando no
+           último item (o `!important` vencia o `:last-child`), fio duplo feito
+           com box-shadow (que a impressão descarta), conteúdo correndo por
+           baixo do rodapé fixo e, pior, NENHUM título — porque o título vive
+           na `.top-bar`, que a impressão esconde.
+
+           Com estrutura própria não há disputa de regra: a tela fica como
+           está e a folha é desenhada como documento. */
         .so-print { display:none; }
-
-        /* ── Impressão: folha branca, cara de documento ──────────────────
-           A tela é a do SnrFit, escura. A folha é outra coisa: papel branco,
-           fio fino em vez de borda de card, hierarquia por tamanho e peso em
-           vez de cor, e número tabular para alinhar na coluna. Nada aqui
-           altera a tela. */
+        /* ── A FOLHA IMPRESSA ────────────────────────────────────────────
+           Só existe dentro de @media print. Papel branco, tinta escura, fio
+           fino em vez de borda de card, hierarquia por tamanho e peso em vez
+           de cor, e número tabular para alinhar na coluna. */
         @media print {
-            @page { margin:12mm; }
+            @page { margin: 13mm 14mm; }
 
-            .so-print { display:block; }
-            .top-bar, .acoes, .alert-ok, .bar { display:none !important; }
+            /* A tela inteira sai; entra a folha. */
+            .top-bar, .container { display: none !important; }
+            .so-print { display: block; }
 
             body {
-                background:#fff !important;
-                color:#16191e !important;
-                font-variant-numeric:tabular-nums;
-                font-feature-settings:'tnum' 1;
+                background: #fff;
+                color: #16191e;
+                font-variant-numeric: tabular-nums;
+                font-feature-settings: 'tnum' 1;
+                font-size: 11.2pt;
+                line-height: 1.5;
             }
-            .container { max-width:none; margin:0; padding:0; }
-            .report { background:transparent !important; border:none !important; border-radius:0; padding:0; }
 
-            /* Timbre: logo à esquerda, emissor à direita, fio duplo embaixo. */
-            .rep-head {
-                border-bottom:2px solid #16191e;
-                box-shadow:0 3px 0 -2px #d4d9e0;
-                padding-bottom:12px;
-                margin-bottom:24px;
-                page-break-after:avoid;
-            }
-            .rep-head .logo { color:#16191e !important; letter-spacing:-0.01em; }
-            .rep-head .who { text-align:right; }
-            .rep-head .who b { font-size:1rem; }
-            .rep-head .who small { color:#5d6673; }
+            /* Espaço reservado para o rodapé fixo: sem isto o último bloco
+               corre por baixo dele e o texto some. */
+            .folha { counter-reset: secao; padding-bottom: 16mm; position: relative; z-index: 1; }
 
-            /* Os quatro cards viram linhas de dados: rótulo à esquerda,
-               valor à direita, fio fino entre elas. Card impresso é o que mais
-               faz a folha parecer captura de tela. */
-            .grid { display:block; margin-bottom:0; }
-            .stat {
-                background:transparent !important;
-                border:none !important;
-                border-bottom:1px solid #d4d9e0 !important;
-                border-radius:0;
-                padding:7px 0;
-                display:flex;
-                align-items:baseline;
-                justify-content:space-between;
-                gap:14px;
+            /* ── Timbre ── */
+            .f-topo {
+                display: flex;
+                justify-content: space-between;
+                align-items: flex-start;
+                gap: 24px;
+                padding-bottom: 9px;
+                /* Fio duplo de verdade: `border-bottom: double` imprime; a
+                   sombra que eu havia usado antes é descartada. */
+                border-bottom: 3px double #16191e;
             }
-            .stat:last-child { border-bottom:1px solid #16191e !important; }
-            .stat .l { margin:0; font-size:0.8rem; font-weight:400; text-transform:none; color:#5d6673; }
-            .stat .v { font-size:0.95rem; color:#16191e !important; text-align:right; }
-            .stat .v small { color:#5d6673; }
+            .f-id { display: flex; align-items: center; gap: 9px; }
+            .f-id img { width: 26px; height: 26px; }
+            .f-id .nome { font-weight: 800; letter-spacing: 1.8px; font-size: 9pt; }
+            .f-id .tag { display: block; font-weight: 400; letter-spacing: 0.4px; font-size: 7pt; color: #5d6673; }
+            .f-emissor { text-align: right; font-size: 8.4pt; line-height: 1.45; color: #5d6673; }
+            .f-emissor strong { display: block; font-size: 9.4pt; color: #16191e; }
 
-            .sec-t {
-                color:#5d6673 !important;
-                border-bottom:1px solid #d4d9e0;
-                padding-bottom:5px;
-                margin:26px 0 10px;
-                page-break-after:avoid;
+            /* ── Título do documento ── */
+            .f-cabeca { margin: 22px 0 24px; }
+            .f-cabeca h1 {
+                margin: 0;
+                font-size: 19pt;
+                font-weight: 800;
+                letter-spacing: -0.02em;
+                line-height: 1.1;
             }
-            .rec-item { border-bottom:1px solid #d4d9e0 !important; padding:7px 0; }
-            .rec-item .p { color:#16191e !important; }
-            .rec-item .muted, .muted { color:#5d6673 !important; }
+            .f-cabeca p { margin: 5px 0 0; font-size: 10.4pt; color: #5d6673; }
 
-            /* Marca d'água — `fixed` repete em toda página impressa. */
-            .doc-marca {
-                display:flex !important;
-                position:fixed; inset:0;
-                align-items:center; justify-content:center;
-                pointer-events:none; z-index:0;
-            }
-            .doc-marca img {
-                width:54%; max-width:400px; opacity:0.055; transform:rotate(-24deg);
-                -webkit-print-color-adjust:exact; print-color-adjust:exact;
-            }
-            .container { position:relative; z-index:1; }
+            /* ── Ficha de dados ── */
+            .f-ficha { width: 100%; border-collapse: collapse; margin-bottom: 4px; }
+            .f-ficha th, .f-ficha td { text-align: left; padding: 6px 0; border-bottom: 1px solid #dfe3e8; font-size: 9.4pt; }
+            .f-ficha th { width: 150px; font-weight: 600; color: #5d6673; padding-right: 14px; }
+            .f-ficha tr:last-child th, .f-ficha tr:last-child td { border-bottom: 1px solid #16191e; }
 
-            .pr-legenda { font-size:0.78rem; color:#5d6673; margin-top:20px; padding-left:11px; border-left:2px solid #3d6b00; }
-            .pr-assina { margin-top:50px; text-align:center; page-break-inside:avoid; }
-            .pr-assina .linha { width:290px; margin:0 auto 6px; border-top:1px solid #16191e; }
-            .pr-assina .nome { font-weight:700; font-size:0.86rem; }
-            .pr-assina .reg { color:#5d6673; font-size:0.76rem; }
-            .pr-pe {
-                position:fixed; bottom:0; left:0; right:0;
-                display:flex; justify-content:space-between; gap:14px;
-                font-size:0.7rem; color:#5d6673;
-                background:#fff; border-top:1px solid #d4d9e0; padding:3mm 0 0;
+            /* ── Seções numeradas (o contador pula sozinho a seção ausente) ── */
+            .f-secao {
+                margin: 26px 0 11px;
+                font-size: 9pt;
+                font-weight: 700;
+                letter-spacing: 0.1em;
+                text-transform: uppercase;
+                color: #5d6673;
+                padding-bottom: 5px;
+                border-bottom: 1px solid #dfe3e8;
+                page-break-after: avoid;
             }
+            .f-secao::before { counter-increment: secao; content: counter(secao) ' · '; }
+
+            /* ── Destaque: a aderência é o número que resume o mês ── */
+            .f-destaque { display: flex; align-items: flex-end; gap: 26px; margin-bottom: 4px; }
+            .f-destaque .num { font-size: 42pt; font-weight: 800; line-height: 0.9; letter-spacing: -0.03em; }
+            .f-destaque .leg { font-size: 8.6pt; color: #5d6673; padding-bottom: 5px; }
+            .f-destaque .leg b { display: block; font-size: 10pt; color: #16191e; }
+
+            /* ── Linhas de dados ── */
+            .f-linhas { width: 100%; border-collapse: collapse; }
+            .f-linhas th, .f-linhas td { padding: 7px 0; font-size: 9.6pt; border-bottom: 1px solid #dfe3e8; }
+            .f-linhas th { text-align: left; font-weight: 400; color: #5d6673; }
+            .f-linhas td { text-align: right; font-weight: 700; }
+            .f-linhas td .u { font-weight: 400; color: #5d6673; font-size: 8.8pt; }
+            .f-linhas tr:last-child th, .f-linhas tr:last-child td { border-bottom: 1px solid #16191e; }
+
+            .f-vazio { font-size: 9.4pt; color: #5d6673; font-style: italic; }
+
+            /* ── Legenda e assinatura ── */
+            .f-legenda { margin-top: 22px; padding-left: 11px; border-left: 2px solid #3d6b00; font-size: 8.6pt; color: #5d6673; }
+            .f-assina { margin-top: 46px; text-align: center; page-break-inside: avoid; }
+            .f-assina .linha { width: 280px; margin: 0 auto 6px; border-top: 1px solid #16191e; }
+            .f-assina .nome { font-weight: 700; font-size: 9.6pt; }
+            .f-assina .reg { font-size: 8.4pt; color: #5d6673; }
+
+            /* ── Marca d'água e rodapé corrido ── */
+            .f-marca {
+                display: flex !important;
+                position: fixed; inset: 0;
+                align-items: center; justify-content: center;
+                pointer-events: none; z-index: 0;
+            }
+            .f-marca img {
+                width: 52%; max-width: 380px; opacity: 0.055; transform: rotate(-24deg);
+                -webkit-print-color-adjust: exact; print-color-adjust: exact;
+            }
+            .f-pe {
+                position: fixed; bottom: 0; left: 0; right: 0;
+                display: flex; justify-content: space-between; gap: 14px;
+                font-size: 7.8pt; color: #5d6673;
+                background: #fff;
+                border-top: 1px solid #dfe3e8;
+                padding: 2.5mm 0 0;
+            }
+
+            tr { page-break-inside: avoid; }
         }
     </style>
 </head>
@@ -147,16 +183,7 @@
         <div class="report">
             <div class="rep-head">
                 <div class="logo">SnrFit</div>
-                <div class="who">
-                    <b>{{ $cliente->nome }}</b>
-                    <small>Resumo de {{ ucfirst(now()->locale('pt_BR')->isoFormat('MMMM/YYYY')) }}</small>
-                    {{-- Autoria da folha: na tela é redundante (o personal sabe
-                         quem é), no papel é o que identifica quem emitiu. --}}
-                    <small class="so-print">
-                        {{ $personal->nome }}@if($personal->cref) · CREF {{ $personal->cref }}@endif
-                    </small>
-                    <small class="so-print">Emitido em {{ now()->format('d/m/Y \à\s H:i') }}</small>
-                </div>
+                <div class="who"><b>{{ $cliente->nome }}</b><small>Resumo de {{ ucfirst(now()->locale('pt_BR')->isoFormat('MMMM/YYYY')) }}</small></div>
             </div>
 
             <div class="grid">
@@ -204,31 +231,150 @@
                 </form>
                 <button onclick="window.print()" class="btn btn-ghost"><i class="ph ph-printer"></i> Imprimir / PDF</button>
             </div>
-
-            {{-- Daqui para baixo, só na folha impressa. --}}
-            <div class="pr-legenda so-print">
-                <strong>Aderência</strong> = treinos realizados ÷ planejados no período.
-                <strong>Sequência</strong> = dias consecutivos com treino concluído.
-                <strong>Esforço médio</strong> = média do RPE informado pelo aluno (0 a 10).
-                <strong>Recorde</strong> = maior carga registrada no exercício dentro do mês.
-            </div>
-
-            <div class="pr-assina so-print">
-                <div class="linha"></div>
-                <div class="nome">{{ $personal->nome }}</div>
-                <div class="reg">@if($personal->cref) CREF {{ $personal->cref }} @else Personal trainer @endif</div>
-            </div>
         </div>
     </div>
 
-    <div class="doc-marca so-print" aria-hidden="true">
-        <img src="{{ asset('SnrFit.png') }}" alt="">
+{{-- ──────────────────────────────────────────────────────────────────────
+     A FOLHA IMPRESSA
+
+     Estrutura própria, invisível na tela. A tela acima não é tocada: na
+     impressão ela sai inteira (`.top-bar, .container { display:none }`) e
+     entra isto.
+
+     Os mesmos dados aparecem duas vezes na marcação, e é de propósito: a
+     tentativa de reestilizar os cards da tela para virar documento foi o que
+     deixou a folha simples e com defeito — fio sobrando, fio duplo que não
+     imprimia, texto por baixo do rodapé e nenhum título, porque o título
+     vive na barra que a impressão esconde.
+     ────────────────────────────────────────────────────────────────────── --}}
+@php
+    $mesRef = ucfirst(now()->locale('pt_BR')->isoFormat('MMMM/YYYY'));
+    $naoFeitos = max(0, $planejados - $realizados);
+@endphp
+<div class="folha so-print">
+
+    <header class="f-topo">
+        <div class="f-id">
+            <img src="{{ asset('SnrFit.png') }}" alt="">
+            <span class="nome">SNR·FIT<span class="tag">Treino &amp; performance</span></span>
+        </div>
+        <div class="f-emissor">
+            <strong>{{ $personal->nome }}</strong>
+            @if($personal->cref) CREF {{ $personal->cref }}<br> @endif
+            @if($personal->whatsapp) {{ $personal->whatsapp }}<br> @endif
+            Emitido em {{ now()->format('d/m/Y \à\s H:i') }}
+        </div>
+    </header>
+
+    <div class="f-cabeca">
+        <h1>Relatório Mensal de Treino</h1>
+        <p>{{ $cliente->nome }} · {{ $mesRef }}</p>
     </div>
 
-    <div class="pr-pe so-print">
-        <span>Relatório mensal · {{ $cliente->nome }} · {{ ucfirst(now()->locale('pt_BR')->isoFormat('MMMM/YYYY')) }}</span>
-        <span>{{ now()->format('d/m/Y H:i') }}</span>
+    <table class="f-ficha">
+        <tr><th>Aluno</th><td>{{ $cliente->nome }}</td></tr>
+        @if($cliente->idade)
+            <tr><th>Nascimento</th><td>
+                {{ \Carbon\Carbon::parse($cliente->idade)->format('d/m/Y') }}
+                ({{ \Carbon\Carbon::parse($cliente->idade)->age }} anos)
+            </td></tr>
+        @endif
+        @if($cliente->resumo_objetivo)
+            <tr><th>Objetivo</th><td>{{ $cliente->resumo_objetivo }}</td></tr>
+        @endif
+        <tr><th>Período</th><td>{{ $mesRef }}</td></tr>
+    </table>
+
+    <h2 class="f-secao">Desempenho no período</h2>
+
+    {{-- A aderência resume o mês: vira o número grande, com a leitura ao lado. --}}
+    <div class="f-destaque">
+        <div class="num">{{ $aderencia }}%</div>
+        <div class="leg">
+            <b>{{ $realizados }} de {{ $planejados }} treinos</b>
+            @if($naoFeitos > 0)
+                {{ $naoFeitos }} {{ $naoFeitos === 1 ? 'treino não realizado' : 'treinos não realizados' }}
+            @else
+                nenhum treino perdido no período
+            @endif
+        </div>
     </div>
+
+    <table class="f-linhas">
+        <tr>
+            <th>Treinos realizados</th>
+            <td>{{ $realizados }} <span class="u">de {{ $planejados }} planejados</span></td>
+        </tr>
+        <tr>
+            <th>Sequência atual</th>
+            <td>{{ $streak['atual'] }} <span class="u">dias · recorde {{ $streak['recorde'] }}</span></td>
+        </tr>
+        <tr>
+            <th>Esforço médio percebido</th>
+            {{-- Sem interpolar HTML dentro de `{{ }}`: o Blade escapa e a tag
+                 sairia como texto na folha. --}}
+            <td>@if($rpeMedio){{ $rpeMedio }} <span class="u">/ 10</span>@else—@endif</td>
+        </tr>
+    </table>
+
+    @if($pesoIni !== null && $pesoFim !== null)
+        @php $delta = (float) $pesoFim - (float) $pesoIni; @endphp
+        <h2 class="f-secao">Peso corporal</h2>
+        <table class="f-linhas">
+            <tr>
+                <th>Início do período</th>
+                <td>{{ $pesoIni }} <span class="u">kg</span></td>
+            </tr>
+            <tr>
+                <th>Fim do período</th>
+                <td>{{ $pesoFim }} <span class="u">kg</span></td>
+            </tr>
+            <tr>
+                <th>Variação</th>
+                <td>
+                    {{ $delta > 0 ? '+' : '' }}{{ rtrim(rtrim(number_format($delta, 2, ',', '.'), '0'), ',') }}
+                    <span class="u">kg</span>
+                </td>
+            </tr>
+        </table>
+    @endif
+
+    <h2 class="f-secao">Recordes do mês</h2>
+    @if(count($recordes) === 0)
+        <p class="f-vazio">Nenhum recorde batido neste mês.</p>
+    @else
+        <table class="f-linhas">
+            @foreach($recordes as $r)
+                <tr>
+                    <th>{{ $r['exercicio'] }} <span class="u">· {{ $r['data']->format('d/m/Y') }}</span></th>
+                    <td>{{ rtrim(rtrim(number_format($r['peso'], 2, ',', '.'), '0'), ',') }} <span class="u">kg</span></td>
+                </tr>
+            @endforeach
+        </table>
+    @endif
+
+    <div class="f-legenda">
+        <strong>Aderência</strong> = treinos realizados ÷ planejados no período.
+        <strong>Sequência</strong> = dias consecutivos com treino concluído.
+        <strong>Esforço médio</strong> = média do RPE informado pelo aluno, de 0 a 10.
+        <strong>Recorde</strong> = maior carga registrada no exercício dentro do mês.
+    </div>
+
+    <div class="f-assina">
+        <div class="linha"></div>
+        <div class="nome">{{ $personal->nome }}</div>
+        <div class="reg">@if($personal->cref) CREF {{ $personal->cref }} @else Personal trainer @endif</div>
+    </div>
+</div>
+
+<div class="f-marca so-print" aria-hidden="true">
+    <img src="{{ asset('SnrFit.png') }}" alt="">
+</div>
+
+<div class="f-pe so-print">
+    <span>Relatório mensal · {{ $cliente->nome }} · {{ $mesRef }}</span>
+    <span>SnrFit · {{ now()->format('d/m/Y H:i') }}</span>
+</div>
 </body>
 
 </html>
