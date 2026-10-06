@@ -769,16 +769,13 @@
                     <button type="button" onclick="abrirDetalhesAluno({{ $agendamento->cliente?->id }})" style="background: rgba(124,255,0,0.15); color: var(--primary); border: 1px solid rgba(124,255,0,0.4); width: 40px; height: 40px; border-radius: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: 0.3s; font-weight: 900;" title="Ver informações do aluno">
                         <i class="ph ph-user-circle"></i>
                     </button>
+                    {{-- Dois botões: consultar o aluno e abrir as fichas dele.
+                         O terceiro, de criar ficha, saiu: a criação já mora na
+                         tela de fichas, onde o personal vê o que o aluno tem
+                         antes de montar mais uma. --}}
                     <a href="{{ route('fichas-treino.aluno', $agendamento->cliente?->id) }}" style="background: rgba(124,255,0,0.15); color: var(--primary); border: 1px solid rgba(124,255,0,0.4); width: 40px; height: 40px; border-radius: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: 0.3s; font-weight: 900; text-decoration: none;" title="Visualizar fichas">
                         <i class="ph ph-eye"></i>
                     </a>
-                    <button type="button"
-                        data-cliente-id="{{ $agendamento->cliente?->id }}"
-                        data-cliente-nome="{{ $agendamento->cliente?->nome }}"
-                        onclick="abrirModalCriarFichaAluno(this.dataset.clienteId, this.dataset.clienteNome)"
-                        style="background: rgba(124,255,0,0.2); color: var(--primary); border: 1px solid var(--primary); width: 40px; height: 40px; border-radius: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: 0.3s; font-weight: 900;" title="Criar ficha de treino">
-                        <i class="ph ph-barbell"></i>
-                    </button>
                 </div>
                 @empty
                 <div style="text-align: center; padding: 40px 20px; opacity: 0.5;">
@@ -792,46 +789,6 @@
     </div>
 
 
-    <div id="modalCriarFichaAluno" class="modal-overlay">
-        <div class="modal-content" style="max-width: 500px;">
-            <h2 style="color: var(--primary); font-size: 1.4rem; margin-top: 0; font-weight: 900;">
-                <i class="ph ph-plus"></i> CRIAR FICHA DE TREINO
-            </h2>
-            <p id="nomeAlunoModalFicha" style="color: var(--text-muted); margin-bottom: 20px;"></p>
-            
-            <form action="{{ route('fichas-treino.criar') }}" method="POST">
-                @csrf
-                <input type="hidden" id="clienteIdModalFicha" name="cliente_id" value="">
-
-                <label>Dia da Semana</label>
-                <div class="input-wrapper" style="padding: 0;">
-                    <select name="dia_semana" required style="flex: 1; background: transparent; border: none; padding: 12px; color: #fff; outline: none; font-size: 0.9rem;">
-                        <option value="">Selecione um dia</option>
-                        <option value="0">Domingo</option>
-                        <option value="1">Segunda</option>
-                        <option value="2">Terça</option>
-                        <option value="3">Quarta</option>
-                        <option value="4">Quinta</option>
-                        <option value="5">Sexta</option>
-                        <option value="6">Sábado</option>
-                    </select>
-                </div>
-
-                <label>Nome do Treino</label>
-                <div class="input-wrapper"><i class="ph ph-barbell"></i><input type="text" name="nome_treino" placeholder="Ex: Peito e Costas" required></div>
-
-                <label>Observações</label>
-                <div class="input-wrapper" style="padding: 12px; min-height: 80px;">
-                    <textarea name="observacoes" placeholder="Aquecimento, alongamento, etc" style="flex: 1; background: transparent; border: none; color: #fff; outline: none; font-size: 0.9rem; resize: vertical; min-height: 60px;"></textarea>
-                </div>
-
-                <div style="display: flex; gap: 10px;">
-                    <button type="button" onclick="fecharModalCriarFichaAluno()" class="btn-save btn-cancel" style="flex: 1; margin-top: 0;">CANCELAR</button>
-                    <button type="submit" class="btn-save" style="flex: 1; margin-top: 0;">CRIAR FICHA</button>
-                </div>
-            </form>
-        </div>
-    </div>
 
     {{-- MODAL FINANCEIRO --}}
     <div id="modalFinance" class="modal-overlay">
@@ -1398,7 +1355,6 @@
         const modalGaleria = document.getElementById('modalGaleria');
         const modalAvaliacoes = document.getElementById('modalAvaliacoes');
         const modalDetalhesAluno = document.getElementById('modalDetalhesAluno');
-        const modalCriarFichaAluno = document.getElementById('modalCriarFichaAluno');
 
         document.getElementById('btnOpenUpdate').onclick = () => {
             modalUpdate.style.display = 'block';
@@ -1543,25 +1499,38 @@
         }
 
         // ✅ CRIAR FICHA
-        function abrirModalCriarFichaAluno(clienteId, nomeAluno) {
-            document.getElementById('clienteIdModalFicha').value = clienteId;
-            const p = document.getElementById('nomeAlunoModalFicha');
-            p.textContent = 'Criando ficha para: ';
-            const strong = document.createElement('strong');
-            strong.style.color = 'var(--primary)';
-            strong.textContent = nomeAluno;
-            p.appendChild(strong);
-            modalCriarFichaAluno.style.display = 'block';
-        }
-
-        function fecharModalCriarFichaAluno() {
-            modalCriarFichaAluno.style.display = 'none';
-        }
-
         function escHtml(str) {
             const d = document.createElement('div');
             d.textContent = String(str ?? '');
             return d.innerHTML;
+        }
+
+        /*
+         * Atalhos de acompanhamento do aluno, dentro do detalhe dele.
+         *
+         * Vieram da tela de fichas, que agora é só das fichas. Periodização
+         * entrou junto por necessidade: a tela geral de periodização só lista
+         * aluno que JÁ tem mesociclo, então sem este link não havia como criar
+         * o primeiro de alguém.
+         *
+         * As URLs saem de route() com um marcador, porque o id só é conhecido
+         * aqui no JS.
+         */
+        const ROTAS_ALUNO = [
+            { url: {!! json_encode(route('anamnese.personal', '__ID__')) !!},    rotulo: 'Anamnese',     icone: 'ph-first-aid' },
+            { url: {!! json_encode(route('progresso.personal', '__ID__')) !!},   rotulo: 'Progresso',    icone: 'ph-chart-line' },
+            { url: {!! json_encode(route('relatorio.aluno', '__ID__')) !!},      rotulo: 'Relatório',    icone: 'ph-file-text' },
+            { url: {!! json_encode(route('evolucao-carga.aluno', '__ID__')) !!}, rotulo: 'Evolução',     icone: 'ph-lightning' },
+            { url: {!! json_encode(route('periodizacao.aluno', '__ID__')) !!},   rotulo: 'Periodização', icone: 'ph-stack' },
+        ];
+
+        function linksAluno(clienteId) {
+            return ROTAS_ALUNO.map(function (r) {
+                return `<a href="${r.url.replace('__ID__', encodeURIComponent(clienteId))}"
+                           style="display:inline-flex; align-items:center; justify-content:center; gap:7px; background:rgba(124,255,0,0.1); color:var(--primary); border:1px solid rgba(124,255,0,0.35); padding:11px 12px; border-radius:10px; font-weight:900; font-size:0.74rem; text-transform:uppercase; letter-spacing:0.4px; text-decoration:none;">
+                            <i class="ph ${r.icone}"></i> ${r.rotulo}
+                        </a>`;
+            }).join('');
         }
 
         function abrirDetalhesAluno(clienteId) {
@@ -1625,6 +1594,15 @@
                                 <p style="margin: 0 0 15px 0; font-size: 1.1rem; color: var(--primary); font-weight: 900;">
                                     ${pacoteInfo}
                                 </p>
+                            </div>
+
+                            <div style="margin-top:16px;">
+                                <p style="margin:0 0 10px 0; font-size:0.78rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.5px; font-weight:800;">
+                                    Acompanhamento
+                                </p>
+                                <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(140px, 1fr)); gap:8px;">
+                                    ${linksAluno(clienteId)}
+                                </div>
                             </div>
                         `;
                     } else {
@@ -1763,7 +1741,6 @@
             if (e.target == modalGaleria) closeModalGaleria();
             if (e.target == modalAvaliacoes) closeModalAvaliacoes();
             if (e.target == modalDetalhesAluno) closeModalDetalhesAluno();
-            if (e.target == modalCriarFichaAluno) fecharModalCriarFichaAluno();
             if (e.target == document.getElementById('modalCarteira')) fecharCarteira();
         }
 

@@ -676,34 +676,21 @@
                 <div class="ed-eyebrow"><i class="ph ph-barbell"></i> Fichas do aluno</div>
                 <h1 class="ed-h">{{ strtoupper($cliente->nome) }}</h1>
             </div>
+            {{-- Esta tela é só das fichas: ver as que existem e criar nova.
+                 Anamnese, Progresso, Relatório, Evolução e Periodização viviam
+                 aqui e passaram para o modal de detalhes do aluno (painel →
+                 Meus Alunos), que é onde se consulta o aluno. Aqui eles só
+                 competiam pela atenção de quem veio montar treino. --}}
             <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
-                @unless($vindoDaSolicitacao)
-                    <a href="{{ route('evolucao-carga.aluno', $cliente->id) }}"
-                       style="display:inline-flex; align-items:center; gap:8px; background:var(--primary); color:#000; padding:12px 18px; border-radius:10px; font-weight:900; font-size:0.85rem; text-transform:uppercase; letter-spacing:0.5px; box-shadow:0 0 16px rgba(124,255,0,0.25);">
-                        <i class="ph ph-lightning"></i> Evolução
-                    </a>
-                    <a href="{{ route('periodizacao.aluno', $cliente->id) }}"
+                {{-- Exceção: vindo da solicitação, a anamnese fica. As condições
+                     clínicas são justamente o que se consulta para prescrever, e
+                     nesse fluxo o personal não passou pelo detalhe do aluno. --}}
+                @if($vindoDaSolicitacao)
+                    <a href="{{ route('anamnese.personal', $cliente->id) }}"
                        style="display:inline-flex; align-items:center; gap:8px; background:transparent; color:var(--primary); border:1px solid var(--primary); padding:12px 18px; border-radius:10px; font-weight:900; font-size:0.85rem; text-transform:uppercase; letter-spacing:0.5px;">
-                        <i class="ph ph-stack"></i> Periodização
+                        <i class="ph ph-first-aid"></i> Anamnese
                     </a>
-                @endunless
-                {{-- Anamnese fica mesmo na chegada pela solicitação: as condições
-                     clínicas do aluno são justamente o que se consulta para
-                     prescrever o treino. --}}
-                <a href="{{ route('anamnese.personal', $cliente->id) }}"
-                   style="display:inline-flex; align-items:center; gap:8px; background:transparent; color:var(--primary); border:1px solid var(--primary); padding:12px 18px; border-radius:10px; font-weight:900; font-size:0.85rem; text-transform:uppercase; letter-spacing:0.5px;">
-                    <i class="ph ph-first-aid"></i> Anamnese
-                </a>
-                @unless($vindoDaSolicitacao)
-                    <a href="{{ route('progresso.personal', $cliente->id) }}"
-                       style="display:inline-flex; align-items:center; gap:8px; background:transparent; color:var(--primary); border:1px solid var(--primary); padding:12px 18px; border-radius:10px; font-weight:900; font-size:0.85rem; text-transform:uppercase; letter-spacing:0.5px;">
-                        <i class="ph ph-chart-line"></i> Progresso
-                    </a>
-                    <a href="{{ route('relatorio.aluno', $cliente->id) }}"
-                       style="display:inline-flex; align-items:center; gap:8px; background:transparent; color:var(--primary); border:1px solid var(--primary); padding:12px 18px; border-radius:10px; font-weight:900; font-size:0.85rem; text-transform:uppercase; letter-spacing:0.5px;">
-                        <i class="ph ph-file-text"></i> Relatório
-                    </a>
-                @endunless
+                @endif
                 <button id="btnNovaFicha" class="btn-nova-ficha">
                     <i class="ph ph-plus"></i> NOVA FICHA
                 </button>

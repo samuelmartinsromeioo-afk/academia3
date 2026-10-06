@@ -300,28 +300,48 @@ class SolicitacaoFichaTest extends TestCase
     }
 
     /** Acesso normal: a página é de gestão do aluno e mantém tudo. */
-    public function test_acesso_normal_mantem_todos_os_atalhos(): void
+    /**
+     * A tela de fichas é só das fichas: ver e criar.
+     *
+     * Anamnese, Progresso, Relatório, Evolução e Periodização saíram daqui para
+     * o detalhe do aluno (painel → Meus Alunos). Aqui competiam pela atenção de
+     * quem veio montar treino.
+     */
+    public function test_acesso_normal_mostra_so_as_acoes_de_ficha(): void
     {
         $resp = $this->comoPersonal()
             ->get(route('fichas-treino.aluno', $this->cliente->id))
             ->assertOk();
 
-        $resp->assertSee('Periodização', false);
-        $resp->assertSee('Progresso', false);
-        $resp->assertSee('Relatório', false);
-        $resp->assertSee('Evolução', false);
-        $resp->assertSee('Anamnese');
         $resp->assertSee('NOVA FICHA');
+
+        $resp->assertDontSee('Periodização', false);
+        $resp->assertDontSee('Progresso', false);
+        $resp->assertDontSee('Relatório', false);
+        $resp->assertDontSee('Evolução', false);
+        // Fora do fluxo da solicitação, a anamnese se consulta no detalhe do aluno.
+        $resp->assertDontSee(route('anamnese.personal', $this->cliente->id), false);
 
         $resp->assertSee(route('personal.dashboard'), false);
     }
 
-    /** Um valor qualquer em ?origem não deve enxugar a tela. */
-    public function test_origem_desconhecida_nao_enxuga(): void
+    /**
+     * `?origem` com valor qualquer é acesso normal, não o fluxo da solicitação.
+     *
+     * A comparação é estrita (`=== 'solicitacao'`); o teste existe para que
+     * ninguém a troque por algo frouxo, tipo `filled(request('origem'))`, e faça
+     * qualquer link com query string se passar pelo fluxo do pedido.
+     */
+    public function test_origem_desconhecida_e_tratada_como_acesso_normal(): void
     {
-        $this->comoPersonal()
+        $resp = $this->comoPersonal()
             ->get(route('fichas-treino.aluno', ['clienteId' => $this->cliente->id, 'origem' => 'qualquer']))
-            ->assertOk()
-            ->assertSee('Periodização', false);
+            ->assertOk();
+
+        // Volta para o painel, não para a fila de solicitações.
+        $resp->assertSee(route('personal.dashboard'), false);
+        $resp->assertDontSee(route('personal.solicitacoes-ficha'), false);
+        // E sem o atalho de anamnese, que é exclusivo daquele fluxo.
+        $resp->assertDontSee(route('anamnese.personal', $this->cliente->id), false);
     }
 }
