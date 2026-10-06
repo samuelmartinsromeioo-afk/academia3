@@ -3,10 +3,9 @@
 namespace App\Http\Controllers\Cadastro;
 
 use App\Http\Controllers\Concerns\EscopoAcademia;
+use App\Http\Controllers\Concerns\VinculoComAluno;
 use App\Http\Controllers\Controller;
-use App\Models\Agenda;
 use App\Models\Cadastro\Cliente;
-use App\Models\Cadastro\FichaTreino;
 use App\Models\Cadastro\Mesociclo;
 use App\Models\Cadastro\MesocicloExercicio;
 use App\Models\Cadastro\MesocicloTreino;
@@ -25,6 +24,7 @@ use Illuminate\Support\Facades\Log;
 class MesocicloController extends Controller
 {
     use EscopoAcademia;
+    use VinculoComAluno;
 
     private const LETRAS = ['A', 'B', 'C', 'D', 'E', 'F'];
 
@@ -422,13 +422,6 @@ class MesocicloController extends Controller
     }
 
     // ===================== HELPERS =====================
-
-    private function podeVer($personalId, $clienteId): bool
-    {
-        return FichaTreino::where('personal_id', $personalId)->where('cliente_id', $clienteId)->exists()
-            || Agenda::where('personal_id', $personalId)->where('cliente_id', $clienteId)->where('cancelado', false)->exists()
-            || Mesociclo::where('personal_id', $personalId)->where('cliente_id', $clienteId)->exists();
-    }
 
     private function donoDoTreino(MesocicloTreino $treino): bool
     {

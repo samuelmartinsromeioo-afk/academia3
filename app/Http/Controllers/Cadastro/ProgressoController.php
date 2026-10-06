@@ -2,10 +2,9 @@
 
 namespace App\Http\Controllers\Cadastro;
 
+use App\Http\Controllers\Concerns\VinculoComAluno;
 use App\Http\Controllers\Controller;
-use App\Models\Agenda;
 use App\Models\Cadastro\Cliente;
-use App\Models\Cadastro\FichaTreino;
 use App\Models\Cadastro\RegistroExercicio;
 use App\Models\FotoProgresso;
 use App\Models\MedidaCorporal;
@@ -18,6 +17,8 @@ use Illuminate\Support\Facades\Storage;
  */
 class ProgressoController extends Controller
 {
+    use VinculoComAluno;
+
     // ALUNO: página de progresso (medidas + fotos)
     public function index()
     {
@@ -142,10 +143,4 @@ class ProgressoController extends Controller
         return view('personal.ProgressoAluno', compact('cliente', 'medidas', 'fotos', 'metas', 'exercicios'));
     }
 
-    private function podeVer($personalId, $clienteId): bool
-    {
-        return FichaTreino::where('personal_id', $personalId)->where('cliente_id', $clienteId)->exists()
-            || Agenda::where('personal_id', $personalId)->where('cliente_id', $clienteId)->where('cancelado', false)->exists()
-            || Cliente::where('id', $clienteId)->where('personal_id', $personalId)->exists();
-    }
 }

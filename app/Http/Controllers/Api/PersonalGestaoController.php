@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Api\Concerns\ResolvesApiUser;
+use App\Http\Controllers\Concerns\VinculoComAluno;
 use App\Http\Controllers\Controller;
 use App\Models\Agenda;
 use App\Models\Anamnese;
@@ -30,6 +31,7 @@ use Illuminate\Support\Facades\Storage;
 class PersonalGestaoController extends Controller
 {
     use ResolvesApiUser;
+    use VinculoComAluno;
 
     private const DIAS_SUMIDO = 7;
 
@@ -681,13 +683,6 @@ class PersonalGestaoController extends Controller
         if ($taxa >= 0.8) return ['key' => 'frequente', 'label' => 'Frequente', 'taxa' => round($taxa, 2)];
         if ($taxa >= 0.5) return ['key' => 'medio', 'label' => 'Mais ou menos', 'taxa' => round($taxa, 2)];
         return ['key' => 'ausente', 'label' => 'Pouco frequente', 'taxa' => round($taxa, 2)];
-    }
-
-    private function podeVer($personalId, $clienteId): bool
-    {
-        return FichaTreino::where('personal_id', $personalId)->where('cliente_id', $clienteId)->exists()
-            || Agenda::where('personal_id', $personalId)->where('cliente_id', $clienteId)->where('cancelado', false)->exists()
-            || Cliente::where('id', $clienteId)->where('personal_id', $personalId)->exists();
     }
 
     private function aderenciaResumo($clienteId, $fichas): array

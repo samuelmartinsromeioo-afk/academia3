@@ -2,10 +2,9 @@
 
 namespace App\Http\Controllers\Cadastro;
 
+use App\Http\Controllers\Concerns\VinculoComAluno;
 use App\Http\Controllers\Controller;
-use App\Models\Agenda;
 use App\Models\Cadastro\Cliente;
-use App\Models\Cadastro\FichaTreino;
 use App\Models\Cadastro\RegistroExercicio;
 use App\Models\Cadastro\TreinoConcluido;
 use App\Models\Meta;
@@ -17,6 +16,8 @@ use Illuminate\Http\Request;
  */
 class MetaController extends Controller
 {
+    use VinculoComAluno;
+
     private array $regras = [
         'tipo' => 'required|in:treinos_mes,carga,livre',
         'titulo' => 'required|string|max:255',
@@ -124,10 +125,4 @@ class MetaController extends Controller
             });
     }
 
-    private function podeVer($personalId, $clienteId): bool
-    {
-        return FichaTreino::where('personal_id', $personalId)->where('cliente_id', $clienteId)->exists()
-            || Agenda::where('personal_id', $personalId)->where('cliente_id', $clienteId)->where('cancelado', false)->exists()
-            || Cliente::where('id', $clienteId)->where('personal_id', $personalId)->exists();
-    }
 }

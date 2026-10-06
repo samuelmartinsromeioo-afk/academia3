@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Cadastro;
 
+use App\Http\Controllers\Concerns\VinculoComAluno;
 use App\Http\Controllers\Controller;
 use App\Models\Agenda;
 use App\Models\Cadastro\Cliente;
@@ -21,6 +22,8 @@ use Illuminate\Http\Request;
  */
 class PainelController extends Controller
 {
+    use VinculoComAluno;
+
     private const DIAS_SUMIDO = 7;
 
     // ===================== FEED =====================
@@ -209,10 +212,4 @@ class PainelController extends Controller
             ->unique()->values();
     }
 
-    private function podeVer($personalId, $clienteId): bool
-    {
-        return FichaTreino::where('personal_id', $personalId)->where('cliente_id', $clienteId)->exists()
-            || Agenda::where('personal_id', $personalId)->where('cliente_id', $clienteId)->where('cancelado', false)->exists()
-            || Cliente::where('id', $clienteId)->where('personal_id', $personalId)->exists();
-    }
 }
