@@ -121,13 +121,30 @@
             .container { padding: 20px 15px; }
         }
 
+        /* Marca d'água — a mesma dos outros documentos imprimíveis.
+           `position: fixed` faz repetir em toda página impressa. */
+        .doc-marca { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; pointer-events: none; z-index: 0; }
+        .doc-marca img { width: 58%; max-width: 440px; opacity: 0.06; transform: rotate(-24deg); }
+        .top-bar, .container { position: relative; z-index: 1; }
+
         @media print {
             .top-bar, .print-btn, .back-btn, .doc-nav { display: none; }
-            body { background: #fff; }
-            .content { background: transparent; border: none; padding: 0; }
-            .header h1, .content h2, .content h3 { color: #000; }
-            .content h2 { border-bottom: 2px solid #ccc; }
-            .content p, .content li { color: #333; }
+
+            /* Padrão agora é imprimir ESCURO, igual à tela. Sem o color-adjust
+               o navegador descarta o fundo e a marca d'água. */
+            html, body, .content, .doc-marca img {
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+
+            /* Folha branca só quando a pessoa escolhe. Isto era o comportamento
+               ÚNICO de impressão: quem quisesse o padrão da marca no papel não
+               tinha opção. */
+            html.folha, html.folha body { background: #fff; }
+            html.folha .content { background: transparent; border: none; padding: 0; }
+            html.folha .header h1, html.folha .content h2, html.folha .content h3 { color: #000; }
+            html.folha .content h2 { border-bottom: 2px solid #ccc; }
+            html.folha .content p, html.folha .content li { color: #333; }
         }
     </style>
 </head>
@@ -137,11 +154,18 @@
     <div class="top-bar">
         <a href="/" class="logo"><i class="ph ph-barbell"></i> SNR FIT</a>
         <div style="display: flex; gap: 10px; align-items: center;">
-            <button class="print-btn" onclick="window.print()">
-                <i class="ph ph-printer"></i> Imprimir
+            <button class="print-btn" onclick="imprimirDoc(false)">
+                <i class="ph ph-printer"></i> Imprimir escuro
+            </button>
+            <button class="print-btn" onclick="imprimirDoc(true)">
+                <i class="ph ph-file-text"></i> Folha branca
             </button>
             <a href="/" class="back-btn"><i class="ph ph-caret-left"></i> Voltar</a>
         </div>
+    </div>
+
+    <div class="doc-marca" aria-hidden="true">
+        <img src="{{ asset('SnrFit.png') }}" alt="">
     </div>
 
     <div class="container">
@@ -175,6 +199,24 @@
             <p style="margin-top: 16px;">© {{ date('Y') }} SNR FIT. Todos os direitos reservados.</p>
         </div>
     </div>
+
+<script>
+    // Mesma chave de layouts/documento: a escolha de folha branca vale para
+    // todos os documentos imprimíveis do site, não só para este.
+    function imprimirDoc(folha) {
+        document.documentElement.classList.toggle('folha', !!folha);
+        try { localStorage.setItem('snrfit_doc_folha', folha ? '1' : '0'); } catch (e) { /* modo privado */ }
+        window.requestAnimationFrame(function () {
+            window.requestAnimationFrame(function () { window.print(); });
+        });
+    }
+
+    try {
+        if (localStorage.getItem('snrfit_doc_folha') === '1') {
+            document.documentElement.classList.add('folha');
+        }
+    } catch (e) { /* ignora */ }
+</script>
 
 </body>
 

@@ -255,7 +255,10 @@ class PlanoAlimentarController extends Controller
     {
         $nutri = $this->nutri();
         $plano = $this->planoDoNutri($id);
-        $plano->load('refeicoes.itens.opcoes', 'paciente');
+        // `itens.alimento` entra porque a folha branca mostra preparo e
+        // alergênicos, que vivem no catálogo e não no item do plano — sem o
+        // eager load seria uma query por alimento dentro do laço da view.
+        $plano->load('refeicoes.itens.opcoes', 'refeicoes.itens.alimento', 'paciente');
 
         return view('nutri.planos.pdf', compact('nutri', 'plano'));
     }

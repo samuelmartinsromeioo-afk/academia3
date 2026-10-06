@@ -76,7 +76,14 @@ class PainelController extends Controller
         $cliente = Cliente::findOrFail($clienteId);
         $dados = $this->dadosRelatorio($personalId, $clienteId);
 
-        return view('personal.Relatorio', array_merge(['cliente' => $cliente], $dados));
+        // O documento impresso identifica quem o emitiu (nome + CREF) e assina
+        // no rodapé; sem o personal aqui, a folha sairia sem autoria.
+        $personal = Personal::find($personalId);
+
+        return view('personal.Relatorio', array_merge([
+            'cliente' => $cliente,
+            'personal' => $personal,
+        ], $dados));
     }
 
     public function enviarRelatorio($clienteId)

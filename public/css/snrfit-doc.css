@@ -1,0 +1,271 @@
+/* ──────────────────────────────────────────────────────────────────────────
+   SNR·FIT — documentos imprimíveis (relatório, ficha de nutrição, recibo…)
+   Usado por resources/views/layouts/documento.blade.php.
+
+   Dois modos no MESMO HTML, trocados pela classe `.folha` no <html>:
+
+     padrão  → fundo preto, letra branca. É a identidade da marca, e sai
+               assim no papel também: `print-color-adjust: exact` impede o
+               navegador de "otimizar" o fundo para branco.
+     .folha  → folha branca, e mais detalhada. Os blocos marcados com
+               `.doc-extra` (dados do destinatário, legenda, assinatura)
+               existem no HTML sempre, mas só aparecem aqui — é o que a
+               versão escura, mais enxuta, não mostra.
+
+   A marca d'água é `position: fixed`, então repete em TODA página impressa,
+   nos dois modos.
+   ────────────────────────────────────────────────────────────────────────── */
+
+:root {
+    --doc-lime: #7cff00;
+    --doc-bg: #0a0b0d;
+    --doc-surface: #16181d;
+    --doc-border: rgba(255, 255, 255, 0.14);
+    --doc-text: #ffffff;
+    --doc-dim: #9ca3af;
+    --doc-zebra: rgba(255, 255, 255, 0.03);
+    --doc-marca: 0.06;
+}
+
+/* Folha branca: só troca os tokens — nenhuma regra abaixo precisa saber. */
+html.folha {
+    --doc-lime: #4a7c00;
+    --doc-bg: #ffffff;
+    --doc-surface: #ffffff;
+    --doc-border: #c9ced6;
+    --doc-text: #14171c;
+    --doc-dim: #5b6472;
+    --doc-zebra: #f4f6f8;
+    --doc-marca: 0.05;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+    margin: 0;
+    background: var(--doc-bg);
+    color: var(--doc-text);
+}
+
+body {
+    font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
+    font-size: 13px;
+    line-height: 1.55;
+    padding: 28px 22px 64px;
+}
+
+/* ── Marca d'água ─────────────────────────────────────────────────────── */
+
+.doc-marca {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+    z-index: 0;
+}
+.doc-marca img {
+    width: 58%;
+    max-width: 440px;
+    opacity: var(--doc-marca);
+    transform: rotate(-24deg);
+}
+
+/* O conteúdo sobe acima da marca. */
+.doc-folha { position: relative; z-index: 1; max-width: 820px; margin: 0 auto; }
+
+/* ── Botões (nunca impressos) ─────────────────────────────────────────── */
+
+.doc-acoes {
+    position: fixed;
+    top: 14px;
+    right: 14px;
+    display: flex;
+    gap: 8px;
+    z-index: 10;
+}
+.doc-btn {
+    font-family: inherit;
+    font-size: 0.74rem;
+    font-weight: 800;
+    letter-spacing: 0.3px;
+    text-transform: uppercase;
+    padding: 9px 14px;
+    border-radius: 9px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    border: 1px solid var(--doc-lime);
+    background: var(--doc-lime);
+    color: #0a0b0d;
+}
+.doc-btn--alt { background: transparent; color: var(--doc-lime); }
+html.folha .doc-btn { background: #14171c; border-color: #14171c; color: #fff; }
+html.folha .doc-btn--alt { background: transparent; color: #14171c; }
+
+/* ── Cabeçalho ────────────────────────────────────────────────────────── */
+
+.doc-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 20px;
+    flex-wrap: wrap;
+    border-bottom: 2px solid var(--doc-lime);
+    padding-bottom: 14px;
+    margin-bottom: 20px;
+}
+.doc-head h1 {
+    margin: 0;
+    font-size: 1.32rem;
+    font-weight: 900;
+    letter-spacing: 0.4px;
+    text-transform: uppercase;
+}
+.doc-head .doc-sub { color: var(--doc-dim); font-size: 0.86rem; margin-top: 3px; }
+.doc-emissor { text-align: right; font-size: 0.8rem; line-height: 1.5; }
+.doc-emissor strong { font-size: 0.9rem; }
+.doc-emissor .doc-dim { color: var(--doc-dim); }
+.doc-logo { display: flex; align-items: center; gap: 9px; margin-bottom: 6px; }
+.doc-logo img { width: 26px; height: 26px; }
+.doc-logo span { font-weight: 900; letter-spacing: 2px; font-size: 0.78rem; }
+
+/* ── Blocos de conteúdo ───────────────────────────────────────────────── */
+
+.doc-card {
+    border: 1px solid var(--doc-border);
+    border-radius: 10px;
+    background: var(--doc-surface);
+    margin-bottom: 14px;
+    overflow: hidden;
+    page-break-inside: avoid;
+}
+.doc-card > h3 {
+    margin: 0;
+    padding: 10px 14px;
+    font-size: 0.92rem;
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    background: var(--doc-lime);
+    color: #0a0b0d;
+}
+html.folha .doc-card > h3 { background: #14171c; color: #fff; }
+
+.doc-secao {
+    font-size: 0.68rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-weight: 900;
+    color: var(--doc-lime);
+    margin: 22px 0 9px;
+}
+
+table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+th, td { padding: 8px 13px; text-align: left; border-bottom: 1px solid var(--doc-border); }
+th {
+    font-size: 0.66rem;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    color: var(--doc-dim);
+    background: var(--doc-zebra);
+}
+td.n, th.n { text-align: right; }
+tr.doc-total td { font-weight: 800; background: var(--doc-zebra); }
+
+.doc-faixa {
+    display: flex;
+    gap: 22px;
+    flex-wrap: wrap;
+    background: var(--doc-lime);
+    color: #0a0b0d;
+    padding: 13px 16px;
+    border-radius: 10px;
+    font-weight: 800;
+    font-size: 0.84rem;
+}
+html.folha .doc-faixa { background: #eef2f6; color: #14171c; border: 1px solid var(--doc-border); }
+
+.doc-obs {
+    font-size: 0.82rem;
+    color: var(--doc-text);
+    background: var(--doc-zebra);
+    border: 1px solid var(--doc-border);
+    border-radius: 8px;
+    padding: 11px 13px;
+    margin-top: 12px;
+}
+.doc-nota { color: var(--doc-dim); font-size: 0.76rem; }
+
+.doc-grade {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 10px;
+}
+.doc-stat {
+    border: 1px solid var(--doc-border);
+    border-radius: 10px;
+    padding: 12px 14px;
+    background: var(--doc-surface);
+}
+.doc-stat .rot { font-size: 0.64rem; text-transform: uppercase; letter-spacing: 0.7px; color: var(--doc-dim); }
+.doc-stat .val { font-size: 1.22rem; font-weight: 900; color: var(--doc-lime); }
+html.folha .doc-stat .val { color: #14171c; }
+
+/* ── Só na folha branca (o "mais detalhado") ──────────────────────────── */
+
+.doc-extra { display: none; }
+html.folha .doc-extra { display: block; }
+
+.doc-dados { border: 1px solid var(--doc-border); border-radius: 10px; overflow: hidden; margin-bottom: 18px; }
+.doc-dados table { font-size: 0.8rem; }
+.doc-dados th { width: 150px; background: var(--doc-zebra); font-size: 0.64rem; }
+.doc-dados tr:last-child th, .doc-dados tr:last-child td { border-bottom: none; }
+
+.doc-assina { margin-top: 46px; text-align: center; page-break-inside: avoid; }
+.doc-assina .linha { width: 300px; margin: 0 auto 7px; border-top: 1px solid var(--doc-text); }
+.doc-assina .nome { font-weight: 800; font-size: 0.86rem; }
+.doc-assina .reg { color: var(--doc-dim); font-size: 0.76rem; }
+
+/* Ação que vive na tela mas não faz sentido no papel (enviar, voltar…). */
+.doc-nao-imprime { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 22px; }
+
+/* ── Rodapé ───────────────────────────────────────────────────────────── */
+
+.doc-pe {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    display: flex;
+    justify-content: space-between;
+    gap: 14px;
+    padding: 8px 22px;
+    font-size: 0.68rem;
+    color: var(--doc-dim);
+    border-top: 1px solid var(--doc-border);
+    background: var(--doc-bg);
+    z-index: 2;
+}
+
+/* ── Impressão ────────────────────────────────────────────────────────── */
+
+@page { margin: 12mm; }
+
+@media print {
+    /* Sem isto o navegador descarta o fundo preto e a marca d'água. */
+    html, body, .doc-card, .doc-card > h3, .doc-faixa, .doc-obs, .doc-stat,
+    th, tr.doc-total td, .doc-pe, .doc-marca img {
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+
+    body { padding: 0 0 34px; font-size: 11.5px; }
+    .doc-acoes, .doc-nao-imprime { display: none !important; }
+    .doc-folha { max-width: none; }
+    .doc-head { page-break-after: avoid; }
+    .doc-secao { page-break-after: avoid; }
+    a { color: inherit; text-decoration: none; }
+}
