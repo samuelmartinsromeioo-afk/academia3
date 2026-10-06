@@ -170,7 +170,7 @@ class TreinosGestaoController extends Controller
             'dia_semana' => 'required|integer|min:0|max:6',
             'nome_treino' => 'required|string|max:255',
             'observacoes' => 'nullable|string',
-            'nivel' => 'required|in:iniciante,avancado',
+            'nivel' => FichaTreino::regraNivel(),
             'divisao' => 'nullable|string|max:100',
             'academia_professor_id' => 'nullable|integer|exists:academia_professores,id',
         ]);
@@ -207,7 +207,7 @@ class TreinosGestaoController extends Controller
             'observacoes' => $request->observacoes,
             'ativo' => true,
             'nivel' => $request->nivel,
-            'divisao' => $request->nivel === 'avancado' ? $request->divisao : null,
+            'divisao' => FichaTreino::nivelTemDivisao($request->nivel) ? $request->divisao : null,
         ]);
 
         return response()->json(['success' => true, 'message' => 'Ficha criada com sucesso!', 'ficha_id' => $ficha->id], 201);

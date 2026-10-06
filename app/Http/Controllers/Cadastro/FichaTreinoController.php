@@ -105,7 +105,21 @@ class FichaTreinoController extends Controller
 
         $exerciciosData = $this->getExerciciosData();
 
-        return view('personal.PersonalFichasTreinoLista', compact('cliente', 'fichas', 'exerciciosData'));
+        // Nível que o ALUNO declarou no pedido em aberto. A ficha nasce com ele
+        // em vez de perguntar de novo: a resposta já existe, e repetir a pergunta
+        // abre espaço para o personal contradizê-la sem querer.
+        //
+        // `whereIn(NIVEIS)` porque `nivel_experiencia` é string livre no banco
+        // (validada só como `nullable|string` no app do aluno): um valor fora da
+        // lista entraria no formulário e a criação da ficha falharia na validação.
+        $nivelDoPedido = \App\Models\SolicitacaoFicha::where('personal_id', $personalId)
+            ->where('cliente_id', $clienteId)
+            ->where('status', 'pendente')
+            ->whereIn('nivel_experiencia', FichaTreino::NIVEIS)
+            ->latest()
+            ->value('nivel_experiencia');
+
+        return view('personal.PersonalFichasTreinoLista', compact('cliente', 'fichas', 'exerciciosData', 'nivelDoPedido'));
     }
 
     // ✅ PERSONAL: Criar nova ficha
@@ -121,7 +135,7 @@ class FichaTreinoController extends Controller
             'dia_semana' => 'required|integer|min:0|max:6',
             'nome_treino' => 'required|string|max:255',
             'observacoes' => 'nullable|string',
-            'nivel' => 'required|in:iniciante,avancado',
+            'nivel' => FichaTreino::regraNivel(),
             'divisao' => 'nullable|string|max:100',
         ]);
 
@@ -145,7 +159,7 @@ class FichaTreinoController extends Controller
             'observacoes' => $request->observacoes,
             'ativo' => true,
             'nivel' => $request->nivel,
-            'divisao' => $request->nivel === 'avancado' ? $request->divisao : null,
+            'divisao' => FichaTreino::nivelTemDivisao($request->nivel) ? $request->divisao : null,
         ]);
 
         return redirect()->route('fichas-treino.aluno', $request->cliente_id)
@@ -351,7 +365,7 @@ class FichaTreinoController extends Controller
             'dia_semana' => 'required|integer|min:0|max:6',
             'nome_treino' => 'required|string|max:255',
             'observacoes' => 'nullable|string',
-            'nivel' => 'required|in:iniciante,avancado',
+            'nivel' => FichaTreino::regraNivel(),
             'divisao' => 'nullable|string|max:100',
         ]);
 
@@ -379,7 +393,7 @@ class FichaTreinoController extends Controller
             'observacoes' => $request->observacoes,
             'ativo' => true,
             'nivel' => $request->nivel,
-            'divisao' => $request->nivel === 'avancado' ? $request->divisao : null,
+            'divisao' => FichaTreino::nivelTemDivisao($request->nivel) ? $request->divisao : null,
         ]);
 
         return redirect()->route('academia.aluno-fichas', $request->cliente_id)

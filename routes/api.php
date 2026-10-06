@@ -96,6 +96,7 @@ Route::prefix('v1')->group(function () {
             Route::post('/templates/de-ficha/{fichaId}', [\App\Http\Controllers\Api\PersonalExtrasController::class, 'salvarDeFicha'])->whereNumber('fichaId');
             Route::post('/templates/{id}/exercicios', [\App\Http\Controllers\Api\PersonalExtrasController::class, 'adicionarExercicioTemplate'])->whereNumber('id');
             Route::delete('/templates/{id}/exercicios/{index}', [\App\Http\Controllers\Api\PersonalExtrasController::class, 'removerExercicioTemplate'])->whereNumber('id');
+            Route::patch('/templates/{id}/exercicios/{index}/video', [\App\Http\Controllers\Api\PersonalExtrasController::class, 'trocarVideoExercicioTemplate'])->whereNumber('id')->whereNumber('index');
             Route::post('/templates/{id}/aplicar', [\App\Http\Controllers\Api\PersonalExtrasController::class, 'aplicarTemplate'])->whereNumber('id');
             Route::delete('/templates/{id}', [\App\Http\Controllers\Api\PersonalExtrasController::class, 'excluirTemplate'])->whereNumber('id');
 

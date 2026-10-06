@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Api\Concerns\ResolvesApiUser;
+use App\Http\Controllers\Concerns\VinculoComAluno;
 use App\Http\Controllers\Controller;
 use App\Models\Agenda;
 use App\Models\Cadastro\Academia;
@@ -16,6 +17,7 @@ use App\Models\MedidaCorporal;
 use App\Models\SolicitacaoFicha;
 use App\Services\EstatisticasTreino;
 use App\Services\NotificacaoService;
+use App\Support\VideosExercicios;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 
@@ -28,6 +30,7 @@ use Illuminate\Http\Request;
 class PersonalExtrasController extends Controller
 {
     use ResolvesApiUser;
+    use VinculoComAluno;
 
     private const DIAS_SUMIDO = 7;
 
@@ -56,7 +59,7 @@ class PersonalExtrasController extends Controller
 
         $request->validate([
             'nome' => 'required|string|max:255',
-            'nivel' => 'nullable|in:iniciante,avancado',
+            'nivel' => FichaTreino::regraNivel(false),
         ]);
 
         $t = FichaTemplate::create([
@@ -84,6 +87,7 @@ class PersonalExtrasController extends Controller
             'repeticoes' => 'required|integer|min:1',
             'peso' => 'nullable|numeric|min:0',
             'observacoes' => 'nullable|string',
+            'video_catalogo' => 'nullable|string|max:255',
         ]);
 
         $exs = $t->exercicios ?? [];
@@ -93,10 +97,53 @@ class PersonalExtrasController extends Controller
             'repeticoes' => (int) $request->repeticoes,
             'peso' => ($request->peso === null || $request->peso === '') ? null : (float) $request->peso,
             'observacoes' => $request->observacoes,
+            'video' => $this->videoDoCatalogo($request->input('video_catalogo')),
         ];
         $t->update(['exercicios' => $exs]);
 
         return response()->json(['success' => true, 'message' => 'Exercício adicionado ao template!'], 201);
+    }
+
+    /**
+     * PATCH /api/v1/personal/templates/{id}/exercicios/{index}/video
+     *
+     * Troca o vídeo de um exercício já salvo no template. `video_catalogo`
+     * vazio volta ao automático (casamento por nome em `videoResolvido()`).
+     * Espelha TemplateController@trocarVideoExercicio.
+     */
+    public function trocarVideoExercicioTemplate(Request $request, $id, $index)
+    {
+        $personal = $this->personalAutenticado($request);
+        $t = $this->meuTemplate($personal->id, $id);
+        if (! $t) {
+            return response()->json(['error' => 'Acesso negado.'], 403);
+        }
+
+        $request->validate([
+            'video_catalogo' => 'nullable|string|max:255',
+        ]);
+
+        $exs = $t->exercicios ?? [];
+        $index = (int) $index;
+
+        if (! isset($exs[$index])) {
+            return response()->json(['error' => 'Exercício não encontrado neste template.'], 404);
+        }
+
+        $escolhido = $this->videoDoCatalogo($request->input('video_catalogo'));
+
+        if ($request->filled('video_catalogo') && $escolhido === null) {
+            return response()->json(['error' => 'Esse vídeo não está no catálogo SNR.'], 422);
+        }
+
+        $exs[$index]['video'] = $escolhido;
+        $t->update(['exercicios' => array_values($exs)]);
+
+        return response()->json([
+            'success' => true,
+            'video' => $escolhido,
+            'message' => $escolhido ? 'Vídeo atualizado!' : 'Vídeo voltou ao automático.',
+        ]);
     }
 
     // DELETE /api/v1/personal/templates/{id}/exercicios/{index}
@@ -144,12 +191,15 @@ class PersonalExtrasController extends Controller
             'personal_id' => $personal->id,
             'nome' => $ficha->nome_treino,
             'nivel' => $ficha->nivel ?? 'iniciante',
+            // Mesma regra do web: só vídeo de catálogo entra no template, porque
+            // upload do personal é apagado junto com o exercício de origem.
             'exercicios' => $ficha->exercicios->map(fn ($e) => [
                 'nome' => $e->nome_exercicio,
                 'series' => $e->series,
                 'repeticoes' => $e->repeticoes,
                 'peso' => $e->peso !== null ? (float) $e->peso : null,
                 'observacoes' => $e->observacoes,
+                'video' => $this->videoDoCatalogo($e->video),
             ])->values()->all(),
         ]);
 
@@ -201,6 +251,7 @@ class PersonalExtrasController extends Controller
                 'repeticoes' => $ex['repeticoes'] ?? 10,
                 'peso' => $ex['peso'] ?? null,
                 'observacoes' => $ex['observacoes'] ?? null,
+                'video' => $this->videoDoCatalogo($ex['video'] ?? null),
                 'ordem' => $ordem,
             ]);
         }
@@ -445,6 +496,12 @@ class PersonalExtrasController extends Controller
         return ($t && $t->personal_id == $personalId) ? $t : null;
     }
 
+    /** Devolve o caminho só se for vídeo do catálogo SNR; senão, null. */
+    private function videoDoCatalogo(?string $caminho): ?string
+    {
+        return VideosExercicios::ehDoCatalogo($caminho) ? $caminho : null;
+    }
+
     private function alunoIds(int $personalId)
     {
         return FichaTreino::where('personal_id', $personalId)->pluck('cliente_id')
@@ -452,12 +509,6 @@ class PersonalExtrasController extends Controller
             ->unique()->values();
     }
 
-    private function podeVer($personalId, $clienteId): bool
-    {
-        return FichaTreino::where('personal_id', $personalId)->where('cliente_id', $clienteId)->exists()
-            || Agenda::where('personal_id', $personalId)->where('cliente_id', $clienteId)->where('cancelado', false)->exists()
-            || Cliente::where('id', $clienteId)->where('personal_id', $personalId)->exists();
-    }
 
     private function dadosRelatorio($personalId, $clienteId): array
     {

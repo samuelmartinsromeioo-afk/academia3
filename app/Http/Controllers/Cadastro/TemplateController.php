@@ -2,12 +2,15 @@
 
 namespace App\Http\Controllers\Cadastro;
 
+use App\Http\Controllers\Concerns\VinculoComAluno;
 use App\Http\Controllers\Controller;
 use App\Models\Agenda;
 use App\Models\Cadastro\Cliente;
 use App\Models\Cadastro\ExercicioFicha;
 use App\Models\Cadastro\FichaTemplate;
 use App\Models\Cadastro\FichaTreino;
+use App\Support\CatalogoExercicios;
+use App\Support\VideosExercicios;
 use Illuminate\Http\Request;
 
 /**
@@ -15,6 +18,8 @@ use Illuminate\Http\Request;
  */
 class TemplateController extends Controller
 {
+    use VinculoComAluno;
+
     // Lista de templates + alunos (para aplicar)
     public function index()
     {
@@ -26,7 +31,14 @@ class TemplateController extends Controller
         $templates = FichaTemplate::where('personal_id', $personalId)->orderByDesc('created_at')->get();
         $alunos = $this->alunosDoPersonal($personalId);
 
-        return view('personal.Templates', compact('templates', 'alunos'));
+        // Só os exercícios que TÊM vídeo: o seletor existe para escolher o vídeo,
+        // e listar os sem vídeo seria oferecer opção que não faz nada.
+        $videosCatalogo = collect(CatalogoExercicios::todos())
+            ->filter(fn ($e) => ! empty($e['video']))
+            ->sortBy([['grupo', 'asc'], ['nome', 'asc']])
+            ->groupBy('grupo');
+
+        return view('personal.Templates', compact('templates', 'alunos', 'videosCatalogo'));
     }
 
     public function criar(Request $request)
@@ -38,7 +50,7 @@ class TemplateController extends Controller
 
         $request->validate([
             'nome' => 'required|string|max:255',
-            'nivel' => 'nullable|in:iniciante,avancado',
+            'nivel' => FichaTreino::regraNivel(false),
         ]);
 
         FichaTemplate::create([
@@ -64,6 +76,7 @@ class TemplateController extends Controller
             'repeticoes' => 'required|integer|min:1',
             'peso' => 'nullable|numeric|min:0',
             'observacoes' => 'nullable|string',
+            'video_catalogo' => 'nullable|string|max:255',
         ]);
 
         $exs = $t->exercicios ?? [];
@@ -73,10 +86,54 @@ class TemplateController extends Controller
             'repeticoes' => (int) $request->repeticoes,
             'peso' => ($request->peso === null || $request->peso === '') ? null : (float) $request->peso,
             'observacoes' => $request->observacoes,
+            'video' => $this->videoDoCatalogo($request->input('video_catalogo')),
         ];
         $t->update(['exercicios' => $exs]);
 
         return back()->with('success', 'Exercício adicionado ao template!');
+    }
+
+    /**
+     * Troca (ou limpa) o vídeo de um exercício que já está no template.
+     *
+     * Sem isto só havia o vídeo escolhido na hora de adicionar: corrigir exigia
+     * apagar o exercício e recriar, perdendo séries/reps/peso/observação.
+     *
+     * Valor vazio volta ao automático — o casamento por nome de
+     * `videoResolvido()` — em vez de deixar o exercício sem vídeo.
+     */
+    public function trocarVideoExercicio(Request $request, $id, $index)
+    {
+        $t = $this->meuTemplate($id);
+        if (! $t) {
+            return back()->with('error', 'Acesso negado!');
+        }
+
+        $request->validate([
+            'video_catalogo' => 'nullable|string|max:255',
+        ]);
+
+        $exs = $t->exercicios ?? [];
+        $index = (int) $index;
+
+        if (! isset($exs[$index])) {
+            return back()->with('error', 'Exercício não encontrado neste template.');
+        }
+
+        $escolhido = $this->videoDoCatalogo($request->input('video_catalogo'));
+
+        // Recusa em silêncio seria pior: o personal escolheu algo da lista e
+        // veria o vídeo sumir sem explicação.
+        if ($request->filled('video_catalogo') && $escolhido === null) {
+            return back()->with('error', 'Esse vídeo não está no catálogo SNR.');
+        }
+
+        $exs[$index]['video'] = $escolhido;
+        $t->update(['exercicios' => array_values($exs)]);
+
+        return back()->with('success', $escolhido
+            ? 'Vídeo atualizado: '.($exs[$index]['nome'] ?? 'exercício').'.'
+            : 'Vídeo voltou ao automático (casa pelo nome do exercício).');
     }
 
     public function deletarExercicio($id, $index)
@@ -118,12 +175,19 @@ class TemplateController extends Controller
             return back()->with('error', 'Acesso negado!');
         }
 
+        // O vídeo vai junto, mas só se for do catálogo — ver
+        // VideosExercicios::ehDoCatalogo(). Vídeo do catálogo sobrevive à
+        // exclusão da ficha de origem; upload do personal, não.
+        //
+        // Exercício sem vídeo de catálogo fica com null e continua exibindo pelo
+        // casamento por nome em `videoResolvido()`, como já era.
         $exs = $ficha->exercicios->map(fn ($e) => [
             'nome' => $e->nome_exercicio,
             'series' => $e->series,
             'repeticoes' => $e->repeticoes,
             'peso' => $e->peso !== null ? (float) $e->peso : null,
             'observacoes' => $e->observacoes,
+            'video' => $this->videoDoCatalogo($e->video),
         ])->values()->all();
 
         FichaTemplate::create([
@@ -186,6 +250,9 @@ class TemplateController extends Controller
                 'repeticoes' => $ex['repeticoes'] ?? 10,
                 'peso' => $ex['peso'] ?? null,
                 'observacoes' => $ex['observacoes'] ?? null,
+                // Revalidado em vez de copiado cru: o JSON do template pode ser
+                // antigo e apontar para vídeo que saiu do catálogo.
+                'video' => $this->videoDoCatalogo($ex['video'] ?? null),
                 'ordem' => $ordem,
             ]);
         }
@@ -202,6 +269,12 @@ class TemplateController extends Controller
         return ($t && $t->personal_id == session('personal_id')) ? $t : null;
     }
 
+    /** Devolve o caminho só se for vídeo do catálogo SNR; senão, null. */
+    private function videoDoCatalogo(?string $caminho): ?string
+    {
+        return VideosExercicios::ehDoCatalogo($caminho) ? $caminho : null;
+    }
+
     private function alunosDoPersonal($personalId)
     {
         $ids = FichaTreino::where('personal_id', $personalId)->pluck('cliente_id')
@@ -211,10 +284,4 @@ class TemplateController extends Controller
         return Cliente::whereIn('id', $ids)->orderBy('nome')->get();
     }
 
-    private function podeVer($personalId, $clienteId): bool
-    {
-        return FichaTreino::where('personal_id', $personalId)->where('cliente_id', $clienteId)->exists()
-            || Agenda::where('personal_id', $personalId)->where('cliente_id', $clienteId)->where('cancelado', false)->exists()
-            || Cliente::where('id', $clienteId)->where('personal_id', $personalId)->exists();
-    }
 }

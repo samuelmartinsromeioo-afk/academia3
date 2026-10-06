@@ -139,14 +139,15 @@
                 <div>
                     <label>Nível</label>
                     <select name="nivel" id="nivelSelect" required>
-                        <option value="iniciante">Iniciante</option>
-                        <option value="avancado">Avançado</option>
+                        @foreach(\App\Models\Cadastro\FichaTreino::NIVEIS_LABEL as $valor => $rotulo)
+                        <option value="{{ $valor }}">{{ $rotulo }}</option>
+                        @endforeach
                     </select>
                 </div>
             </div>
             <div class="grid g2" style="margin-bottom:14px;">
                 <div id="divisaoWrap" style="display:none;">
-                    <label>Divisão (avançado)</label>
+                    <label>Divisão</label>
                     <input type="text" name="divisao" placeholder="Ex: Push / Pull / Legs">
                 </div>
                 <div style="grid-column: 1 / -1;">
@@ -169,7 +170,7 @@
                         <span class="dia">{{ $ficha->getDiaSemanaNome() }}</span>
                         <h3>{{ $ficha->nome_treino }}</h3>
                         @if($ficha->observacoes)<div class="obs">{{ $ficha->observacoes }}</div>@endif
-                        <span class="tag">{{ ucfirst($ficha->nivel ?? 'iniciante') }}</span>
+                        <span class="tag">{{ $ficha->nivelLabel() }}</span>
                         @if($ficha->divisao)<span class="tag">{{ $ficha->divisao }}</span>@endif
                     </div>
                     <form action="{{ route('academia.fichas.deletar', $ficha->id) }}" method="POST" onsubmit="return confirm('Excluir esta ficha e todos os exercícios?');">
@@ -348,7 +349,10 @@
     const nivelSelect = document.getElementById('nivelSelect');
     const divisaoWrap = document.getElementById('divisaoWrap');
     function toggleDivisao() {
-        divisaoWrap.style.display = nivelSelect.value === 'avancado' ? '' : 'none';
+        // Espelha FichaTreino::nivelTemDivisao(): iniciante treina o corpo todo,
+        // de intermediário para cima o treino é dividido.
+        var comDivisao = nivelSelect.value === 'intermediario' || nivelSelect.value === 'avancado';
+        divisaoWrap.style.display = comDivisao ? '' : 'none';
     }
     nivelSelect.addEventListener('change', toggleDivisao);
     toggleDivisao();

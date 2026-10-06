@@ -502,6 +502,7 @@ Route::middleware('check.login')->group(function () {
     Route::post('/personal/templates', [TemplateController::class, 'criar'])->name('templates.criar');
     Route::post('/personal/templates/{id}/exercicio', [TemplateController::class, 'adicionarExercicio'])->name('templates.exercicio.add');
     Route::delete('/personal/templates/{id}/exercicio/{index}', [TemplateController::class, 'deletarExercicio'])->name('templates.exercicio.del');
+    Route::patch('/personal/templates/{id}/exercicio/{index}/video', [TemplateController::class, 'trocarVideoExercicio'])->whereNumber('index')->name('templates.exercicio.video');
     Route::delete('/personal/templates/{id}', [TemplateController::class, 'deletar'])->name('templates.deletar');
     Route::post('/personal/templates/de-ficha/{fichaId}', [TemplateController::class, 'salvarDeFicha'])->name('templates.de-ficha');
     Route::post('/personal/templates/{id}/aplicar', [TemplateController::class, 'aplicar'])->name('templates.aplicar');

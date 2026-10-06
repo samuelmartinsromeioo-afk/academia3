@@ -71,6 +71,28 @@ class VideosExercicios
         return null;
     }
 
+    /**
+     * O caminho é um vídeo do catálogo SNR, existente no disco?
+     *
+     * Serve para decidir o que pode ser guardado num TEMPLATE de ficha. Só
+     * caminho de catálogo (`exercicios/`) é seguro: ele é compartilhado entre
+     * fichas e nunca apagado. Vídeo ENVIADO pelo personal vive em
+     * `fichas/videos/` e é removido junto com o exercício
+     * (`apagarVideoDoExercicio`) — guardado num template, viraria referência
+     * morta. E referência morta é pior que vazio: `videoResolvido()` devolveria
+     * o caminho quebrado em vez de cair no casamento por nome.
+     *
+     * Checa `..` porque o valor chega de formulário: sem isso, um caminho
+     * forjado poderia apontar para fora da pasta do catálogo.
+     */
+    public static function ehDoCatalogo(?string $caminho): bool
+    {
+        return is_string($caminho)
+            && str_starts_with($caminho, 'exercicios/')
+            && ! str_contains($caminho, '..')
+            && \Illuminate\Support\Facades\Storage::disk('public')->exists($caminho);
+    }
+
     /** Mapa nome-normalizado => caminho do vídeo (cacheado). */
     private static function mapaNormalizado(): array
     {

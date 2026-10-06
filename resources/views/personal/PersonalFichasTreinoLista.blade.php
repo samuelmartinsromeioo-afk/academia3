@@ -451,11 +451,19 @@
             color: #00c878;
             border: 1px solid rgba(0, 200, 120, 0.3);
         }
+        .badge-nivel.intermediario {
+            background: rgba(255, 190, 0, 0.14);
+            color: #ffbe00;
+            border: 1px solid rgba(255, 190, 0, 0.32);
+        }
         .badge-nivel.avancado {
             background: rgba(124, 255, 0, 0.12);
             color: var(--primary);
             border: 1px solid rgba(124, 255, 0, 0.3);
         }
+        /* Nível vindo da solicitação: mostrado, não escolhido. */
+        .nivel-travado { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; padding: 10px 12px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; }
+        .nivel-origem { color: var(--text-muted); font-size: 0.72rem; display: inline-flex; align-items: center; gap: 5px; }
         .badge-divisao {
             font-size: 0.68rem;
             font-weight: 700;
@@ -647,6 +655,15 @@
          * acesso normal a esta página, pelo painel.
          */
         $vindoDaSolicitacao = request('origem') === 'solicitacao';
+
+        /*
+         * Nível da ficha vindo do pedido do aluno (`nivel_experiencia`), quando
+         * houver pedido pendente. Definido aqui, e não dentro do modal, porque o
+         * script lá embaixo também usa — deixar no modal criaria dependência de
+         * ordem entre dois blocos distantes do arquivo.
+         */
+        $nivelInicial = $nivelDoPedido ?? 'iniciante';
+        $niveisLabel = \App\Models\Cadastro\FichaTreino::NIVEIS_LABEL;
     @endphp
 
     <div class="container">
@@ -734,7 +751,7 @@
                         <div class="ficha-badges">
                             @php $nivelFicha = $ficha->nivel ?? 'iniciante'; @endphp
                             <span class="badge-nivel {{ $nivelFicha }}">
-                                {{ $nivelFicha === 'avancado' ? 'Avançado' : 'Iniciante' }}
+                                {{ $ficha->nivelLabel() }}
                             </span>
                             @if($ficha->divisao)
                                 @php
@@ -819,18 +836,33 @@
             <form action="{{ route('fichas-treino.criar') }}" method="POST">
                 @csrf
                 <input type="hidden" name="cliente_id" value="{{ $cliente->id }}">
-                <input type="hidden" name="nivel" id="inputNivel" value="iniciante">
+                {{-- Vindo da tela de Solicitações, o nível NÃO é escolha do
+                     personal: o aluno já respondeu em `nivel_experiencia` e
+                     repetir a pergunta convida a contradizer a resposta dele. --}}
+                <input type="hidden" name="nivel" id="inputNivel" value="{{ $nivelInicial }}">
 
                 <div class="form-group">
                     <label>Nível da Ficha</label>
-                    <div class="nivel-toggle">
-                        <button type="button" class="nivel-btn ativo" data-nivel="iniciante" onclick="selecionarNivel('iniciante')">
-                            <i class="ph ph-plant"></i> INICIANTE
-                        </button>
-                        <button type="button" class="nivel-btn" data-nivel="avancado" onclick="selecionarNivel('avancado')">
-                            <i class="ph ph-fire"></i> AVANÇADO
-                        </button>
-                    </div>
+                    @if($vindoDaSolicitacao && $nivelDoPedido)
+                        <div class="nivel-travado">
+                            <span class="badge-nivel {{ $nivelDoPedido }}">
+                                <i class="ph ph-cell-signal-full"></i> {{ $niveisLabel[$nivelDoPedido] ?? 'Iniciante' }}
+                            </span>
+                            <span class="nivel-origem"><i class="ph ph-info"></i> Informado pelo aluno no pedido</span>
+                        </div>
+                    @else
+                        <div class="nivel-toggle">
+                            <button type="button" class="nivel-btn {{ $nivelInicial === 'iniciante' ? 'ativo' : '' }}" data-nivel="iniciante" onclick="selecionarNivel('iniciante')">
+                                <i class="ph ph-plant"></i> INICIANTE
+                            </button>
+                            <button type="button" class="nivel-btn {{ $nivelInicial === 'intermediario' ? 'ativo' : '' }}" data-nivel="intermediario" onclick="selecionarNivel('intermediario')">
+                                <i class="ph ph-trend-up"></i> INTERMEDIÁRIO
+                            </button>
+                            <button type="button" class="nivel-btn {{ $nivelInicial === 'avancado' ? 'ativo' : '' }}" data-nivel="avancado" onclick="selecionarNivel('avancado')">
+                                <i class="ph ph-fire"></i> AVANÇADO
+                            </button>
+                        </div>
+                    @endif
                 </div>
 
                 <div class="form-group" id="grupoDivisao" style="display:none">
@@ -1095,7 +1127,9 @@
         const modalAdicionarExercicio = document.getElementById('modalAdicionarExercicio');
 
         function abrirModalNovaFicha() {
-            selecionarNivel('iniciante');
+            // Vindo da solicitação, abre no nível que o aluno informou — e isso
+            // já libera o campo Divisão quando for intermediário/avançado.
+            selecionarNivel({!! json_encode($nivelInicial) !!});
             modalNovaFicha.classList.add('active');
         }
 
@@ -1208,15 +1242,25 @@
         }
 
         // ─── NOVA FICHA: NÍVEL / DIVISÃO ────────────────────────────────────
+
+        // Iniciante treina o corpo todo numa ficha; de intermediário para cima o
+        // treino é dividido. Espelha FichaTreino::nivelTemDivisao() no servidor —
+        // se mudar lá, muda aqui.
+        function nivelTemDivisao(nivel) {
+            return nivel === 'intermediario' || nivel === 'avancado';
+        }
+
         function selecionarNivel(nivel) {
             document.querySelectorAll('.nivel-btn').forEach(b => b.classList.remove('ativo'));
-            document.querySelector(`.nivel-btn[data-nivel="${nivel}"]`).classList.add('ativo');
+            const btn = document.querySelector(`.nivel-btn[data-nivel="${nivel}"]`);
+            // Vindo da solicitação o toggle não existe: o nível é travado.
+            if (btn) { btn.classList.add('ativo'); }
             document.getElementById('inputNivel').value = nivel;
 
             const grupoDivisao  = document.getElementById('grupoDivisao');
             const selectDivisao = document.getElementById('selectDivisao');
 
-            if (nivel === 'avancado') {
+            if (nivelTemDivisao(nivel)) {
                 grupoDivisao.style.display = 'block';
                 selectDivisao.setAttribute('required', 'required');
             } else {
