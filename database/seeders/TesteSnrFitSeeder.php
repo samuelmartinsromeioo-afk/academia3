@@ -7,6 +7,7 @@ use App\Models\Anamnese;
 use App\Models\AulaReposicao;
 use App\Models\Cadastro\Cliente;
 use App\Models\Cadastro\ExercicioFicha;
+use App\Models\Cadastro\FichaTemplate;
 use App\Models\Cadastro\FichaTreino;
 use App\Models\Cadastro\Mesociclo;
 use App\Models\Cadastro\MesocicloExercicio;
@@ -19,6 +20,7 @@ use App\Models\MedidaCorporal;
 use App\Models\Meta;
 use App\Models\SolicitacaoAvaliacao;
 use App\Models\SolicitacaoFicha;
+use App\Models\TermoAceite;
 use Carbon\Carbon;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
@@ -41,6 +43,7 @@ class TesteSnrFitSeeder extends Seeder
     private const SENHA = 'senha123';
     private const EMAILS_ALUNOS = [
         'ana@snrfit.com', 'bruno@snrfit.com', 'carla@snrfit.com', 'diego@snrfit.com',
+        'elisa@snrfit.com',
     ];
 
     public function run(): void
@@ -53,6 +56,19 @@ class TesteSnrFitSeeder extends Seeder
         $bruno = $this->criarAluno('Bruno Lima',  'bruno@snrfit.com', '11999990002');
         $carla = $this->criarAluno('Carla Dias',  'carla@snrfit.com', '11999990003');
         $diego = $this->criarAluno('Diego Nunes', 'diego@snrfit.com', '11999990004');
+        // Elisa é o aluno NOVO que só comprou a montagem da ficha: sem agenda,
+        // sem ficha, sem histórico. É o unico vinculo que nasce de um pagamento
+        // de solicitação, e o caso que a tela de Solicitações existe para servir.
+        $elisa = $this->criarAluno('Elisa Prado', 'elisa@snrfit.com', '11999990005');
+
+        // Sem isto a conta nasce travada: o middleware VerificaAceiteTermos
+        // redireciona TODA rota logada para /termos/aceite enquanto não existe
+        // aceite na versão vigente. O cadastro real faz isso em
+        // Cadastro\PersonalController@store; o seeder cria direto no model e
+        // pulava a etapa, deixando o fixture inutilizável.
+        foreach ([$personal, $ana, $bruno, $carla, $diego, $elisa] as $conta) {
+            $conta->registrarAceiteTermos('127.0.0.1', 'TesteSnrFitSeeder', TermoAceite::ORIGEM_CADASTRO);
+        }
 
         $hoje = Carbon::today();
 
@@ -161,7 +177,19 @@ class TesteSnrFitSeeder extends Seeder
             ['B', 'Treino B', [['Levantamento terra', 3, 10, 50]]],
         ], 1, $hoje->copy()->subDays(12));
 
-        // ───────── DIEGO — novo, sem treinos e sem anamnese ─────────
+        // Diego pediu ficha de novo e tem anamnese preenchida: é o caso completo
+        // da tela de Solicitações — recorrente, com histórico E com anamnese para
+        // o personal consultar antes de montar. Carla e Elisa ficam sem, de
+        // propósito, para a tela mostrar os dois estados.
+        $this->anamnese($diego->id, 'Hipertrofia', 'leve', [
+            'historico_lesoes' => 'Condromalácia leve no joelho esquerdo, liberado pelo ortopedista.',
+            'restricoes_medicas' => 'Evitar impacto e agachamento profundo.',
+            'parq_2' => true,
+            'parq_observacoes' => 'Sente desconforto no joelho ao subir escadas.',
+            'observacoes' => 'Só consegue treinar de manhã, 45 min.',
+        ]);
+
+        // ───────── DIEGO — novo, sem treinos ─────────
         $this->ficha($personal->id, $diego->id, 1, 'Iniciante A', [
             ['Leg press', 3, 15, 80], ['Cadeira extensora', 3, 15, 30],
         ]);
@@ -169,16 +197,29 @@ class TesteSnrFitSeeder extends Seeder
             ['Puxada frente', 3, 15, 35], ['Rosca direta', 3, 15, 12],
         ]);
 
+        // As fichas acima são trabalho ANTIGO: o histórico de treinos criado
+        // logo acima vai até 70 dias atrás apontando para elas, então nascer com
+        // `created_at = agora` era incoerente. Importa também para a tela de
+        // Solicitações, que usa a data do pedido para separar "ficha anterior"
+        // de "entrega deste pedido": com tudo criado no mesmo segundo, uma ficha
+        // de meses atrás contaria como entrega e liberaria a conclusão de graça.
+        FichaTreino::where('personal_id', $personal->id)
+            ->update([
+                'created_at' => $hoje->copy()->subDays(90),
+                'updated_at' => $hoje->copy()->subDays(90),
+            ]);
+
         // ───────── simulação da rotina do Prof. Diego Ramos ─────────
         $this->agendaDaSemana($personal, $ana, $bruno, $carla, $diego);
-        $this->solicitacoesDeFicha($personal, $bruno, $carla, $diego);
+        $this->solicitacoesDeFicha($personal, $bruno, $carla, $diego, $elisa);
         $this->cancelamentos($personal, $bruno, $carla, $diego);
         $this->pedidosDeAvaliacao($personal, $ana, $diego);
+        $this->templatesDeFicha($personal);
 
         $this->command?->info('Seed concluído.');
         $this->command?->info('Personal:  ' . self::PERSONAL_EMAIL . ' / ' . self::SENHA);
-        $this->command?->info('Alunos:    ana@ / bruno@ / carla@ / diego@ snrfit.com  (senha: ' . self::SENHA . ')');
-        $this->command?->info('Simulação: agenda da semana, 3 solicitações de ficha, 3 cancelamentos, 2 pedidos de avaliação.');
+        $this->command?->info('Alunos:    ana@ / bruno@ / carla@ / diego@ / elisa@ snrfit.com  (senha: ' . self::SENHA . ')');
+        $this->command?->info('Simulação: agenda da semana, 4 solicitações de ficha, 3 cancelamentos, 2 pedidos de avaliação, 2 templates.');
     }
 
     // ───────── helpers de criação ─────────
@@ -291,14 +332,34 @@ class TesteSnrFitSeeder extends Seeder
      * `concluida` (FIELD(status,...) em listarSolicitacoesFicha) e mostra tudo,
      * paga ou não — por isso os três estados aparecem aqui.
      */
-    private function solicitacoesDeFicha(Personal $p, Cliente $bruno, Cliente $carla, Cliente $diego): void
+    private function solicitacoesDeFicha(Personal $p, Cliente $bruno, Cliente $carla, Cliente $diego, Cliente $elisa): void
     {
+        // Aluno novo, vínculo só pelo pagamento desta solicitação: sem agenda e
+        // sem ficha anterior. Na tela nao aparece o bloco "ja foi seu aluno"
+        // (correto, ela e nova) mas o "aplicar template" tem de funcionar —
+        // e so funciona porque TemplateController::podeVer() passou a aceitar
+        // solicitacao paga como vinculo.
+        SolicitacaoFicha::create([
+            'personal_id' => $p->id, 'cliente_id' => $elisa->id,
+            'objetivos' => 'Começar a treinar do zero, foco em saúde e disposição.',
+            'condicoes_clinicas' => null,
+            'nivel_experiencia' => 'iniciante',
+            'observacoes' => 'Nunca pisou numa academia. Quer treino curto para começar.',
+            'valor' => 120.00, 'status' => 'pendente', 'payment_status' => 'pago',
+            'asaas_payment_id' => 'pay_sim_ficha_elisa',
+        ]);
+
         // Pendente e paga: o caso que o personal precisa atender.
+        //
+        // `avancado` de propósito: junto com `intermediario` da Carla e
+        // `iniciante` da Elisa, o fixture cobre os três níveis que o aluno pode
+        // escolher — e só de intermediário para cima a ficha pede Divisão, o que
+        // deixa os dois comportamentos visíveis na tela.
         SolicitacaoFicha::create([
             'personal_id' => $p->id, 'cliente_id' => $diego->id,
             'objetivos' => 'Ganhar massa muscular nas pernas e corrigir postura no agachamento.',
             'condicoes_clinicas' => 'Condromalácia leve no joelho esquerdo, liberado pelo ortopedista.',
-            'nivel_experiencia' => 'iniciante',
+            'nivel_experiencia' => 'avancado',
             'observacoes' => 'Treina de manhã, antes do trabalho. Só tem 45 min.',
             'valor' => 120.00, 'status' => 'pendente', 'payment_status' => 'pago',
             'asaas_payment_id' => 'pay_sim_ficha_diego',
@@ -386,6 +447,57 @@ class TesteSnrFitSeeder extends Seeder
             'cliente_id' => $diego->id, 'personal_id' => $p->id,
             'valor' => 90.00, 'motivo' => 'Ficou doente.',
             'status' => Estorno::STATUS_PENDENTE,
+        ]);
+    }
+
+    /**
+     * Modelos de ficha reutilizáveis do personal.
+     *
+     * Vivem em `ficha_templates`, tabela separada de `fichas_treino` — não
+     * pertencem a aluno nenhum. São o que a tela de Solicitações oferece para
+     * aplicar num pedido novo sem remontar o treino do zero.
+     *
+     * `onDelete('cascade')` no personal_id limpa estes registros junto com o
+     * personal, então `limpar()` não precisa tocá-los.
+     *
+     * O campo `video` cobre os dois casos de propósito:
+     *
+     *  - null  → nome casa com a biblioteca e `videoResolvido()` acha sozinho
+     *            (Agachamento livre, Supino reto, Prancha, Stiff…);
+     *  - path  → nome digitado livre que o casamento NÃO acha. "Afundo com
+     *            halteres" e "Puxada frente" não existem no catálogo com esse
+     *            nome, então sem escolher na mão o aluno ficaria sem vídeo.
+     *
+     * É esse segundo grupo que justifica o seletor na tela de templates.
+     */
+    private function templatesDeFicha(Personal $p): void
+    {
+        FichaTemplate::create([
+            'personal_id' => $p->id,
+            'nome' => 'Hipertrofia Iniciante — Full Body',
+            'nivel' => 'iniciante',
+            'exercicios' => [
+                ['nome' => 'Agachamento livre', 'series' => 3, 'repeticoes' => 12, 'peso' => 40.0, 'observacoes' => 'Descer até 90 graus.', 'video' => null],
+                ['nome' => 'Supino reto', 'series' => 3, 'repeticoes' => 12, 'peso' => 30.0, 'observacoes' => null, 'video' => null],
+                ['nome' => 'Puxada frente', 'series' => 3, 'repeticoes' => 12, 'peso' => 35.0, 'observacoes' => null,
+                    'video' => 'exercicios/lat-pulldown__gym-shot__portrait__primary.mp4'],
+                ['nome' => 'Desenvolvimento halteres', 'series' => 3, 'repeticoes' => 12, 'peso' => 12.0, 'observacoes' => null,
+                    'video' => 'exercicios/dumbbell-shoulder-press__white-background__landscape__primary.mp4'],
+                ['nome' => 'Prancha', 'series' => 3, 'repeticoes' => 30, 'peso' => null, 'observacoes' => '30 segundos por série.', 'video' => null],
+            ],
+        ]);
+
+        FichaTemplate::create([
+            'personal_id' => $p->id,
+            'nome' => 'Força Avançado — Inferiores',
+            'nivel' => 'avancado',
+            'exercicios' => [
+                ['nome' => 'Agachamento livre', 'series' => 5, 'repeticoes' => 5, 'peso' => 100.0, 'observacoes' => 'Progressão de 2,5 kg por semana.', 'video' => null],
+                ['nome' => 'Levantamento terra', 'series' => 4, 'repeticoes' => 6, 'peso' => 110.0, 'observacoes' => null, 'video' => null],
+                ['nome' => 'Afundo com halteres', 'series' => 3, 'repeticoes' => 10, 'peso' => 20.0, 'observacoes' => null,
+                    'video' => 'exercicios/dumbbell-lunges__white-background__landscape__primary.mp4'],
+                ['nome' => 'Stiff', 'series' => 4, 'repeticoes' => 10, 'peso' => 60.0, 'observacoes' => null, 'video' => null],
+            ],
         ]);
     }
 
@@ -505,6 +617,20 @@ class TesteSnrFitSeeder extends Seeder
         if (! empty($cids)) {
             AulaReposicao::whereIn('cliente_id', $cids)->delete();
             Estorno::whereIn('cliente_id', $cids)->delete();
+        }
+
+        // `termo_aceites` é polimórfico e também sem foreign key. Deixar a linha
+        // para trás é pior que lixo: o MySQL reaproveita ids, então uma conta
+        // futura com o mesmo id herdaria silenciosamente o aceite desta.
+        if ($personal) {
+            TermoAceite::where('usuario_type', $personal->getMorphClass())
+                ->where('usuario_id', $personal->id)
+                ->delete();
+        }
+        if (! empty($cids)) {
+            TermoAceite::where('usuario_type', (new Cliente)->getMorphClass())
+                ->whereIn('usuario_id', $cids)
+                ->delete();
         }
 
         if ($personal || ! empty($cids)) {
