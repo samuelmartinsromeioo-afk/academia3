@@ -3,10 +3,9 @@
 
 @section('doc-titulo', 'Plano Alimentar')
 
-@section('doc-sub')
-    {{ $plano->paciente->nome ?? 'Modelo' }}@if($plano->objetivo) · {{ $plano->objetivo }}@endif
-    @unless($plano->is_modelo) · Dias: {{ $plano->diasSemanaLabels() }} @endunless
-@endsection
+{{-- Só o nome: objetivo e dias ficam na ficha de dados abaixo, e repetir aqui
+     deixava a mesma informação em três lugares da mesma página. --}}
+@section('doc-sub', $plano->paciente->nome ?? 'Modelo')
 
 @section('doc-emissor')
     <strong>{{ $nutri->nome }}</strong><br>
@@ -28,7 +27,8 @@
         @endif
         @if($plano->paciente?->objetivo)<tr><th>Objetivo do paciente</th><td>{{ $plano->paciente->objetivo }}</td></tr>@endif
         @if($plano->objetivo)<tr><th>Objetivo do plano</th><td>{{ $plano->objetivo }}</td></tr>@endif
-        @if($plano->kcal_meta)<tr><th>Meta diária</th><td>{{ number_format($plano->kcal_meta, 0, ',', '.') }} kcal</td></tr>@endif
+        {{-- A meta diária aparece na linha de totais, ao lado do que foi
+             somado — é lá que ela serve para comparar. --}}
         @unless($plano->is_modelo)
             <tr><th>Dias da semana</th><td>{{ $plano->diasSemanaLabels() }}</td></tr>
         @endunless

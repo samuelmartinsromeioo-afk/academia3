@@ -2,38 +2,21 @@
    SNR·FIT — documentos imprimíveis (relatório, ficha de nutrição, recibo…)
    Usado por resources/views/layouts/documento.blade.php.
 
-   A primeira versão disto portou UI de dashboard para o papel: cards com
-   canto arredondado, "stat tiles" com número grande em lime, faixas
-   preenchidas, caixa-alta espaçada em tudo. Impresso, aquilo tinha a
-   aparência de uma captura de tela — era, literalmente, a tela.
+   Folha branca, tinta preta, marca d'água. Um modo só.
 
-   Aqui as primitivas são de DOCUMENTO: fio fino em vez de borda de card,
-   hierarquia por tamanho e peso em vez de cor, números tabulares que alinham
-   na coluna, zero canto arredondado. Os nomes de classe seguem os mesmos das
-   views, então a mudança é só de aparência.
+   Houve uma tentativa de imprimir no padrão escuro da marca, com alternância
+   entre os dois. Caiu: no papel, página escura fica ruim mesmo com margem —
+   além de pesar no toner. O que sobrou é o que funciona num documento.
 
-   Dois modos, trocados pela classe `folha` no <html>:
-
-     padrão  folha ESCURA com margem branca ao redor. O papel continua branco
-             (@page), e quem carrega o fundo escuro é o bloco `.doc-folha` —
-             é a margem de papel que faz a coisa ler como documento de capa
-             escura, e não como print de tela sangrado até a borda.
-     .folha  folha branca, tinta preta, e mais detalhada.
+   As primitivas aqui são de DOCUMENTO, não de tela: fio fino em vez de borda
+   de card, hierarquia por tamanho e peso em vez de cor, números tabulares que
+   alinham na coluna, zero canto arredondado no conteúdo. A primeira versão
+   deste arquivo portou UI de dashboard para cá — cards arredondados, tiles de
+   KPI em lime, faixas preenchidas — e impresso aquilo tinha a aparência de
+   uma captura de tela porque era, literalmente, a tela.
    ────────────────────────────────────────────────────────────────────────── */
 
 :root {
-    /* Tinta sobre fundo escuro. */
-    --doc-papel: #0a0b0d;
-    --doc-tinta: #f2f4f7;
-    --doc-tinta-fraca: #9aa3b0;
-    --doc-fio: rgba(255, 255, 255, 0.18);
-    --doc-fio-forte: rgba(255, 255, 255, 0.38);
-    --doc-acento: #7cff00;
-    --doc-marca-op: 0.05;
-    --doc-fundo-tela: #2a2e35;
-}
-
-html.folha {
     --doc-papel: #ffffff;
     --doc-tinta: #16191e;
     --doc-tinta-fraca: #5d6673;
@@ -52,7 +35,7 @@ body {
     margin: 0;
     padding: 26px 18px 60px;
     font-family: 'Inter', -apple-system, 'Segoe UI', Arial, sans-serif;
-    /* Números em tabela têm de alinhar na coluna. */
+    /* Número em tabela tem de alinhar na coluna. */
     font-variant-numeric: tabular-nums;
     font-feature-settings: 'tnum' 1;
 }
@@ -69,7 +52,7 @@ body {
     color: var(--doc-tinta);
     font-size: 13.5px;
     line-height: 1.52;
-    box-shadow: 0 10px 34px rgba(0, 0, 0, 0.35);
+    box-shadow: 0 10px 34px rgba(0, 0, 0, 0.18);
 }
 
 /* ── Marca d'água ─────────────────────────────────────────────────────── */
@@ -90,7 +73,7 @@ body {
     transform: rotate(-24deg);
 }
 
-/* ── Botões (nunca impressos) ─────────────────────────────────────────── */
+/* ── Botão (nunca impresso) ───────────────────────────────────────────── */
 
 .doc-acoes { position: fixed; top: 14px; right: 14px; display: flex; gap: 8px; z-index: 10; }
 .doc-btn {
@@ -100,17 +83,15 @@ body {
     padding: 9px 14px;
     border-radius: 4px;
     cursor: pointer;
-    border: 1px solid #7cff00;
-    background: #7cff00;
-    color: #0a0b0d;
+    border: 1px solid #16191e;
+    background: #16191e;
+    color: #fff;
     text-decoration: none;
     display: inline-flex;
     align-items: center;
     gap: 7px;
 }
-.doc-btn--alt { background: transparent; color: #7cff00; }
-html.folha .doc-btn { background: #16191e; border-color: #16191e; color: #fff; }
-html.folha .doc-btn--alt { background: transparent; color: #16191e; }
+.doc-btn--alt { background: transparent; color: #16191e; }
 
 /* ── Timbre ───────────────────────────────────────────────────────────── */
 
@@ -155,7 +136,7 @@ html.folha .doc-btn--alt { background: transparent; color: #16191e; }
     border-bottom: 1px solid var(--doc-fio);
 }
 
-/* ── Bloco: era um card; agora é só um agrupamento com título ─────────── */
+/* ── Bloco: agrupamento com título, não card ──────────────────────────── */
 
 .doc-card { margin: 0 0 20px; page-break-inside: avoid; }
 .doc-card > h3 {
@@ -188,7 +169,7 @@ td.n, th.n { text-align: right; padding-right: 0; }
 tbody tr:last-child td { border-bottom: 1px solid var(--doc-fio-forte); }
 tr.doc-total td { font-weight: 700; border-bottom: none; }
 
-/* ── Dados em lista (era a grade de "stat tiles") ─────────────────────── */
+/* ── Dados em lista ───────────────────────────────────────────────────── */
 
 .doc-grade { display: block; margin-bottom: 4px; }
 .doc-stat {
@@ -232,10 +213,12 @@ tr.doc-total td { font-weight: 700; border-bottom: none; }
 }
 .doc-nota { color: var(--doc-tinta-fraca); font-size: 0.78rem; }
 
-/* ── Ficha de dados (só na folha branca) ──────────────────────────────── */
+/* ── Ficha de dados ───────────────────────────────────────────────────── */
 
-.doc-extra { display: none; }
-html.folha .doc-extra { display: block; }
+/* `.doc-extra` marcava o que só aparecia na folha branca, quando havia dois
+   modos. Com um modo só, é tudo documento — a classe fica como marcação de
+   intenção ("este bloco é o detalhamento") e não esconde mais nada. */
+.doc-extra { display: block; }
 
 .doc-dados { margin-bottom: 24px; border-top: 1px solid var(--doc-fio-forte); }
 .doc-dados table { font-size: 0.82rem; }
@@ -277,33 +260,27 @@ html.folha .doc-extra { display: block; }
 
 /* ── Impressão ────────────────────────────────────────────────────────── */
 
-/* A margem do @page é a margem BRANCA de papel em volta da folha escura. */
 @page { margin: 11mm; }
 
 @media print {
-    /* Sem isto o navegador descarta o fundo da folha e a marca d'água. */
-    .doc-folha, .doc-marca img, .doc-pe, th, td {
+    /* A marca d'água é fundo: sem isto o navegador a descarta. */
+    .doc-marca img {
         -webkit-print-color-adjust: exact;
         print-color-adjust: exact;
     }
 
-    /* O papel é branco; o escuro é da FOLHA, não da página. */
     html, body { background: #fff; }
     body { padding: 0; font-size: 12px; }
 
     .doc-folha {
         max-width: none;
         box-shadow: none;
-        padding: 14mm 15mm 16mm;
+        padding: 4mm 0 10mm;
     }
 
     .doc-acoes, .doc-nao-imprime { display: none !important; }
 
-    /* Rodapé corrido: `fixed` na impressão repete em TODA página, dentro da
-       área do @page.
-       Fundo próprio porque o elemento fixo NÃO fica dentro de `.doc-folha` —
-       sem isso, no modo escuro seria tinta clara sobre o papel branco, ou
-       seja, invisível. Com o fundo do papel ele lê certo nos dois modos. */
+    /* Rodapé corrido: `fixed` na impressão repete em TODA página. */
     .doc-pe {
         position: fixed;
         bottom: 0;
@@ -311,8 +288,8 @@ html.folha .doc-extra { display: block; }
         right: 0;
         max-width: none;
         margin: 0;
-        padding: 3mm 15mm 4mm;
-        background: var(--doc-papel);
+        padding: 3mm 0 0;
+        background: #fff;
         border-top: 1px solid var(--doc-fio);
     }
 

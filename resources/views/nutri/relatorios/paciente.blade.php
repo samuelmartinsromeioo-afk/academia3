@@ -29,27 +29,10 @@
 @endsection
 
 @section('doc-corpo')
-    {{-- Na versão enxuta o resumo fica aqui; na folha branca ele já aparece
-         completo no bloco do paciente, acima. --}}
-    <div class="doc-grade">
-        <div class="doc-stat">
-            <div class="rot">Objetivo</div>
-            <div class="val" style="font-size:0.95rem;">{{ $paciente->objetivo ?? '—' }}</div>
-        </div>
-        <div class="doc-stat">
-            <div class="rot">Idade</div>
-            <div class="val">{{ $paciente->idade ? $paciente->idade.' anos' : '—' }}</div>
-        </div>
-        <div class="doc-stat">
-            <div class="rot">Sexo</div>
-            <div class="val" style="font-size:0.95rem;">{{ $paciente->sexo ?? '—' }}</div>
-        </div>
-        <div class="doc-stat">
-            <div class="rot">Altura</div>
-            <div class="val">{{ $paciente->altura_cm ? $paciente->altura_cm.' cm' : '—' }}</div>
-        </div>
-    </div>
-
+    {{-- Objetivo, idade, sexo e altura ficam só no bloco do paciente, acima.
+         Havia uma cópia aqui porque antes esse bloco era exclusivo da folha
+         branca e a versão escura precisava do resumo; com um modo só, as duas
+         apareciam juntas. --}}
     <div class="doc-secao">Evolução antropométrica</div>
     @if ($paciente->antropometrias->count())
         <div class="doc-card">

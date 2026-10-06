@@ -10,9 +10,6 @@
     $numero = str_pad($cobranca->id, 6, '0', STR_PAD_LEFT);
     $dataRecibo = optional($cobranca->pago_em)->translatedFormat('d \d\e F \d\e Y')
         ?? now()->translatedFormat('d \d\e F \d\e Y');
-
-    // Recibo é documento de quitação: a assinatura vale nos dois modos.
-    $assinaturaSempre = true;
 @endphp
 
 @section('doc-titulo', 'Recibo')
@@ -57,13 +54,6 @@
 
     <div style="text-align:center; margin-top:26px; font-size:0.9rem;">
         @if($nutri->cidade){{ $nutri->cidade }}, @endif{{ $dataRecibo }}
-    </div>
-
-    {{-- Na versão enxuta a trilha do pagamento fica aqui; na folha branca ela
-         já aparece completa no bloco do pagador, acima. --}}
-    <div class="doc-obs doc-nota" style="display:flex; justify-content:space-between; flex-wrap:wrap; gap:10px; margin-top:28px;">
-        <span>Pagamento confirmado em {{ optional($cobranca->pago_em)->format('d/m/Y H:i') ?? '—' }}</span>
-        @if($cobranca->asaas_payment_id)<span>Transação: {{ $cobranca->asaas_payment_id }}</span>@endif
     </div>
 @endsection
 

@@ -25,8 +25,9 @@
             </td></tr>
         @endif
         @if($cliente->resumo_objetivo)<tr><th>Objetivo</th><td>{{ $cliente->resumo_objetivo }}</td></tr>@endif
+        {{-- "Treinos planejados" sai daqui: o corpo já mostra realizados
+             sobre planejados, e repetir na ficha de dados duplicava o número. --}}
         <tr><th>Período</th><td>{{ $mesRef }}</td></tr>
-        <tr><th>Treinos planejados</th><td>{{ $planejados }}</td></tr>
     </table>
 @endsection
 
