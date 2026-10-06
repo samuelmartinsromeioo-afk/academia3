@@ -792,7 +792,57 @@ class PersonalController extends Controller
             ->latest()
             ->get();
 
-        return view('personal.solicitacoes_ficha', compact('personal', 'solicitacoes'));
+        $clienteIds = $solicitacoes->pluck('cliente_id')->filter()->unique();
+
+        // Todas as fichas que este personal já montou para quem está pedindo.
+        // Uma query só, agrupada por aluno — a view itera as solicitações, e
+        // consultar dentro do laço seria N+1.
+        //
+        // Sem filtro de `ativo`: ficha desativada é exatamente o histórico que
+        // interessa aqui, o trabalho da vez anterior.
+        $fichasPorCliente = \App\Models\Cadastro\FichaTreino::where('personal_id', $personalId)
+            ->whereIn('cliente_id', $clienteIds)
+            ->withCount('exercicios')
+            ->orderByDesc('created_at')
+            ->get()
+            ->groupBy('cliente_id');
+
+        // A data do pedido divide as fichas do aluno em duas coisas diferentes,
+        // e tratá-las como uma só seria errado nas duas pontas:
+        //
+        //  - anterior ao pedido  = histórico, o trabalho da vez passada;
+        //  - posterior ao pedido = a entrega DESTE pedido.
+        //
+        // É o que permite exigir ficha antes de concluir sem que o cliente
+        // recorrente passe de graça pelas fichas velhas dele.
+        $fichasAnteriores = [];
+        $fichaFeita = [];
+
+        foreach ($solicitacoes as $s) {
+            $doCliente = $fichasPorCliente->get($s->cliente_id) ?? collect();
+
+            $fichasAnteriores[$s->id] = $doCliente
+                ->filter(fn ($f) => $f->created_at && $f->created_at->lt($s->created_at))
+                ->values();
+
+            $fichaFeita[$s->id] = $doCliente
+                ->contains(fn ($f) => $f->created_at && $f->created_at->gte($s->created_at));
+        }
+
+        // Anamnese do aluno que pediu: o personal precisa dela justamente para
+        // montar a ficha. Só a existência aqui — o conteúdo fica na tela própria
+        // (anamnese.personal), que é somente leitura.
+        $temAnamnese = \App\Models\Anamnese::whereIn('cliente_id', $clienteIds)
+            ->pluck('cliente_id')
+            ->flip();
+
+        $templates = \App\Models\Cadastro\FichaTemplate::where('personal_id', $personalId)
+            ->orderBy('nome')
+            ->get();
+
+        return view('personal.solicitacoes_ficha', compact(
+            'personal', 'solicitacoes', 'fichasAnteriores', 'fichaFeita', 'temAnamnese', 'templates'
+        ));
     }
 
     public function concluirSolicitacaoFicha(Request $request, $id)
@@ -801,6 +851,22 @@ class PersonalController extends Controller
         $solicitacao = \App\Models\SolicitacaoFicha::where('id', $id)
             ->where('personal_id', $personalId)
             ->firstOrFail();
+
+        // Não se conclui o que não foi entregue. Concluir dispara o WhatsApp e o
+        // e-mail "sua ficha está pronta" para o aluno — fazer isso sem ficha
+        // montada manda a pessoa abrir o app e não encontrar nada.
+        //
+        // A ficha tem de ser POSTERIOR ao pedido: quem já foi aluno antes carrega
+        // fichas velhas, e aceitar qualquer uma deixaria o personal concluir um
+        // pedido novo sem montar nada.
+        $fichaDestePedido = \App\Models\Cadastro\FichaTreino::where('personal_id', $personalId)
+            ->where('cliente_id', $solicitacao->cliente_id)
+            ->where('created_at', '>=', $solicitacao->created_at)
+            ->exists();
+
+        if (! $fichaDestePedido) {
+            return back()->with('error', 'Monte a ficha antes de concluir: o aluno recebe o aviso de "ficha pronta" e precisa encontrá-la no app.');
+        }
 
         $solicitacao->update(['status' => 'concluida']);
 
