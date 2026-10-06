@@ -27,7 +27,11 @@
     <link rel="icon" type="image/png" href="{{ asset('SnrFit.png') }}">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;800;900&display=swap">
-    <link rel="stylesheet" href="{{ asset('css/snrfit-doc.css') }}">
+    {{-- Versão pelo mtime do arquivo. Sem isso o navegador serve a folha de
+         estilo que ele já tem em cache, e uma mudança de visual simplesmente
+         não chega — foi o que aconteceu ao trocar o modo escuro pelo claro:
+         a CSS antiga em cache continuou pintando o documento de preto. --}}
+    <link rel="stylesheet" href="{{ asset('css/snrfit-doc.css').'?v='.(@filemtime(public_path('css/snrfit-doc.css')) ?: 1) }}">
     @stack('doc-estilo')
 </head>
 <body>
