@@ -48,6 +48,12 @@
         .a-ok { background: rgba(0,255,136,0.08); border: 1px solid rgba(0,255,136,0.3); color: #00ff88; }
         .a-err { background: rgba(255,68,68,0.08); border: 1px solid rgba(255,68,68,0.3); color: #ff4444; }
         .vazio { color: #9aa1ab; text-align: center; padding: 40px 0; }
+
+        /* Seletores de dia/horário livre (ver _reposicao_horarios.blade.php). */
+        select { background: #0a0b0d; border: 1px solid rgba(255,255,255,0.12); color: #fff; padding: 9px 11px; border-radius: 9px; font-size: 0.82rem; font-family: inherit; font-weight: 700; min-width: 190px; }
+        select:focus { outline: none; border-color: #7cff00; }
+        select:disabled { opacity: 0.45; }
+        .sem-vaga { display: flex; align-items: center; gap: 9px; background: rgba(255,170,0,0.07); border: 1px solid rgba(255,170,0,0.28); color: #ffaa00; padding: 12px 14px; border-radius: 10px; font-size: 0.8rem; font-weight: 700; }
     </style>
 </head>
 <body class="ed-page">
@@ -71,6 +77,11 @@
             $estorno = $estornos[$falta->id] ?? null;
             $ehPacote = $falta->tipo_aula === 'pacote';
             $aguardando = $pedido && $pedido->estaPendente();
+
+            // Grade de horários livres do personal para a duração desta aula.
+            // Vem pronta do controller — a tela não consulta a agenda.
+            $dur = $duracaoDaFalta[$falta->id] ?? 60;
+            $diasLivres = $disponibilidade[$dur] ?? [];
         @endphp
 
         <div class="card {{ $aguardando ? 'pendente' : '' }}">
@@ -103,25 +114,16 @@
             @if($aguardando)
                 <form method="POST" action="{{ route('personal.reposicoes.aceitar', $pedido->id) }}">
                     @csrf
+                    @include('personal._reposicao_horarios', ['diasLivres' => $diasLivres, 'dur' => $dur, 'uid' => 'a'.$pedido->id])
+                    @if($diasLivres !== [])
                     <div class="campos">
-                        <div class="campo">
-                            <label>Remarcar para</label>
-                            <input type="date" name="data" required min="{{ now()->format('Y-m-d') }}">
-                        </div>
-                        <div class="campo">
-                            <label>Início</label>
-                            <input type="time" name="hora_inicio" required>
-                        </div>
-                        <div class="campo">
-                            <label>Fim</label>
-                            <input type="time" name="hora_fim" required>
-                        </div>
                         <button class="b-ok" type="submit"><i class="ph ph-check"></i> Confirmar reposição</button>
                     </div>
                     <div class="campo" style="margin-top:10px;">
                         <label>Recado para o aluno</label>
                         <input type="text" name="resposta" placeholder="Opcional no aceite.">
                     </div>
+                    @endif
                 </form>
 
                 <div class="sep">
@@ -170,19 +172,9 @@
 
                 <form method="POST" action="{{ route('personal.faltas.remarcar', $falta->id) }}">
                     @csrf
+                    @include('personal._reposicao_horarios', ['diasLivres' => $diasLivres, 'dur' => $dur, 'uid' => 'r'.$falta->id])
+                    @if($diasLivres !== [])
                     <div class="campos">
-                        <div class="campo">
-                            <label>Remarcar para</label>
-                            <input type="date" name="data" required min="{{ now()->format('Y-m-d') }}">
-                        </div>
-                        <div class="campo">
-                            <label>Início</label>
-                            <input type="time" name="hora_inicio" required>
-                        </div>
-                        <div class="campo">
-                            <label>Fim</label>
-                            <input type="time" name="hora_fim" required>
-                        </div>
                         <button class="b-ok" type="submit"
                                 @if($jaDevolvido) onclick="return confirm('O valor já foi devolvido ao aluno. Remarcar assim mesmo, sem receber por essa aula?')" @endif>
                             <i class="ph ph-calendar-plus"></i> Remarcar
@@ -192,6 +184,7 @@
                         <label>Recado para o aluno</label>
                         <input type="text" name="resposta" placeholder="Opcional.">
                     </div>
+                    @endif
                 </form>
             @endif
         </div>
@@ -199,5 +192,50 @@
         <p class="vazio"><i class="ph ph-check-circle"></i> Nenhum aluno desmarcou aula até agora.</p>
     @endforelse
 </div>
+
+<script>
+    // Escolher o dia popula os horários daquele dia e preenche os campos que o
+    // servidor espera (data/hora_inicio/hora_fim). A grade vem de window.vagas,
+    // montada pelo partial — a tela não consulta a agenda.
+    document.querySelectorAll('.sel-dia').forEach(function (selDia) {
+        var uid = selDia.dataset.uid;
+        var selHora = document.getElementById('hora' + uid);
+
+        selDia.addEventListener('change', function () {
+            var dia = selDia.value;
+            document.getElementById('data' + uid).value = dia;
+            document.getElementById('ini' + uid).value = '';
+            document.getElementById('fim' + uid).value = '';
+
+            selHora.innerHTML = '';
+            if (!dia) {
+                selHora.disabled = true;
+                selHora.innerHTML = '<option value="">Escolha o dia primeiro</option>';
+                return;
+            }
+
+            var horarios = (window.vagas[uid][dia] || {}).horarios || [];
+            selHora.disabled = false;
+            selHora.appendChild(new Option('Escolha o horário…', ''));
+            horarios.forEach(function (h) {
+                var o = new Option(h.label, h.inicio);
+                o.dataset.fim = h.fim;
+                selHora.appendChild(o);
+            });
+
+            // Um horário só: não faz sentido obrigar a escolher.
+            if (horarios.length === 1) {
+                selHora.selectedIndex = 1;
+                selHora.dispatchEvent(new Event('change'));
+            }
+        });
+
+        selHora.addEventListener('change', function () {
+            var op = selHora.options[selHora.selectedIndex];
+            document.getElementById('ini' + uid).value = selHora.value || '';
+            document.getElementById('fim' + uid).value = (op && op.dataset.fim) ? op.dataset.fim : '';
+        });
+    });
+</script>
 </body>
 </html>

@@ -460,7 +460,7 @@ class ExplorarController extends Controller
     }
 
     // GET /api/v1/personais/{personalId}/horarios/{dia}
-    public function horariosPersonal(Request $request, $personalId, $dia)
+    public function horariosPersonal(Request $request, $personalId, $dia, \App\Services\AgendaService $agendas)
     {
         $this->clienteAutenticado($request);
 
@@ -472,29 +472,10 @@ class ExplorarController extends Controller
             return response()->json(['error' => 'Formato de data inválido'], 400);
         }
 
-        // Slots de 60min entre 06:00 e 22:00 sem conflito na agenda (igual ao web).
-        $hora = Carbon::createFromFormat('H:i', '06:00');
-        $fimTurno = Carbon::createFromFormat('H:i', '22:00');
-        $horarios = [];
-
-        while ($hora < $fimTurno) {
-            $horaFim = $hora->copy()->addMinutes(60);
-            $ini = $hora->format('H:i');
-            $fim = $horaFim->format('H:i');
-
-            $temConflito = Agenda::where('personal_id', $personalId)
-                ->where('data', $dia)
-                ->where('cancelado', false)
-                ->whereRaw('hora_inicio < ? AND hora_fim > ?', [$fim, $ini])
-                ->exists();
-
-            if (! $temConflito) {
-                $horarios[] = ['inicio' => $ini, 'fim' => $fim, 'label' => "$ini - $fim"];
-            }
-            $hora->addMinutes(60);
-        }
-
-        return response()->json(['horarios' => $horarios]);
+        // Mesma fonte do web agora: AgendaService::horariosLivres(). O comentário
+        // que estava aqui dizia "igual ao web" sobre uma cópia da conta — era
+        // igual até alguém mexer em um dos dois.
+        return response()->json(['horarios' => $agendas->horariosLivres((int) $personalId, $dia)]);
     }
 
     // GET /api/v1/studios/{studioId}/horarios/{dia}

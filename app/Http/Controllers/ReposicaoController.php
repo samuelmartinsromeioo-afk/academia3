@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Agenda;
 use App\Models\AulaReposicao;
+use App\Services\AgendaService;
 use App\Services\NotificacaoService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -23,6 +24,25 @@ class ReposicaoController extends Controller
     }
 
     /**
+     * Duração da aula perdida, para a reposição ter o mesmo tamanho.
+     *
+     * Aula antiga pode estar sem hora de fim; nesse caso vale 60min, que é o
+     * passo da grade — melhor que gerar slot de duração zero.
+     */
+    private function duracaoEmMinutos(Agenda $aula): int
+    {
+        if (! $aula->hora_inicio || ! $aula->hora_fim) {
+            return 60;
+        }
+
+        $ini = \Carbon\Carbon::parse($aula->hora_inicio);
+        $fim = \Carbon\Carbon::parse($aula->hora_fim);
+        $min = $ini->diffInMinutes($fim);
+
+        return $min > 0 ? $min : 60;
+    }
+
+    /**
      * Tudo que os alunos desmarcaram, com o que dá para fazer em cada caso.
      *
      * Por que `cancelado = true` basta para dizer "foi o aluno": todo
@@ -32,7 +52,7 @@ class ReposicaoController extends Controller
      * Se algum dia o lado do personal virar soft-delete, este filtro precisa de
      * um `cancelado_por`.
      */
-    public function index()
+    public function index(AgendaService $agendas)
     {
         $personalId = $this->personalLogado();
         if (! $personalId) {
@@ -61,12 +81,29 @@ class ReposicaoController extends Controller
             ->get()
             ->keyBy('agenda_id');
 
+        // Horários que o personal realmente tem livres, por dia, para ele marcar
+        // a reposição sem sair daqui para conferir a agenda.
+        //
+        // A duração sai da aula perdida — repor uma aula de 1h em 1h. Fichas com
+        // durações diferentes geram grades diferentes, então a lista é montada
+        // por duração e reaproveitada entre as faltas de mesma duração, em vez de
+        // uma varredura de 22 dias por pedido.
+        $disponibilidade = [];
+        foreach ($faltas as $falta) {
+            $dur = $this->duracaoEmMinutos($falta);
+            if (! isset($disponibilidade[$dur])) {
+                $disponibilidade[$dur] = $agendas->diasComHorarioLivre($personalId, 21, $dur);
+            }
+        }
+
         return view('personal.reposicoes', [
             'personal' => $personal,
             'faltas' => $faltas,
             'pedidos' => $pedidos,
             'estornos' => $estornos,
             'pendentes' => $pedidos->where('status', AulaReposicao::STATUS_PENDENTE)->count(),
+            'disponibilidade' => $disponibilidade,
+            'duracaoDaFalta' => $faltas->mapWithKeys(fn ($f) => [$f->id => $this->duracaoEmMinutos($f)])->all(),
         ]);
     }
 
@@ -77,7 +114,7 @@ class ReposicaoController extends Controller
      * do aluno ou mandar outra. Conflito na agenda barra — senão a reposição
      * criaria duas aulas no mesmo horário.
      */
-    public function aceitar(Request $request, $id)
+    public function aceitar(Request $request, $id, AgendaService $agendas)
     {
         $personalId = $this->personalLogado();
         if (! $personalId) {
@@ -97,14 +134,8 @@ class ReposicaoController extends Controller
             'resposta' => 'nullable|string|max:500',
         ]);
 
-        $conflito = Agenda::where('personal_id', $personalId)
-            ->where('data', $dados['data'])
-            ->where('cancelado', false)
-            ->whereRaw('hora_inicio < ? AND hora_fim > ?', [$dados['hora_fim'], $dados['hora_inicio']])
-            ->exists();
-
-        if ($conflito) {
-            return redirect()->back()->with('error', 'Você já tem compromisso nesse horário. Escolha outro para a reposição.');
+        if ($motivo = $agendas->motivoParaNaoMarcar($personalId, $dados['data'], $dados['hora_inicio'], $dados['hora_fim'])) {
+            return redirect()->back()->with('error', $motivo);
         }
 
         $original = $pedido->agenda;
@@ -153,7 +184,7 @@ class ReposicaoController extends Controller
      * Se o admin já devolveu, a aula sai de graça; a tela avisa o personal disso
      * antes, e a decisão é dele.
      */
-    public function remarcarAvulsa(Request $request, $agendaId)
+    public function remarcarAvulsa(Request $request, $agendaId, AgendaService $agendas)
     {
         $personalId = $this->personalLogado();
         if (! $personalId) {
@@ -180,14 +211,8 @@ class ReposicaoController extends Controller
             'resposta' => 'nullable|string|max:500',
         ]);
 
-        $conflito = Agenda::where('personal_id', $personalId)
-            ->where('data', $dados['data'])
-            ->where('cancelado', false)
-            ->whereRaw('hora_inicio < ? AND hora_fim > ?', [$dados['hora_fim'], $dados['hora_inicio']])
-            ->exists();
-
-        if ($conflito) {
-            return redirect()->back()->with('error', 'Você já tem compromisso nesse horário. Escolha outro para a remarcação.');
+        if ($motivo = $agendas->motivoParaNaoMarcar($personalId, $dados['data'], $dados['hora_inicio'], $dados['hora_fim'])) {
+            return redirect()->back()->with('error', $motivo);
         }
 
         $estorno = \App\Models\Estorno::where('agenda_id', $original->id)->first();

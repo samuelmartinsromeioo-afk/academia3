@@ -904,38 +904,16 @@ class ClienteController extends Controller
         ]);
     }
 
-    public function buscarHorariosDisponiveis($personalId, $dia)
+    public function buscarHorariosDisponiveis($personalId, $dia, \App\Services\AgendaService $agendas)
     {
         $personal = Personal::find($personalId);
         if (!$personal) return response()->json(['erro' => 'Personal não encontrado'], 404);
         if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $dia)) return response()->json(['erro' => 'Formato de data inválido'], 400);
 
-        $hora     = Carbon::createFromFormat('H:i', '06:00');
-        $fimTurno = Carbon::createFromFormat('H:i', '22:00');
-        $horariosDisponiveis = [];
-
-        while ($hora < $fimTurno) {
-            $horaFim             = $hora->copy()->addMinutes(60);
-            $horaInicioFormatted = $hora->format('H:i');
-            $horaFimFormatted    = $horaFim->format('H:i');
-
-            $temConflito = Agenda::where('personal_id', $personalId)
-                ->where('data', $dia)
-                ->where('cancelado', false)
-                ->whereRaw("hora_inicio < ? AND hora_fim > ?", [$horaFimFormatted, $horaInicioFormatted])
-                ->exists();
-
-            if (!$temConflito) {
-                $horariosDisponiveis[] = [
-                    'inicio' => $horaInicioFormatted,
-                    'fim'    => $horaFimFormatted,
-                    'label'  => $horaInicioFormatted . ' - ' . $horaFimFormatted,
-                ];
-            }
-            $hora->addMinutes(60);
-        }
-
-        return response()->json($horariosDisponiveis);
+        // A conta mora em AgendaService::horariosLivres(). Estava copiada aqui e
+        // no Api\ExplorarController, com uma query por slot e ofertando horário
+        // já vencido. O formato da resposta é o mesmo de antes.
+        return response()->json($agendas->horariosLivres((int) $personalId, $dia));
     }
 
     public function buscarHorariosStudio($studioId, $dia)
