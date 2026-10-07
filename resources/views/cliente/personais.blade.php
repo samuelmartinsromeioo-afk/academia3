@@ -243,12 +243,7 @@
 <div class="container">
     <div class="welcome">
         <div class="ed-eyebrow"><i class="ph ph-user"></i> Descobrir</div><h1 class="ed-h">Explorar <span class="ed-mark">Profissionais</span></h1>
-        <p>Encontre personal trainers e nutricionistas, veja avaliações e entre em contato.</p>
-    </div>
-
-    <div class="tabs" role="tablist">
-        <button class="tab active" data-tab="personais" onclick="trocarAba('personais')"><i class="ph ph-barbell"></i> Personais <span class="cnt">{{ $personais->count() }}</span></button>
-        <button class="tab" data-tab="nutricionistas" onclick="trocarAba('nutricionistas')"><i class="ph ph-carrot"></i> Nutricionistas <span class="cnt">{{ $nutricionistas->count() }}</span></button>
+        <p>Encontre personal trainers, veja avaliações e entre em contato.</p>
     </div>
 
     <div class="search-wrapper">
@@ -352,78 +347,6 @@
         @endif
     </div>
 
-    {{-- ABA: NUTRICIONISTAS --}}
-    <div class="tab-panel" id="panel-nutricionistas">
-        @if ($nutricionistas->isEmpty())
-            <div class="empty-state"><i class="ph ph-carrot"></i><p>Nenhum nutricionista disponível no momento.</p></div>
-        @else
-            <div class="grid grid-prof">
-                @foreach ($nutricionistas as $nutri)
-                    <div class="card nutri {{ $nutri->eh_pioneiro ? 'pioneiro' : '' }}"
-                         data-busca="{{ strtolower($nutri->nome . ' ' . ($nutri->cidade ?? '')) }}"
-                         data-modalidade="{{ $nutri->modalidade ?? '' }}">
-                        <div class="card-img">
-                            @if ($nutri->foto)
-                                <img src="{{ asset('storage/' . $nutri->foto) }}" alt="{{ $nutri->nome }}">
-                            @elseif ($nutri->fotos->isNotEmpty())
-                                <img src="{{ asset('storage/' . $nutri->fotos->first()->path) }}" alt="{{ $nutri->nome }}">
-                            @else
-                                <i class="ph ph-carrot"></i>
-                            @endif
-                            <span class="card-badge"><i class="ph ph-carrot"></i> Nutricionista</span>
-                        </div>
-                        <div class="card-body">
-                            <h3>
-                                {{ $nutri->nome }}
-                                @if ($nutri->eh_pioneiro)
-                                    @include('partials.badge-pioneiro', ['posicao' => $nutri->pioneiro_posicao, 'estado' => $nutri->estado, 'tipo' => 'nutricionista', 'tamanho' => 15])
-                                @endif
-                            </h3>
-                            @if ($nutri->cidade)
-                                <div class="card-meta"><i class="ph ph-map-pin"></i> {{ $nutri->cidade }}{{ $nutri->estado ? ' - ' . $nutri->estado : '' }}</div>
-                            @endif
-                            @if ($nutri->crn)
-                                <div class="card-meta"><i class="ph ph-identification-badge"></i> CRN {{ $nutri->crn }}</div>
-                            @endif
-                            {{-- O nutricionista também declara modalidade no cadastro, e o
-                                 filtro vale para esta aba: sem exibir, o card filtrado não
-                                 explicaria por que apareceu. --}}
-                            @if ($nutri->modalidade)
-                                <div class="card-meta">
-                                    <i class="ph {{ match ($nutri->modalidade) {
-                                        'Online'  => 'ph-monitor-play',
-                                        'Híbrido' => 'ph-arrows-left-right',
-                                        default   => 'ph-barbell',
-                                    } }}"></i> {{ $nutri->modalidade }}
-                                </div>
-                            @endif
-                            @if (!empty($nutri->especialidades))
-                                <div class="chips">
-                                    @foreach (array_slice((array) $nutri->especialidades, 0, 3) as $esp)
-                                        <span class="chip">{{ $esp }}</span>
-                                    @endforeach
-                                </div>
-                            @endif
-                            <div class="rating">
-                                @php $media = (float) $nutri->media_avaliacao; @endphp
-                                @if ($nutri->avaliacoes->count())
-                                    @for ($i = 1; $i <= 5; $i++)<i class="ph-star {{ $i <= round($media) ? 'ph-fill' : 'ph' }}"></i>@endfor
-                                    <span class="num">{{ $nutri->media_avaliacao }} ({{ $nutri->avaliacoes->count() }})</span>
-                                @else
-                                    <span class="num" style="color: var(--primary);"><i class="ph ph-plant"></i> Novo profissional</span>
-                                @endif
-                            </div>
-                            <div class="card-footer">
-                                <div class="preco" style="font-size:.82rem; color:var(--text-muted);"><i class="ph ph-fork-knife"></i> Nutrição</div>
-                                <a href="{{ route('nutricionistas.detalhes', $nutri->id) }}" class="btn-detalhes">Ver perfil <i class="ph ph-arrow-right"></i></a>
-                            </div>
-                        </div>
-                    </div>
-                @endforeach
-            </div>
-        @endif
-    </div>
-
     <div class="empty-state" id="semResultados" style="display:none;">
         <i class="ph ph-magnifying-glass"></i>
         <p>Nenhum profissional encontrado para a sua busca.</p>
@@ -431,12 +354,6 @@
 </div>
 
 <script>
-    function trocarAba(aba) {
-        document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === aba));
-        document.querySelectorAll('.tab-panel').forEach(p => p.classList.toggle('active', p.id === 'panel-' + aba));
-        filtrar();
-    }
-
     const inputBusca = document.getElementById('buscaProfissional');
 
     // Modalidade selecionada: '' (todas), 'Presencial' ou 'Online'.
@@ -484,7 +401,7 @@
             .forEach(b => b.classList.toggle('active', b === botao));
 
         // Mantém o filtro na URL para o link ser compartilhável e sobreviver ao
-        // recarregar, igual ao ?tipo=nutricionistas que já existia.
+        // recarregar.
         const url = new URLSearchParams(location.search);
         modalidadeAtiva ? url.set('modalidade', modalidadeAtiva) : url.delete('modalidade');
         history.replaceState(null, '', location.pathname + (url.toString() ? '?' + url : ''));
@@ -492,10 +409,6 @@
         filtrar();
     }
     if (inputBusca) inputBusca.addEventListener('input', filtrar);
-
-    // Estado inicial a partir da URL: ?tipo=nutricionistas
-    const params = new URLSearchParams(location.search);
-    if (params.get('tipo') === 'nutricionistas') trocarAba('nutricionistas');
 
     // A pílula ativa e `modalidadeAtiva` já vieram marcadas do servidor (atributo
     // data-inicial), então aqui basta aplicar o filtro uma vez na carga. Não

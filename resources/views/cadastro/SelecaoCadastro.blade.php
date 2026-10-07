@@ -230,7 +230,7 @@
             <div class="sel-index">01</div>
             <div class="sel-body">
                 <h3>Profissional da Educação Física</h3>
-                <p>Personal trainer ou nutricionista: treinos e planos personalizados, acompanhamento de evolução e gestão da sua agenda.</p>
+                <p>Personal trainer: treinos personalizados, acompanhamento de evolução e gestão da sua agenda.</p>
                 <span class="sel-go">Começar agora <i class="ph-bold ph-arrow-right"></i></span>
             </div>
         </a>

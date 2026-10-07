@@ -26,12 +26,9 @@ class PersonalController extends Controller
 
     public function store(Request $request, \App\Services\CupomService $cupons)
     {
-        // Passo 1 define os campos condicionais (CREF x CRN, especialidades).
-        $tipo = \App\Enums\ProfessionalType::tryFromDefault($request->input('professional_type'));
-        $ehNutri = $tipo === \App\Enums\ProfessionalType::NUTRITIONIST;
+        $tipo = \App\Enums\ProfessionalType::PERSONAL_TRAINER;
 
         $regras = [
-            'professional_type' => ['required', 'in:' . implode(',', \App\Enums\ProfessionalType::values())],
             'nome'          => 'required|string|max:255',
             'cep'           => 'required|string|max:9',
             'rua'           => 'required|string|max:300',
@@ -61,19 +58,12 @@ class PersonalController extends Controller
             'cupom'         => $cupons->regraValidacao(),
         ];
 
-        if ($ehNutri) {
-            // Nutricionista: CRN obrigatório (formato + região 1–11), CREF ausente.
-            $regras['crn'] = ['required', 'string', 'max:40', function ($attribute, $value, $fail) {
-                if (! \App\Support\CadastroHelper::validarCRN($value)) {
-                    $fail(config('textos.profissional.crn_erro'));
-                }
-            }];
-        } else {
-            // Personal trainer: mantém o comportamento existente (CREF obrigatório).
-            $regras['cref'] = 'required|string|max:30';
-        }
+        $regras['cref'] = 'required|string|max:30';
 
         $dados = $request->validate($regras);
+
+        // O tipo não vem do formulário: a plataforma só cadastra personal trainer.
+        $dados['professional_type'] = $tipo->value;
 
         // Fora do create(): `cupom` não é coluna de personals.
         $codigoCupom = \Illuminate\Support\Arr::pull($dados, 'cupom');
@@ -107,7 +97,7 @@ class PersonalController extends Controller
 
         $fb = app(MetaConversionsService::class);
         return redirect()->route('cadastro.sucesso')
-            ->with('cad_tipo', $ehNutri ? 'nutricionista' : 'personal')
+            ->with('cad_tipo', 'personal')
             ->with('fb_event', $fb->track(
                 'CompleteRegistration',
                 ['content_name' => $tipo->label(), 'status' => 'pendente'],

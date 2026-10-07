@@ -72,10 +72,6 @@ class loginController extends Controller
             $this->abrirSessao(['personal_id' => $personal->id]);
             $this->marcarPrimeiroLogin($personal, 'personal');
 
-            // Nutricionista tem painel próprio; personal trainer segue no dashboard de treino.
-            if ($personal->isNutricionista()) {
-                return redirect()->route('nutri.painel');
-            }
             return redirect()->route('personal.dashboard');
         }
 

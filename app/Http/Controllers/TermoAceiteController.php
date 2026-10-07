@@ -123,7 +123,7 @@ class TermoAceiteController extends Controller
     private function rotaDashboard($usuario): string
     {
         return match (class_basename($usuario)) {
-            'Personal' => $usuario->isNutricionista() ? route('nutri.painel') : route('personal.dashboard'),
+            'Personal' => route('personal.dashboard'),
             'Cliente'  => route('cliente.index'),
             'Academia' => route('academia.dashboard'),
             'Studio'   => route('studio.dashboard'),
@@ -148,7 +148,7 @@ class TermoAceiteController extends Controller
     private function perfilLabel($usuario): string
     {
         return match (class_basename($usuario)) {
-            'Personal' => $usuario->isNutricionista() ? 'Nutricionista' : 'Personal Trainer',
+            'Personal' => 'Personal Trainer',
             'Cliente'  => 'Aluno',
             'Academia' => 'Academia',
             'Studio'   => 'Studio',

@@ -314,7 +314,7 @@ class IndicacaoController extends Controller
     private function rotaDashboard($usuario): string
     {
         return match (class_basename($usuario)) {
-            'Personal' => $usuario->isNutricionista() ? route('nutri.painel') : route('personal.dashboard'),
+            'Personal' => route('personal.dashboard'),
             'Cliente'  => route('cliente.index'),
             'Academia' => route('academia.dashboard'),
             'Studio'   => route('studio.dashboard'),

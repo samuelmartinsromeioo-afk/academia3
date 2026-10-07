@@ -26,10 +26,6 @@ class Kernel extends ConsoleKernel
         // Geocodifica cadastros novos (lat/lng) para a busca por proximidade.
         $schedule->command('geo:preencher')->hourly()->withoutOverlapping();
 
-        // Lembra o paciente da consulta nutricional ~24 h antes. A trava de
-        // duplicidade é a coluna lembrete_enviado, não o horário da execução.
-        $schedule->command('nutri:lembrete-consulta')->everyFifteenMinutes()->withoutOverlapping();
-
         // Apura o bônus de indicação (10% do faturamento do indicado na janela de
         // 35 dias) e libera para saque o que fechou a janela com a meta batida.
         // O painel do indicador também reavalia no acesso, mas sem isto o bônus de

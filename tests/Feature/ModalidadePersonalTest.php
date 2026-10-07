@@ -302,26 +302,4 @@ class ModalidadePersonalTest extends TestCase
         $this->assertStringContainsString('history.replaceState', $html);
     }
 
-    /** O nutricionista também declara modalidade: o card dele precisa exibir. */
-    public function test_card_do_nutricionista_mostra_a_modalidade(): void
-    {
-        $nutri = Personal::create([
-            'nome' => 'Nutri Modalidade', 'email' => 'nm@mod.teste', 'cpf' => '443',
-            'senha' => bcrypt('x'), 'cep' => '30130-000', 'rua' => 'R', 'bairro' => 'B',
-            'cidade' => 'BH', 'estado' => 'MG', 'complemento' => '-', 'foto' => '',
-            'idade' => '1990-01-01', 'valor_secao' => 0, 'crn' => 'CRN-9 12345',
-            'professional_type' => 'NUTRITIONIST', 'modalidade' => 'Online',
-            'status' => 'aprovado', 'data_aprovacao' => now()->subYear(),
-        ]);
-
-        $html = $this->withSession(['cliente_id' => $this->cliente->id])
-            ->get(route('personais.explorar'))
-            ->assertOk()
-            ->assertSee('Nutri Modalidade')
-            ->getContent();
-
-        // O card do nutri carrega o atributo que o filtro lê.
-        $this->assertStringContainsString('data-modalidade="Online"', $html);
-        $this->assertTrue($nutri->isNutricionista());
-    }
 }

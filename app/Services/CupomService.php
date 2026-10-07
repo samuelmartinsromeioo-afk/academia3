@@ -309,28 +309,6 @@ class CupomService
             ];
         }
 
-        // Consulta do nutricionista corre por nutri_cobrancas, fora de payments.
-        if (method_exists($indicado, 'isNutricionista') && $indicado->isNutricionista()) {
-            $cobrancas = \App\Models\Nutri\Cobranca::query()
-                ->where('personal_id', $indicado->getKey())
-                ->where('status', 'pago')
-                ->whereBetween('pago_em', [$inicio, $fim])
-                ->get(['id', 'valor', 'pago_em']);
-
-            foreach ($cobrancas as $cobranca) {
-                $bruto = (float) $cobranca->valor;
-
-                $receitas[] = [
-                    'origem' => 'nutri_cobranca:' . $cobranca->id,
-                    // nutri_cobrancas não tem coluna de comissão: aqui a comissão
-                    // é sempre derivada da taxa do split.
-                    'base'   => $this->comissao($bruto, null),
-                    'bruto'  => $bruto,
-                    'em'     => $cobranca->pago_em,
-                ];
-            }
-        }
-
         return $receitas;
     }
 

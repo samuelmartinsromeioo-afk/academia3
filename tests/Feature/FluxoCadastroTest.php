@@ -121,14 +121,13 @@ class FluxoCadastroTest extends TestCase
         $this->assertCadastroConsistente($aluno, esperaBonus: false);
     }
 
-    // ── Personal e nutricionista ─────────────────────────────────────────
+    // ── Personal ─────────────────────────────────────────────────────────
 
     public function test_cadastro_de_personal_fica_pendente_e_vai_para_a_tela_de_recebido(): void
     {
         $this->get(route('form.personal'))->assertOk();
 
         $this->post(route('personal.store'), [
-            'professional_type' => 'PERSONAL_TRAINER',
             'nome' => 'Personal Fluxo', 'email' => 'pt@fluxo.teste',
             'cpf' => '11144477735', 'cref' => '000123-G/MG',
             'senha' => 'senha12345', 'senha_confirmation' => 'senha12345',
@@ -149,11 +148,14 @@ class FluxoCadastroTest extends TestCase
         $this->assertCadastroConsistente($pt);
     }
 
-    public function test_cadastro_de_nutricionista_exige_crn_e_nao_cref(): void
+    /**
+     * O cadastro de profissional é só personal trainer: o CREF é obrigatório e o
+     * tipo não vem do formulário (ver PersonalController@store).
+     */
+    public function test_cadastro_de_personal_exige_cref(): void
     {
         $base = [
-            'professional_type' => 'NUTRITIONIST',
-            'nome' => 'Nutri Fluxo', 'email' => 'nutri@fluxo.teste',
+            'nome' => 'Sem Cref', 'email' => 'semcref@fluxo.teste',
             'cpf' => '12345678909',
             'senha' => 'senha12345', 'senha_confirmation' => 'senha12345',
             'idade' => '1992-07-01', 'valor_secao' => '150',
@@ -161,17 +163,16 @@ class FluxoCadastroTest extends TestCase
             'complemento' => 'Sala 2',
         ] + $this->endereco();
 
-        // Sem CRN o submit é barrado.
-        $this->post(route('personal.store'), $base)->assertSessionHasErrors('crn');
-        $this->assertNull(Personal::where('email', 'nutri@fluxo.teste')->first());
+        $this->post(route('personal.store'), $base)->assertSessionHasErrors('cref');
+        $this->assertNull(Personal::where('email', 'semcref@fluxo.teste')->first());
 
-        $this->post(route('personal.store'), $base + ['crn' => 'CRN-9 12345'])
+        $this->post(route('personal.store'), $base + ['cref' => '000999-G/MG'])
             ->assertSessionHasNoErrors()
-            ->assertSessionHas('cad_tipo', 'nutricionista');
+            ->assertSessionHas('cad_tipo', 'personal');
 
-        $nutri = Personal::where('email', 'nutri@fluxo.teste')->firstOrFail();
-        $this->assertTrue($nutri->isNutricionista());
-        $this->assertSame('pendente', $nutri->status);
+        $pt = Personal::where('email', 'semcref@fluxo.teste')->firstOrFail();
+        $this->assertTrue($pt->isPersonalTrainer());
+        $this->assertSame('pendente', $pt->status);
     }
 
     // ── Academia, studio e loja ──────────────────────────────────────────

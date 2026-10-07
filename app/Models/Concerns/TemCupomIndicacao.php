@@ -148,19 +148,6 @@ trait TemCupomIndicacao
             );
         }
 
-        // Nutricionista conquista cliente pela consulta paga, que corre por
-        // nutri_cobrancas e não por payments.
-        if (method_exists($this, 'isNutricionista') && $this->isNutricionista()) {
-            $clientes = $clientes->merge(
-                \App\Models\Nutri\Cobranca::query()
-                    ->where('personal_id', $this->getKey())
-                    ->where('status', 'pago')
-                    ->whereNotNull('cliente_id')
-                    ->distinct()
-                    ->pluck('cliente_id')
-            );
-        }
-
         return $clientes->unique()->count();
     }
 

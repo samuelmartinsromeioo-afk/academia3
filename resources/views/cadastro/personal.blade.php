@@ -356,32 +356,8 @@
 
             @php
                 $tipos = config('textos.profissional.tipos');
-                $tipoSel = old('professional_type', 'PERSONAL_TRAINER');
+                $tipoSel = 'PERSONAL_TRAINER';
             @endphp
-
-            <input type="hidden" name="professional_type" id="professional_type" value="{{ $tipoSel }}">
-
-            <!-- PASSO 1: TIPO DE PROFISSIONAL -->
-            <div class="type-step">
-                <div class="type-step-title">{{ config('textos.profissional.seletor_titulo') }}</div>
-                <div class="type-step-help">{{ config('textos.profissional.seletor_ajuda') }}</div>
-                <div class="type-grid">
-                    <div class="type-card" data-tipo="PERSONAL_TRAINER" onclick="selecionarTipo('PERSONAL_TRAINER')">
-                        <i class="ph ph-barbell"></i>
-                        <div>
-                            <h4>{{ $tipos['PERSONAL_TRAINER']['label'] }}</h4>
-                            <p>{{ $tipos['PERSONAL_TRAINER']['descricao'] }}</p>
-                        </div>
-                    </div>
-                    <div class="type-card" data-tipo="NUTRITIONIST" onclick="selecionarTipo('NUTRITIONIST')">
-                        <i class="ph ph-carrot"></i>
-                        <div>
-                            <h4>{{ $tipos['NUTRITIONIST']['label'] }}</h4>
-                            <p>{{ $tipos['NUTRITIONIST']['descricao'] }}</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
 
             <div class="full-width" style="border-top:1px solid rgba(255,255,255,0.06); padding-top:6px;">
                 <div class="type-step-title" id="formTitulo">{{ $tipos[$tipoSel]['form_titulo'] }}</div>
@@ -484,20 +460,11 @@
             </div>
 
             <!-- CREF (Personal Trainer) -->
-            <div class="form-group" data-tipo-only="PERSONAL_TRAINER" id="grupoCref">
+            <div class="form-group" id="grupoCref">
                 <label>CREF</label>
                 <div class="input-wrapper">
                     <i class="ph ph-identification-badge"></i>
-                    <input type="text" name="cref" value="{{ old('cref') }}" placeholder="{{ $tipos['PERSONAL_TRAINER']['conselho_placeholder'] }}">
-                </div>
-            </div>
-
-            <!-- CRN (Nutricionista) -->
-            <div class="form-group" data-tipo-only="NUTRITIONIST" id="grupoCrn" style="display:none;">
-                <label>CRN <span style="color:var(--text-dim); font-weight:400; text-transform:none;">(com a região)</span></label>
-                <div class="input-wrapper">
-                    <i class="ph ph-identification-badge"></i>
-                    <input type="text" name="crn" value="{{ old('crn') }}" placeholder="{{ $tipos['NUTRITIONIST']['conselho_placeholder'] }}">
+                    <input type="text" name="cref" value="{{ old('cref') }}" placeholder="{{ $tipos['PERSONAL_TRAINER']['conselho_placeholder'] }}" required>
                 </div>
             </div>
 
@@ -526,7 +493,6 @@
             <!-- ESPECIALIDADES (multi-seleção via chips) -->
             @php
                 $espPersonal = config('textos.profissional.especialidades.PERSONAL_TRAINER');
-                $espNutri    = config('textos.profissional.especialidades.NUTRITIONIST');
                 $espSel      = collect(old('especialidades', []));
             @endphp
             <div class="chips-section form-group">
@@ -543,16 +509,8 @@
                 </div>
             </div>
 
-            <!-- DIFERENCIAIS (nutricionista) -->
-            <div class="diferenciais" id="diferenciais">
-                <div class="dif-item"><i class="ph ph-shield-check"></i><span>{{ config('textos.profissional.diferenciais.confiabilidade') }}</span></div>
-                <div class="dif-item"><i class="ph ph-export"></i><span>{{ config('textos.profissional.diferenciais.portabilidade') }}</span></div>
-                <div class="dif-item"><i class="ph ph-megaphone"></i><span>{{ config('textos.profissional.diferenciais.escuta') }}</span></div>
-                <div class="dif-item"><i class="ph ph-handshake"></i><span>{{ config('textos.profissional.diferenciais.transparencia') }}</span></div>
-            </div>
-
             <!-- ✅ SEÇÃO DE ACADEMIAS -->
-            <div class="academias-section" id="academiasSection" data-tipo-only="PERSONAL_TRAINER">
+            <div class="academias-section" id="academiasSection">
                 <div class="academias-title">
                     <i class="ph ph-building"></i> Academias onde você atua
                 </div>
@@ -730,9 +688,7 @@
          usuário fecharia o bloco e o resto do valor viraria HTML executável. --}}
     const ESPECIALIDADES = {!! json_encode([
         'PERSONAL_TRAINER' => $espPersonal,
-        'NUTRITIONIST'     => $espNutri,
     ], JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP) !!};
-    const TIPOS = {!! json_encode($tipos, JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP) !!};
     const ESP_SELECIONADAS = new Set({!! json_encode($espSel->values(), JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP) !!});
 
     function renderChips(tipo) {
@@ -758,39 +714,9 @@
         });
     }
 
-    function selecionarTipo(tipo) {
-        document.getElementById('professional_type').value = tipo;
-
-        document.querySelectorAll('.type-card').forEach(function (c) {
-            c.classList.toggle('active', c.dataset.tipo === tipo);
-        });
-
-        // Mostra/esconde blocos condicionais e ajusta o "required".
-        document.querySelectorAll('[data-tipo-only]').forEach(function (el) {
-            const mostra = el.dataset.tipoOnly === tipo;
-            el.style.display = mostra ? '' : 'none';
-            el.querySelectorAll('input, select, textarea').forEach(function (f) {
-                f.disabled = !mostra; // desabilita não envia (evita CREF vazio p/ nutri)
-            });
-        });
-
-        // Conselho obrigatório conforme o tipo.
-        const cref = document.querySelector('#grupoCref input');
-        const crn  = document.querySelector('#grupoCrn input');
-        if (cref) cref.required = (tipo === 'PERSONAL_TRAINER');
-        if (crn)  crn.required  = (tipo === 'NUTRITIONIST');
-
-        document.getElementById('formTitulo').textContent = TIPOS[tipo].form_titulo;
-        document.getElementById('valorLabel').textContent =
-            (tipo === 'NUTRITIONIST') ? 'Valor por Consulta' : 'Valor por Sessão';
-        document.getElementById('diferenciais').classList.toggle('show', tipo === 'NUTRITIONIST');
-
-        renderChips(tipo);
-    }
-
-    // Estado inicial (respeita old() após erro de validação).
+    // Chips de especialidade (o restante do formulário já vem pronto do servidor).
     document.addEventListener('DOMContentLoaded', function () {
-        selecionarTipo(document.getElementById('professional_type').value || 'PERSONAL_TRAINER');
+        renderChips('PERSONAL_TRAINER');
     });
 </script>
 

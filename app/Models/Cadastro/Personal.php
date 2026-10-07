@@ -118,22 +118,6 @@ class Personal extends Authenticatable
         return $query->where('professional_type', \App\Enums\ProfessionalType::NUTRITIONIST->value);
     }
 
-    // ── Relações do módulo de nutrição ───────────────────────────────
-    public function pacientes()
-    {
-        return $this->hasMany(\App\Models\Nutri\Paciente::class, 'personal_id');
-    }
-
-    public function planosAlimentares()
-    {
-        return $this->hasMany(\App\Models\Nutri\PlanoAlimentar::class, 'personal_id');
-    }
-
-    public function modelosAnamnese()
-    {
-        return $this->hasMany(\App\Models\Nutri\AnamneseModelo::class, 'personal_id');
-    }
-
     // O limite de pioneiros por estado vem de config('pioneiro.limite_por_estado').
 
     /**
