@@ -579,6 +579,38 @@
                 grid-template-columns: 1fr;
             }
         }
+
+        /* Especialidades: chips de seleção no formulário de perfil. O checkbox
+           real fica escondido, o <label> inteiro é a área clicável. */
+        .esp-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+
+        .esp-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 14px;
+            border-radius: 20px;
+            border: 1px solid var(--border, rgba(255,255,255,0.1));
+            background: rgba(255,255,255,0.04);
+            color: var(--text-muted, #9ca3af);
+            font-size: 0.78rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.2s;
+            user-select: none;
+        }
+
+        .esp-chip input { display: none; }
+        .esp-chip i { font-size: 0.85rem; opacity: 0; transition: 0.2s; }
+        .esp-chip:hover { border-color: rgba(124,255,0,0.4); color: #fff; }
+
+        .esp-chip.active {
+            background: rgba(124,255,0,0.1);
+            border-color: var(--primary, #7cff00);
+            color: var(--primary, #7cff00);
+        }
+
+        .esp-chip.active i { opacity: 1; }
     </style>
 </head>
 
@@ -937,6 +969,28 @@
                             </select>
                         </div>
                         <p style="color: var(--text-muted); font-size: 0.7rem; margin: 5px 0 0;">Aparece no seu perfil para o aluno saber se você atende presencialmente, online ou nos dois formatos.</p>
+                    </div>
+                    <div class="full-width">
+                        @php $espAtuais = (array) ($personal->especialidades ?? []); @endphp
+                        <label>Especialidades</label>
+                        <p style="color: var(--text-muted); font-size: 0.73rem; margin: 3px 0 8px;">
+                            <i class="ph ph-info"></i>
+                            O aluno <strong>filtra a vitrine por especialidade</strong>. Sem nenhuma marcada, você não aparece quando ele busca por uma — só na listagem geral.
+                        </p>
+                        {{-- Marcador: checkbox desmarcado não é enviado, e sem este hidden
+                             o controller não saberia diferenciar "desmarquei todas" de
+                             "o formulário não tinha o campo". --}}
+                        <input type="hidden" name="especialidades_enviado" value="1">
+                        <div class="esp-chips">
+                            @foreach (config('textos.profissional.especialidades.PERSONAL_TRAINER') as $esp)
+                                <label class="esp-chip {{ in_array($esp, $espAtuais, true) ? 'active' : '' }}">
+                                    <input type="checkbox" name="especialidades[]" value="{{ $esp }}"
+                                           @checked(in_array($esp, $espAtuais, true))
+                                           onchange="this.closest('.esp-chip').classList.toggle('active', this.checked)">
+                                    <i class="ph ph-check"></i>{{ $esp }}
+                                </label>
+                            @endforeach
+                        </div>
                     </div>
                     <div class="full-width">
                         <label>Chave Pix</label>

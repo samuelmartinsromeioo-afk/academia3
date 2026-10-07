@@ -965,9 +965,78 @@ class ClienteController extends Controller
             $modalidadeFiltro = '';
         }
 
+        [$especialidadesDisponiveis, $especialidadeFiltro] = $this->filtroEspecialidades($personais);
+
         return view('cliente.personais', compact('personais', 'cliente') + [
-            'modalidadeFiltro' => $modalidadeFiltro,
+            'modalidadeFiltro'          => $modalidadeFiltro,
+            'especialidadesDisponiveis' => $especialidadesDisponiveis,
+            'especialidadeFiltro'       => $especialidadeFiltro,
         ]);
+    }
+
+    /**
+     * Catálogo de especialidades para as pílulas da vitrine + o filtro resolvido.
+     *
+     * O catálogo é derivado dos profissionais REALMENTE listados, não de
+     * `config('textos.profissional.especialidades')`: uma pílula que não casa com
+     * ninguém é um beco sem saída, e hoje a maioria dos personais ainda não
+     * declarou nada (o campo só passou a ser editável junto com esta tela). A
+     * ordem vem do config, para o vocabulário ficar estável entre acessos; valores
+     * fora dele — que a validação permite, e que podem entrar por API/import —
+     * vão para o fim em ordem alfabética em vez de desaparecerem.
+     *
+     * Diferente de `modalidade`, quem não declarou especialidade **não** aparece
+     * quando o aluno filtra (ver `atendeEspecialidade()` na view). Lá a leniência
+     * existe porque o filtro é aplicado sozinho, pela preferência do cadastro;
+     * aqui o aluno clicou pedindo "Hipertrofia", e devolver quem nunca afirmou
+     * isso faria a pílula mentir.
+     *
+     * @param  \Illuminate\Support\Collection<int,\App\Models\Cadastro\Personal>  $personais
+     * @return array{0: array<string,int>, 1: string}  [especialidade => quantos], filtro vigente
+     */
+    private function filtroEspecialidades($personais): array
+    {
+        $contagem = [];
+
+        foreach ($personais as $personal) {
+            foreach ((array) $personal->especialidades as $esp) {
+                $esp = trim((string) $esp);
+
+                if ($esp !== '') {
+                    $contagem[$esp] = ($contagem[$esp] ?? 0) + 1;
+                }
+            }
+        }
+
+        $disponiveis = [];
+
+        foreach ((array) config('textos.profissional.especialidades.PERSONAL_TRAINER', []) as $esp) {
+            if (isset($contagem[$esp])) {
+                $disponiveis[$esp] = $contagem[$esp];
+            }
+        }
+
+        $extras = array_diff_key($contagem, $disponiveis);
+        ksort($extras);
+        $disponiveis += $extras;
+
+        // Resolve o ?especialidade= da URL contra o catálogo, sem diferenciar
+        // caixa/acento digitado, e devolve o valor canônico. Um valor que não
+        // casa com nada cai para "todas" em vez de render uma lista vazia — mesma
+        // tolerância do ?modalidade= logo acima.
+        $pedido = trim((string) request('especialidade', ''));
+        $filtro = '';
+
+        if ($pedido !== '') {
+            foreach (array_keys($disponiveis) as $esp) {
+                if (mb_strtolower($esp) === mb_strtolower($pedido)) {
+                    $filtro = $esp;
+                    break;
+                }
+            }
+        }
+
+        return [$disponiveis, $filtro];
     }
 
     public function detalheAcademia($id)

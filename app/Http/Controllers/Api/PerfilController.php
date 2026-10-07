@@ -111,14 +111,17 @@ class PerfilController extends Controller
     {
         $user = $request->user();
         $tipo = $this->tipoDe($user);
-        [, $regras] = $this->config($tipo);
+        [$campos, $regras] = $this->config($tipo);
 
         $dados = $request->validate($regras);
         $user->update($dados);
 
-        $perfil = ['email' => $user->email];
-        foreach (array_keys($regras) as $campo) {
-            $perfil[$campo] = $user->fresh()->{$campo};
+        // Um fresh() só, fora do laço: dentro dele era uma consulta por campo.
+        $atualizado = $user->fresh();
+
+        $perfil = ['email' => $atualizado->email];
+        foreach ($campos as $campo) {
+            $perfil[$campo] = $atualizado->{$campo};
         }
 
         return response()->json([
@@ -164,6 +167,11 @@ class PerfilController extends Controller
                 // web. Allowlist a partir do config, nunca string livre (A04).
                 // Aqui "Híbrido" vale: é o profissional declarando os dois formatos.
                 'modalidade' => ['nullable', \Illuminate\Validation\Rule::in(config('textos.profissional.modalidades'))],
+                // Especialidades — editáveis pelo app, como no painel web. Também
+                // por allowlist: valor livre aqui poluiria o catálogo de pílulas da
+                // vitrine, que é derivado do que os profissionais declararam.
+                'especialidades' => ['nullable', 'array'],
+                'especialidades.*' => ['string', \Illuminate\Validation\Rule::in(config('textos.profissional.especialidades.PERSONAL_TRAINER'))],
             ], $endereco),
 
             'academia' => array_merge([
@@ -202,6 +210,18 @@ class PerfilController extends Controller
             ], $endereco),
         };
 
-        return [array_keys($regras), $regras];
+        /*
+         * A lista de campos sai das próprias regras — é o que faz uma regra nova
+         * aparecer no GET sem uma segunda edição. Mas chaves com ponto
+         * (`especialidades.*`) descrevem os ITENS de um array, não um campo: sem
+         * este filtro, `show()` devolveria `"especialidades.*": null` e `update()`
+         * tentaria ler `$user->{'especialidades.*'}`.
+         */
+        $campos = array_values(array_filter(
+            array_keys($regras),
+            fn ($campo) => ! str_contains($campo, '.')
+        ));
+
+        return [$campos, $regras];
     }
 }

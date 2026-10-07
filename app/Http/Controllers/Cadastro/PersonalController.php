@@ -214,6 +214,12 @@ class PersonalController extends Controller
             // ficava congelada: não havia como o profissional mudar de
             // presencial para híbrido/online sem mexer no banco.
             'modalidade'   => ['nullable', 'string', Rule::in(config('textos.profissional.modalidades'))],
+            // Especialidades. Mesmo problema que a modalidade tinha, e pior: eram
+            // coletadas no cadastro e não apareciam em lugar nenhum. Agora o aluno
+            // filtra a vitrine por elas, então quem não puder editar fica invisível
+            // ao filtro para sempre — era o caso de quase todos os cadastros antigos.
+            'especialidades'   => ['nullable', 'array'],
+            'especialidades.*' => ['string', Rule::in(config('textos.profissional.especialidades.PERSONAL_TRAINER'))],
             'avaliacao'    => 'nullable|string',
             'foto'         => 'nullable|file|mimes:jpeg,jpg,png,gif,webp,heic,heif|max:10240',
             'senha'        => 'nullable|string|min:8|confirmed',
@@ -233,6 +239,22 @@ class PersonalController extends Controller
 
         if ($request->filled('senha')) {
             $dados['senha'] = Hash::make($request->senha);
+        }
+
+        /*
+         * Checkbox desmarcado não é enviado pelo navegador, então um `especialidades`
+         * ausente é ambíguo: pode ser "desmarquei todas" ou "este formulário nem
+         * tinha o campo". O hidden `especialidades_enviado` desfaz a ambiguidade —
+         * sem ele, o profissional conseguiria ADICIONAR especialidade mas nunca
+         * remover a última, e um POST de outra origem apagaria as dele sem querer.
+         *
+         * Lido direto do request, de propósito: como marcador ele não é regra de
+         * validação nem coluna. Uma tentativa anterior de validá-lo com
+         * `['nullable','accepted']` rejeitava TODO update que não o enviasse —
+         * `accepted` falha no campo ausente, e `nullable` não salva disso.
+         */
+        if ($request->boolean('especialidades_enviado')) {
+            $dados['especialidades'] = array_values(array_unique($request->input('especialidades', [])));
         }
 
         $dados['data_aceicao_termos_atualizacao'] = Carbon::now();

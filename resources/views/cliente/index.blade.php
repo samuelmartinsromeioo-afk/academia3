@@ -353,6 +353,22 @@
             transform: scale(1.05);
         }
 
+        .detalhes-chips {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .detalhes-chip {
+            background: rgba(124, 255, 0, 0.08);
+            border: 1px solid rgba(124, 255, 0, 0.25);
+            color: var(--primary);
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 0.78rem;
+            font-weight: 600;
+        }
+
         .detalhes-academias {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
@@ -1066,6 +1082,15 @@
         </div>
 
         {{-- ACADEMIAS ONDE ATUA --}}
+        <div class="detalhes-section" id="detalhesEspecialidadesSection" style="display: none;">
+            <div class="detalhes-section-title">
+                <i class="ph ph-medal"></i> Especialidades
+            </div>
+            <div class="detalhes-chips" id="detalhesEspecialidades">
+                {{-- Preenchido via JavaScript --}}
+            </div>
+        </div>
+
         <div class="detalhes-section" id="detalhesAcademiasSection" style="display: none;">
             <div class="detalhes-section-title">
                 <i class="ph ph-building"></i> Academias onde atua
@@ -1505,6 +1530,7 @@
             pacotes_avaliacao: {!! json_encode($p->pacotesAvaliacao->map(fn($pa) => ['id' => $pa->id, 'nome' => $pa->nome, 'valor' => (float) $pa->valor, 'tipos' => $pa->tipos]), JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP) !!},
             academias: {!! json_encode($p->academias ?? '', JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP) !!},
             modalidade: {!! json_encode($p->modalidade ?? '', JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP) !!},
+            especialidades: {!! json_encode(array_values(array_filter(array_map('trim', (array) $p->especialidades))), JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP) !!},
             fotos: [
                 @foreach($p->fotos ?? [] as $foto)
                 { url: '{{ asset("storage/" . $foto->path) }}', legenda: '{{ addslashes($foto->legenda ?? "") }}' },
@@ -1596,6 +1622,25 @@
             `).join('');
         } else {
             document.getElementById('detalhesGaleriaSection').style.display = 'none';
+        }
+
+        // ESPECIALIDADES — declaradas no cadastro/perfil do profissional.
+        // Usa textContent em vez de interpolar no HTML: o valor é texto livre
+        // (a validação aceita qualquer string até 80 chars), então concatenar
+        // abriria XSS no modal.
+        const espBox = document.getElementById('detalhesEspecialidades');
+        const esps = personal.especialidades || [];
+        if (esps.length) {
+            document.getElementById('detalhesEspecialidadesSection').style.display = 'block';
+            espBox.innerHTML = '';
+            esps.forEach(e => {
+                const chip = document.createElement('span');
+                chip.className = 'detalhes-chip';
+                chip.textContent = e;
+                espBox.appendChild(chip);
+            });
+        } else {
+            document.getElementById('detalhesEspecialidadesSection').style.display = 'none';
         }
 
         // ACADEMIAS

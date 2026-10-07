@@ -205,6 +205,7 @@
         .card.nutri .card-badge { color: var(--primary); border-color: rgba(124,255,0,0.4); }
         .chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0 4px; }
         .chip { font-size: 0.68rem; background: rgba(124,255,0,0.08); color: var(--primary); border: 1px solid rgba(124,255,0,0.2); padding: 3px 9px; border-radius: 20px; }
+        .chip-mais { background: rgba(255,255,255,0.05); color: var(--text-muted); border-color: var(--border); }
 
         /* Filtro por modalidade de atendimento */
         .filtros-modalidade { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 18px; }
@@ -218,6 +219,8 @@
         .filtro-pill:hover { color: #fff; border-color: rgba(124,255,0,0.4); }
         .filtro-pill.active { background: var(--primary); color: #000; border-color: var(--primary); }
         .filtro-nota { font-size: 0.72rem; color: var(--text-muted); margin-left: 4px; }
+        .filtro-rotulo { font-size: 0.68rem; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); margin-right: 2px; }
+        .pill-cnt { font-size: 0.66rem; opacity: 0.65; font-weight: 700; }
         .aviso-preferencia {
             display: flex; gap: 10px; align-items: flex-start;
             background: rgba(124,255,0,0.06); border: 1px solid rgba(124,255,0,0.22);
@@ -270,6 +273,26 @@
         <span class="filtro-nota" id="filtroNota"></span>
     </div>
 
+    {{-- Filtro por especialidade.
+         As pílulas vêm do catálogo que o controller derivou dos profissionais
+         listados, então nunca existe uma opção que não casa com ninguém. Quem
+         não declarou especialidade NÃO entra em nenhum filtro (ao contrário da
+         modalidade) — ver filtroEspecialidades() no ClienteController. --}}
+    @if (! empty($especialidadesDisponiveis))
+        @php $especialidadeFiltro = $especialidadeFiltro ?? ''; @endphp
+        <div class="filtros-modalidade" id="filtrosEspecialidade" data-inicial="{{ $especialidadeFiltro }}">
+            <span class="filtro-rotulo">Especialidade</span>
+            <button class="filtro-pill {{ $especialidadeFiltro === '' ? 'active' : '' }}" data-especialidade="" onclick="filtrarEspecialidade(this)">
+                <i class="ph ph-list"></i> Todas
+            </button>
+            @foreach ($especialidadesDisponiveis as $esp => $quantos)
+                <button class="filtro-pill {{ $especialidadeFiltro === $esp ? 'active' : '' }}" data-especialidade="{{ $esp }}" onclick="filtrarEspecialidade(this)">
+                    <i class="ph ph-medal"></i> {{ $esp }} <span class="pill-cnt">{{ $quantos }}</span>
+                </button>
+            @endforeach
+        </div>
+    @endif
+
     {{-- Quando o filtro vem da preferência do cadastro (e não de um clique), o
          aluno precisa saber por que a lista já está reduzida — senão parece que
          faltam profissionais. --}}
@@ -290,9 +313,16 @@
         @else
             <div class="grid grid-prof">
                 @foreach ($personais as $personal)
+                    @php
+                        $esps = array_values(array_filter(array_map('trim', (array) $personal->especialidades)));
+                        // Delimitado por "|" para o filtro casar o item inteiro: sem os
+                        // delimitadores, "Musculação" daria match dentro de outra string.
+                        $espAttr = $esps ? '|' . mb_strtolower(implode('|', $esps)) . '|' : '';
+                    @endphp
                     <div class="card {{ $personal->eh_pioneiro ? 'pioneiro' : '' }}"
-                         data-busca="{{ strtolower($personal->nome . ' ' . ($personal->cidade ?? '')) }}"
-                         data-modalidade="{{ $personal->modalidade ?? '' }}">
+                         data-busca="{{ strtolower($personal->nome . ' ' . ($personal->cidade ?? '') . ' ' . implode(' ', $esps)) }}"
+                         data-modalidade="{{ $personal->modalidade ?? '' }}"
+                         data-especialidades="{{ $espAttr }}">
                         <div class="card-img">
                             @if ($personal->foto)
                                 <img src="{{ asset('storage/' . $personal->foto) }}" alt="{{ $personal->nome }}">
@@ -323,6 +353,19 @@
                                         'Híbrido' => 'ph-arrows-left-right',
                                         default   => 'ph-barbell',
                                     } }}"></i> {{ $personal->modalidade }}
+                                </div>
+                            @endif
+                            {{-- Especialidades declaradas no cadastro. Ficaram anos sendo
+                                 coletadas e nunca exibidas; é por elas que o aluno
+                                 escolhe entre dois personais do mesmo preço. --}}
+                            @if ($esps)
+                                <div class="chips">
+                                    @foreach (array_slice($esps, 0, 3) as $esp)
+                                        <span class="chip">{{ $esp }}</span>
+                                    @endforeach
+                                    @if (count($esps) > 3)
+                                        <span class="chip chip-mais">+{{ count($esps) - 3 }}</span>
+                                    @endif
                                 </div>
                             @endif
                             <div class="rating">
@@ -372,12 +415,29 @@
         return m === modalidadeAtiva || m === 'Híbrido';
     }
 
+    // Especialidade selecionada: '' (todas) ou o valor exato de uma pílula.
+    let especialidadeAtiva = document.getElementById('filtrosEspecialidade')?.dataset.inicial || '';
+
+    /**
+     * Ao contrário da modalidade, quem NÃO declarou especialidade não passa: o
+     * aluno clicou pedindo uma competência específica, e devolver um perfil que
+     * nunca a afirmou faria a pílula mentir. O atributo vem delimitado por "|"
+     * para casar o item inteiro, nunca um pedaço de outro.
+     */
+    function atendeEspecialidade(card) {
+        if (!especialidadeAtiva) return true;
+        const lista = card.dataset.especialidades || '';
+        return lista.includes('|' + especialidadeAtiva.toLowerCase() + '|');
+    }
+
     function filtrar() {
         const termo = (inputBusca?.value || '').toLowerCase().trim();
         const panel = document.querySelector('.tab-panel.active');
         let visiveis = 0;
         panel?.querySelectorAll('.card').forEach(card => {
-            const ok = (!termo || card.dataset.busca.includes(termo)) && atendeModalidade(card);
+            const ok = (!termo || card.dataset.busca.includes(termo))
+                && atendeModalidade(card)
+                && atendeEspecialidade(card);
             card.style.display = ok ? '' : 'none';
             if (ok) visiveis++;
         });
@@ -404,6 +464,20 @@
         // recarregar.
         const url = new URLSearchParams(location.search);
         modalidadeAtiva ? url.set('modalidade', modalidadeAtiva) : url.delete('modalidade');
+        history.replaceState(null, '', location.pathname + (url.toString() ? '?' + url : ''));
+
+        filtrar();
+    }
+
+    function filtrarEspecialidade(botao) {
+        especialidadeAtiva = botao.dataset.especialidade || '';
+        document.querySelectorAll('#filtrosEspecialidade .filtro-pill')
+            .forEach(b => b.classList.toggle('active', b === botao));
+
+        // Compõe com ?modalidade= em vez de substituir: os dois filtros são
+        // independentes e o link tem de carregar os dois.
+        const url = new URLSearchParams(location.search);
+        especialidadeAtiva ? url.set('especialidade', especialidadeAtiva) : url.delete('especialidade');
         history.replaceState(null, '', location.pathname + (url.toString() ? '?' + url : ''));
 
         filtrar();

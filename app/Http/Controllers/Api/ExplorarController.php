@@ -148,6 +148,9 @@ class ExplorarController extends Controller
             // Presencial / Online / Híbrido — o app precisa para exibir e filtrar,
             // como a vitrine web já faz.
             'modalidade' => $p->modalidade,
+            // Mesmo motivo da modalidade: a vitrine web exibe e filtra por
+            // especialidade, então o app precisa do dado para não ficar atrás.
+            'especialidades' => array_values(array_filter(array_map('trim', (array) $p->especialidades))),
             'valor_secao' => $p->valor_secao !== null ? (float) $p->valor_secao : null,
             'media_avaliacao' => $p->avaliacoes->avg('nota') ? round($p->avaliacoes->avg('nota'), 1) : null,
             'total_avaliacoes' => $p->avaliacoes->count(),
