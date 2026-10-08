@@ -52,22 +52,47 @@ class AulaAlunoController extends Controller
             return redirect()->route('cliente.index')->with('error', 'Aula não encontrada.');
         }
 
-        if ($aula->cancelado) {
-            return redirect()->back()->with('error', 'Essa aula já está cancelada.');
-        }
-
-        if ($agendas->ehPacote($aula)) {
-            return redirect()->back()->with('error', 'Aula de pacote não é cancelada: peça a reposição em outro horário.');
-        }
-
-        if ($bloqueio = $agendas->motivoParaAlunoNaoAgir($aula)) {
-            return redirect()->back()->with('error', $bloqueio);
-        }
-
         $dados = $request->validate([
             'motivo' => 'nullable|string|max:500',
         ]);
-        $motivo = $dados['motivo'] ?? null;
+
+        $r = $this->cancelarInterno($aula, $dados['motivo'] ?? null, $agendas);
+
+        if (! $r['ok']) {
+            return redirect()->back()->with('error', $r['erro']);
+        }
+
+        return redirect()->back()->with('success', $r['mensagem']);
+    }
+
+    /**
+     * O cancelamento da avulsa em si — a PORTA COMUM do web e do app.
+     *
+     * Existe separada porque as duas superfícies só diferem na resposta
+     * (redirect x JSON); a regra, o estorno e o aviso ao personal têm de ser
+     * os mesmos. Mesmo padrão de `agendarAulaAvulsaInterno`, e pelo mesmo
+     * motivo: quando a regra foi copiada entre web e app, ela divergiu.
+     *
+     * Não decide de quem é a aula: quem chama já resolveu isso (sessão no web,
+     * token no app).
+     *
+     * @return array{ok: bool, erro: ?string, mensagem: ?string, estorno: bool}
+     */
+    public function cancelarInterno(Agenda $aula, ?string $motivo, AgendaService $agendas): array
+    {
+        $falha = fn (string $erro) => ['ok' => false, 'erro' => $erro, 'mensagem' => null, 'estorno' => false];
+
+        if ($aula->cancelado) {
+            return $falha('Essa aula já está cancelada.');
+        }
+
+        if ($agendas->ehPacote($aula)) {
+            return $falha('Aula de pacote não é cancelada: peça a reposição em outro horário.');
+        }
+
+        if ($bloqueio = $agendas->motivoParaAlunoNaoAgir($aula)) {
+            return $falha($bloqueio);
+        }
 
         $inicio = $agendas->inicioDaAula($aula);
 
@@ -104,9 +129,14 @@ class AulaAlunoController extends Controller
                 . ($motivo ? ' Motivo: ' . $motivo : '')
         );
 
-        return redirect()->back()->with('success', isset($estorno)
-            ? 'Aula cancelada. A devolução foi solicitada e você recebe o valor de volta em breve.'
-            : 'Aula cancelada.');
+        return [
+            'ok' => true,
+            'erro' => null,
+            'mensagem' => isset($estorno)
+                ? 'Aula cancelada. A devolução foi solicitada e você recebe o valor de volta em breve.'
+                : 'Aula cancelada.',
+            'estorno' => isset($estorno),
+        ];
     }
 
     /**
@@ -123,24 +153,44 @@ class AulaAlunoController extends Controller
             return redirect()->route('cliente.index')->with('error', 'Aula não encontrada.');
         }
 
-        if ($aula->cancelado) {
-            return redirect()->back()->with('error', 'Essa aula já foi cancelada.');
-        }
-
-        if (! $agendas->ehPacote($aula)) {
-            return redirect()->back()->with('error', 'Essa aula é avulsa: use o cancelamento, que devolve o valor pago.');
-        }
-
-        if ($bloqueio = $agendas->motivoParaAlunoNaoAgir($aula)) {
-            return redirect()->back()->with('error', $bloqueio);
-        }
-
         // O aluno só avisa a falta e diz o porquê. Quem marca dia e hora da
         // reposição é o personal — é a agenda dele que manda.
         $dados = $request->validate([
             'motivo' => 'nullable|string|max:500',
         ]);
 
+        $r = $this->pedirReposicaoInterno($aula, $dados['motivo'] ?? null, $agendas);
+
+        if (! $r['ok']) {
+            return redirect()->back()->with('error', $r['erro']);
+        }
+
+        return redirect()->back()->with('success', $r['mensagem']);
+    }
+
+    /**
+     * O pedido de reposição em si — a PORTA COMUM do web e do app (ver o
+     * comentário de `cancelarInterno`).
+     *
+     * @return array{ok: bool, erro: ?string, mensagem: ?string}
+     */
+    public function pedirReposicaoInterno(Agenda $aula, ?string $motivo, AgendaService $agendas): array
+    {
+        $falha = fn (string $erro) => ['ok' => false, 'erro' => $erro, 'mensagem' => null];
+
+        if ($aula->cancelado) {
+            return $falha('Essa aula já foi cancelada.');
+        }
+
+        if (! $agendas->ehPacote($aula)) {
+            return $falha('Essa aula é avulsa: use o cancelamento, que devolve o valor pago.');
+        }
+
+        if ($bloqueio = $agendas->motivoParaAlunoNaoAgir($aula)) {
+            return $falha($bloqueio);
+        }
+
+        $dados = ['motivo' => $motivo];
         $inicio = $agendas->inicioDaAula($aula);
 
         DB::transaction(function () use ($aula, $dados) {
@@ -172,7 +222,11 @@ class AulaAlunoController extends Controller
                 . ($dados['motivo'] ?? null ? ' Motivo: ' . $dados['motivo'] : '')
         );
 
-        return redirect()->back()->with('success', 'Falta avisada! Seu personal vai definir o dia e a hora da reposição.');
+        return [
+            'ok' => true,
+            'erro' => null,
+            'mensagem' => 'Falta avisada! Seu personal vai definir o dia e a hora da reposição.',
+        ];
     }
 
     private function avisarPersonal(Agenda $aula, string $assunto, string $texto): void

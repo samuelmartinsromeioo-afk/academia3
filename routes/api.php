@@ -289,6 +289,17 @@ Route::prefix('v1')->group(function () {
 
         // Minha academia (aluno contratado) e avaliação de serviços
         Route::get('/minha-academia', [\App\Http\Controllers\Api\ExplorarController::class, 'minhaAcademia']);
+
+        /*
+         * As aulas do ALUNO. Faltava por completo: ele agendava pelo app e
+         * nunca mais via a aula, então também não tinha como desmarcar — quem
+         * faltava só não aparecia, e o personal ficava com o horário bloqueado
+         * sem aviso. A regra de 24h e o estorno vêm do controller web, pelas
+         * portas `cancelarInterno`/`pedirReposicaoInterno`.
+         */
+        Route::get('/minhas-aulas', [\App\Http\Controllers\Api\AulaAlunoController::class, 'index']);
+        Route::post('/aulas/{id}/cancelar', [\App\Http\Controllers\Api\AulaAlunoController::class, 'cancelar'])->whereNumber('id');
+        Route::post('/aulas/{id}/reposicao', [\App\Http\Controllers\Api\AulaAlunoController::class, 'reposicao'])->whereNumber('id');
         // Rate limit extra (A04/A07): evita spam de avaliações além do limite global.
         Route::post('/avaliar', [\App\Http\Controllers\Api\AvaliacaoServicoController::class, 'store'])->middleware('throttle:20,1');
 
