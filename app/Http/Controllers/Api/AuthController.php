@@ -130,7 +130,7 @@ class AuthController extends Controller
 
     // POST /api/v1/register — cadastro de CLIENTE pelo app.
     // (Personal/academia/studio/loja: ver Api\RegisterController.)
-    public function register(Request $request)
+    public function register(Request $request, \App\Services\CupomService $cupons)
     {
         $validated = $request->validate([
             'nome' => 'required|string|max:255',
@@ -141,6 +141,10 @@ class AuthController extends Controller
             // oferta do profissional, não desejo de quem procura, então não entra.
             'modalidade_preferida' => ['nullable', \Illuminate\Validation\Rule::in(config('textos.profissional.modalidades_aluno'))],
             'aceita_termos' => 'required|accepted',
+            // Cupom de indicação. A regra vem do serviço para um código errado
+            // BARRAR o envio com mensagem clara, em vez de ser engolido em
+            // silêncio — quem indicou perderia o crédito sem ninguém notar.
+            'cupom' => $cupons->regraValidacao(),
             'device_name' => 'nullable|string|max:100',
         ], [
             'email.unique' => 'Este e-mail já está cadastrado.',
@@ -157,6 +161,15 @@ class AuthController extends Controller
             'data_aceitacao_termos' => now(),
             'ip_aceitacao_termos' => $request->ip(),
         ]);
+
+        /*
+         * Indicação registrada logo após o create, como nos cadastros do web.
+         * `registrarIndicacao` nunca lança: uma falha aqui não pode desfazer um
+         * cadastro já persistido. Para um Cliente o uso nasce `sem_bonus` —
+         * indicar aluno não gera bônus (aluno não tem alunos, e contas falsas
+         * seriam uma fazenda barata); fica só o histórico.
+         */
+        $cupons->registrarIndicacao($validated['cupom'] ?? null, $cliente, $request->ip());
 
         // Aceite versionado, além das colunas legadas acima: é o que permite
         // provar QUAL versão dos Termos foi aceita quando eles mudarem.

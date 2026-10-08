@@ -32,6 +32,14 @@ Route::prefix('v1')->group(function () {
 
     // Streaming de vídeo dos exercícios com suporte a Range (206) — pública
     // porque o player (AVPlayer/ExoPlayer) não envia o token Bearer.
+    /*
+     * Validação ao vivo do cupom de indicação no cadastro. Pública porque quem
+     * está se cadastrando ainda não tem token — e por isso com throttle, igual
+     * ao web: sem ele a rota vira um oráculo para enumerar códigos de terceiros.
+     */
+    Route::get('/cupom/validar', [\App\Http\Controllers\Api\IndicacaoController::class, 'validar'])
+        ->middleware('throttle:20,1');
+
     Route::get('/media/exercicio-video/{path}', [\App\Http\Controllers\Api\MediaController::class, 'exercicioVideo'])
         ->where('path', '.*');
 
@@ -57,6 +65,15 @@ Route::prefix('v1')->group(function () {
          */
         Route::get('/termos', [\App\Http\Controllers\Api\TermosController::class, 'show']);
         Route::post('/termos/aceitar', [\App\Http\Controllers\Api\TermosController::class, 'aceitar']);
+
+        /*
+         * Painel "Indique e ganhe" (qualquer papel). Só LEITURA: o pedido de
+         * saque NÃO existe na API de propósito — é transferência Pix saindo do
+         * saldo da plataforma, protegida por sete camadas e por um webhook
+         * fail-closed no web, e abrir uma segunda superfície exige replicar
+         * todas elas. Ver o cabeçalho de Api\IndicacaoController.
+         */
+        Route::get('/indicacoes', [\App\Http\Controllers\Api\IndicacaoController::class, 'painel']);
 
         // Push notifications (Expo): o app registra o token do aparelho ao logar
         // e remove ao sair. Qualquer papel — detecta pelo token Sanctum.

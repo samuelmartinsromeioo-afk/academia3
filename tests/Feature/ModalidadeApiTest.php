@@ -106,6 +106,9 @@ class ModalidadeApiTest extends TestCase
             'cep' => '30130-000', 'rua' => 'R', 'bairro' => 'B', 'cidade' => 'BH', 'estado' => 'MG',
             'foto' => UploadedFile::fake()->image('p.jpg'),
             'modalidade' => 'Híbrido',
+            // Passou a ser obrigatório junto com o registro do aceite versionado
+            // (o app já enviava; a API é que ignorava).
+            'aceita_termos' => true,
         ])->assertCreated();
 
         // Para o profissional, Híbrido É válido: ele oferece os dois formatos.
