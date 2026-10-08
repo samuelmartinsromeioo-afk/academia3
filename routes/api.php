@@ -49,6 +49,15 @@ Route::prefix('v1')->group(function () {
         // Exclusão da própria conta (requisito da App Store — qualquer papel).
         Route::delete('/conta', [\App\Http\Controllers\Api\ContaController::class, 'destroy']);
 
+        /*
+         * Reaceite dos Termos de Uso (qualquer papel). Necessário porque
+         * VerificaAceiteTermos só barra GET que aceitam HTML, e o app nunca faz
+         * um: sem isto, subir termos.versao parava o site e o app passava reto.
+         * O sinal `precisa_aceitar` também vem no login e no /me.
+         */
+        Route::get('/termos', [\App\Http\Controllers\Api\TermosController::class, 'show']);
+        Route::post('/termos/aceitar', [\App\Http\Controllers\Api\TermosController::class, 'aceitar']);
+
         // Push notifications (Expo): o app registra o token do aparelho ao logar
         // e remove ao sair. Qualquer papel — detecta pelo token Sanctum.
         Route::post('/push-token', [\App\Http\Controllers\Api\PushTokenController::class, 'store']);

@@ -185,7 +185,29 @@ class AuthController extends Controller
         return response()->json([
             'user_type' => self::userType($user),
             'user' => self::resourceFor($user),
+            'termos' => self::blocoTermos($user),
         ]);
+    }
+
+    /**
+     * Estado do aceite dos Termos desta conta.
+     *
+     * Vai no login E no /me porque o app precisa do sinal nos dois momentos: ao
+     * entrar e ao restaurar a sessão de um token já salvo (quando a versão pode
+     * ter mudado desde o último acesso).
+     *
+     * Isto existe porque o middleware VerificaAceiteTermos NÃO alcança o app:
+     * ele só barra GET que aceitam HTML — e essa isenção de JSON é deliberada
+     * (um 302 no meio de um fetch quebraria o fluxo sem ganho). Logo, no app a
+     * trava tem de ser do cliente, a partir deste sinal.
+     */
+    public static function blocoTermos($user): array
+    {
+        return [
+            'versao_vigente' => (string) config('termos.versao'),
+            'versao_aceita' => $user->versaoTermosAceita(),
+            'precisa_aceitar' => $user->precisaAceitarTermos(),
+        ];
     }
 
     public static function userType($user): string
@@ -230,6 +252,7 @@ class AuthController extends Controller
             'token_type' => 'Bearer',
             'user_type' => $userType,
             'user' => self::resourceFor($user),
+            'termos' => self::blocoTermos($user),
         ], $extra), $status);
     }
 }
