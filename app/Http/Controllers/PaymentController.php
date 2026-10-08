@@ -883,7 +883,15 @@ class PaymentController extends Controller
         ]);
     }
 
-    public function calculateSplit(float $amountTotal, float $feeRate = 0.10): array
+    /**
+     * Repassa para AsaasService::calculateSplit.
+     *
+     * O default TEM de ser null, não `0.10`. Este wrapper sempre repassa o que
+     * recebe, então um default literal fazia o `$feeRate ??= feeRate()` lá
+     * dentro NUNCA executar — a derivação a partir de SPLIT_RATE existia e
+     * estava morta para todos os fluxos que passam por aqui.
+     */
+    public function calculateSplit(float $amountTotal, ?float $feeRate = null): array
     {
         return $this->asaasService()->calculateSplit($amountTotal, $feeRate);
     }
@@ -991,7 +999,7 @@ class PaymentController extends Controller
      * Cria uma assinatura mensal via PIX. A cada mês o Asaas gera uma nova
      * cobrança PIX (o aluno paga manualmente cada uma).
      */
-    private function criarAssinaturaPix($cliente, float $amount, string $description, string $extRefPrefix, string $idemPrefix, ?array $split, array $subFields, array $bookingData, float $companyFeeRate = 0.10)
+    private function criarAssinaturaPix($cliente, float $amount, string $description, string $extRefPrefix, string $idemPrefix, ?array $split, array $subFields, array $bookingData, ?float $companyFeeRate = null)
     {
         return response()->json($this->asaasService()->criarAssinaturaPix(
             $cliente, $amount, $description, $extRefPrefix, $idemPrefix, $split, $subFields, $bookingData, $companyFeeRate
@@ -1002,7 +1010,7 @@ class PaymentController extends Controller
      * Cria uma assinatura mensal no cartão de crédito. O Asaas debita
      * automaticamente todo mês usando o cartão tokenizado.
      */
-    private function criarAssinaturaCartao($cliente, float $amount, string $description, string $extRefPrefix, string $idemPrefix, ?array $split, array $subFields, array $bookingData, array $validated, float $companyFeeRate = 0.10)
+    private function criarAssinaturaCartao($cliente, float $amount, string $description, string $extRefPrefix, string $idemPrefix, ?array $split, array $subFields, array $bookingData, array $validated, ?float $companyFeeRate = null)
     {
         try {
             $asaasCustomerId = $this->obterOuCriarClienteAsaas($cliente);
@@ -1349,7 +1357,7 @@ class PaymentController extends Controller
             'academia_id' => $validated['academia_id'],
             'plano_id' => $planoId,
             'cliente_id' => $clienteId,
-        ], 0.10); // academia entra no split 90/10 do marketplace
+        ]); // academia entra no split 90/10 do marketplace (taxa padrão, de SPLIT_RATE)
     }
 
     /**
@@ -1641,7 +1649,7 @@ class PaymentController extends Controller
             'academia_id' => $validated['academia_id'],
             'plano_id' => $planoId,
             'cliente_id' => $clienteId,
-        ], $validated, 0.10); // academia entra no split 90/10 do marketplace
+        ], $validated); // academia entra no split 90/10 do marketplace (taxa padrão, de SPLIT_RATE)
     }
 
     // ─────────────────────────────────────────────

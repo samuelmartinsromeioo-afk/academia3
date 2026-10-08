@@ -430,8 +430,14 @@ class AsaasService
      * Cria uma assinatura mensal via PIX. A cada mês o Asaas gera uma nova
      * cobrança PIX (o aluno paga manualmente cada uma). Devolve o array de
      * dados da primeira cobrança (payload/QR) para o front.
+     *
+     * `$companyFeeRate` null = usa a taxa da plataforma derivada de SPLIT_RATE.
+     * O default ERA `0.10` literal, e isso anulava na prática a derivação do
+     * `calculateSplit`: todo caminho de assinatura gravava `company_fee` a 10%
+     * fixo enquanto o split ENVIADO ao Asaas saía de SPLIT_RATE. Só passe um
+     * valor aqui se a intenção for realmente uma taxa diferente da padrão.
      */
-    public function criarAssinaturaPix(Cliente $cliente, float $amount, string $description, string $extRefPrefix, string $idemPrefix, ?array $split, array $subFields, array $bookingData, float $companyFeeRate = 0.10, string $billingType = 'PIX'): array
+    public function criarAssinaturaPix(Cliente $cliente, float $amount, string $description, string $extRefPrefix, string $idemPrefix, ?array $split, array $subFields, array $bookingData, ?float $companyFeeRate = null, string $billingType = 'PIX'): array
     {
         try {
             $asaasCustomerId = $this->obterOuCriarClienteAsaas($cliente);

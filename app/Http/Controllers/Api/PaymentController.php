@@ -174,7 +174,10 @@ class PaymentController extends Controller
                 'tipo' => 'pacote',
                 'trainer_id' => $personal->id,
                 'membership_id' => $validated['pacote_id'] ?? null,
-            ], $bookingData, 0.10, $billingType);
+            // null = taxa padrão da plataforma, derivada de SPLIT_RATE. Não
+            // cravar o número aqui: `company_fee` é a base do bônus de
+            // indicação, e uma cópia velha o faria pagar sobre a taxa errada.
+            ], $bookingData, null, $billingType);
 
             return response()->json($result, 201);
         }
@@ -202,8 +205,8 @@ class PaymentController extends Controller
 
     /**
      * Contexto ACADEMIA — mesmo padrão do web (criarPagamentoAcademia):
-     * assinatura mensal recorrente com split 90/10 (companyFeeRate 0.10 —
-     * 90% para a academia, 10% de comissão da plataforma).
+     * assinatura mensal recorrente com o split padrão do marketplace (90% para
+     * a academia, 10% de comissão), derivado de AsaasService::SPLIT_RATE.
      */
     private function criarPagamentoAcademia(Request $request, Cliente $cliente, string $billingType = 'PIX')
     {
@@ -229,7 +232,7 @@ class PaymentController extends Controller
             'academia_id' => $validated['academia_id'],
             'plano_id' => $planoId,
             'cliente_id' => $cliente->id,
-        ], 0.10, $billingType); // academia entra no split 90/10 do marketplace
+        ], null, $billingType); // academia entra no split 90/10 (taxa padrão, de SPLIT_RATE)
 
         return response()->json($result, 201);
     }
@@ -263,7 +266,7 @@ class PaymentController extends Controller
             'studio_id' => $studio->id,
             'studio_plano_id' => $plano->id,
             'cliente_id' => $cliente->id,
-        ], 0.10, $billingType);
+        ], null, $billingType); // studio entra no split 90/10 (taxa padrão, de SPLIT_RATE)
 
         return response()->json($result, 201);
     }
