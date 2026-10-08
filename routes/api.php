@@ -138,6 +138,17 @@ Route::prefix('v1')->group(function () {
             Route::delete('/academias/{academia}/cancelar', [\App\Http\Controllers\Api\PersonalExtrasController::class, 'cancelarVinculo'])->whereNumber('academia');
 
             // Solicitações de ficha
+            /*
+             * Faltas e reposições — o lado do PERSONAL. Sem isto o app tinha
+             * meia funcionalidade: o aluno pedia reposição pelo celular e o
+             * personal só conseguia responder abrindo o site, deixando o aluno
+             * esperando uma resposta que não tinha como vir.
+             */
+            Route::get('/reposicoes', [\App\Http\Controllers\Api\ReposicaoController::class, 'index']);
+            Route::post('/reposicoes/{id}/aceitar', [\App\Http\Controllers\Api\ReposicaoController::class, 'aceitar'])->whereNumber('id');
+            Route::post('/reposicoes/{id}/recusar', [\App\Http\Controllers\Api\ReposicaoController::class, 'recusar'])->whereNumber('id');
+            Route::post('/faltas/{agendaId}/remarcar', [\App\Http\Controllers\Api\ReposicaoController::class, 'remarcar'])->whereNumber('agendaId');
+
             Route::get('/solicitacoes-ficha', [\App\Http\Controllers\Api\PersonalExtrasController::class, 'solicitacoesFicha']);
             Route::post('/solicitacoes-ficha/{id}/concluir', [\App\Http\Controllers\Api\PersonalExtrasController::class, 'concluirSolicitacaoFicha'])->whereNumber('id');
             Route::post('/valor-ficha', [\App\Http\Controllers\Api\PersonalExtrasController::class, 'atualizarValorFicha']);
