@@ -24,6 +24,10 @@ class PersonalResource extends JsonResource
             'cidade' => $this->cidade,
             'estado' => $this->estado,
             'status' => $this->status,
+            // Presencial | Online | Híbrido. O app mostra no próprio perfil e
+            // usa para saber se precisa perguntar a modalidade de cada aula.
+            'modalidade' => $this->modalidade,
+            'especialidades' => array_values(array_filter(array_map('trim', (array) $this->especialidades))),
             'valor_secao' => $this->valor_secao !== null ? (float) $this->valor_secao : null,
             'valor_ficha' => $this->valor_ficha !== null ? (float) $this->valor_ficha : null,
             'valor_avaliacao' => $this->valor_avaliacao !== null ? (float) $this->valor_avaliacao : null,

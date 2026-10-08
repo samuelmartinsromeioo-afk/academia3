@@ -23,6 +23,10 @@ class ClienteResource extends JsonResource
             'altura' => $this->altura,
             'peso' => $this->peso,
             'resumo_objetivo' => $this->resumo_objetivo,
+            // Presencial | Online | null. O app guarda o `user` do /me em
+            // contexto e usa isto para abrir a vitrine já no filtro que o aluno
+            // escolheu no cadastro, sem uma chamada extra ao /perfil.
+            'modalidade_preferida' => $this->modalidade_preferida,
             // Academia contratada: o app usa isso para exibir a aba "Minha Academia".
             'academia_id' => $this->academia_id,
             'plano_ativo' => (bool) $this->plano_ativo,
