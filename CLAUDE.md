@@ -165,6 +165,18 @@ As portas são: `Cadastro\{Cliente,Personal,Academia,Studio,Loja}Controller@stor
 
 **Nenhum cadastro do app dispara `CompleteRegistration` no Meta** (o web dispara nos cinco). Isso é uma lacuna conhecida, não um esquecimento: `MetaConversionsService::trackServer()` existe e funcionaria, mas o app não tem o banner de consentimento que o web tem, e `META_REQUIRE_CONSENT=true` é o padrão — disparar dali seria furar o gate de LGPD que o projeto construiu de propósito. Se for para fechar essa lacuna, o caminho é consentimento no app primeiro.
 
+### Trava de `APP_DEBUG` — duas camadas, e `APP_ENV` é a que importa
+
+`AppServiceProvider::boot()` desliga `app.debug` e as runnable solutions do Ignition à força quando `environment('production')`, além de `URL::forceScheme('https')`. **Essa trava existia e não protegeu nada**, porque o `.env` do servidor estava com `APP_ENV` diferente de `production`: um 404 em snrfit.com.br devolvia `exception`/`file`/`line`/`trace` com o caminho absoluto do servidor — e num 500 a mesma tela mostra `DB_PASSWORD`, `ASAAS_*`, `TWILIO_AUTH_TOKEN` e `APP_KEY`.
+
+A lição é que `APP_ENV` é o interruptor de quase todo o endurecimento (debug, HTTPS nos links, Ignition, e por tabela cookie Secure e CORS). Conferir só `APP_DEBUG` não basta.
+
+Daí a **segunda camada**, `travarDebugEmHostPublico()`: decide por `App\Support\Ambiente::hostEhPublico(request()->getHost())`, não pelo `.env`. O host vem da requisição, então não há o que esquecer de configurar. Domínio público ou IP roteável → debug desligado nesta requisição + um `critical` no canal `security` (throttled a 1/hora com `Cache::add`, porque isto roda em toda requisição enquanto o servidor estiver assim). `localhost`, `.test`, hostname sem ponto e **IP de rede privada** continuam com debug — este último é obrigatório: o celular acessa o backend por IP de LAN durante o trabalho no app.
+
+**Não há escape por env, de propósito.** `APP_DEBUG` governa apenas o que o *visitante* vê; o stack trace completo vai para `storage/logs/laravel.log` nos dois casos. Travar não custa diagnóstico — por isso a trava pode ser absoluta.
+
+`Ambiente::hostEhPublico()` usa `FILTER_FLAG_NO_PRIV_RANGE|NO_RES_RANGE` em vez de comparar prefixos à mão: a faixa privada 172.16/12 termina em **172.31**, e `172.32.x` é público. `TravaDebugTest` fixa essa tabela de hosts, incluindo esse caso.
+
 ### `payments.status` inclui `processing` — não tire
 
 `enum('pending','processing','succeeded','failed','refunded')`. O `processing` existe porque `PaymentController::processarPagamentoConfirmado` reivindica a entrega com um **UPDATE condicional atômico** (`whereNotIn('status', ['succeeded','processing'])->update(['status' => 'processing'])`), que é o que impede o webhook reentregue pelo Asaas de agendar, baixar estoque e repassar duas vezes.
