@@ -76,11 +76,10 @@ class ModalidadeApiTest extends TestCase
 
     public function test_register_do_aluno_aceita_preferencia(): void
     {
-        $this->postJson('/api/v1/register', [
+        $this->postJson('/api/v1/register', $this->dadosRegistroAluno([
             'nome' => 'Novo App', 'email' => 'novoapp@mod.teste',
-            'senha' => 'senha12345', 'aceita_termos' => true,
             'modalidade_preferida' => 'Online',
-        ])->assertCreated();
+        ]))->assertCreated();
 
         $this->assertSame('Online', Cliente::where('email', 'novoapp@mod.teste')->value('modalidade_preferida'));
     }
@@ -88,11 +87,12 @@ class ModalidadeApiTest extends TestCase
     /** Allowlist: "Híbrido" é oferta do profissional, não desejo do aluno. */
     public function test_register_do_aluno_recusa_hibrido(): void
     {
-        $this->postJson('/api/v1/register', [
+        // Com o payload completo, o único erro possível é o da allowlist — sem
+        // isso o teste passaria por campo faltando e não provaria a regra.
+        $this->postJson('/api/v1/register', $this->dadosRegistroAluno([
             'nome' => 'App Hib', 'email' => 'apphib@mod.teste',
-            'senha' => 'senha12345', 'aceita_termos' => true,
             'modalidade_preferida' => 'Híbrido',
-        ])->assertStatus(422)->assertJsonValidationErrors('modalidade_preferida');
+        ]))->assertStatus(422)->assertJsonValidationErrors('modalidade_preferida');
 
         $this->assertNull(Cliente::where('email', 'apphib@mod.teste')->first());
     }

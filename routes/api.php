@@ -30,6 +30,15 @@ Route::prefix('v1')->group(function () {
         Route::post('/loja', [\App\Http\Controllers\Api\RegisterController::class, 'loja']);
     });
 
+    /*
+     * Listas fechadas dos formulários de cadastro (modalidades, especialidades,
+     * sexo). O app lê daqui em vez de embutir uma cópia que envelhece: as
+     * regras validam com Rule::in(config(...)) e uma lista velha no binário da
+     * loja viraria 422 em cima do usuário.
+     */
+    Route::get('/cadastro/opcoes', [\App\Http\Controllers\Api\RegisterController::class, 'opcoes'])
+        ->middleware('throttle:30,1');
+
     // Streaming de vídeo dos exercícios com suporte a Range (206) — pública
     // porque o player (AVPlayer/ExoPlayer) não envia o token Bearer.
     /*

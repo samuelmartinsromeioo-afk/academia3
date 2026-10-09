@@ -348,8 +348,12 @@ class ClienteController extends Controller
             'nome'               => 'required|string|max:255',
             'email'              => 'required|email|max:255|unique:clientes,email',
             'senha'              => 'required|string|min:8|max:255',
+            'whatsapp'           => 'nullable|string|max:20',
             'idade'              => 'required|date',
-            'sexo'               => 'required|in:Masculino,Feminino,Outro,masculino,feminino,outro',
+            // Lista única em config('textos.profissional.sexos'): a cópia que
+            // vivia aqui divergiu do <select> do formulário e a terceira opção
+            // ("Outro") era recusada na validação.
+            'sexo'               => 'required|' . \App\Support\CadastroHelper::regraSexo(),
             'cep'                => 'required|string|max:9',
             'rua'                => 'nullable|string|max:255',
             'bairro'             => 'nullable|string|max:255',
@@ -365,8 +369,9 @@ class ClienteController extends Controller
             // é oferta do profissional, não desejo de quem procura.
             'modalidade_preferida' => ['nullable', Rule::in(config('textos.profissional.modalidades_aluno'))],
             'condicao_clinica'   => 'nullable|string',
-            'latitude'           => 'nullable|numeric',
-            'longitude'          => 'nullable|numeric',
+            // latitude/longitude saíram: `clientes` não tem essas colunas, o
+            // formulário nunca as enviou e o mass-assignment as descartava —
+            // regra sobre campo inexistente só engana quem lê depois.
             'aceita_termos'      => 'required|accepted',
             'cupom'              => $cupons->regraValidacao(),
         ], [

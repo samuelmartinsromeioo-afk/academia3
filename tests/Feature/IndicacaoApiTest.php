@@ -96,11 +96,10 @@ class IndicacaoApiTest extends TestCase
 
     public function test_cadastro_de_aluno_pelo_app_registra_a_indicacao(): void
     {
-        $this->postJson('/api/v1/register', [
+        $this->postJson('/api/v1/register', $this->dadosRegistroAluno([
             'nome' => 'Aluno Indicado', 'email' => 'indicado@ind.teste',
-            'senha' => 'senha12345', 'aceita_termos' => true,
             'cupom' => $this->codigoDoIndicador(),
-        ])->assertCreated();
+        ]))->assertCreated();
 
         $cliente = Cliente::where('email', 'indicado@ind.teste')->firstOrFail();
         $uso = CupomUso::where('usuario_type', $cliente->getMorphClass())
@@ -118,11 +117,10 @@ class IndicacaoApiTest extends TestCase
      */
     public function test_cupom_invalido_barra_o_cadastro(): void
     {
-        $this->postJson('/api/v1/register', [
+        $this->postJson('/api/v1/register', $this->dadosRegistroAluno([
             'nome' => 'Aluno Ruim', 'email' => 'ruim@ind.teste',
-            'senha' => 'senha12345', 'aceita_termos' => true,
             'cupom' => 'INVENTADO9',
-        ])->assertStatus(422)->assertJsonValidationErrors('cupom');
+        ]))->assertStatus(422)->assertJsonValidationErrors('cupom');
 
         $this->assertNull(Cliente::where('email', 'ruim@ind.teste')->first());
     }
@@ -130,10 +128,9 @@ class IndicacaoApiTest extends TestCase
     /** `cupom` não é coluna de nenhuma das cinco tabelas. */
     public function test_cadastro_sem_cupom_continua_funcionando(): void
     {
-        $this->postJson('/api/v1/register', [
+        $this->postJson('/api/v1/register', $this->dadosRegistroAluno([
             'nome' => 'Aluno Solto', 'email' => 'solto@ind.teste',
-            'senha' => 'senha12345', 'aceita_termos' => true,
-        ])->assertCreated();
+        ]))->assertCreated();
 
         $this->assertNotNull(Cliente::where('email', 'solto@ind.teste')->first());
     }

@@ -65,6 +65,28 @@ class RegisterController extends Controller
             TermoAceite::ORIGEM_CADASTRO
         );
     }
+    /**
+     * GET /api/v1/cadastro/opcoes — catálogo das listas fechadas dos cadastros.
+     *
+     * Existe para o app NÃO carregar uma segunda cópia destas listas. A regra
+     * de validação é `Rule::in(config(...))`: uma lista velha embutida no
+     * binário publicado na loja viraria 422 em cima do usuário no dia em que
+     * alguém editasse `config/textos.php` — e ninguém lembraria da relação.
+     * O app mantém só um fallback mínimo para renderizar offline.
+     *
+     * Público (o cadastro é anterior ao login) e sem nada sensível: são as
+     * mesmas opções que qualquer um lê no HTML do formulário web.
+     */
+    public function opcoes()
+    {
+        return response()->json([
+            'modalidades' => config('textos.profissional.modalidades'),
+            'modalidades_aluno' => config('textos.profissional.modalidades_aluno'),
+            'especialidades' => config('textos.profissional.especialidades.PERSONAL_TRAINER'),
+            'sexos' => config('textos.profissional.sexos'),
+        ]);
+    }
+
     // POST /api/v1/register/personal (multipart: campo "foto" é arquivo)
     public function personal(Request $request)
     {
@@ -91,6 +113,19 @@ class RegisterController extends Controller
             // Modalidade de atendimento. Aqui "Híbrido" É opção: é o profissional
             // declarando que atende dos dois jeitos (ver config textos.profissional).
             'modalidade'    => ['nullable', Rule::in(config('textos.profissional.modalidades'))],
+            /*
+             * Especialidades e bio — o que o aluno realmente lê no card e no
+             * perfil da vitrine. Faltavam aqui, então quem se cadastrava pelo
+             * app entrava na busca sem nenhuma pílula e sem apresentação, e
+             * só descobria isso (se descobrisse) editando o perfil depois.
+             *
+             * Allowlist a partir do config, igual ao Api\PerfilController:
+             * valor livre poluiria o catálogo de filtros da vitrine, que é
+             * derivado do que os profissionais declararam.
+             */
+            'especialidades'   => ['nullable', 'array'],
+            'especialidades.*' => ['string', Rule::in(config('textos.profissional.especialidades.PERSONAL_TRAINER'))],
+            'bio'           => 'nullable|string|max:2000',
             'latitude'      => 'nullable|numeric',
             'longitude'     => 'nullable|numeric',
             'academias'     => 'nullable|string|max:1000',
