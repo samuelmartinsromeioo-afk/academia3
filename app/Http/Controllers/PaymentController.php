@@ -352,6 +352,13 @@ class PaymentController extends Controller
                             'plano_ativo' => true,
                         ]);
                     }
+
+                    // A academia ganhava um aluno sem ser avisada de nada.
+                    \App\Services\AvisoService::academiaContratada(
+                        \App\Models\Cadastro\Academia::find($booking['academia_id']),
+                        $cliente,
+                        $payment->amount_total
+                    );
                 } catch (\Exception $e) {
                     Log::error('processarPagamentoConfirmado: academia falhou', [
                         'error' => $e->getMessage(),
@@ -370,6 +377,12 @@ class PaymentController extends Controller
                             'studio_plano_ativo' => true,
                         ]);
                     }
+
+                    \App\Services\AvisoService::studioPlanoContratado(
+                        Studio::find($booking['studio_id']),
+                        $cliente,
+                        $payment->amount_total
+                    );
                 } catch (\Exception $e) {
                     Log::error('processarPagamentoConfirmado: studio_plano falhou', [
                         'error' => $e->getMessage(),
@@ -395,6 +408,15 @@ class PaymentController extends Controller
                             'cancelado' => false,
                             'status' => 0,
                         ]);
+
+                        // Sem isto a vaga era reservada e o studio não ficava
+                        // sabendo que tinha alguém a mais na turma.
+                        \App\Services\AvisoService::studioAulaContratada(
+                            $studio,
+                            \App\Models\Cadastro\Cliente::find($booking['cliente_id']),
+                            $booking['data'],
+                            $booking['hora_inicio']
+                        );
                     } else {
                         Log::critical('processarPagamentoConfirmado: slot do studio lotou entre cobrança e confirmação — ESTORNO MANUAL NECESSÁRIO', [
                             'payment_id' => $payment->id,
@@ -424,6 +446,18 @@ class PaymentController extends Controller
                         'modalidade' => $booking['modalidade'] ?? null,
                         'cliente_id' => $booking['cliente_id'] ?? null,
                     ]);
+
+                    /*
+                     * Confirmação para o ALUNO. O personal já é avisado dentro
+                     * de `agendarAulasInterno` (notificarPersonalWhatsApp), que
+                     * carrega o template aprovado na Meta — avisar os dois aqui
+                     * duplicaria o aviso do personal.
+                     */
+                    \App\Services\AvisoService::pacoteConfirmadoParaAluno(
+                        \App\Models\Cadastro\Personal::find($booking['personal_id']),
+                        \App\Models\Cadastro\Cliente::find($booking['cliente_id'] ?? 0),
+                        isset($booking['frequencia_pacote']) ? (int) $booking['frequencia_pacote'] : null
+                    );
                 } catch (\Exception $e) {
                     Log::error('processarPagamentoConfirmado: contratarPacote falhou', [
                         'error' => $e->getMessage(),
@@ -2760,9 +2794,20 @@ class PaymentController extends Controller
                 ? "🚚 Entrega: {$pedido->endereco_entrega}"
                 : '🏬 Retirada na loja';
 
-            if ($loja && $loja->whatsapp) {
-                $this->notificarWhatsApp(
-                    $loja->whatsapp,
+            /*
+             * Aviso para a LOJA pelo canal completo (in-app + push + WhatsApp +
+             * e-mail), não só WhatsApp.
+             *
+             * Antes isto era `notificarWhatsApp($loja->whatsapp, ...)`, e o
+             * efeito era duplo: a tela "Avisos" da loja no app ficava sempre
+             * vazia (nada era gravado em `notificacoes`), e uma loja sem número
+             * cadastrado — o campo é opcional — não era avisada de NADA. O
+             * pedido entrava, o estoque baixava e ninguém separava a encomenda.
+             */
+            if ($loja) {
+                \App\Services\NotificacaoService::conta(
+                    $loja,
+                    'Novo pedido pago — SnrFit',
                     "🛒 *Novo pedido pago!*\n\n".
                     "Cliente: *{$cliente?->nome}*\n".
                     ($cliente?->whatsapp ? "Contato: {$cliente->whatsapp}\n" : '').

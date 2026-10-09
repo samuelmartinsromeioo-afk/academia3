@@ -138,7 +138,18 @@ class PersonalGestaoController extends Controller
             'justificativa' => $request->justificativa,
         ];
 
+        $horaInicio = $agenda->hora_inicio;
         $agenda->delete();
+
+        // Mesmo aviso do site — o texto vive em AvisoService, não aqui, para as
+        // duas portas não poderem divergir (e para nenhuma ficar sem avisar).
+        \App\Services\AvisoService::aulaCanceladaPeloPersonal(
+            $cliente,
+            $personal,
+            $dataStr,
+            $horaInicio,
+            $request->justificativa
+        );
 
         if ($cliente && $cliente->email) {
             try {
@@ -170,8 +181,12 @@ class PersonalGestaoController extends Controller
         }
 
         $cancelados = 0;
+        // Guarda as aulas canceladas para avisar DEPOIS do delete: cada aluno
+        // perdeu a aula dele e não participou da decisão.
+        $avisar = [];
         foreach ($agendamentos as $ag) {
             if ($agendas->podeCancelar($ag)) {
+                $avisar[] = $ag->replicate()->forceFill(['id' => $ag->id]);
                 $ag->delete();
                 $cancelados++;
             }
@@ -180,6 +195,8 @@ class PersonalGestaoController extends Controller
         if ($cancelados === 0) {
             return response()->json(['error' => 'Nenhum horário pode ser cancelado. Verifique a regra de 24h de antecedência.'], 422);
         }
+
+        \App\Services\AvisoService::diaCanceladoPeloPersonal($avisar, $personal);
 
         return response()->json(['success' => true, 'message' => "Dia cancelado! {$cancelados} horário(s) liberado(s)."]);
     }

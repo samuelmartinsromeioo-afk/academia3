@@ -305,6 +305,17 @@ class PersonalController extends Controller
 
             $agenda->delete();
 
+            // Aviso in-app + push + WhatsApp para o aluno. O e-mail abaixo já
+            // existia, mas e-mail sozinho é o canal que o aluno menos olha:
+            // dentro do app o cancelamento era silencioso.
+            \App\Services\AvisoService::aulaCanceladaPeloPersonal(
+                $cliente,
+                $personal,
+                $dataStr,
+                $agenda->hora_inicio,
+                $request->justificativa
+            );
+
             if ($cliente && $cliente->email) {
                 try {
                     Mail::send('emails.aula-cancelada', $dadosEmail, function ($message) use ($cliente) {
@@ -526,8 +537,12 @@ class PersonalController extends Controller
         }
 
         $cancelados = 0;
+        // Guarda as aulas canceladas para avisar DEPOIS do delete: cada aluno
+        // perdeu a aula dele e não participou da decisão.
+        $avisar = [];
         foreach ($agendamentos as $ag) {
             if ($agendas->podeCancelar($ag)) {
+                $avisar[] = $ag->replicate()->forceFill(['id' => $ag->id]);
                 $ag->delete();
                 $cancelados++;
             }
@@ -536,6 +551,8 @@ class PersonalController extends Controller
         if ($cancelados === 0) {
             return redirect()->back()->with('error', 'Nenhum horário pode ser cancelado. Verifique a regra de 24h de antecedência.');
         }
+
+        \App\Services\AvisoService::diaCanceladoPeloPersonal($avisar, Personal::find(session('personal_id')));
 
         return redirect()->back()->with('success', "Dia cancelado! $cancelados horário(s) liberado(s).");
     }

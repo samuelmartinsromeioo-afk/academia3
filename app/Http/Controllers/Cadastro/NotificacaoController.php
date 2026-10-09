@@ -21,7 +21,15 @@ class NotificacaoController extends Controller
             ->where('destinatario_id', $d['id'])
             ->orderByDesc('created_at')->limit(100)->get();
 
-        $voltar = $d['tipo'] === 'personal' ? route('personal.dashboard') : route('cliente.index');
+        // Um destino por papel: com o ternário de antes, academia/studio/loja
+        // voltariam para o painel do ALUNO (`cliente.index`).
+        $voltar = match ($d['tipo']) {
+            'personal' => route('personal.dashboard'),
+            'academia' => route('academia.dashboard'),
+            'studio'   => route('studio.dashboard'),
+            'loja'     => route('loja.dashboard'),
+            default    => route('cliente.index'),
+        };
 
         return view('notificacoes.index', compact('notificacoes', 'voltar'));
     }
@@ -86,14 +94,25 @@ class NotificacaoController extends Controller
         return redirect()->route('notificacoes.index')->with('success', 'Tudo marcado como lido.');
     }
 
+    /**
+     * Caixa de avisos do usuário da sessão — nos CINCO papéis.
+     *
+     * Tratava só personal e cliente; academia, studio e loja caíam no null e
+     * eram redirecionados para o login mesmo estando logados. Agora que os
+     * eventos de venda avisam essas contas (plano contratado, pedido pago), a
+     * leitura tem de existir — senão o aviso é gravado e ninguém lê.
+     *
+     * A ordem segue a do login (LoginController): personal → cliente →
+     * academia → studio → loja.
+     */
     private function dest(): ?array
     {
-        if (session('personal_id')) {
-            return ['tipo' => 'personal', 'id' => session('personal_id')];
+        foreach (['personal', 'cliente', 'academia', 'studio', 'loja'] as $tipo) {
+            if (session("{$tipo}_id")) {
+                return ['tipo' => $tipo, 'id' => (int) session("{$tipo}_id")];
+            }
         }
-        if (session('cliente_id')) {
-            return ['tipo' => 'cliente', 'id' => session('cliente_id')];
-        }
+
         return null;
     }
 }

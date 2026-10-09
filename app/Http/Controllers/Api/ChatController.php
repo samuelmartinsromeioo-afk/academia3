@@ -224,16 +224,26 @@ class ChatController extends Controller
 
     // ===================== HELPERS =====================
 
+    /**
+     * Caixa de avisos do usuário autenticado — nos CINCO papéis.
+     *
+     * Isto tratava só personal e cliente, e devolvia null para academia, studio
+     * e loja: a lista deles vinha sempre vazia. Era um furo em duas pontas,
+     * porque os outros dois lados já funcionavam para eles — `push_tokens`
+     * registra o aparelho pelo papel do token (`AuthController::userType`) e
+     * `ExpoPushService::paraDestinatario` é genérico. Resultado: a loja recebia
+     * o push do pedido no celular e, ao abrir o atalho "Avisos" do app, não
+     * encontrava nada.
+     *
+     * `NotificacaoService::tipoDe()` é a mesma fonte usada na ESCRITA, então
+     * leitura e escrita não podem divergir no nome do papel.
+     */
     private function dest(Request $request): ?array
     {
         $user = $request->user();
-        if ($user instanceof Personal) {
-            return ['tipo' => 'personal', 'id' => $user->id];
-        }
-        if ($user instanceof Cliente) {
-            return ['tipo' => 'cliente', 'id' => $user->id];
-        }
-        return null;
+        $tipo = \App\Services\NotificacaoService::tipoDe($user);
+
+        return $tipo ? ['tipo' => $tipo, 'id' => (int) $user->id] : null;
     }
 
     private function ctx(Request $request, $outroId): ?array

@@ -11,13 +11,75 @@ use Illuminate\Support\Facades\Mail;
 /**
  * Canal unificado de notificações do SnrFit.
  *
- * Envia a mesma mensagem por dois canais: WhatsApp (via WhatsAppService) e
- * e-mail (via NotificacaoMail). O texto legível usado no WhatsApp é reaproveitado
- * como corpo do e-mail, garantindo que o destinatário receba o aviso mesmo fora
- * da janela de 24h do WhatsApp ou quando não houver número cadastrado.
+ * Envia a mesma mensagem por quatro canais: aviso in-app (`notificacoes`),
+ * push no aparelho (via `Notificacao::para` → ExpoPushService), WhatsApp (via
+ * WhatsAppService) e e-mail (via NotificacaoMail). O texto legível usado no
+ * WhatsApp é reaproveitado como corpo do e-mail, garantindo que o destinatário
+ * receba o aviso mesmo fora da janela de 24h do WhatsApp ou quando não houver
+ * número cadastrado.
+ *
+ * Isto é o CANAL. O texto de cada evento de negócio vive em `AvisoService`,
+ * um lugar só — porque o web e o app disparam os mesmos eventos e a cópia
+ * duplicada entre eles já nasceu divergente mais de uma vez.
  */
 class NotificacaoService
 {
+    /** Nome genérico por papel, para quando a conta não tiver `nome`. */
+    private const FALLBACK_NOME = [
+        'personal' => 'Personal',
+        'cliente' => 'Aluno',
+        'academia' => 'Academia',
+        'studio' => 'Studio',
+        'loja' => 'Loja',
+    ];
+
+    /**
+     * Notifica QUALQUER uma das cinco contas, detectando o papel pelo model.
+     *
+     * Existe porque `personal()` e `cliente()` cobriam só dois papéis: academia,
+     * studio e loja não tinham como ser avisados de nada — e são justamente
+     * quem precisa saber que vendeu um plano ou recebeu um pedido.
+     *
+     * Tolerante a null de propósito: um aviso é efeito colateral de um fluxo
+     * que já terminou (pagamento confirmado, aula cancelada) e não pode
+     * derrubá-lo porque a conta de destino foi apagada no meio.
+     */
+    public static function conta($conta, string $assunto, string $texto, string $template = '', array $params = []): bool
+    {
+        $tipo = self::tipoDe($conta);
+        if (! $tipo) {
+            return false;
+        }
+
+        \App\Models\Notificacao::para($tipo, (int) $conta->id, $assunto, $texto);
+
+        return self::enviar(
+            $conta->whatsapp ?? null,
+            $conta->email ?? null,
+            $conta->nome ?? self::FALLBACK_NOME[$tipo],
+            $assunto,
+            $texto,
+            $template,
+            $params
+        );
+    }
+
+    /**
+     * Papel de uma conta, no mesmo vocabulário de `notificacoes.destinatario_tipo`
+     * e de `push_tokens.destinatario_tipo` (igual a `Api\AuthController::userType`).
+     */
+    public static function tipoDe($conta): ?string
+    {
+        return match (true) {
+            $conta instanceof Personal => 'personal',
+            $conta instanceof Cliente => 'cliente',
+            $conta instanceof \App\Models\Cadastro\Academia => 'academia',
+            $conta instanceof \App\Models\Cadastro\Studio => 'studio',
+            $conta instanceof \App\Models\Cadastro\Loja => 'loja',
+            default => null,
+        };
+    }
+
     /**
      * Notifica um Personal por WhatsApp e e-mail.
      *
@@ -30,17 +92,7 @@ class NotificacaoService
      */
     public static function personal(Personal $personal, string $assunto, string $texto, string $template = '', array $params = []): bool
     {
-        \App\Models\Notificacao::para('personal', $personal->id, $assunto, $texto);
-
-        return self::enviar(
-            $personal->whatsapp ?? null,
-            $personal->email ?? null,
-            $personal->nome ?? 'Personal',
-            $assunto,
-            $texto,
-            $template,
-            $params
-        );
+        return self::conta($personal, $assunto, $texto, $template, $params);
     }
 
     /**
@@ -55,17 +107,7 @@ class NotificacaoService
      */
     public static function cliente(Cliente $cliente, string $assunto, string $texto, string $template = '', array $params = []): bool
     {
-        \App\Models\Notificacao::para('cliente', $cliente->id, $assunto, $texto);
-
-        return self::enviar(
-            $cliente->whatsapp ?? null,
-            $cliente->email ?? null,
-            $cliente->nome ?? 'Aluno',
-            $assunto,
-            $texto,
-            $template,
-            $params
-        );
+        return self::conta($cliente, $assunto, $texto, $template, $params);
     }
 
     /**

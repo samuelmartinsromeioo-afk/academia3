@@ -165,6 +165,28 @@ As portas são: `Cadastro\{Cliente,Personal,Academia,Studio,Loja}Controller@stor
 
 **Nenhum cadastro do app dispara `CompleteRegistration` no Meta** (o web dispara nos cinco). Isso é uma lacuna conhecida, não um esquecimento: `MetaConversionsService::trackServer()` existe e funcionaria, mas o app não tem o banner de consentimento que o web tem, e `META_REQUIRE_CONSENT=true` é o padrão — disparar dali seria furar o gate de LGPD que o projeto construiu de propósito. Se for para fechar essa lacuna, o caminho é consentimento no app primeiro.
 
+### `payments.status` inclui `processing` — não tire
+
+`enum('pending','processing','succeeded','failed','refunded')`. O `processing` existe porque `PaymentController::processarPagamentoConfirmado` reivindica a entrega com um **UPDATE condicional atômico** (`whereNotIn('status', ['succeeded','processing'])->update(['status' => 'processing'])`), que é o que impede o webhook reentregue pelo Asaas de agendar, baixar estoque e repassar duas vezes.
+
+O valor **ficou faltando no enum por ~3 semanas** (o commit `6b8c58a2` escreveu `processing` sem migration). A conexão roda `'strict' => true` com `STRICT_TRANS_TABLES`, então aquele UPDATE **lançava** — e ele é a *primeira* instrução do método. Efeito: **toda cobrança que passava por ali era recebida no Asaas e nunca cumprida.** Nada depois do claim executava — pacote não agendado, estoque não baixado, plano de academia/studio não vinculado, ninguém avisado — e o pagamento ficava preso em `pending` enquanto o Asaas reentregava para estourar de novo. Consertado por `2026_10_09_000001_add_processing_to_payments_status`.
+
+**Num banco sem modo estrito o sintoma é pior:** o valor inválido vira string vazia, `whereNotIn(...)` deixa de casar e o guard de idempotência cai — aí o reenvio do webhook **reprocessa** (estoque, agendamento e repasse em dobro). Se mexer no claim, mexa no enum junto.
+
+Os testes `LojaCheckoutTest > checkout cartao confirma...` e `AcademiaPagamentoTest > pagamento cartao academia confirma...` acusavam isso o tempo todo (esperavam `succeeded`, achavam `pending`) e foram tratados como "falha conhecida". **Um teste que falha desde sempre é uma hipótese, não um fato.** `Data truncated for column` nunca é flake: é valor fora do enum.
+
+### Avisos de eventos — `AvisoService` é o texto, `NotificacaoService` é o canal
+
+`NotificacaoService` é o **canal**: uma chamada entrega em quatro lugares — aviso in-app (`notificacoes`), push no aparelho (via `Notificacao::para` → `ExpoPushService`), WhatsApp e e-mail. `NotificacaoService::conta($model, ...)` serve **os cinco papéis** (detecta pelo model via `tipoDe()`); `personal()` e `cliente()` são só atalhos que delegam para ela.
+
+`AvisoService` é **o que se diz em cada evento**, um método por evento. A separação é prática: quase todo evento é disparado de *dois* lugares (controller do site + controller da API), e quando o texto mora no controller as duas cópias divergem ou só uma existe. Foi o caso do cancelamento de aula — `Cadastro\PersonalController@cancelarAula` e `Api\PersonalGestaoController@cancelarAula` são cópias quase idênticas, as duas mandavam e-mail e **nenhuma** avisava o aluno dentro do app.
+
+Três regras ao acrescentar um evento: **(1) nada ali pode lançar** (aviso é efeito colateral de um fluxo já concluído — por isso tudo passa por `seguro()`, que só loga); **(2) avise os dois lados** (quem vendeu e quem comprou — metade do aviso é o que gera ticket de suporte); **(3) o texto diz o que fazer, não só o que houve** (o push aparece justamente quando o usuário não está no app).
+
+**Antes de criar um evento novo, procure quem já avisa.** O pacote já notificava o personal de dentro de `agendarAulasInterno` (`notificarPersonalWhatsApp`, que carrega o template aprovado na Meta), e a primeira versão de `pacoteConfirmadoParaAluno` avisava os dois — gerando **dois** avisos ao personal. Quem pegou foi o teste de integração afirmando a **contagem** (esperava 1, achou 2). Mesma razão pela qual o pedido pago da loja **não** tem método aqui: `PaymentController::notificarPedidoLoja` já montava um texto melhor (itens, entrega, contato) a partir do `Pedido`; o que faltava era o canal, e lá agora ele passa por `NotificacaoService::conta()`.
+
+**A caixa de avisos existe para os cinco papéis.** `dest()` (no web `Cadastro\NotificacaoController` e no `Api\ChatController`) conhecia só personal e cliente, e devolvia null para academia/studio/loja — lista sempre vazia. Era furo de duas pontas, porque os outros canais já funcionavam para eles: `push_tokens` registra o aparelho pelo papel do token (`AuthController::userType`) e `ExpoPushService::paraDestinatario` é genérico. A loja recebia o push do pedido no celular e, ao abrir "Avisos" no app, não achava nada. Leitura e escrita saem da mesma `NotificacaoService::tipoDe()`, de propósito.
+
 ### Notificações in-app — `notificacoes.mensagem`, não `texto`
 
 A coluna do corpo do aviso é **`mensagem`** (`notificacoes`: `destinatario_tipo`, `destinatario_id`, `titulo`, **`mensagem`**, `url`, `icone`, `lida`). A tabela do chat é outra: `mensagens.texto`. As duas convivem, e confundi-las já custou um bug em produção.
