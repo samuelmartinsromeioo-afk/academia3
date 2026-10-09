@@ -10,24 +10,39 @@ use Illuminate\Http\Request;
 
 class PacoteController extends Controller
 {
+    /**
+     * Tabela de preços de pacote do personal logado.
+     *
+     * A01 — o dono vem da SESSÃO, nunca do corpo da requisição. Antes isto
+     * aceitava `personal_id` do formulário e só validava `exists:personals,id`,
+     * sem conferir de quem era: como a rota está sob `CheckLogin` (que aceita
+     * qualquer um dos cinco papéis), **qualquer usuário logado — inclusive um
+     * aluno — podia reescrever a tabela de preços de qualquer personal**. É a
+     * mesma regra que o `Api\PersonalGestaoController@salvarPrecos` já seguia,
+     * tirando o personal do token; o web é que estava fora do padrão.
+     */
     public function store(Request $request)
     {
-        // Validação melhorada
-        $data = $request->validate([
-            'personal_id' => 'required|exists:personals,id',
+        $personalId = session('personal_id');
+        if (! $personalId) {
+            return redirect()->route('login.index')
+                ->with('error', 'Só o personal define a própria tabela de preços.');
+        }
+
+        $request->validate([
             'precos' => 'required|array',
-            'precos.*' => 'nullable|numeric|min:0'
+            'precos.*' => 'nullable|numeric|min:0',
         ]);
 
-        $pacotesCriados = 0; 
+        $pacotesCriados = 0;
         foreach ($request->precos as $frequencia => $valor) {
             // Converte para float e verifica se é válido
             $valorFloat = (float)$valor;
-            
+
             if (!empty($valor) && $valorFloat > 0) {
                 Pacote::updateOrCreate(
                     [
-                        'personal_id' => $request->personal_id, 
+                        'personal_id' => $personalId,
                         'frequencia' => $frequencia
                     ],
                     [
@@ -49,8 +64,18 @@ class PacoteController extends Controller
 
     public function edit()
     {
-        $id = auth()->user()->id;
-        $precosSalvos = Pacote::where('personal_id', $id)
+        /*
+         * `auth()->user()->id` não funciona aqui: este projeto não usa o Auth
+         * padrão do Laravel, a sessão guarda `personal_id` (ver CLAUDE.md).
+         * O guard devolve null e isto estourava "property on null" — não
+         * aparecia porque nenhuma rota aponta para este método.
+         */
+        $personalId = session('personal_id');
+        if (! $personalId) {
+            return redirect()->route('login.index');
+        }
+
+        $precosSalvos = Pacote::where('personal_id', $personalId)
             ->pluck('valor_mensal', 'frequencia')
             ->toArray();
 

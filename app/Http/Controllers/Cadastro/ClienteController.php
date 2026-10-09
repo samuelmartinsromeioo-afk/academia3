@@ -296,10 +296,23 @@ class ClienteController extends Controller
         $validated = $request->validate([
             'nome'        => 'required|string|max:255',
             'email'       => 'required|email|max:255|unique:clientes,email,' . $id,
-            'sexo'        => 'required|in:Masculino,Feminino,Outro,masculino,feminino,outro',
+            // Lista única em config('textos.profissional.sexos') — a cópia que
+            // vivia aqui é a mesma que divergiu no cadastro.
+            'sexo'        => 'required|' . \App\Support\CadastroHelper::regraSexo(),
             'cep'         => 'nullable|string|max:9',
             'altura'      => 'nullable|numeric',
             'peso'        => 'nullable|numeric',
+            /*
+             * Campos que o APP já editava e o site não: a mesma conta tinha um
+             * conjunto editável diferente dependendo de por onde o aluno
+             * entrasse. `condicao_clinica` e `frequencia_semanal` são coletados
+             * no cadastro e não eram editáveis em nenhum dos dois — uma lesão
+             * nova ou uma mudança de rotina não tinha por onde entrar.
+             */
+            'whatsapp'    => 'nullable|string|max:20',
+            'resumo_objetivo' => 'nullable|string|max:500',
+            'condicao_clinica' => 'nullable|string',
+            'frequencia_semanal' => 'nullable|integer|min:1',
             'rua'         => 'nullable|string|max:255',
             'bairro'      => 'nullable|string|max:255',
             'cidade'      => 'nullable|string|max:255',

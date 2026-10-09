@@ -114,6 +114,17 @@ class PerfilController extends Controller
         [$campos, $regras] = $this->config($tipo);
 
         $dados = $request->validate($regras);
+
+        /*
+         * A coluna `clientes.sexo` é um enum em MINÚSCULAS. A regra aceita as
+         * duas caixas (o cadastro do site e o do app mandam capitalizado), e a
+         * normalização tem de acontecer aqui também — senão "Masculino" vindo
+         * do app bate no enum e o MySQL recusa em modo estrito.
+         */
+        if (isset($dados['sexo'])) {
+            $dados['sexo'] = mb_strtolower($dados['sexo']);
+        }
+
         $user->update($dados);
 
         // Um fresh() só, fora do laço: dentro dele era uma consulta por campo.
@@ -204,6 +215,33 @@ class PerfilController extends Controller
                 'nome' => 'required|string|max:255',
                 'whatsapp' => 'nullable|string|max:20',
                 'resumo_objetivo' => 'nullable|string|max:500',
+                /*
+                 * Perfil físico — o mesmo conjunto que o site edita em
+                 * `Cadastro\ClienteController@update`.
+                 *
+                 * Faltava aqui, e era a divergência que mais doía: altura e
+                 * peso são os dados que MUDAM com o tempo e que a avaliação
+                 * física e o IMC leem. O aluno informava no cadastro e, pelo
+                 * app, não tinha como corrigir nunca mais — ficava preso ao
+                 * peso do dia em que criou a conta.
+                 *
+                 * `condicao_clinica` e `frequencia_semanal` são coletados no
+                 * cadastro dos dois lados e não eram editáveis em NENHUM: uma
+                 * lesão nova ou uma mudança de rotina não tinha por onde
+                 * entrar. Dado que só se escreve uma vez vira dado errado.
+                 */
+                'altura' => 'nullable|numeric',
+                'peso' => 'nullable|numeric',
+                /*
+                 * `sometimes|required`, não `required`: a coluna é um enum NOT
+                 * NULL, então o valor não pode virar null — mas exigir o campo
+                 * quebraria o salvamento de perfil em todo app JÁ instalado,
+                 * que não manda `sexo` no PUT. "Se vier, tem de ser válido" é a
+                 * regra certa para uma API que atende versões antigas.
+                 */
+                'sexo' => ['sometimes', 'required', \App\Support\CadastroHelper::regraSexo()],
+                'condicao_clinica' => 'nullable|string',
+                'frequencia_semanal' => 'nullable|integer|min:1',
                 // Preferência do ALUNO: domínio menor que o do profissional —
                 // "Híbrido" é oferta, não desejo (ver Cliente::modalidadesCompativeis).
                 'modalidade_preferida' => ['nullable', \Illuminate\Validation\Rule::in(config('textos.profissional.modalidades_aluno'))],
