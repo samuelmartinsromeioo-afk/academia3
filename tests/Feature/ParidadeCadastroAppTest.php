@@ -80,13 +80,54 @@ class ParidadeCadastroAppTest extends TestCase
         );
     }
 
-    public function test_app_exige_nascimento_e_sexo_como_o_site(): void
+    /**
+     * App ANTIGO (sem nascimento/sexo/CEP) continua conseguindo cadastrar.
+     *
+     * A regra é `sometimes|required`, e isso é compatibilidade de versão, não
+     * relaxamento: entre o deploy do servidor e a atualização chegar ao
+     * aparelho existe a revisão da Apple — dias. Com `required`, todo cadastro
+     * de quem está no binário antigo voltaria 422 nessa janela. Cadastro
+     * perdido é usuário perdido; conta sem nascimento é conta que o próprio
+     * aluno completa depois, agora que o perfil é editável nos dois lados.
+     */
+    public function test_app_antigo_sem_nascimento_e_sexo_ainda_cadastra(): void
     {
-        $dados = $this->dadosAluno('semnascimento@teste.com');
-        unset($dados['idade'], $dados['sexo']);
+        /*
+         * O payload LITERAL do binário publicado (snrfit-app, RegisterScreen
+         * antes de 87964a1) — não uma aproximação. É o cadastro de usuário real
+         * que não pode quebrar durante a revisão da Apple, então o teste manda
+         * exatamente o que o aparelho manda, nem um campo a mais.
+         */
+        $this->postJson('/api/v1/register', [
+            'nome' => 'Aluno App Antigo',
+            'email' => 'appantigo@teste.com',
+            'senha' => 'senha12345',
+            'whatsapp' => null,
+            'modalidade_preferida' => 'Online',
+            'cupom' => null,
+            'aceita_termos' => true,
+            'device_name' => 'snrfit-app',
+        ])->assertStatus(201);
 
-        // Se estes voltarem a ser opcionais no app, a paridade acima passa a
-        // comparar dois nulos e deixa de provar qualquer coisa.
+        $c = Cliente::where('email', 'appantigo@teste.com')->firstOrFail();
+        $this->assertNull($c->idade, 'sem o campo, nada deve ser inventado para a data de nascimento');
+        $this->assertSame('Online', $c->modalidade_preferida);
+    }
+
+    /**
+     * Mas se o campo VIER, tem de ser válido — vazio não vira null em silêncio.
+     *
+     * É a metade que faz `sometimes|required` diferir de `nullable`: o app novo
+     * mandando `idade: ""` é bug do app, e tem de aparecer como 422 em vez de
+     * gravar uma conta pela metade.
+     */
+    public function test_campo_enviado_vazio_e_recusado(): void
+    {
+        $dados = array_merge($this->dadosAluno('vazio@teste.com'), [
+            'idade' => '',
+            'sexo' => '',
+        ]);
+
         $this->postJson('/api/v1/register', $dados)
             ->assertStatus(422)
             ->assertJsonValidationErrors(['idade', 'sexo']);

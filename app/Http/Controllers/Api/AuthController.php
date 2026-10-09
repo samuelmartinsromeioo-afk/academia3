@@ -146,9 +146,27 @@ class AuthController extends Controller
             'email' => 'required|email|max:255|unique:clientes,email',
             'senha' => 'required|string|min:8|max:255',
             'whatsapp' => 'nullable|string|max:20',
-            'idade' => 'required|date',
-            'sexo' => 'required|' . \App\Support\CadastroHelper::regraSexo(),
-            'cep' => 'required|string|max:9',
+            /*
+             * `sometimes|required`, não `required` — e isto é compatibilidade
+             * com versão de app, não relaxamento da regra.
+             *
+             * O site exige estes três no formulário e o app novo os envia. Mas
+             * o binário JÁ publicado na loja não os conhece, e entre o deploy
+             * do servidor e a chegada da atualização ao aparelho existe a
+             * revisão da Apple — dias. Com `required`, todo cadastro de quem
+             * está no app antigo voltaria 422 nessa janela: cadastro perdido é
+             * usuário perdido, enquanto uma conta sem nascimento é uma conta
+             * que o próprio aluno completa depois (o perfil agora é editável
+             * nos dois lados).
+             *
+             * `sometimes|required` dá o comportamento exato que se quer:
+             * ausente passa (app antigo), presente tem de ser válido e não
+             * vazio — então um `idade: ""` vindo do app novo é barrado em vez
+             * de virar null em silêncio.
+             */
+            'idade' => 'sometimes|required|date',
+            'sexo' => ['sometimes', 'required', \App\Support\CadastroHelper::regraSexo()],
+            'cep' => 'sometimes|required|string|max:9',
             'rua' => 'nullable|string|max:255',
             'bairro' => 'nullable|string|max:255',
             'cidade' => 'nullable|string|max:255',
@@ -190,8 +208,15 @@ class AuthController extends Controller
             'cupom', 'aceita_termos', 'device_name',
         ]);
 
-        // Mesma normalização do web: a base guarda o sexo em minúsculas.
-        $dados['sexo'] = mb_strtolower($dados['sexo']);
+        /*
+         * Mesma normalização do web: a base guarda o sexo em minúsculas.
+         * Condicional porque `sexo` é `sometimes` — o app antigo não manda, e
+         * sem o isset isto estouraria "Undefined array key" justamente no
+         * cadastro que a tolerância acima existe para salvar.
+         */
+        if (isset($dados['sexo'])) {
+            $dados['sexo'] = mb_strtolower($dados['sexo']);
+        }
         $dados['senha'] = Hash::make($dados['senha']);
         $dados['aceita_termos'] = true;
         $dados['data_aceitacao_termos'] = now();
