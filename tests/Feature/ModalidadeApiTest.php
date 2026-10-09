@@ -36,8 +36,16 @@ class ModalidadeApiTest extends TestCase
         parent::setUp();
 
         Storage::fake('public');
-        // O cadastro de profissional cria subconta no Asaas; nada sai da máquina.
-        Http::fake();
+        /*
+         * Nada sai da máquina: o cadastro de profissional cria subconta no Asaas
+         * e os testes de /payments criam cobrança.
+         *
+         * O fake TEM de ser registrado aqui, uma vez só: `Http::fake()` ANEXA
+         * stubs e o primeiro que casa vence, então um `Http::fake()` sem
+         * argumentos (catch-all vazio) registrado antes faz qualquer fake
+         * posterior do teste virar código morto — o que já custou uma depuração.
+         */
+        $this->fakeAsaas();
 
         $this->cliente = Cliente::create([
             'nome' => 'Aluno API', 'email' => 'api@mod.teste', 'senha' => bcrypt('x'),
@@ -68,11 +76,10 @@ class ModalidadeApiTest extends TestCase
 
     public function test_register_do_aluno_aceita_preferencia(): void
     {
-        $this->postJson('/api/v1/register', [
+        $this->postJson('/api/v1/register', $this->dadosRegistroAluno([
             'nome' => 'Novo App', 'email' => 'novoapp@mod.teste',
-            'senha' => 'senha12345', 'aceita_termos' => true,
             'modalidade_preferida' => 'Online',
-        ])->assertCreated();
+        ]))->assertCreated();
 
         $this->assertSame('Online', Cliente::where('email', 'novoapp@mod.teste')->value('modalidade_preferida'));
     }
@@ -80,11 +87,12 @@ class ModalidadeApiTest extends TestCase
     /** Allowlist: "Híbrido" é oferta do profissional, não desejo do aluno. */
     public function test_register_do_aluno_recusa_hibrido(): void
     {
-        $this->postJson('/api/v1/register', [
+        // Com o payload completo, o único erro possível é o da allowlist — sem
+        // isso o teste passaria por campo faltando e não provaria a regra.
+        $this->postJson('/api/v1/register', $this->dadosRegistroAluno([
             'nome' => 'App Hib', 'email' => 'apphib@mod.teste',
-            'senha' => 'senha12345', 'aceita_termos' => true,
             'modalidade_preferida' => 'Híbrido',
-        ])->assertStatus(422)->assertJsonValidationErrors('modalidade_preferida');
+        ]))->assertStatus(422)->assertJsonValidationErrors('modalidade_preferida');
 
         $this->assertNull(Cliente::where('email', 'apphib@mod.teste')->first());
     }
@@ -98,6 +106,9 @@ class ModalidadeApiTest extends TestCase
             'cep' => '30130-000', 'rua' => 'R', 'bairro' => 'B', 'cidade' => 'BH', 'estado' => 'MG',
             'foto' => UploadedFile::fake()->image('p.jpg'),
             'modalidade' => 'Híbrido',
+            // Passou a ser obrigatório junto com o registro do aceite versionado
+            // (o app já enviava; a API é que ignorava).
+            'aceita_termos' => true,
         ])->assertCreated();
 
         // Para o profissional, Híbrido É válido: ele oferece os dois formatos.
@@ -306,5 +317,288 @@ class ModalidadeApiTest extends TestCase
             ->getJson("/api/v1/personais/{$soOnline->id}/pacotes")
             ->assertOk()
             ->assertJsonPath('personal.modalidades_disponiveis', ['Online']);
+    }
+
+    // ── Caminho PAGO do app (POST /payments) ─────────────────────────────
+
+    /**
+     * O app não agenda por /agendar nem por /pacotes/contratar: ele cria uma
+     * cobrança em POST /payments, e a aula nasce só quando o pagamento confirma.
+     * Então é o `booking_data` dessa cobrança que tem de carregar a modalidade —
+     * era exatamente aqui que a escolha do aluno se perdia no app, mesmo depois
+     * dos dois endpoints acima terem ganhado o campo.
+     */
+    private function fakeAsaas(): void
+    {
+        Http::fake(function ($request) {
+            $url = $request->url();
+
+            if (str_contains($url, '/pixQrCode')) {
+                return Http::response(['payload' => 'PIX123', 'encodedImage' => 'IMG'], 200);
+            }
+            if (str_contains($url, '/subscriptions/') && str_contains($url, '/payments')) {
+                return Http::response(['data' => [['id' => 'pay_1', 'status' => 'PENDING']]], 200);
+            }
+            if (str_contains($url, '/subscriptions') && $request->method() === 'POST') {
+                return Http::response(['id' => 'sub_1', 'nextDueDate' => now()->addMonth()->format('Y-m-d')], 200);
+            }
+            if (str_contains($url, '/payments') && $request->method() === 'POST') {
+                return Http::response(['id' => 'pay_1', 'invoiceUrl' => 'https://asaas.test/i/1'], 200);
+            }
+            if (str_contains($url, '/customers')) {
+                return Http::response(['data' => [['id' => 'cus_1']]], 200);
+            }
+
+            return Http::response([], 200);
+        });
+    }
+
+    /** booking_data da última cobrança do aluno. */
+    private function ultimoBooking(): array
+    {
+        $json = \App\Models\Payment::where('user_id', $this->cliente->id)
+            ->latest('id')
+            ->value('booking_data');
+
+        return json_decode((string) $json, true) ?: [];
+    }
+
+    public function test_avulsa_paga_pelo_app_carrega_a_modalidade(): void
+    {
+        $personal = $this->personal('Híbrido', '601');
+
+        $this->withHeaders($this->comToken())
+            ->postJson('/api/v1/payments', [
+                'contexto' => 'personal', 'tipo' => 'aula_avulsa',
+                'personal_id' => $personal->id, 'data' => now()->addDays(2)->format('Y-m-d'),
+                'hora_inicio' => '08:00', 'hora_fim' => '09:00',
+                'metodo' => 'pix', 'modalidade' => 'Online',
+            ])->assertCreated();
+
+        $this->assertSame('Online', $this->ultimoBooking()['modalidade']);
+    }
+
+    public function test_pacote_pago_pelo_app_carrega_a_modalidade(): void
+    {
+        $personal = $this->personal('Híbrido', '602');
+        // O valor do pacote sai do PACOTE, não do que o app manda, então o
+        // registro tem de existir (resolverItemPersonal faz findOrFail).
+        $pacote = \App\Models\Cadastro\Pacote::create([
+            'personal_id' => $personal->id, 'frequencia' => 2, 'valor_mensal' => 400,
+        ]);
+
+        $this->withHeaders($this->comToken())
+            ->postJson('/api/v1/payments', [
+                'contexto' => 'personal', 'tipo' => 'pacote',
+                'personal_id' => $personal->id, 'pacote_id' => $pacote->id,
+                'frequencia' => 2, 'dias_selecionados' => '[1,3]',
+                'metodo' => 'pix', 'modalidade' => 'Presencial',
+            ])->assertCreated();
+
+        $this->assertSame('Presencial', $this->ultimoBooking()['modalidade']);
+    }
+
+    /** Allowlist no caminho pago também: o cliente não escreve na coluna. */
+    public function test_pagamento_recusa_modalidade_fora_do_dominio(): void
+    {
+        $personal = $this->personal('Híbrido', '603');
+
+        $this->withHeaders($this->comToken())
+            ->postJson('/api/v1/payments', [
+                'contexto' => 'personal', 'tipo' => 'aula_avulsa',
+                'personal_id' => $personal->id, 'data' => now()->addDays(2)->format('Y-m-d'),
+                'hora_inicio' => '08:00', 'hora_fim' => '09:00',
+                'metodo' => 'pix', 'modalidade' => 'Telepatia',
+            ])->assertStatus(422)->assertJsonValidationErrors('modalidade');
+    }
+
+    // ── Filtro da vitrine (modalidade + especialidade) ───────────────────
+    //
+    // O filtro roda no SERVIDOR, não no app: a listagem é paginada, e filtrar
+    // depois do COUNT faria o app dizer "20 resultados" e mostrar 3.
+
+    /** Nomes dos personais da vitrine, buscando só os desta bateria. */
+    private function nomesDaVitrine(string $queryExtra = ''): array
+    {
+        $resposta = $this->withHeaders($this->comToken())
+            ->getJson('/api/v1/explorar/personais?q=Vitrine' . $queryExtra)
+            ->assertOk();
+
+        return array_column($resposta->json('personais'), 'nome');
+    }
+
+    /** Cria um personal da bateria da vitrine com nome previsível. */
+    private function personalVitrine(string $sufixo, ?string $modalidade, array $especialidades = []): Personal
+    {
+        $p = $this->personal($modalidade, '77' . $sufixo);
+        $p->update(['nome' => 'Vitrine ' . $sufixo, 'especialidades' => $especialidades]);
+
+        return $p;
+    }
+
+    /**
+     * Híbrido atende as DUAS preferências — é oferta ("atendo dos dois jeitos"),
+     * não um terceiro desejo. Quem só atende do outro jeito sai da lista.
+     */
+    public function test_filtro_de_modalidade_inclui_o_hibrido(): void
+    {
+        $this->personalVitrine('01', 'Presencial');
+        $this->personalVitrine('02', 'Online');
+        $this->personalVitrine('03', 'Híbrido');
+
+        $nomes = $this->nomesDaVitrine('&modalidade=Online');
+
+        $this->assertContains('Vitrine 02', $nomes);
+        $this->assertContains('Vitrine 03', $nomes, 'Híbrido atende quem quer Online');
+        $this->assertNotContains('Vitrine 01', $nomes);
+    }
+
+    /**
+     * Quem não declarou modalidade NÃO é descartado: a ausência do dado é
+     * omissão do profissional, não escolha do aluno (Cliente::atendidoPor).
+     */
+    public function test_filtro_de_modalidade_e_leniente_com_quem_nao_declarou(): void
+    {
+        $this->personalVitrine('04', null);
+
+        $this->assertContains('Vitrine 04', $this->nomesDaVitrine('&modalidade=Presencial'));
+    }
+
+    /** Sem preferência salva e sem parâmetro, ninguém é filtrado. */
+    public function test_vitrine_sem_filtro_mostra_todas_as_modalidades(): void
+    {
+        $this->personalVitrine('05', 'Presencial');
+        $this->personalVitrine('06', 'Online');
+
+        $nomes = $this->nomesDaVitrine();
+
+        $this->assertContains('Vitrine 05', $nomes);
+        $this->assertContains('Vitrine 06', $nomes);
+    }
+
+    /**
+     * A preferência do cadastro pré-aplica o filtro — é o que impede
+     * `modalidade_preferida` de virar campo coletado que ninguém lê.
+     */
+    public function test_preferencia_do_cadastro_pre_aplica_o_filtro(): void
+    {
+        $this->personalVitrine('07', 'Presencial');
+        $this->personalVitrine('08', 'Online');
+        $this->cliente->update(['modalidade_preferida' => 'Presencial']);
+
+        $nomes = $this->nomesDaVitrine();
+
+        $this->assertContains('Vitrine 07', $nomes);
+        $this->assertNotContains('Vitrine 08', $nomes);
+
+        // E o app sabe que o filtro veio da preferência (para explicar na tela).
+        $this->withHeaders($this->comToken())
+            ->getJson('/api/v1/explorar/personais?q=Vitrine')
+            ->assertJsonPath('modalidade_filtro', 'Presencial')
+            ->assertJsonPath('modalidade_da_preferencia', true);
+    }
+
+    /** O parâmetro vence a preferência salva, e `todas` é a fuga explícita. */
+    public function test_parametro_vence_a_preferencia_salva(): void
+    {
+        $this->personalVitrine('09', 'Presencial');
+        $this->personalVitrine('10', 'Online');
+        $this->cliente->update(['modalidade_preferida' => 'Presencial']);
+
+        $nomes = $this->nomesDaVitrine('&modalidade=Online');
+        $this->assertContains('Vitrine 10', $nomes);
+        $this->assertNotContains('Vitrine 09', $nomes);
+
+        $todas = $this->nomesDaVitrine('&modalidade=todas');
+        $this->assertContains('Vitrine 09', $todas);
+        $this->assertContains('Vitrine 10', $todas);
+
+        // Clique explícito não precisa do aviso "como você escolheu no cadastro".
+        $this->withHeaders($this->comToken())
+            ->getJson('/api/v1/explorar/personais?q=Vitrine&modalidade=Online')
+            ->assertJsonPath('modalidade_da_preferencia', false);
+    }
+
+    /** Valor desconhecido cai para "todas" em vez de devolver lista vazia. */
+    public function test_modalidade_invalida_nao_esvazia_a_vitrine(): void
+    {
+        $this->personalVitrine('11', 'Presencial');
+
+        $this->assertContains('Vitrine 11', $this->nomesDaVitrine('&modalidade=teletransporte'));
+    }
+
+    /**
+     * Especialidade é ESTRITA, ao contrário da modalidade: aqui o aluno pediu
+     * "Hipertrofia", e devolver quem nunca declarou faria a pílula mentir.
+     */
+    public function test_filtro_de_especialidade_e_estrito(): void
+    {
+        $this->personalVitrine('12', 'Presencial', ['Hipertrofia']);
+        $this->personalVitrine('13', 'Presencial', ['Emagrecimento']);
+        $this->personalVitrine('14', 'Presencial', []);
+
+        $nomes = $this->nomesDaVitrine('&especialidade=Hipertrofia');
+
+        $this->assertSame(['Vitrine 12'], $nomes);
+    }
+
+    /** Caixa diferente casa: o valor digitado é resolvido para o canônico. */
+    public function test_filtro_de_especialidade_ignora_a_caixa(): void
+    {
+        $this->personalVitrine('15', 'Presencial', ['Hipertrofia']);
+
+        $this->assertContains('Vitrine 15', $this->nomesDaVitrine('&especialidade=hipertrofia'));
+    }
+
+    /**
+     * O catálogo de pílulas é contado ANTES de aplicar a especialidade: se
+     * saísse da lista já filtrada, escolher uma pílula colapsaria o catálogo
+     * nela mesma e o aluno ficaria sem como trocar de filtro.
+     */
+    public function test_catalogo_de_especialidades_nao_colapsa_no_filtro_ativo(): void
+    {
+        $this->personalVitrine('16', 'Presencial', ['Hipertrofia']);
+        $this->personalVitrine('17', 'Presencial', ['Emagrecimento']);
+
+        $disponiveis = $this->withHeaders($this->comToken())
+            ->getJson('/api/v1/explorar/personais?q=Vitrine&especialidade=Hipertrofia')
+            ->assertOk()
+            ->assertJsonPath('especialidade_filtro', 'Hipertrofia')
+            ->json('especialidades_disponiveis');
+
+        $this->assertArrayHasKey('Hipertrofia', $disponiveis);
+        $this->assertArrayHasKey('Emagrecimento', $disponiveis, 'a outra pílula tem de continuar alcançável');
+    }
+
+    /** O catálogo conta quantos casam, e respeita a busca digitada. */
+    public function test_catalogo_de_especialidades_conta_e_respeita_a_busca(): void
+    {
+        $this->personalVitrine('18', 'Presencial', ['Hipertrofia']);
+        $this->personalVitrine('19', 'Presencial', ['Hipertrofia']);
+        $outro = $this->personal('Presencial', '7799');
+        $outro->update(['nome' => 'Fora da busca', 'especialidades' => ['Hipertrofia']]);
+
+        $disponiveis = $this->withHeaders($this->comToken())
+            ->getJson('/api/v1/explorar/personais?q=Vitrine')
+            ->assertOk()
+            ->json('especialidades_disponiveis');
+
+        $this->assertSame(2, $disponiveis['Hipertrofia'], 'quem está fora da busca não entra na contagem');
+    }
+
+    /**
+     * O filtro precisa agir antes do COUNT, senão a paginação mente: era o
+     * motivo de não filtrar no app.
+     */
+    public function test_total_reflete_o_filtro(): void
+    {
+        $this->personalVitrine('20', 'Presencial');
+        $this->personalVitrine('21', 'Online');
+        $this->personalVitrine('22', 'Online');
+
+        $this->withHeaders($this->comToken())
+            ->getJson('/api/v1/explorar/personais?q=Vitrine&modalidade=Online')
+            ->assertOk()
+            ->assertJsonPath('total', 2);
     }
 }

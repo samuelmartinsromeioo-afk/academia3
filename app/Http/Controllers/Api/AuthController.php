@@ -128,35 +128,85 @@ class AuthController extends Controller
         return response()->json(['error' => 'E-mail, CNPJ ou senha inválidos.'], 401);
     }
 
-    // POST /api/v1/register — cadastro de CLIENTE pelo app.
-    // (Personal/academia/studio/loja: ver Api\RegisterController.)
-    public function register(Request $request)
+    /**
+     * POST /api/v1/register — cadastro de CLIENTE pelo app.
+     * (Personal/academia/studio/loja: ver Api\RegisterController.)
+     *
+     * Espelha campo a campo o `Cadastro\ClienteController@store` do web. Até
+     * aqui o app só pedia nome/e-mail/senha/WhatsApp/modalidade e nascia uma
+     * conta sem nascimento, sexo, endereço nem perfil físico — dados que o
+     * resto do produto LÊ (idade na ficha, cidade na vitrine, altura/peso na
+     * avaliação). Não era um cadastro mais curto: era um aluno pela metade,
+     * que o personal recebia sem saber com quem estava lidando.
+     */
+    public function register(Request $request, \App\Services\CupomService $cupons)
     {
         $validated = $request->validate([
             'nome' => 'required|string|max:255',
             'email' => 'required|email|max:255|unique:clientes,email',
             'senha' => 'required|string|min:8|max:255',
             'whatsapp' => 'nullable|string|max:20',
+            'idade' => 'required|date',
+            'sexo' => 'required|' . \App\Support\CadastroHelper::regraSexo(),
+            'cep' => 'required|string|max:9',
+            'rua' => 'nullable|string|max:255',
+            'bairro' => 'nullable|string|max:255',
+            'cidade' => 'nullable|string|max:255',
+            'estado' => 'nullable|string|max:255',
+            'complemento' => 'nullable|string|max:255',
+            'altura' => 'nullable|numeric',
+            'peso' => 'nullable|numeric',
+            'resumo_objetivo' => 'nullable|string',
+            'frequencia_semanal' => 'nullable|integer|min:1',
+            'condicao_clinica' => 'nullable|string',
+            // Sem latitude/longitude de propósito: `clientes` não tem essas
+            // colunas (ver a migration de criação). O web as valida e o
+            // mass-assignment as descarta em silêncio — copiar isso para cá
+            // seria copiar um campo morto.
             // Preferência de atendimento do aluno. Allowlist (A04): "Híbrido" é
             // oferta do profissional, não desejo de quem procura, então não entra.
             'modalidade_preferida' => ['nullable', \Illuminate\Validation\Rule::in(config('textos.profissional.modalidades_aluno'))],
             'aceita_termos' => 'required|accepted',
+            // Cupom de indicação. A regra vem do serviço para um código errado
+            // BARRAR o envio com mensagem clara, em vez de ser engolido em
+            // silêncio — quem indicou perderia o crédito sem ninguém notar.
+            'cupom' => $cupons->regraValidacao(),
             'device_name' => 'nullable|string|max:100',
         ], [
             'email.unique' => 'Este e-mail já está cadastrado.',
             'aceita_termos.accepted' => 'Você precisa aceitar os termos de uso.',
+            'idade.required' => 'Informe sua data de nascimento.',
+            'sexo.in' => 'Selecione uma opção válida de sexo.',
         ]);
 
-        $cliente = Cliente::create([
-            'nome' => $validated['nome'],
-            'email' => $validated['email'],
-            'senha' => Hash::make($validated['senha']),
-            'whatsapp' => $validated['whatsapp'] ?? null,
-            'modalidade_preferida' => $validated['modalidade_preferida'] ?? null,
-            'aceita_termos' => true,
-            'data_aceitacao_termos' => now(),
-            'ip_aceitacao_termos' => $request->ip(),
+        /*
+         * `cupom`, `aceita_termos` e `device_name` não são colunas de clientes;
+         * saem antes do create. O resto vai como veio da validação, para um
+         * campo novo na regra acima não precisar de uma segunda edição aqui
+         * (foi a duplicação desta lista que deixou o cadastro do app atrás do
+         * web por tanto tempo).
+         */
+        $dados = \Illuminate\Support\Arr::except($validated, [
+            'cupom', 'aceita_termos', 'device_name',
         ]);
+
+        // Mesma normalização do web: a base guarda o sexo em minúsculas.
+        $dados['sexo'] = mb_strtolower($dados['sexo']);
+        $dados['senha'] = Hash::make($dados['senha']);
+        $dados['aceita_termos'] = true;
+        $dados['data_aceitacao_termos'] = now();
+        $dados['ip_aceitacao_termos'] = $request->ip();
+
+        $cliente = Cliente::create($dados);
+
+        /*
+         * Indicação registrada logo após o create, como nos cadastros do web.
+         * `registrarIndicacao` nunca lança: uma falha aqui não pode desfazer um
+         * cadastro já persistido. Para um Cliente o uso nasce `sem_bonus` —
+         * indicar aluno não gera bônus (aluno não tem alunos, e contas falsas
+         * seriam uma fazenda barata); fica só o histórico.
+         */
+        $cupons->registrarIndicacao($validated['cupom'] ?? null, $cliente, $request->ip());
 
         // Aceite versionado, além das colunas legadas acima: é o que permite
         // provar QUAL versão dos Termos foi aceita quando eles mudarem.
@@ -185,7 +235,29 @@ class AuthController extends Controller
         return response()->json([
             'user_type' => self::userType($user),
             'user' => self::resourceFor($user),
+            'termos' => self::blocoTermos($user),
         ]);
+    }
+
+    /**
+     * Estado do aceite dos Termos desta conta.
+     *
+     * Vai no login E no /me porque o app precisa do sinal nos dois momentos: ao
+     * entrar e ao restaurar a sessão de um token já salvo (quando a versão pode
+     * ter mudado desde o último acesso).
+     *
+     * Isto existe porque o middleware VerificaAceiteTermos NÃO alcança o app:
+     * ele só barra GET que aceitam HTML — e essa isenção de JSON é deliberada
+     * (um 302 no meio de um fetch quebraria o fluxo sem ganho). Logo, no app a
+     * trava tem de ser do cliente, a partir deste sinal.
+     */
+    public static function blocoTermos($user): array
+    {
+        return [
+            'versao_vigente' => (string) config('termos.versao'),
+            'versao_aceita' => $user->versaoTermosAceita(),
+            'precisa_aceitar' => $user->precisaAceitarTermos(),
+        ];
     }
 
     public static function userType($user): string
@@ -230,6 +302,7 @@ class AuthController extends Controller
             'token_type' => 'Bearer',
             'user_type' => $userType,
             'user' => self::resourceFor($user),
+            'termos' => self::blocoTermos($user),
         ], $extra), $status);
     }
 }

@@ -81,11 +81,28 @@ class Cliente extends Authenticatable
          */
         public function modalidadesCompativeis(): array
         {
-            if (blank($this->modalidade_preferida)) {
+            return self::compativeisCom($this->modalidade_preferida);
+        }
+
+        /**
+         * A mesma regra, para uma preferência que NÃO está neste modelo.
+         *
+         * Existe porque a vitrine do app filtra no SQL a partir do
+         * `?modalidade=` recebido, que tem precedência sobre a preferência
+         * salva (igual ao web) e portanto não sai de um Cliente. Sem este
+         * ponto de entrada estático a alternativa seria repetir
+         * `[$pref, 'Híbrido']` na query — uma terceira cópia da regra, que é
+         * exatamente o que o comentário do método acima pede para não fazer.
+         *
+         * @return array<int, string>
+         */
+        public static function compativeisCom(?string $preferida): array
+        {
+            if (blank($preferida)) {
                 return [];
             }
 
-            return [$this->modalidade_preferida, 'Híbrido'];
+            return [$preferida, 'Híbrido'];
         }
 
         /** Este profissional atende do jeito que o aluno quer? */

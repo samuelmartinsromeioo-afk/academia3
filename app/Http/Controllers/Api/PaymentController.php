@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\Concerns\ResolvesApiUser;
 use App\Http\Controllers\Controller;
 use App\Http\Controllers\PaymentController as WebPaymentController;
 use App\Http\Resources\PaymentResource;
+use App\Models\Agenda;
 use App\Models\Cadastro\Academia;
 use App\Models\Cadastro\Cliente;
 use App\Models\Cadastro\Loja;
@@ -14,6 +15,7 @@ use App\Models\Cadastro\Produto;
 use App\Models\Payment;
 use App\Services\AsaasService;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 /**
  * Pagamentos (Asaas) na API mobile. Usa o MESMO AsaasService do fluxo web:
@@ -111,6 +113,9 @@ class PaymentController extends Controller
             'hora_fim' => 'nullable|string|max:10',
             'academia_nome' => 'nullable|string|max:255',
             'data' => 'nullable|date',
+            // Como ESTA aula acontece (3º nível da modalidade). Allowlist, igual
+            // ao web: o cliente nunca escreve direto na coluna.
+            'modalidade' => ['nullable', Rule::in(Agenda::MODALIDADES)],
             // campos ficha
             'objetivos' => 'nullable|string',
             'condicoes_clinicas' => 'nullable|string',
@@ -137,6 +142,22 @@ class PaymentController extends Controller
             'hora_fim' => $validated['hora_fim'] ?? null,
             'academia_nome' => $validated['academia_nome'] ?? null,
             'data' => $validated['data'] ?? null,
+            /*
+             * A escolha tem de sobreviver ao PAGAMENTO inteiro: as aulas só são
+             * criadas depois da confirmação, por agendarAulasInterno (pacote) e
+             * agendarAulaAvulsaInterno (avulsa), e as duas leem
+             * `booking_data['modalidade']`. Sem esta linha a aula nasce sem
+             * modalidade e o personal recebe a reserva sem saber se vai dirigir
+             * até a academia ou abrir uma chamada de vídeo — era o estado do
+             * app até aqui, apesar de /agendar e /pacotes/contratar já aceitarem
+             * o campo (o app paga por /payments, não por eles).
+             *
+             * Não revalido contra a oferta do personal aqui de propósito: quem
+             * faz isso são os dois métodos internos, no momento de criar a aula,
+             * porque o profissional pode mudar de modalidade entre o pagamento e
+             * a confirmação.
+             */
+            'modalidade' => $validated['modalidade'] ?? null,
             'objetivos' => $validated['objetivos'] ?? null,
             'condicoes_clinicas' => $validated['condicoes_clinicas'] ?? null,
             'nivel_experiencia' => $validated['nivel_experiencia'] ?? null,
@@ -153,7 +174,10 @@ class PaymentController extends Controller
                 'tipo' => 'pacote',
                 'trainer_id' => $personal->id,
                 'membership_id' => $validated['pacote_id'] ?? null,
-            ], $bookingData, 0.10, $billingType);
+            // null = taxa padrão da plataforma, derivada de SPLIT_RATE. Não
+            // cravar o número aqui: `company_fee` é a base do bônus de
+            // indicação, e uma cópia velha o faria pagar sobre a taxa errada.
+            ], $bookingData, null, $billingType);
 
             return response()->json($result, 201);
         }
@@ -181,8 +205,8 @@ class PaymentController extends Controller
 
     /**
      * Contexto ACADEMIA — mesmo padrão do web (criarPagamentoAcademia):
-     * assinatura mensal recorrente com split 90/10 (companyFeeRate 0.10 —
-     * 90% para a academia, 10% de comissão da plataforma).
+     * assinatura mensal recorrente com o split padrão do marketplace (90% para
+     * a academia, 10% de comissão), derivado de AsaasService::SPLIT_RATE.
      */
     private function criarPagamentoAcademia(Request $request, Cliente $cliente, string $billingType = 'PIX')
     {
@@ -208,7 +232,7 @@ class PaymentController extends Controller
             'academia_id' => $validated['academia_id'],
             'plano_id' => $planoId,
             'cliente_id' => $cliente->id,
-        ], 0.10, $billingType); // academia entra no split 90/10 do marketplace
+        ], null, $billingType); // academia entra no split 90/10 (taxa padrão, de SPLIT_RATE)
 
         return response()->json($result, 201);
     }
@@ -242,7 +266,7 @@ class PaymentController extends Controller
             'studio_id' => $studio->id,
             'studio_plano_id' => $plano->id,
             'cliente_id' => $cliente->id,
-        ], 0.10, $billingType);
+        ], null, $billingType); // studio entra no split 90/10 (taxa padrão, de SPLIT_RATE)
 
         return response()->json($result, 201);
     }

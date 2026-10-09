@@ -13,6 +13,21 @@ use Illuminate\Support\Facades\Log;
  */
 class CadastroHelper
 {
+    /**
+     * Regra de validação do `sexo` do aluno, a partir de config('textos').
+     *
+     * Aceita maiúscula e minúscula porque o cadastro grava `strtolower` e a
+     * base já tem as duas formas; o que não pode é a LISTA ser uma segunda
+     * cópia — foi assim que o <select> do web passou a mandar um valor que a
+     * regra recusava.
+     */
+    public static function regraSexo(): string
+    {
+        $sexos = (array) config('textos.profissional.sexos', []);
+
+        return 'in:' . implode(',', array_merge($sexos, array_map('mb_strtolower', $sexos)));
+    }
+
     public static function validarCPF(string $cpf): bool
     {
         $cpf = preg_replace('/\D/', '', $cpf);

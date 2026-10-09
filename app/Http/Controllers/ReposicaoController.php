@@ -29,7 +29,7 @@ class ReposicaoController extends Controller
      * Aula antiga pode estar sem hora de fim; nesse caso vale 60min, que é o
      * passo da grade — melhor que gerar slot de duração zero.
      */
-    private function duracaoEmMinutos(Agenda $aula): int
+    public function duracaoEmMinutos(Agenda $aula): int
     {
         if (! $aula->hora_inicio || ! $aula->hora_fim) {
             return 60;
@@ -134,8 +134,37 @@ class ReposicaoController extends Controller
             'resposta' => 'nullable|string|max:500',
         ]);
 
+        $r = $this->aceitarInterno($pedido, $dados, $agendas);
+
+        if (! $r['ok']) {
+            return redirect()->back()->with('error', $r['erro']);
+        }
+
+        return redirect()->back()->with('success', $r['mensagem']);
+    }
+
+    /**
+     * O aceite em si — PORTA COMUM do web e do app.
+     *
+     * Separada porque as duas superfícies só diferem na resposta; a criação da
+     * aula reposta, a checagem de conflito e o aviso ao aluno têm de ser os
+     * mesmos. Mesmo padrão de `AulaAlunoController::cancelarInterno`.
+     *
+     * Quem chama já garantiu que o pedido é deste personal e está pendente.
+     *
+     * @param  array{data: string, hora_inicio: string, hora_fim: string, resposta?: ?string}  $dados
+     * @return array{ok: bool, erro: ?string, mensagem: ?string, agenda_id: ?int}
+     */
+    public function aceitarInterno(AulaReposicao $pedido, array $dados, AgendaService $agendas): array
+    {
+        $personalId = $pedido->personal_id;
+
+        if (! $pedido->estaPendente()) {
+            return ['ok' => false, 'erro' => 'Esse pedido já foi respondido.', 'mensagem' => null, 'agenda_id' => null];
+        }
+
         if ($motivo = $agendas->motivoParaNaoMarcar($personalId, $dados['data'], $dados['hora_inicio'], $dados['hora_fim'])) {
-            return redirect()->back()->with('error', $motivo);
+            return ['ok' => false, 'erro' => $motivo, 'mensagem' => null, 'agenda_id' => null];
         }
 
         $original = $pedido->agenda;
@@ -172,7 +201,12 @@ class ReposicaoController extends Controller
                 . ($dados['resposta'] ?? null ? ' ' . $dados['resposta'] : '')
         );
 
-        return redirect()->back()->with('success', 'Reposição confirmada e lançada na sua agenda.');
+        return [
+            'ok' => true,
+            'erro' => null,
+            'mensagem' => 'Reposição confirmada e lançada na sua agenda.',
+            'agenda_id' => $pedido->fresh()->agenda_reposta_id,
+        ];
     }
 
     /**
@@ -196,14 +230,6 @@ class ReposicaoController extends Controller
             ->where('cancelado', true)
             ->firstOrFail();
 
-        if ($original->tipo_aula === 'pacote') {
-            return redirect()->back()->with('error', 'Aula de pacote se remarca pelo pedido de reposição.');
-        }
-
-        if (AulaReposicao::where('agenda_id', $original->id)->exists()) {
-            return redirect()->back()->with('error', 'Essa aula já foi remarcada.');
-        }
-
         $dados = $request->validate([
             'data' => 'required|date|after_or_equal:today',
             'hora_inicio' => 'required|date_format:H:i',
@@ -211,8 +237,41 @@ class ReposicaoController extends Controller
             'resposta' => 'nullable|string|max:500',
         ]);
 
+        $r = $this->remarcarAvulsaInterno($original, $dados, $agendas);
+
+        if (! $r['ok']) {
+            return redirect()->back()->with('error', $r['erro']);
+        }
+
+        return redirect()->back()->with('success', $r['mensagem']);
+    }
+
+    /**
+     * A remarcação da avulsa em si — PORTA COMUM do web e do app.
+     *
+     * Aqui existe DINHEIRO no meio, e é o que diferencia do pacote: o
+     * cancelamento abriu um pedido de devolução, e remarcar o encerra como
+     * `remarcado` — o aluno recebe a aula em vez do valor, nunca as duas
+     * coisas. Se o admin já devolveu, a aula sai de graça e a mensagem avisa.
+     *
+     * @param  array{data: string, hora_inicio: string, hora_fim: string, resposta?: ?string}  $dados
+     * @return array{ok: bool, erro: ?string, mensagem: ?string, ja_devolvido: bool}
+     */
+    public function remarcarAvulsaInterno(Agenda $original, array $dados, AgendaService $agendas): array
+    {
+        $personalId = $original->personal_id;
+        $falha = fn (string $erro) => ['ok' => false, 'erro' => $erro, 'mensagem' => null, 'ja_devolvido' => false];
+
+        if ($original->tipo_aula === 'pacote') {
+            return $falha('Aula de pacote se remarca pelo pedido de reposição.');
+        }
+
+        if (AulaReposicao::where('agenda_id', $original->id)->exists()) {
+            return $falha('Essa aula já foi remarcada.');
+        }
+
         if ($motivo = $agendas->motivoParaNaoMarcar($personalId, $dados['data'], $dados['hora_inicio'], $dados['hora_fim'])) {
-            return redirect()->back()->with('error', $motivo);
+            return $falha($motivo);
         }
 
         $estorno = \App\Models\Estorno::where('agenda_id', $original->id)->first();
@@ -267,9 +326,14 @@ class ReposicaoController extends Controller
                 . ($dados['resposta'] ?? null ? ' ' . $dados['resposta'] : '')
         );
 
-        return redirect()->back()->with('success', $jaDevolvido
-            ? 'Aula remarcada. Atenção: o valor já havia sido devolvido ao aluno, então essa aula não será paga.'
-            : 'Aula remarcada e devolução cancelada — o aluno recebe a aula no lugar do valor.');
+        return [
+            'ok' => true,
+            'erro' => null,
+            'mensagem' => $jaDevolvido
+                ? 'Aula remarcada. Atenção: o valor já havia sido devolvido ao aluno, então essa aula não será paga.'
+                : 'Aula remarcada e devolução cancelada — o aluno recebe a aula no lugar do valor.',
+            'ja_devolvido' => (bool) $jaDevolvido,
+        ];
     }
 
     /** Recusa — normalmente com uma contraproposta de horário no texto. */
@@ -282,23 +346,43 @@ class ReposicaoController extends Controller
 
         $pedido = AulaReposicao::where('id', $id)->where('personal_id', $personalId)->firstOrFail();
 
-        if (! $pedido->estaPendente()) {
-            return redirect()->back()->with('error', 'Esse pedido já foi respondido.');
-        }
-
         $dados = $request->validate([
             'resposta' => 'required|string|min:5|max:500',
         ]);
 
+        $r = $this->recusarInterno($pedido, $dados['resposta']);
+
+        if (! $r['ok']) {
+            return redirect()->back()->with('error', $r['erro']);
+        }
+
+        return redirect()->back()->with('success', $r['mensagem']);
+    }
+
+    /**
+     * A recusa em si — PORTA COMUM do web e do app.
+     *
+     * A resposta é obrigatória (e com tamanho mínimo) de propósito: recusar sem
+     * dizer nada deixa o aluno sem saber o que fazer, e na prática a recusa é
+     * uma contraproposta de horário.
+     *
+     * @return array{ok: bool, erro: ?string, mensagem: ?string}
+     */
+    public function recusarInterno(AulaReposicao $pedido, string $resposta): array
+    {
+        if (! $pedido->estaPendente()) {
+            return ['ok' => false, 'erro' => 'Esse pedido já foi respondido.', 'mensagem' => null];
+        }
+
         $pedido->update([
             'status' => AulaReposicao::STATUS_RECUSADA,
-            'resposta' => $dados['resposta'],
+            'resposta' => $resposta,
             'respondido_em' => now(),
         ]);
 
-        $this->avisarAluno($pedido, 'Sobre sua reposição', $dados['resposta']);
+        $this->avisarAluno($pedido, 'Sobre sua reposição', $resposta);
 
-        return redirect()->back()->with('success', 'Resposta enviada ao aluno.');
+        return ['ok' => true, 'erro' => null, 'mensagem' => 'Resposta enviada ao aluno.'];
     }
 
     private function avisarAluno(AulaReposicao $pedido, string $assunto, string $texto): void

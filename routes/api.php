@@ -30,8 +30,25 @@ Route::prefix('v1')->group(function () {
         Route::post('/loja', [\App\Http\Controllers\Api\RegisterController::class, 'loja']);
     });
 
+    /*
+     * Listas fechadas dos formulários de cadastro (modalidades, especialidades,
+     * sexo). O app lê daqui em vez de embutir uma cópia que envelhece: as
+     * regras validam com Rule::in(config(...)) e uma lista velha no binário da
+     * loja viraria 422 em cima do usuário.
+     */
+    Route::get('/cadastro/opcoes', [\App\Http\Controllers\Api\RegisterController::class, 'opcoes'])
+        ->middleware('throttle:30,1');
+
     // Streaming de vídeo dos exercícios com suporte a Range (206) — pública
     // porque o player (AVPlayer/ExoPlayer) não envia o token Bearer.
+    /*
+     * Validação ao vivo do cupom de indicação no cadastro. Pública porque quem
+     * está se cadastrando ainda não tem token — e por isso com throttle, igual
+     * ao web: sem ele a rota vira um oráculo para enumerar códigos de terceiros.
+     */
+    Route::get('/cupom/validar', [\App\Http\Controllers\Api\IndicacaoController::class, 'validar'])
+        ->middleware('throttle:20,1');
+
     Route::get('/media/exercicio-video/{path}', [\App\Http\Controllers\Api\MediaController::class, 'exercicioVideo'])
         ->where('path', '.*');
 
@@ -48,6 +65,24 @@ Route::prefix('v1')->group(function () {
 
         // Exclusão da própria conta (requisito da App Store — qualquer papel).
         Route::delete('/conta', [\App\Http\Controllers\Api\ContaController::class, 'destroy']);
+
+        /*
+         * Reaceite dos Termos de Uso (qualquer papel). Necessário porque
+         * VerificaAceiteTermos só barra GET que aceitam HTML, e o app nunca faz
+         * um: sem isto, subir termos.versao parava o site e o app passava reto.
+         * O sinal `precisa_aceitar` também vem no login e no /me.
+         */
+        Route::get('/termos', [\App\Http\Controllers\Api\TermosController::class, 'show']);
+        Route::post('/termos/aceitar', [\App\Http\Controllers\Api\TermosController::class, 'aceitar']);
+
+        /*
+         * Painel "Indique e ganhe" (qualquer papel). Só LEITURA: o pedido de
+         * saque NÃO existe na API de propósito — é transferência Pix saindo do
+         * saldo da plataforma, protegida por sete camadas e por um webhook
+         * fail-closed no web, e abrir uma segunda superfície exige replicar
+         * todas elas. Ver o cabeçalho de Api\IndicacaoController.
+         */
+        Route::get('/indicacoes', [\App\Http\Controllers\Api\IndicacaoController::class, 'painel']);
 
         // Push notifications (Expo): o app registra o token do aparelho ao logar
         // e remove ao sair. Qualquer papel — detecta pelo token Sanctum.
@@ -112,6 +147,17 @@ Route::prefix('v1')->group(function () {
             Route::delete('/academias/{academia}/cancelar', [\App\Http\Controllers\Api\PersonalExtrasController::class, 'cancelarVinculo'])->whereNumber('academia');
 
             // Solicitações de ficha
+            /*
+             * Faltas e reposições — o lado do PERSONAL. Sem isto o app tinha
+             * meia funcionalidade: o aluno pedia reposição pelo celular e o
+             * personal só conseguia responder abrindo o site, deixando o aluno
+             * esperando uma resposta que não tinha como vir.
+             */
+            Route::get('/reposicoes', [\App\Http\Controllers\Api\ReposicaoController::class, 'index']);
+            Route::post('/reposicoes/{id}/aceitar', [\App\Http\Controllers\Api\ReposicaoController::class, 'aceitar'])->whereNumber('id');
+            Route::post('/reposicoes/{id}/recusar', [\App\Http\Controllers\Api\ReposicaoController::class, 'recusar'])->whereNumber('id');
+            Route::post('/faltas/{agendaId}/remarcar', [\App\Http\Controllers\Api\ReposicaoController::class, 'remarcar'])->whereNumber('agendaId');
+
             Route::get('/solicitacoes-ficha', [\App\Http\Controllers\Api\PersonalExtrasController::class, 'solicitacoesFicha']);
             Route::post('/solicitacoes-ficha/{id}/concluir', [\App\Http\Controllers\Api\PersonalExtrasController::class, 'concluirSolicitacaoFicha'])->whereNumber('id');
             Route::post('/valor-ficha', [\App\Http\Controllers\Api\PersonalExtrasController::class, 'atualizarValorFicha']);
@@ -263,6 +309,17 @@ Route::prefix('v1')->group(function () {
 
         // Minha academia (aluno contratado) e avaliação de serviços
         Route::get('/minha-academia', [\App\Http\Controllers\Api\ExplorarController::class, 'minhaAcademia']);
+
+        /*
+         * As aulas do ALUNO. Faltava por completo: ele agendava pelo app e
+         * nunca mais via a aula, então também não tinha como desmarcar — quem
+         * faltava só não aparecia, e o personal ficava com o horário bloqueado
+         * sem aviso. A regra de 24h e o estorno vêm do controller web, pelas
+         * portas `cancelarInterno`/`pedirReposicaoInterno`.
+         */
+        Route::get('/minhas-aulas', [\App\Http\Controllers\Api\AulaAlunoController::class, 'index']);
+        Route::post('/aulas/{id}/cancelar', [\App\Http\Controllers\Api\AulaAlunoController::class, 'cancelar'])->whereNumber('id');
+        Route::post('/aulas/{id}/reposicao', [\App\Http\Controllers\Api\AulaAlunoController::class, 'reposicao'])->whereNumber('id');
         // Rate limit extra (A04/A07): evita spam de avaliações além do limite global.
         Route::post('/avaliar', [\App\Http\Controllers\Api\AvaliacaoServicoController::class, 'store'])->middleware('throttle:20,1');
 

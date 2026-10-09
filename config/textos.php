@@ -76,6 +76,20 @@ return [
          */
         'modalidades_aluno' => ['Presencial', 'Online'],
 
+        /*
+         * Sexo do aluno — fonte única da lista, lida pela regra de validação
+         * (CadastroHelper::regraSexo), pelo <select> do cadastro web, pelo
+         * cadastro do app e pelo catálogo de opções da API.
+         *
+         * Existia como três cópias (regra do controller, options do blade e
+         * nada no app) e elas DIVERGIRAM: o blade mandava
+         * `value="Prefiro não informar"` enquanto a regra só aceitava
+         * "Masculino|Feminino|Outro", então escolher a terceira opção derrubava
+         * o cadastro inteiro com "sexo é inválido". O rótulo pode ser o que a
+         * gente quiser; o VALOR tem de sair daqui.
+         */
+        'sexos' => ['Masculino', 'Feminino', 'Outro'],
+
         // Mensagem de erro do CRN (formato + região 1–11).
         'crn_erro' => 'Informe um CRN válido, incluindo a região — ex.: 12345/3',
 

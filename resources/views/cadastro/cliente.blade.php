@@ -234,7 +234,20 @@
                     <input type="password" name="senha" required placeholder="••••••••">
                 </div>
             </div>
-            
+
+            {{-- WhatsApp: a coluna existe e o cadastro pelo app já o pedia;
+                 aqui o campo faltava, então a mesma conta nascia sem contato
+                 dependendo de por onde o aluno entrou. --}}
+            <div class="form-group">
+                <label>WhatsApp (opcional)</label>
+                <div class="input-wrapper">
+                    <i class="ph ph-whatsapp-logo"></i>
+                    <input type="text" name="whatsapp" value="{{ old('whatsapp') }}"
+                        placeholder="(11) 99999-9999" maxlength="15"
+                        oninput="this.value = mascaras.telefone(this.value)">
+                </div>
+            </div>
+
             <div class="form-group">
                 <label>Data de Nascimento</label>
                 <div class="input-wrapper">
@@ -247,11 +260,15 @@
                 <label>Sexo</label>
                 <div class="input-wrapper">
                     <i class="ph ph-gender-intersex"></i>
+                    {{-- Valores vindos de config('textos.profissional.sexos'):
+                         o "Prefiro não informar" que estava aqui não existia na
+                         regra de validação nem no enum da coluna, e derrubava o
+                         cadastro de quem escolhia a terceira opção. --}}
                     <select name="sexo" required>
                         <option value="">Selecione</option>
-                        <option value="Masculino">Masculino</option>
-                        <option value="Feminino">Feminino</option>
-                        <option value="Prefiro não informar">Outro</option>
+                        @foreach (config('textos.profissional.sexos') as $sexo)
+                            <option value="{{ $sexo }}" @selected(old('sexo') === $sexo)>{{ $sexo }}</option>
+                        @endforeach
                     </select>
                 </div>
             </div>

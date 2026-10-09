@@ -8,6 +8,7 @@ use App\Http\Controllers\Cadastro\ClienteController as WebClienteController;
 use App\Http\Controllers\Controller;
 use App\Models\Agenda;
 use App\Models\Cadastro\Academia;
+use App\Models\Cadastro\Cliente;
 use App\Models\Cadastro\FichaTreino;
 use App\Models\Cadastro\Loja;
 use App\Models\Cadastro\Pacote;
@@ -39,6 +40,22 @@ class ExplorarController extends Controller
      */
     private function aplicarBuscaPaginacao($query, Request $request): array
     {
+        $this->aplicarFiltrosBusca($query, $request);
+
+        return $this->aplicarPaginacao($query, $request);
+    }
+
+    /**
+     * Só os filtros de busca, sem paginar.
+     *
+     * Separado de `aplicarBuscaPaginacao` porque a vitrine de personais precisa
+     * encaixar os filtros dela (modalidade/especialidade) e contar o catálogo de
+     * pílulas ENTRE as duas etapas: depois dos filtros de busca, para as
+     * contagens respeitarem o que o aluno digitou, e antes do offset/limit, para
+     * não contar apenas a página visível.
+     */
+    private function aplicarFiltrosBusca($query, Request $request): void
+    {
         $q = trim((string) $request->query('q', ''));
         $cidade = trim((string) $request->query('cidade', ''));
         $uf = trim((string) $request->query('uf', ''));
@@ -59,7 +76,11 @@ class ExplorarController extends Controller
 
         // Ordena por proximidade quando o app envia a posição do usuário (lat/lng).
         $this->aplicarProximidade($query, $request);
+    }
 
+    /** Conta o total e aplica offset/limit. Deve ser a ÚLTIMA etapa da query. */
+    private function aplicarPaginacao($query, Request $request): array
+    {
         $total = (clone $query)->count();
         $limit = min(50, max(1, (int) $request->query('limit', 20)));
         $offset = max(0, (int) $request->query('offset', 0));
@@ -114,12 +135,17 @@ class ExplorarController extends Controller
             ->distinct()->orderBy('cidade')->pluck('cidade');
     }
 
-    /** Monta a resposta paginada; inclui as cidades só na 1ª página (offset 0). */
-    private function respostaLista(Request $request, string $chave, $items, array $meta, string $modelClass)
+    /**
+     * Monta a resposta paginada; inclui as cidades (e o `$extra` de filtros
+     * resolvidos de quem tiver) só na 1ª página (offset 0) — nas páginas
+     * seguintes seria peso repetido, e o app já guardou da primeira.
+     */
+    private function respostaLista(Request $request, string $chave, $items, array $meta, string $modelClass, array $extra = [])
     {
         $payload = [$chave => $items, 'total' => $meta['total'], 'has_more' => $meta['has_more']];
         if ($meta['offset'] === 0) {
             $payload['cidades'] = $this->cidadesDe($modelClass);
+            $payload += $extra;
         }
         return response()->json($payload);
     }
@@ -127,7 +153,7 @@ class ExplorarController extends Controller
     // GET /api/v1/explorar/personais
     public function personais(Request $request)
     {
-        $this->clienteAutenticado($request);
+        $cliente = $this->clienteAutenticado($request);
 
         $query = Personal::where('status', 'aprovado')
             ->with('avaliacoes')
@@ -135,7 +161,34 @@ class ExplorarController extends Controller
             ->orderBy('pioneiro_posicao')
             ->orderBy('nome');
 
-        $meta = $this->aplicarBuscaPaginacao($query, $request);
+        /*
+         * Modalidade e especialidade filtram no SERVIDOR, não no app.
+         *
+         * A vitrine web carrega todos os personais e filtra no JS; aqui a lista
+         * é paginada (limit/offset), então filtrar no cliente devolveria "20
+         * resultados" e mostraria 3, e o "carregar mais" traria páginas já
+         * furadas. O filtro tem de estar antes do COUNT.
+         */
+        $this->aplicarFiltrosBusca($query, $request);
+
+        $modalidadeFiltro = $this->resolverFiltroModalidade($request, $cliente);
+        $especialidadeFiltro = trim((string) $request->query('especialidade', ''));
+
+        $this->filtrarPorModalidade($query, $modalidadeFiltro);
+
+        // O catálogo de pílulas é contado ANTES de aplicar a especialidade: se
+        // ele saísse da lista já filtrada, escolher "Hipertrofia" colapsaria o
+        // catálogo nessa única pílula e o aluno não teria como trocar de filtro.
+        [$especialidadesDisponiveis, $especialidadeFiltro] = $this->catalogoEspecialidades($query, $especialidadeFiltro);
+
+        if ($especialidadeFiltro !== '') {
+            // Estrito, ao contrário da modalidade: aqui o aluno PEDIU uma
+            // especialidade, e devolver quem nunca a declarou faria a pílula
+            // mentir (mesma assimetria de Cadastro\ClienteController).
+            $query->whereJsonContains('especialidades', $especialidadeFiltro);
+        }
+
+        $meta = $this->aplicarPaginacao($query, $request);
 
         $personais = $query->get()->map(fn ($p) => [
             'id' => $p->id,
@@ -158,7 +211,130 @@ class ExplorarController extends Controller
             'distancia_km' => $p->distancia_km !== null ? round((float) $p->distancia_km, 1) : null,
         ]);
 
-        return $this->respostaLista($request, 'personais', $personais, $meta, Personal::class);
+        /*
+         * O app recebe o filtro JÁ RESOLVIDO em vez de reinterpretar a regra.
+         * É o equivalente do `data-inicial` que a vitrine web entrega no
+         * #filtrosModalidade: quem decide se o filtro veio da URL, da
+         * preferência do cadastro ou de nada é o servidor, um lugar só.
+         */
+        return $this->respostaLista($request, 'personais', $personais, $meta, Personal::class, [
+            'modalidade_filtro' => $modalidadeFiltro,
+            // Só true quando o filtro NÃO foi pedido explicitamente: é o que
+            // permite ao app mostrar o aviso "como você escolheu no cadastro"
+            // apenas nesse caso (um clique do aluno não precisa de explicação).
+            'modalidade_da_preferencia' => $modalidadeFiltro !== '' && $request->query('modalidade') === null,
+            'modalidades_aluno' => config('textos.profissional.modalidades_aluno'),
+            'especialidade_filtro' => $especialidadeFiltro,
+            'especialidades_disponiveis' => $especialidadesDisponiveis,
+        ]);
+    }
+
+    /**
+     * Resolve o `?modalidade=` com a MESMA precedência do web
+     * (Cadastro\ClienteController@listarPersonais): o parâmetro vence a
+     * preferência salva, `todas` é a fuga explícita e um valor desconhecido cai
+     * para "todas" em vez de dar erro ou devolver lista vazia.
+     *
+     * Devolve '' para "não filtra".
+     */
+    private function resolverFiltroModalidade(Request $request, Cliente $cliente): string
+    {
+        $pedido = $request->query('modalidade');
+
+        // Parâmetro ausente (≠ vazio) = o aluno não opinou nesta tela, então
+        // vale o que ele declarou no cadastro.
+        $filtro = $pedido === null ? $cliente->modalidade_preferida : $pedido;
+
+        if (! in_array($filtro, config('textos.profissional.modalidades_aluno'), true)) {
+            return '';
+        }
+
+        return (string) $filtro;
+    }
+
+    /**
+     * Aplica o filtro de modalidade com a leniência da regra do web: profissional
+     * que não declarou modalidade NÃO é descartado — a ausência do dado é
+     * omissão dele, não escolha do aluno (ver Cliente::atendidoPor).
+     *
+     * As modalidades compatíveis saem de Cliente::compativeisCom(), para o
+     * "Híbrido atende as duas preferências" continuar existindo num só lugar.
+     */
+    private function filtrarPorModalidade($query, string $filtro): void
+    {
+        $compativeis = Cliente::compativeisCom($filtro !== '' ? $filtro : null);
+
+        if ($compativeis === []) {
+            return;
+        }
+
+        $query->where(function ($sub) use ($compativeis) {
+            $sub->whereIn('modalidade', $compativeis)
+                ->orWhereNull('modalidade')
+                ->orWhere('modalidade', '');
+        });
+    }
+
+    /**
+     * Catálogo de especialidades (especialidade => quantos) dos personais que a
+     * query já alcança, mais o filtro pedido resolvido para o valor canônico.
+     *
+     * Derivado de quem está REALMENTE listado, não do config: uma pílula que não
+     * casa com ninguém é um beco sem saída, e hoje a maioria dos personais ainda
+     * não declarou especialidade. A ordem vem do config para o vocabulário ficar
+     * estável; valores fora dele (a validação os permite) vão para o fim em
+     * ordem alfabética em vez de desaparecerem. Espelha
+     * Cadastro\ClienteController::filtroEspecialidades.
+     *
+     * @return array{0: array<string,int>, 1: string}
+     */
+    private function catalogoEspecialidades($query, string $pedido): array
+    {
+        $contagem = [];
+
+        // `clone` para não consumir a query que ainda vai receber paginação.
+        // `setEagerLoads([])` + `reorder()` porque aqui só interessa a coluna:
+        // sem isso o eager-load de avaliacoes tentaria casar pela chave local,
+        // que este SELECT de uma coluna não traz.
+        $varredura = (clone $query)->setEagerLoads([])->reorder();
+
+        foreach ($varredura->get(['especialidades']) as $personal) {
+            foreach ((array) $personal->especialidades as $esp) {
+                $esp = trim((string) $esp);
+
+                if ($esp !== '') {
+                    $contagem[$esp] = ($contagem[$esp] ?? 0) + 1;
+                }
+            }
+        }
+
+        $disponiveis = [];
+
+        foreach ((array) config('textos.profissional.especialidades.PERSONAL_TRAINER', []) as $esp) {
+            if (isset($contagem[$esp])) {
+                $disponiveis[$esp] = $contagem[$esp];
+            }
+        }
+
+        $extras = array_diff_key($contagem, $disponiveis);
+        ksort($extras);
+        $disponiveis += $extras;
+
+        // Resolve sem diferenciar caixa e devolve o valor canônico — o
+        // whereJsonContains compara string exata, então um "hipertrofia"
+        // digitado em minúscula não casaria com "Hipertrofia" no banco.
+        $filtro = '';
+
+        if ($pedido !== '') {
+            foreach (array_keys($disponiveis) as $esp) {
+                if (mb_strtolower($esp) === mb_strtolower($pedido)) {
+                    $filtro = $esp;
+                    break;
+                }
+            }
+        }
+
+        return [$disponiveis, $filtro];
     }
 
     // GET /api/v1/explorar/academias
@@ -452,6 +628,10 @@ class ExplorarController extends Controller
                 // o profissional atende de um jeito (não pergunte), duas quando é
                 // Híbrido. Mesma regra do servidor, para o app não reimplementar.
                 'modalidades_disponiveis' => Agenda::modalidadesDisponiveis($personal->modalidade),
+                // A vitrine já mostra as especialidades; o detalhe também
+                // precisa, senão o aluno perde a informação justamente na tela
+                // em que decide contratar.
+                'especialidades' => array_values(array_filter(array_map('trim', (array) $personal->especialidades))),
                 'valor_secao' => $personal->valor_secao !== null ? (float) $personal->valor_secao : null,
             ], $this->blocoAvaliacoes('personal', $personal, $cliente)),
             'pacotes' => $pacotes->map(fn ($p) => [
