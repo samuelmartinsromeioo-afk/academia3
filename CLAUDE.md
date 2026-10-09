@@ -165,6 +165,16 @@ As portas são: `Cadastro\{Cliente,Personal,Academia,Studio,Loja}Controller@stor
 
 **Nenhum cadastro do app dispara `CompleteRegistration` no Meta** (o web dispara nos cinco). Isso é uma lacuna conhecida, não um esquecimento: `MetaConversionsService::trackServer()` existe e funcionaria, mas o app não tem o banner de consentimento que o web tem, e `META_REQUIRE_CONSENT=true` é o padrão — disparar dali seria furar o gate de LGPD que o projeto construiu de propósito. Se for para fechar essa lacuna, o caminho é consentimento no app primeiro.
 
+### Notificações in-app — `notificacoes.mensagem`, não `texto`
+
+A coluna do corpo do aviso é **`mensagem`** (`notificacoes`: `destinatario_tipo`, `destinatario_id`, `titulo`, **`mensagem`**, `url`, `icone`, `lida`). A tabela do chat é outra: `mensagens.texto`. As duas convivem, e confundi-las já custou um bug em produção.
+
+`Api\ChatController@notificacoes` lia `$n->texto`. **Eloquent devolve `null` para atributo inexistente, sem erro nenhum** — então a API respondia 200 com `"texto": null`, `NotificacoesScreen` só desenha o corpo quando `n.texto` tem valor, e **toda notificação aparecia no app com título e data e nenhum texto**. No site aparecia certo, porque a view lê `$n->mensagem` direto do model. O **push nunca teve o problema** (`ExpoPushService` recebe `$mensagem` direto), e foi isso que disfarçou: chegava o aviso com texto no aparelho e a lista dentro do app ficava vazia.
+
+**A chave do JSON continua `texto`** — é o nome que o app já consome, e mantê-la corrige em todo aparelho já instalado no deploy do backend, sem build novo nem revisão de loja. Não renomeie para `mensagem` sem publicar o app junto.
+
+**A lição que vale além deste campo:** um smoke test de status 200 não pega isto, e o `SmokeAppEndpointsTest` de fato passava com o bug no lugar. Quando a tela depende do **valor** de um campo, afirme o valor. `NotificacaoApiTest` compara o corpo que a API entrega com o que o site lê da mesma linha, então a divergência não pode voltar sem alguém ver.
+
 ### Referral Coupons ("Indique e ganhe")
 
 Every account (Personal, Cliente, Academia, Studio, Loja) gets a personal referral code and can enter someone else's at signup. Tracking + bonus only — it does **not** change any amount charged.

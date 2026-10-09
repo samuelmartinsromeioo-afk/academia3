@@ -36,7 +36,26 @@ class ChatController extends Controller
             ->map(fn ($n) => [
                 'id' => $n->id,
                 'titulo' => $n->titulo,
-                'texto' => $n->texto,
+                /*
+                 * A coluna é `mensagem`. Isto lia `$n->texto`, que não existe
+                 * em `notificacoes` — Eloquent devolve null para atributo
+                 * inexistente, sem erro nenhum, então a API respondia
+                 * "texto": null e o app (NotificacoesScreen) só desenha o
+                 * corpo quando `n.texto` tem valor: toda notificação aparecia
+                 * com título e data e NENHUM texto. No site funcionava porque
+                 * a view lê `$n->mensagem` direto do model.
+                 *
+                 * `texto` é o nome que o app já consome, e manter a chave é
+                 * deliberado: corrige em todo aparelho já instalado no deploy
+                 * do backend, sem build novo nem revisão de loja. Não renomeie
+                 * para `mensagem` sem publicar o app junto.
+                 *
+                 * O PUSH nunca teve esse problema (ExpoPushService recebe
+                 * `$mensagem` direto), e foi isso que disfarçou o furo: chegava
+                 * o aviso com texto no aparelho e a lista dentro do app ficava
+                 * vazia.
+                 */
+                'texto' => $n->mensagem,
                 'lida' => (bool) $n->lida,
                 'criada_em' => $n->created_at?->toDateTimeString(),
             ]);
