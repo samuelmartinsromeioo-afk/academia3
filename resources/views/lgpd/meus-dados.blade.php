@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Privacidade e meus dados</title>
-    <link rel="icon" type="image/png" href="{{ asset('SnrFit.png') }}">
+    <link rel="icon" type="image/png" href="{{ asset('icone-snrfit.png') }}">
     @include('partials.brand-head')
     <style>
         :root { --bg:#000; --card:#111317; --field:#1a1d23; --text:#fff; --muted:#9a9a9a; --red:#ff5252; --green:#00e676; }

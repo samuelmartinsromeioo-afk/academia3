@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Templates de Ficha</title>
-    <link rel="icon" type="image/png" href="{{ asset('SnrFit.png') }}">
+    <link rel="icon" type="image/png" href="{{ asset('icone-snrfit.png') }}">
     @include('partials.brand-head')
     <style>
         :root { --field:#1a1d23; --green:#00e676; --red:#ff5252; }

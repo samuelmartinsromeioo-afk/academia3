@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Mapa - Academias & Personais</title>
-    <link rel="icon" type="image/png" href="{{ asset('SnrFit.png') }}">
+    <link rel="icon" type="image/png" href="{{ asset('icone-snrfit.png') }}">
     @include('partials.pwa')
     @include('partials.brand-head')
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">

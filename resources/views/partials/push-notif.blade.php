@@ -3,7 +3,10 @@
 (function () {
     const URL_COUNT = @json(route('notificacoes.nao-lidas'));
     const URL_LISTA = @json(route('notificacoes.index'));
-    const ICON = @json(asset('SnrFit.png'));
+    // Tile (fundo verde), não o símbolo solto: o sistema desenha isto em ~48px,
+    // e nesse tamanho os cinco fios fecham — a silhueta do tile continua
+    // identificando a marca, o símbolo transparente vira mancha.
+    const ICON = @json(asset('icone-snrfit.png'));
     let ultimo = parseInt(localStorage.getItem('snrfit_notif_count') || '0');
 
     // Pede permissão de notificação no primeiro toque/clique do usuário.

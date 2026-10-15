@@ -24,7 +24,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>@yield('doc-titulo') — SnrFit</title>
-    <link rel="icon" type="image/png" href="{{ asset('SnrFit.png') }}">
+    <link rel="icon" type="image/png" href="{{ asset('icone-snrfit.png') }}">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;800;900&display=swap">
     {{-- Versão pelo mtime do arquivo. Sem isso o navegador serve a folha de

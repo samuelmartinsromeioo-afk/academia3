@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Política de Privacidade — SNR FIT</title>
-    <link rel="icon" type="image/png" href="{{ asset('SnrFit.png') }}">
+    <link rel="icon" type="image/png" href="{{ asset('icone-snrfit.png') }}">
     @include('partials.brand-head')
     <style>
         :root { --bg:#0a0b0d; --card:#14161a; --text:#e8e8e8; --muted:#9a9a9a; }

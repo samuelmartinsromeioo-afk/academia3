@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <title>@yield('title', 'SnrFit')</title>
-    <link rel="icon" type="image/png" href="{{ asset('SnrFit.png') }}">
+    <link rel="icon" type="image/png" href="{{ asset('icone-snrfit.png') }}">
     @include('partials.meta-pixel')
     @include('partials.pwa')
 
