@@ -78,7 +78,12 @@ return [
     // Encarregado pelo Tratamento de Dados Pessoais (LGPD, art. 41). Pode ser
     // pessoa natural ou jurídica, e o NOME tem de ser divulgado — não basta o
     // e-mail genérico de suporte.
-    'dpo_nome' => env('EMPRESA_DPO_NOME', 'Samuel'),
+    //
+    // Era só 'Samuel'. O art. 41, §1º, exige que a IDENTIDADE do Encarregado
+    // seja divulgada publicamente, e primeiro nome não identifica ninguém: o
+    // titular que precisa acionar o Encarregado — ou a ANPD, num procedimento —
+    // tem de saber de quem se trata. Nome completo é o mínimo para isso.
+    'dpo_nome' => env('EMPRESA_DPO_NOME', 'Samuel Martins Romeiro'),
     'dpo_email' => env('EMPRESA_DPO_EMAIL', 'suporte@snrfittech.com'),
 
     // Processador de pagamentos. A Plataforma NÃO é instituição de pagamento;
