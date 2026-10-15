@@ -150,6 +150,15 @@ Route::get('/suporte', fn () => view('suporte'))->name('suporte');
 // funcionando via redirect para não quebrar links já publicados.
 Route::get('/privacidade', fn () => redirect()->route('lgpd.politica'))->name('privacidade');
 
+// Escolha do banner de cookies. PÚBLICA porque o banner aparece antes de haver
+// conta, e nesse caso o cookie é o único registro possível; havendo sessão, a
+// escolha também vai para `consentimentos`, que é o que o envio
+// server-to-server à Meta consulta — num webhook não existe cookie para ler.
+// Com throttle porque é POST público, e ninguém responde um banner 20x/minuto.
+Route::post('/consentimento/cookies', [LgpdController::class, 'registrarCookies'])
+    ->name('lgpd.cookies')
+    ->middleware('throttle:20,1');
+
 // ==========================================
 // RECUPERAÇÃO DE SENHA
 // ==========================================
@@ -525,10 +534,15 @@ Route::middleware('check.login')->group(function () {
     Route::post('/chat/{outroId}', [ChatController::class, 'enviar'])->name('chat.enviar')->whereNumber('outroId');
     Route::get('/chat/{outroId}/msgs', [ChatController::class, 'mensagens'])->name('chat.mensagens')->whereNumber('outroId');
 
-    // LGPD — meus dados (acesso, portabilidade e exclusão)
+    // LGPD — meus dados (acesso, portabilidade, consentimentos e exclusão)
     Route::get('/meus-dados', [LgpdController::class, 'meusDados'])->name('lgpd.meus-dados');
     Route::get('/meus-dados/exportar', [LgpdController::class, 'exportar'])->name('lgpd.exportar');
     Route::post('/meus-dados/excluir', [LgpdController::class, 'excluirConta'])->name('lgpd.excluir');
+    // Revogação do consentimento de saúde: apaga a anamnese SEM encerrar a
+    // conta. Antes o único caminho era excluir a conta inteira — para tirar um
+    // dado, perder todos.
+    Route::post('/meus-dados/revogar-saude', [LgpdController::class, 'revogarSaude'])
+        ->name('lgpd.revogar-saude')->middleware('throttle:10,1');
 });
 
 // CLIENTE

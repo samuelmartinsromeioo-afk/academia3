@@ -34,75 +34,7 @@ fbq('track', {!! json_encode($ev['event']) !!}, {!! json_encode($ev['params'] ??
 src="https://www.facebook.com/tr?id={{ urlencode($fbPixelId) }}&ev=PageView&noscript=1"/></noscript>
 @endif
 
-@if($fbPixelId && $requireConsent)
-{{-- Banner de consentimento de cookies (LGPD). Injetado via JS para funcionar
-     em qualquer layout; some apos o visitante decidir (aceitar/recusar). --}}
-<script>
-(function () {
-    var COOKIE = {!! json_encode($consentCookie) !!};
-    var POLITICA = {!! json_encode(route('lgpd.politica')) !!};
-
-    function getCookie(name) {
-        return document.cookie.split('; ').reduce(function (r, c) {
-            var p = c.split('=');
-            return p[0] === name ? decodeURIComponent(p[1]) : r;
-        }, '');
-    }
-    if (getCookie(COOKIE)) return; // ja decidiu
-
-    function setConsent(value) {
-        document.cookie = COOKIE + '=' + value + '; path=/; max-age=31536000; SameSite=Lax';
-    }
-
-    function build() {
-        if (document.getElementById('snrfit-consent')) return;
-
-        var bar = document.createElement('div');
-        bar.id = 'snrfit-consent';
-        bar.setAttribute('role', 'dialog');
-        bar.setAttribute('aria-label', 'Aviso de cookies');
-        bar.style.cssText = 'position:fixed;left:16px;right:16px;bottom:16px;z-index:2147483647;' +
-            'max-width:720px;margin:0 auto;background:#0a0b0d;color:#eef0f2;' +
-            'border:1px solid rgba(124,255,0,0.35);border-radius:16px;padding:18px 20px;' +
-            'box-shadow:0 20px 60px rgba(0,0,0,0.55);font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;' +
-            'display:flex;flex-wrap:wrap;gap:14px;align-items:center;justify-content:space-between;';
-
-        var txt = document.createElement('p');
-        txt.style.cssText = 'margin:0;flex:1 1 320px;font-size:0.86rem;line-height:1.5;color:#cfd3da;';
-        txt.innerHTML = 'Usamos cookies para medir e melhorar sua experiencia, inclusive com ' +
-            'ferramentas de marketing (Meta). Você pode aceitar ou recusar. ' +
-            '<a href="' + POLITICA + '" style="color:#7cff00;text-decoration:underline;">Política de Privacidade</a>.';
-
-        var acts = document.createElement('div');
-        acts.style.cssText = 'display:flex;gap:10px;flex:0 0 auto;';
-
-        var btnBase = 'border:none;cursor:pointer;padding:11px 20px;border-radius:10px;font-weight:800;font-size:0.85rem;';
-
-        var no = document.createElement('button');
-        no.type = 'button';
-        no.textContent = 'Recusar';
-        no.style.cssText = btnBase + 'background:transparent;color:#cfd3da;border:1px solid rgba(255,255,255,0.22);';
-        no.onclick = function () { setConsent('denied'); bar.remove(); };
-
-        var yes = document.createElement('button');
-        yes.type = 'button';
-        yes.textContent = 'Aceitar';
-        yes.style.cssText = btnBase + 'background:#7cff00;color:#0a0b0d;';
-        yes.onclick = function () { setConsent('granted'); bar.remove(); location.reload(); };
-
-        acts.appendChild(no);
-        acts.appendChild(yes);
-        bar.appendChild(txt);
-        bar.appendChild(acts);
-        document.body.appendChild(bar);
-    }
-
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', build);
-    } else {
-        build();
-    }
-})();
-</script>
-@endif
+{{-- Banner de consentimento de cookies. Em partial separado porque as páginas
+     legais precisam dele SEM o Pixel — ver o cabeçalho de banner-cookies. --}}
+@include('partials.banner-cookies')
 {{-- End Meta Pixel Code --}}

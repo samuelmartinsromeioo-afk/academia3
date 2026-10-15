@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Cadastro;
 
 use App\Http\Controllers\Controller;
 use App\Services\MetaConversionsService;
+use App\Support\CadastroHelper;
+use App\Support\Cref;
 use Illuminate\Http\Request;
 use App\Models\Cadastro\Personal;
 use App\Models\Agenda;
@@ -45,7 +47,9 @@ class PersonalController extends Controller
             'foto'          => 'required|file|mimes:jpeg,jpg,png,gif,webp,heic,heif|max:10240',
             'valor_secao'   => 'required|numeric',
             'senha'         => 'required|string|min:8|confirmed',
-            'idade'         => 'required|date',
+            // Nascimento (a coluna chama `idade` por histórico). O profissional
+            // tem corte mais alto que o aluno — ver CadastroHelper.
+            'idade'         => array_merge(['required'], CadastroHelper::regraNascimento(CadastroHelper::IDADE_MINIMA_PROFISSIONAL)),
             'resultados'    => 'nullable|string',
             'avaliacao'     => 'nullable|string',
             'latitude'      => 'nullable|numeric',
@@ -58,9 +62,27 @@ class PersonalController extends Controller
             'cupom'         => $cupons->regraValidacao(),
         ];
 
-        $regras['cref'] = 'required|string|max:30';
+        /*
+         * Formato do registro profissional.
+         *
+         * Era `required|string|max:30` — ou seja, qualquer coisa: "aaa",
+         * "não tenho" e "000000-X/ZZ" passavam, e o número ia para o perfil
+         * público ao lado da foto como se tivesse sido conferido. Um campo
+         * obrigatório que aceita tudo é pior que campo ausente, porque parece
+         * credencial validada.
+         *
+         * `App\Support\Cref` é a fonte única da regra, lida também pela API.
+         */
+        $regras['cref'] = Cref::regra();
 
-        $dados = $request->validate($regras);
+        $dados = $request->validate(
+            $regras,
+            CadastroHelper::mensagensNascimento(CadastroHelper::IDADE_MINIMA_PROFISSIONAL)
+        );
+
+        // Grava canônico (`123456-G/SP`): é o que permite comparar, achar
+        // duplicata e montar a consulta ao conselho sem adivinhar formato.
+        $dados['cref'] = Cref::normalizar($dados['cref']);
 
         // O tipo não vem do formulário: a plataforma só cadastra personal trainer.
         $dados['professional_type'] = $tipo->value;

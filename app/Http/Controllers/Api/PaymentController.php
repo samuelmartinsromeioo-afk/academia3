@@ -13,15 +13,21 @@ use App\Models\Cadastro\Loja;
 use App\Models\Cadastro\Personal;
 use App\Models\Cadastro\Produto;
 use App\Models\Payment;
+use App\Models\Subscription;
 use App\Services\AsaasService;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 
 /**
- * Pagamentos (Asaas) na API mobile. Usa o MESMO AsaasService do fluxo web:
- *  - Personal: split 90/10 (montarSplit — 90% do bruto p/ o personal);
- *  - Academia: assinatura mensal com split 90/10 (90% academia, 10% plataforma);
- *  - Studio (plano): assinatura mensal com split 90/10.
+ * Pagamentos (Asaas) na API mobile. Usa o MESMO AsaasService do fluxo web, e
+ * por isso o modelo de cobrança é idêntico nos dois: o profissional (personal,
+ * academia, studio, loja) recebe o preço INTEGRAL que cadastrou, e a comissão
+ * da plataforma é um acréscimo cobrado do cliente.
+ *
+ * Em todo endpoint daqui, `$amount` é o preço do profissional — nunca o valor
+ * que o app deve mostrar. O valor cobrado vem de volta na resposta
+ * (`amount` + a quebra em `valores`), calculado em um lugar só.
+ *
  * Pacote/planos = assinatura mensal recorrente; aula avulsa/ficha/avaliação =
  * cobrança única. v1 cobre PIX (cartão continua só no fluxo web).
  *
@@ -94,8 +100,8 @@ class PaymentController extends Controller
 
     /**
      * Contexto PERSONAL — mesmas regras do web (criarPagamento):
-     * pacote = assinatura mensal com split 90/10; aula avulsa/ficha/avaliação =
-     * cobrança PIX única com split 90/10.
+     * pacote = assinatura mensal; aula avulsa/ficha/avaliação = cobrança única.
+     * Nos dois o split repassa o preço integral do personal.
      */
     private function criarPagamentoPersonal(Request $request, Cliente $cliente, string $billingType = 'PIX')
     {
@@ -174,10 +180,7 @@ class PaymentController extends Controller
                 'tipo' => 'pacote',
                 'trainer_id' => $personal->id,
                 'membership_id' => $validated['pacote_id'] ?? null,
-            // null = taxa padrão da plataforma, derivada de SPLIT_RATE. Não
-            // cravar o número aqui: `company_fee` é a base do bônus de
-            // indicação, e uma cópia velha o faria pagar sobre a taxa errada.
-            ], $bookingData, null, $billingType);
+            ], $bookingData, $billingType);
 
             return response()->json($result, 201);
         }
@@ -205,8 +208,8 @@ class PaymentController extends Controller
 
     /**
      * Contexto ACADEMIA — mesmo padrão do web (criarPagamentoAcademia):
-     * assinatura mensal recorrente com o split padrão do marketplace (90% para
-     * a academia, 10% de comissão), derivado de AsaasService::SPLIT_RATE.
+     * assinatura mensal recorrente com repasse integral da mensalidade à
+     * academia; a comissão é o acréscimo cobrado do aluno.
      */
     private function criarPagamentoAcademia(Request $request, Cliente $cliente, string $billingType = 'PIX')
     {
@@ -232,14 +235,14 @@ class PaymentController extends Controller
             'academia_id' => $validated['academia_id'],
             'plano_id' => $planoId,
             'cliente_id' => $cliente->id,
-        ], null, $billingType); // academia entra no split 90/10 (taxa padrão, de SPLIT_RATE)
+        ], $billingType);
 
         return response()->json($result, 201);
     }
 
     /**
      * Contexto STUDIO (plano) — mesmo padrão do web (criarPagamentoStudioPlano):
-     * assinatura mensal recorrente com split 90/10.
+     * assinatura mensal recorrente com repasse integral ao studio.
      */
     private function criarPagamentoStudioPlano(Request $request, Cliente $cliente, string $billingType = 'PIX')
     {
@@ -266,7 +269,7 @@ class PaymentController extends Controller
             'studio_id' => $studio->id,
             'studio_plano_id' => $plano->id,
             'cliente_id' => $cliente->id,
-        ], null, $billingType); // studio entra no split 90/10 (taxa padrão, de SPLIT_RATE)
+        ], $billingType);
 
         return response()->json($result, 201);
     }
@@ -469,6 +472,69 @@ class PaymentController extends Controller
         }
 
         return response()->json(['status' => $status, 'confirmed' => $confirmed]);
+    }
+
+    // ─────────────────────────────────────────────
+    // ASSINATURAS (planos e pacotes recorrentes do aluno)
+    // ─────────────────────────────────────────────
+
+    /**
+     * GET /api/v1/assinaturas — as recorrências do aluno autenticado.
+     *
+     * Existe pelo mesmo motivo do cancelamento: o app criava assinatura mensal
+     * e não mostrava nenhuma lista delas, então o aluno não tinha como saber
+     * quantas recorrências ativas tinha, nem até quando o acesso ia, nem onde
+     * parar a cobrança.
+     */
+    public function assinaturas(Request $request)
+    {
+        $cliente = $this->clienteAutenticado($request);
+
+        $subs = Subscription::where('user_id', $cliente->id)
+            ->with(['cliente:id,nome'])
+            ->orderByRaw("FIELD(status, 'active', 'overdue', 'canceled')")
+            ->orderByDesc('created_at')
+            ->get();
+
+        return response()->json([
+            'assinaturas' => $subs->map(fn ($s) => [
+                'id' => $s->id,
+                'tipo' => $s->tipo,
+                // O que o ALUNO paga por ciclo — `amount_total`, não
+                // `trainer_amount`: aqui quem olha é quem paga. Ver o aviso
+                // sobre essa confusão no CLAUDE.md (Revenue Model).
+                'valor' => (float) $s->amount_total,
+                'status' => $s->status,
+                'ativa' => $s->status !== 'canceled',
+                'metodo' => $s->payment_method,
+                'proxima_cobranca' => $s->status === 'canceled'
+                    ? null
+                    : $s->next_due_date?->toDateString(),
+                'acesso_ate' => $s->acesso_ate?->toDateString(),
+            ]),
+        ]);
+    }
+
+    /**
+     * POST /api/v1/assinaturas/{id}/cancelar — encerra a recorrência.
+     *
+     * O dono vem do TOKEN, nunca do corpo. A regra e o efeito são os mesmos do
+     * site: a lógica inteira vive em `WebPaymentController::cancelarAssinaturaDe`
+     * e inclui a confirmação por escrito — duas implementações divergiriam, e a
+     * do app nasceria sem o comprovante que a cláusula 8.2 promete.
+     */
+    public function cancelarAssinatura(Request $request, int $id)
+    {
+        $cliente = $this->clienteAutenticado($request);
+
+        $sub = Subscription::where('id', $id)->where('user_id', $cliente->id)->first();
+        if (! $sub) {
+            return response()->json(['error' => 'Assinatura não encontrada.'], 404);
+        }
+
+        return response()->json(
+            app(WebPaymentController::class)->cancelarAssinaturaDe($sub, 'app')
+        );
     }
 
     /**

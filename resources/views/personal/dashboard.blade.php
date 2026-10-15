@@ -952,11 +952,27 @@
                     <div>
                         <label>Valor por Seção (R$)</label>
                         <div class="input-wrapper"><i class="ph ph-currency-dollar"></i><input type="number" step="0.01" name="valor_secao" value="{{ $personal->valor_secao }}"></div>
+                        {{-- O profissional precisa ver as DUAS pontas: o que ele recebe (o
+                             que digitou) e o que o aluno paga. Sem isso, ele descobre o
+                             acréscimo pela vitrine e acha que a plataforma mexeu no preço dele. --}}
+                        <p style="color: var(--text-muted); font-size: 0.7rem; margin: 5px 0 0;">
+                            Você recebe esse valor <strong style="color:var(--primary);">integral</strong>.
+                            @if(($personal->valor_secao ?? 0) > 0)
+                                O aluno paga R$ {{ \App\Support\Preco::fmt($personal->valor_secao) }} (a taxa de serviço da SNR FIT é somada por cima).
+                            @else
+                                A taxa de serviço da SNR FIT é somada por cima, no preço que o aluno vê.
+                            @endif
+                        </p>
                     </div>
                     <div>
                         <label>Valor da Ficha Personalizada (R$)</label>
                         <div class="input-wrapper"><i class="ph ph-clipboard-text"></i><input type="number" step="0.01" name="valor_ficha" value="{{ $personal->valor_ficha }}" placeholder="0.00"></div>
-                        <p style="color: var(--text-muted); font-size: 0.7rem; margin: 5px 0 0;">Deixe em branco (ou 0) se você não trabalha com esse serviço — assim ele não é oferecido ao aluno.</p>
+                        <p style="color: var(--text-muted); font-size: 0.7rem; margin: 5px 0 0;">
+                            Deixe em branco (ou 0) se você não trabalha com esse serviço — assim ele não é oferecido ao aluno.
+                            @if(($personal->valor_ficha ?? 0) > 0)
+                                Você recebe o valor integral; o aluno paga R$ {{ \App\Support\Preco::fmt($personal->valor_ficha) }}.
+                            @endif
+                        </p>
                     </div>
                     <div>
                         <label>Modalidade de Atendimento</label>

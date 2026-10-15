@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\Consentimento;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -64,20 +65,52 @@ class MetaConversionsService
     }
 
     /**
-     * Evento server-to-server, para contextos SEM browser (ex.: webhooks de
-     * renovação de assinatura). Não exige consentimento de cookie — o usuário
-     * já consentiu na compra original — e não envia IP/user-agent (que seriam
-     * os do servidor de origem do webhook, não do cliente).
+     * Evento server-to-server, para contextos SEM browser (ex.: webhook de
+     * renovação de assinatura). Não há requisição, então não há cookie de
+     * consentimento nem IP/user-agent do cliente a enviar — os do servidor de
+     * origem do webhook seriam dado errado, não dado a mais.
      *
-     * Retorna o event_id usado.
+     * O consentimento vem do REGISTRO do titular (`consentimentos`), não do
+     * cookie. Esta é a correção de um furo que era invisível por construção: a
+     * versão anterior recebia `array $userData` já montado e não checava nada,
+     * justificando-se em "o usuário já consentiu na compra original". Duas
+     * coisas estavam erradas nisso. Consentir com a COBRANÇA não é consentir
+     * com MEDIÇÃO DE ANÚNCIO — são finalidades e bases legais diferentes, e é
+     * exatamente a confusão que o art. 8º da LGPD veda. E o caso que mais doía
+     * nem passava por banner nenhum: assinatura contratada pelo APP, onde
+     * banner nunca existiu, renovava todo mês mandando nome, e-mail, telefone,
+     * cidade e id (com hash) para a Meta — contrariando a própria Política, que
+     * promete "enquanto você não aceitar, nada é enviado à Meta", e
+     * configurando "tracking" na definição da Apple para dado coletado no app.
+     *
+     * Por isso o parâmetro é o TITULAR, não um array: com o array era possível
+     * enviar sem ter quem checar. Agora não é — a porta insegura não ficou ao
+     * lado da segura, ela deixou de existir.
+     *
+     * Retorna o event_id usado, ou null quando nada foi enviado (sem
+     * consentimento, sem titular ou integração desligada) — para quem chama
+     * poder distinguir "mandei" de "não mandei" sem inspecionar config.
      */
-    public function trackServer(string $eventName, array $customData, array $userData, ?string $eventId = null, ?string $eventSourceUrl = null): string
+    public function trackServer(string $eventName, array $customData, $titular, ?string $eventId = null, ?string $eventSourceUrl = null): ?string
     {
+        if (! $this->enabled() || ! $titular) {
+            return null;
+        }
+
+        if (config('services.meta.require_consent', true)
+            && ! Consentimento::concedido($titular, Consentimento::TIPO_MARKETING)) {
+            return null;
+        }
+
         $eventId = $eventId ?: (string) Str::uuid();
 
-        if ($this->enabled()) {
-            $this->dispatch($eventName, $customData, $this->buildUserData($userData, null), $eventId, $eventSourceUrl);
-        }
+        $this->dispatch(
+            $eventName,
+            $customData,
+            $this->buildUserData($this->userDataFromModel($titular), null),
+            $eventId,
+            $eventSourceUrl
+        );
 
         return $eventId;
     }

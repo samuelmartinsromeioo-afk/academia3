@@ -11,6 +11,7 @@ use App\Models\Cadastro\Studio;
 use App\Models\TermoAceite;
 use App\Services\CupomService;
 use App\Support\CadastroHelper;
+use App\Support\Cref;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Hash;
@@ -84,6 +85,19 @@ class RegisterController extends Controller
             'modalidades_aluno' => config('textos.profissional.modalidades_aluno'),
             'especialidades' => config('textos.profissional.especialidades.PERSONAL_TRAINER'),
             'sexos' => config('textos.profissional.sexos'),
+            /*
+             * Idade mínima por papel, pelo mesmo motivo das listas acima: o app
+             * precisa avisar ANTES do envio ("você precisa ter 18 anos") e para
+             * isso precisa do número — mas um número embutido no binário fica
+             * velho no dia em que o corte mudar, e aí o app deixa passar o que o
+             * servidor recusa (ou barra quem o servidor aceitaria).
+             *
+             * Quem valida continua sendo o servidor; isto é só a mensagem.
+             */
+            'idade_minima' => [
+                'aluno' => CadastroHelper::IDADE_MINIMA_ALUNO,
+                'profissional' => CadastroHelper::IDADE_MINIMA_PROFISSIONAL,
+            ],
         ]);
     }
 
@@ -104,11 +118,16 @@ class RegisterController extends Controller
                 }
             }],
             'email'         => 'required|email|unique:personals,email',
-            'cref'          => 'required|string|max:30',
+            // Mesma regra do site — `App\Support\Cref` é a fonte única. Era
+            // `required|string|max:30` nas duas portas, ou seja, qualquer
+            // string passava (ver o comentário em Cadastro\PersonalController).
+            'cref'          => Cref::regra(),
             'foto'          => 'required|file|mimes:jpeg,jpg,png,gif,webp,heic,heif|max:10240',
             'valor_secao'   => 'required|numeric',
             'senha'         => 'required|string|min:8|confirmed',
-            'idade'         => 'required|date',
+            // Mesmo corte de idade do formulário web (CadastroHelper é a fonte
+            // única): 21 anos para quem vai atender aluno e receber repasse.
+            'idade'         => array_merge(['required'], CadastroHelper::regraNascimento(CadastroHelper::IDADE_MINIMA_PROFISSIONAL)),
             'whatsapp'      => 'nullable|string|max:20',
             // Modalidade de atendimento. Aqui "Híbrido" É opção: é o profissional
             // declarando que atende dos dois jeitos (ver config textos.profissional).
@@ -129,13 +148,13 @@ class RegisterController extends Controller
             'latitude'      => 'nullable|numeric',
             'longitude'     => 'nullable|numeric',
             'academias'     => 'nullable|string|max:1000',
-        ] + $this->regrasComuns(), [
+        ] + $this->regrasComuns(), array_merge([
             'email.unique' => 'Este e-mail já está cadastrado.',
             'cpf.unique' => 'Este CPF já está cadastrado.',
             'senha.confirmed' => 'A confirmação de senha não confere.',
             'foto.required' => 'Envie uma foto sua (será exibida no seu perfil).',
             'aceita_termos.accepted' => 'Você precisa aceitar os termos de uso.',
-        ]);
+        ], CadastroHelper::mensagensNascimento(CadastroHelper::IDADE_MINIMA_PROFISSIONAL)));
 
         $codigoCupom = Arr::pull($dados, 'cupom');
         Arr::forget($dados, 'aceita_termos');
@@ -145,6 +164,9 @@ class RegisterController extends Controller
         $dados['avaliacao'] = 'Aguardando avaliação inicial';
         $dados['resultados'] = 'Nenhum resultado registrado';
         $dados['status'] = 'pendente';
+        // Canônico, igual ao site: é o que permite comparar, achar duplicata e
+        // montar a consulta ao conselho sem adivinhar o formato digitado.
+        $dados['cref'] = Cref::normalizar($dados['cref']);
 
         $personal = Personal::create($dados);
         $personal->definirPosicaoPioneiro();

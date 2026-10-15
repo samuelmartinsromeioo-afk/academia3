@@ -147,24 +147,31 @@ class AuthController extends Controller
             'senha' => 'required|string|min:8|max:255',
             'whatsapp' => 'nullable|string|max:20',
             /*
-             * `sometimes|required`, não `required` — e isto é compatibilidade
-             * com versão de app, não relaxamento da regra.
+             * `idade` SAIU do grupo `sometimes` — e é a única que saiu.
              *
-             * O site exige estes três no formulário e o app novo os envia. Mas
-             * o binário JÁ publicado na loja não os conhece, e entre o deploy
-             * do servidor e a chegada da atualização ao aparelho existe a
-             * revisão da Apple — dias. Com `required`, todo cadastro de quem
-             * está no app antigo voltaria 422 nessa janela: cadastro perdido é
-             * usuário perdido, enquanto uma conta sem nascimento é uma conta
-             * que o próprio aluno completa depois (o perfil agora é editável
-             * nos dois lados).
+             * `sexo` e `cep` continuam `sometimes|required` por compatibilidade
+             * com o binário já publicado na loja, que não os envia: entre o
+             * deploy do servidor e a chegada da atualização ao aparelho existe a
+             * revisão da Apple, e nessa janela `required` devolveria 422 em todo
+             * cadastro feito pelo app antigo. O raciocínio se sustenta porque
+             * conta sem sexo/CEP é conta incompleta que o próprio aluno termina
+             * depois (o perfil é editável nos dois lados).
              *
-             * `sometimes|required` dá o comportamento exato que se quer:
-             * ausente passa (app antigo), presente tem de ser válido e não
-             * vazio — então um `idade: ""` vindo do app novo é barrado em vez
-             * de virar null em silêncio.
+             * Esse raciocínio NÃO vale para o nascimento, porque aqui ele deixou
+             * de ser só completude de dado e passou a ser a trava de idade
+             * mínima. Com `sometimes`, bastava omitir o campo para não haver
+             * trava nenhuma — e o app antigo omite. Uma trava com saída não é
+             * trava, e esta não é a que o aluno conserta depois: conta de menor
+             * de idade não se completa, se recusa.
+             *
+             * O preço é conhecido e aceito: quem estiver no app antigo recebe
+             * 422 com `idade.required` até atualizar — daí a mensagem abaixo
+             * mandar atualizar o app, em vez do "informe sua data de
+             * nascimento" genérico, que num app sem o campo não diz o que fazer.
              */
-            'idade' => 'sometimes|required|date',
+            'idade' => array_merge(['required'], \App\Support\CadastroHelper::regraNascimento(
+                \App\Support\CadastroHelper::IDADE_MINIMA_ALUNO
+            )),
             'sexo' => ['sometimes', 'required', \App\Support\CadastroHelper::regraSexo()],
             'cep' => 'sometimes|required|string|max:9',
             'rua' => 'nullable|string|max:255',
@@ -190,12 +197,20 @@ class AuthController extends Controller
             // silêncio — quem indicou perderia o crédito sem ninguém notar.
             'cupom' => $cupons->regraValidacao(),
             'device_name' => 'nullable|string|max:100',
-        ], [
-            'email.unique' => 'Este e-mail já está cadastrado.',
-            'aceita_termos.accepted' => 'Você precisa aceitar os termos de uso.',
-            'idade.required' => 'Informe sua data de nascimento.',
-            'sexo.in' => 'Selecione uma opção válida de sexo.',
-        ]);
+        ], array_merge(
+            \App\Support\CadastroHelper::mensagensNascimento(
+                \App\Support\CadastroHelper::IDADE_MINIMA_ALUNO
+            ),
+            [
+                'email.unique' => 'Este e-mail já está cadastrado.',
+                'aceita_termos.accepted' => 'Você precisa aceitar os termos de uso.',
+                // Sobrepõe a mensagem padrão do helper: num app antigo o campo
+                // não existe na tela, então "informe sua data de nascimento"
+                // mandaria preencher algo que não está lá.
+                'idade.required' => 'Atualize o app para continuar: o cadastro passou a exigir a data de nascimento.',
+                'sexo.in' => 'Selecione uma opção válida de sexo.',
+            ]
+        ));
 
         /*
          * `cupom`, `aceita_termos` e `device_name` não são colunas de clientes;

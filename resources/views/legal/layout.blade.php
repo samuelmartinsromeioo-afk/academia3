@@ -82,6 +82,11 @@
         .warn { border-left-color: #ff5252; background: rgba(255, 82, 82, 0.06); }
         .warn strong { color: #ff8a8a; }
 
+        /* Nota de fundamentação legal: subordinada ao texto da cláusula, porque
+           é a citação da norma, não a regra contratada. */
+        .content p.muted, .content .muted { font-size: 0.82rem; opacity: 0.75; }
+        .content p.muted strong { color: inherit; }
+
         .toc {
             background: rgba(124, 255, 0, 0.05); border: 1px solid rgba(124, 255, 0, 0.2);
             border-radius: 12px; padding: 25px; margin-bottom: 40px;
@@ -106,6 +111,19 @@
             text-align: center; margin-top: 50px; padding-top: 30px;
             border-top: 1px solid var(--border); color: var(--text-muted); font-size: 0.9rem;
         }
+
+        /* Tabelas dos documentos (ex.: a de procedimentos da cláusula 12.1).
+           Mesmo desenho da Política, que já tinha o seu. O `.tbl-wrap` com
+           overflow é obrigatório: sem ele a tabela de quatro colunas estoura a
+           largura no celular e empurra a página inteira para o lado. */
+        .tbl-wrap { overflow-x: auto; margin: 18px 0; }
+        .content table { width: 100%; border-collapse: collapse; font-size: 0.86rem; min-width: 680px; }
+        .content th, .content td {
+            border: 1px solid var(--border); padding: 9px 11px;
+            text-align: left; vertical-align: top;
+        }
+        .content th { background: rgba(124, 255, 0, 0.07); color: var(--primary); font-weight: 700; }
+        .content td strong { color: var(--text-main); }
 
         .print-btn {
             background: var(--primary); color: #000; border: none; padding: 12px 25px;
@@ -141,7 +159,11 @@
             .content { background: transparent; border: none; padding: 0; }
             .header h1, .content h2, .content h3 { color: #000; }
             .content h2 { border-bottom: 2px solid #ccc; }
-            .content p, .content li { color: #333; }
+            .content p, .content li, .content td, .content th { color: #333; }
+            /* Impresso, não há como rolar: a tabela tem de caber na folha. */
+            .tbl-wrap { overflow: visible; }
+            .content table { min-width: 0; font-size: 0.74rem; }
+            .content th { background: #f0f0f0; color: #000; }
         }
     </style>
 </head>
@@ -169,8 +191,16 @@
             @hasSection('doc_perfil')
             <div class="perfil-tag"><i class="ph ph-user-circle"></i> @yield('doc_perfil')</div>
             @endif
+            {{--
+                A data vem de `config('termos.vigente_desde')`, NUNCA de date('d/m/Y').
+                Com a data de hoje, o documento impresso afirmava ter sido atualizado
+                no dia em que foi impresso — num contrato, uma afirmação falsa sobre a
+                própria vigência, e justamente a que importa quando se discute qual
+                versão a pessoa aceitou.
+            --}}
             <p style="margin-top: 12px; font-size: 0.85rem; color: rgba(255,255,255,0.5);">
-                Última atualização: {{ date('d/m/Y') }} · Versão @yield('doc_versao', '1.0')
+                Em vigor desde {{ \Carbon\Carbon::parse(config('termos.vigente_desde'))->format('d/m/Y') }}
+                · Versão @yield('doc_versao', '1.0')
             </p>
 
             <div class="doc-nav">
@@ -188,11 +218,35 @@
         </div>
 
         <div class="footer">
-            <p><strong>Última atualização:</strong> {{ date('d/m/Y') }} · <strong>Versão:</strong> @yield('doc_versao', '1.0')</p>
-            <p style="margin-top: 10px;">Contato: <a href="mailto:suporte@snrfittech.com" style="color:var(--primary);">suporte@snrfittech.com</a></p>
-            <p style="margin-top: 16px;">© {{ date('Y') }} SNR FIT. Todos os direitos reservados.</p>
+            <p><strong>Em vigor desde:</strong> {{ \Carbon\Carbon::parse(config('termos.vigente_desde'))->format('d/m/Y') }}
+                · <strong>Versão:</strong> @yield('doc_versao', '1.0')</p>
+            <p style="margin-top: 10px;">
+                {{ \App\Support\Empresa::get('razao_social') }} · CNPJ {{ \App\Support\Empresa::get('cnpj') }}<br>
+                Contato: <a href="mailto:{{ \App\Support\Empresa::get('email_suporte') }}" style="color:var(--primary);">{{ \App\Support\Empresa::get('email_suporte') }}</a>
+            </p>
+            {{--
+                Rever a escolha de cookies de dentro do documento que a explica.
+                Antes a Política instruía a "limpar os cookies do navegador",
+                que é um procedimento do navegador e não da Plataforma — e
+                deixava o titular sem caminho para revogar pelo mesmo meio em
+                que consentiu. O botão só aparece quando há banner configurado,
+                porque `banner-cookies` não define nada sem Pixel.
+            --}}
+            <p style="margin-top: 16px;">
+                <button type="button" onclick="window.snrfitCookies && window.snrfitCookies.abrir()"
+                    style="background:transparent;border:1px solid rgba(255,255,255,0.22);color:inherit;
+                           border-radius:999px;padding:7px 14px;font-size:0.8rem;cursor:pointer;font-family:inherit;">
+                    <i class="ph ph-cookie"></i> Preferências de cookies
+                </button>
+            </p>
+
+            <p style="margin-top: 16px;">© {{ date('Y') }} {{ \App\Support\Empresa::get('marca') }}. Todos os direitos reservados.</p>
         </div>
     </div>
+
+    {{-- Só a gestão da ESCOLHA: este partial nunca carrega o Pixel, e é por
+         isso que pode entrar numa página legal. --}}
+    @include('partials.banner-cookies')
 
 </body>
 

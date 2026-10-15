@@ -15,6 +15,11 @@ class Kernel extends ConsoleKernel
         // Verifica a cada 5 min se algum personal tem compromisso em ~90 min (lógica de janela no comando)
         $schedule->command('personal:lembrete-diario')->everyFiveMinutes();
 
+        // O MESMO lembrete, para o lado que precisa sair de casa: o ALUNO. Ele
+        // não recebia nada, enquanto o personal era avisado desde o começo.
+        // Mesma cadência porque a janela de 80–100 min mora dentro do comando.
+        $schedule->command('aluno:lembrete-aula')->everyFiveMinutes()->withoutOverlapping();
+
         // Suspende diariamente o acesso de assinaturas canceladas/em atraso cujo
         // período pago (30 dias a partir do pagamento) já terminou.
         $schedule->command('assinaturas:expirar')->dailyAt('03:00');

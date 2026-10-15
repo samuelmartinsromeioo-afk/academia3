@@ -31,4 +31,38 @@ abstract class TestCase extends BaseTestCase
             'aceita_termos' => true,
         ], $extra);
     }
+
+    /**
+     * Payload mínimo VÁLIDO de cadastro de personal, aceito pelas duas portas
+     * (POST /api/v1/register/personal e POST route('personal.store')).
+     *
+     * Mesma razão de existir do método acima: o cadastro de personal é o mais
+     * longo do projeto e cada teste que mexe nele carregava a sua própria
+     * cópia de 15 chaves. O CPF é parâmetro porque é `unique` — dois cadastros
+     * no mesmo teste precisam de dois CPFs válidos distintos.
+     *
+     * Quem chama precisa de `Storage::fake('public')` (a foto é obrigatória) e
+     * `Http::fake()` (a criação da subconta Asaas não deve sair da máquina).
+     */
+    protected function dadosRegistroPersonal(array $extra = []): array
+    {
+        return array_merge([
+            'nome' => 'PT Teste',
+            'email' => 'pt@teste.com',
+            'senha' => 'senhaforte123',
+            'senha_confirmation' => 'senhaforte123',
+            'cpf' => '529.982.247-25', // válido (dígitos verificadores ok)
+            'cref' => '123456-G/PR',
+            'idade' => '1990-01-01',
+            'valor_secao' => 90,
+            'cep' => '87000-000',
+            'rua' => 'Av. Brasil',
+            'bairro' => 'Centro',
+            'cidade' => 'Maringá',
+            'estado' => 'PR',
+            'complemento' => '100',
+            'foto' => \Illuminate\Http\UploadedFile::fake()->image('eu.jpg'),
+            'aceita_termos' => 1,
+        ], $extra);
+    }
 }

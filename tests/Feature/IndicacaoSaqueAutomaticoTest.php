@@ -81,19 +81,24 @@ class IndicacaoSaqueAutomaticoTest extends TestCase
      * Deixa um bônus liberado para o indicador, DE VALOR EXATO, e devolve o saldo.
      *
      * Recebe o bônus desejado — é ele que os tetos e o webhook comparam — e
-     * calcula para trás quanto os 6 alunos (que também batem a meta) precisam
-     * faturar: o bônus é `percentual` da comissão, e a comissão é `feeRate()` do
-     * bruto. Antes esta função recebia o BRUTO e cada chamada trazia o bônus
-     * calculado à mão no comentário; quando a base de cálculo mudou de bruto
-     * para comissão, os 20 números espalhados pelo arquivo ficaram 10x errados
-     * de uma vez. Com o bônus como entrada, outra mudança de base não mexe em
-     * nenhuma asserção.
+     * calcula para trás o PREÇO que os 6 alunos (que também batem a meta)
+     * precisam ter pago: o bônus é `percentual` da comissão, e a comissão é
+     * `feeRate()` do preço do profissional. Antes esta função recebia o BRUTO e
+     * cada chamada trazia o bônus calculado à mão no comentário; quando a base
+     * de cálculo mudou de bruto para comissão, os 20 números espalhados pelo
+     * arquivo ficaram 10x errados de uma vez. Com o bônus como entrada, outra
+     * mudança de base não mexe em nenhuma asserção — e de fato não mexeu
+     * quando a comissão virou acréscimo em vez de desconto.
+     *
+     * As colunas vêm de `calculateSplit()`, a mesma função que a produção usa:
+     * reescrever a conta aqui faria o teste passar com um ledger que o sistema
+     * nunca produziria.
      */
     private function comBonusLiberado(float $bonusDesejado): float
     {
-        $porAluno = $bonusDesejado / 6
-            / (float) config('indicacao.percentual')
-            / AsaasService::feeRate();
+        $comissaoPorAluno = $bonusDesejado / 6 / (float) config('indicacao.percentual');
+        $precoPorAluno = $comissaoPorAluno / AsaasService::feeRate();
+        $valores = app(AsaasService::class)->calculateSplit($precoPorAluno);
 
         $cupom = $this->cupons->cupomDe($this->indicador);
         $uso = $this->cupons->registrarIndicacao($cupom->codigo, $this->indicado, '127.0.0.1');
@@ -102,9 +107,10 @@ class IndicacaoSaqueAutomaticoTest extends TestCase
             Payment::create([
                 'user_id' => $this->novoCliente("sq{$i}." . uniqid() . '@t.teste'),
                 'trainer_id' => $this->indicado->id, 'membership_id' => $this->pacoteId,
-                'amount_total' => $porAluno,
-                'company_fee' => round($porAluno * AsaasService::feeRate(), 2),
-                'trainer_amount' => round($porAluno * AsaasService::SPLIT_RATE, 2),
+                'amount_total' => $valores['amount_total'],
+                'company_fee' => $valores['company_fee'],
+                'trainer_amount' => $valores['trainer_amount'],
+                'gateway_fee' => $valores['gateway_fee'],
                 'status' => 'succeeded', 'paid_at' => now()->subDays(30),
             ]);
         }

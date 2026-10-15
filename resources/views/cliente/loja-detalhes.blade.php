@@ -286,6 +286,15 @@
             <h3><i class="ph ph-shopping-cart"></i> Seu carrinho</h3>
             <div id="cartItens"></div>
             <p id="cartVazio" class="modal-sub" style="display:none;">Seu carrinho está vazio.</p>
+            {{-- A taxa da plataforma aparece como LINHA no carrinho, não embutida no
+                 preço de cada produto. Num pedido com vários itens, somar o acréscimo
+                 produto a produto não fecha com o acréscimo sobre o total (os
+                 arredondamentos de centavo não são distributivos), e o cliente veria
+                 as linhas discordando do total. Uma linha só é exata e explícita. --}}
+            <div id="cartResumo" style="color:var(--text-muted); font-size:0.78rem; display:grid; gap:4px; margin-top:14px;">
+                <div style="display:flex; justify-content:space-between;"><span>Produtos</span> <span id="cartSubtotal">R$ 0,00</span></div>
+                <div style="display:flex; justify-content:space-between;"><span>Taxa SNR FIT ({{ \App\Support\Preco::configJs()['taxa_pct'] }}%)</span> <span id="cartTaxa">R$ 0,00</span></div>
+            </div>
             <div class="cart-total"><span>Total</span> <span class="v" id="cartTotal">R$ 0,00</span></div>
             <button class="btn-confirmar" id="btnIrCheckout" onclick="irParaEntrega()"><i class="ph ph-arrow-right"></i> Continuar</button>
         </div>
@@ -333,7 +342,12 @@
                 <textarea id="entObs" rows="2" maxlength="500" placeholder="Algo que a loja precisa saber?"></textarea>
             </div>
 
-            <div class="cart-total"><span>Total</span> <span class="v" id="cartTotal2">R$ 0,00</span></div>
+            <div style="color:var(--text-muted); font-size:0.78rem; display:grid; gap:4px; margin-top:14px;">
+                <div style="display:flex; justify-content:space-between;"><span>Produtos</span> <span id="cartSubtotal2">R$ 0,00</span></div>
+                <div style="display:flex; justify-content:space-between;"><span>Taxa SNR FIT ({{ \App\Support\Preco::configJs()['taxa_pct'] }}%)</span> <span id="cartTaxa2">R$ 0,00</span></div>
+                <div style="display:flex; justify-content:space-between;"><span>No cartão, a taxa do cartão é somada</span> <span></span></div>
+            </div>
+            <div class="cart-total"><span>Total no PIX</span> <span class="v" id="cartTotal2">R$ 0,00</span></div>
             <p class="erro-msg" id="checkoutErro"></p>
             <div class="botoes-pagamento">
                 <button class="btn-pix" onclick="pagarPix()"><i class="ph ph-qr-code"></i> PIX</button>
@@ -351,6 +365,7 @@
         <h3><i class="ph ph-qr-code"></i> PAGAMENTO PIX</h3>
         <p class="modal-sub" id="pixDescricao"></p>
         <p class="modal-valor" id="pixValor">Gerando QR Code...</p>
+        <p id="pixDetalhe" style="color:var(--text-muted); font-size:0.74rem; margin:-14px 0 16px;"></p>
         <img class="pix-qr" id="pixQr" src="" alt="QR Code PIX">
         <div class="pix-copia-wrap">
             <input type="text" id="pixCopia" readonly>
@@ -368,6 +383,7 @@
         <button class="modal-fechar" onclick="fecharModalCartao()">✕</button>
         <h3><i class="ph ph-credit-card"></i> PAGAMENTO COM CARTÃO</h3>
         <p class="modal-valor" id="cartaoValor"></p>
+        <p id="cartaoDetalhe" style="color:var(--text-muted); font-size:0.74rem; margin:-14px 0 16px;"></p>
         <form id="formCartao" onsubmit="submeterCartao(event)" autocomplete="off">
             <div class="campo"><label>Número do cartão</label><input id="cartaoNumero" type="text" inputmode="numeric" maxlength="19" placeholder="0000 0000 0000 0000" oninput="fmtCartao(this)" required></div>
             <div class="campo"><label>Nome impresso no cartão</label><input id="cartaoNomeTitular" type="text" placeholder="NOME SOBRENOME" maxlength="100" oninput="this.value=this.value.toUpperCase()" required></div>
@@ -399,6 +415,11 @@
     const CLIENTE_CEP = {!! json_encode($cliente->cep ?? '', JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP) !!};
     const EH_CLIENTE  = {!! json_encode((bool) $cliente, JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP) !!};
 
+    // A taxa vem do SERVIDOR (config('taxas.comissao')), nunca escrita aqui: um
+    // 0.10 cravado neste script ficaria velho no dia em que a comissão mudasse e
+    // o carrinho passaria a prometer um total que o checkout não cobra.
+    const TAXA_SNRFIT = {!! json_encode(\App\Support\Preco::configJs()['taxa'], JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP) !!};
+
     let cart = [];          // { id, nome, preco, estoque, qtd }
     let entregaTipo = 'retirada';
 
@@ -423,7 +444,13 @@
         setTimeout(() => ph.style.transform = '', 150);
     }
 
+    // Soma dos PRODUTOS — é isto que vai no corpo da requisição e é sobre isto
+    // que o servidor aplica a taxa. O total cobrado volta do servidor
+    // (`data.amount`); aqui só antecipamos a mesma conta para a tela.
     function totalCart() { return cart.reduce((s, i) => s + i.preco * i.qtd, 0); }
+
+    function taxaCart()  { return Math.round(totalCart() * TAXA_SNRFIT * 100) / 100; }
+    function cobradoCart() { return totalCart() + taxaCart(); }
     function countCart() { return cart.reduce((s, i) => s + i.qtd, 0); }
 
     function atualizarFab() {
@@ -478,9 +505,15 @@
                     <button class="ci-remove" onclick="removeItem(${i.id})"><i class="ph ph-trash"></i></button>
                 </div>`).join('');
         }
-        const t = brl(totalCart());
-        document.getElementById('cartTotal').textContent = t;
-        document.getElementById('cartTotal2').textContent = t;
+        const sub = brl(totalCart());
+        const tx  = brl(taxaCart());
+        const t   = brl(cobradoCart());
+        document.getElementById('cartSubtotal').textContent  = sub;
+        document.getElementById('cartSubtotal2').textContent = sub;
+        document.getElementById('cartTaxa').textContent      = tx;
+        document.getElementById('cartTaxa2').textContent     = tx;
+        document.getElementById('cartTotal').textContent     = t;
+        document.getElementById('cartTotal2').textContent    = t;
     }
 
     function escapeHtml(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
@@ -552,6 +585,7 @@
     let pixPolling = null;
     function abrirModalPix() {
         document.getElementById('pixValor').textContent = 'Gerando QR Code...';
+        document.getElementById('pixDetalhe').textContent = '';
         document.getElementById('pixQr').src = '';
         document.getElementById('pixCopia').value = '';
         document.getElementById('pixStatus').style.display = 'none';
@@ -576,6 +610,10 @@
             document.getElementById('pixQr').src = 'data:image/png;base64,' + data.pixQrCode;
             document.getElementById('pixCopia').value = data.pixPayload;
             document.getElementById('pixValor').textContent = brl(data.amount);
+            if (data.valores) {
+                document.getElementById('pixDetalhe').textContent =
+                    `Produtos ${brl(data.valores.base)} + taxa SNR FIT ${brl(data.valores.comissao)}`;
+            }
 
             pixPolling = setInterval(async () => {
                 try {
@@ -599,9 +637,26 @@
     }
 
     // ============ CARTÃO ============
-    function pagarCartao() {
+    async function pagarCartao() {
         if (!validarEntrega()) return;
-        document.getElementById('cartaoValor').textContent = brl(totalCart());
+
+        // O total no cartão inclui a taxa do Asaas, que é um gross-up — pedimos
+        // a conta ao servidor em vez de reimplementá-la aqui. Até a resposta
+        // chegar, mostramos o total do Pix (sempre menor) com um aviso, para o
+        // campo nunca ficar vazio nem exibir um número maior que o cobrado.
+        const valorEl   = document.getElementById('cartaoValor');
+        const detalheEl = document.getElementById('cartaoDetalhe');
+        valorEl.textContent = brl(cobradoCart());
+        detalheEl.textContent = 'Calculando a taxa do cartão...';
+
+        fetch('/api/v1/precos/cotar?valor=' + encodeURIComponent(totalCart().toFixed(2)))
+            .then(r => r.ok ? r.json() : Promise.reject())
+            .then(d => {
+                valorEl.textContent = brl(d.cartao.total);
+                detalheEl.textContent = `Produtos ${brl(d.cartao.base)} + taxa SNR FIT ${brl(d.cartao.comissao)} + taxa do cartão ${brl(d.cartao.gateway)}`;
+            })
+            .catch(() => { detalheEl.textContent = 'A taxa do cartão é somada ao total no momento da cobrança.'; });
+
         document.getElementById('formCartao').reset();
         document.getElementById('cartaoErro').style.display = 'none';
         document.getElementById('cartaoSucesso').style.display = 'none';

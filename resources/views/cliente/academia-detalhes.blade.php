@@ -159,7 +159,7 @@
                 <div class="modalidades"><i class="ph ph-lightning"></i> {{ $academia->tipos_aulas }}</div>
             @endif
             <div class="meta"><i class="ph ph-map-pin"></i> {{ $academia->endereco ?? ($academia->cidade . ' - ' . $academia->estado) }}</div>
-            <div class="meta"><i class="ph ph-identification-card"></i> Mensalidade: <strong style="color:#fff;">R$ {{ number_format($academia->valor_mensalidade ?? 0, 2, ',', '.') }}</strong></div>
+            <div class="meta"><i class="ph ph-identification-card"></i> Mensalidade: <strong style="color:#fff;">R$ {{ \App\Support\Preco::fmt($academia->valor_mensalidade) }}</strong></div>
             @if($academia->descricao)
                 <p class="descricao">{{ $academia->descricao }}</p>
             @endif
@@ -185,10 +185,17 @@
         <div class="mensalidade-box">
             <div>
                 <div class="label">Mensalidade</div>
-                <div style="color:var(--text-muted); font-size:0.8rem;">Valor base da academia</div>
+                <div style="color:var(--text-muted); font-size:0.8rem;">Já com a taxa de serviço</div>
             </div>
             <div style="text-align:right;">
-                <div class="valor">R$ {{ number_format($academia->valor_mensalidade ?? 0, 2, ',', '.') }} <small>/mês</small></div>
+                {{-- Valor FINAL (mensalidade + taxa da plataforma). Ver App\Support\Preco. --}}
+                <div class="valor">R$ {{ \App\Support\Preco::fmt($academia->valor_mensalidade) }} <small>/mês</small></div>
+                @if(($academia->valor_mensalidade ?? 0) > 0)
+                    <div style="color:var(--text-muted); font-size:0.7rem; margin-top:2px;">
+                        Mensalidade R$ {{ number_format($academia->valor_mensalidade, 2, ',', '.') }}
+                        + taxa R$ {{ number_format(\App\Support\Preco::taxa($academia->valor_mensalidade), 2, ',', '.') }}
+                    </div>
+                @endif
                 @if(($academia->valor_mensalidade ?? 0) > 0)
                     <div class="botoes-pagamento" style="margin-top:10px; min-width:190px;">
                         <button class="btn-pix" onclick="pagarMensalidadePix()"><i class="ph ph-qr-code"></i> PIX</button>
@@ -205,15 +212,23 @@
                 @foreach($academia->planos as $plano)
                     <div class="plano-card">
                         <h4>{{ $plano->nome }}</h4>
-                        <div class="valor">R$ {{ number_format($plano->valor, 2, ',', '.') }} <small>/mês · {{ $plano->duracao_meses }} {{ $plano->duracao_meses == 1 ? 'mês' : 'meses' }}</small></div>
+                        {{-- Valor FINAL (plano + taxa da plataforma). Ver App\Support\Preco. --}}
+                        <div class="valor">R$ {{ \App\Support\Preco::fmt($plano->valor) }} <small>/mês · {{ $plano->duracao_meses }} {{ $plano->duracao_meses == 1 ? 'mês' : 'meses' }}</small></div>
+                        <div style="color:var(--text-muted); font-size:0.7rem; margin:-2px 0 6px;">
+                            Plano R$ {{ number_format($plano->valor, 2, ',', '.') }}
+                            + taxa R$ {{ number_format(\App\Support\Preco::taxa($plano->valor), 2, ',', '.') }}
+                        </div>
                         @if($plano->descricao)
                             <p class="desc">{{ $plano->descricao }}</p>
                         @else
                             <p class="desc"></p>
                         @endif
+                        {{-- A quebra dos dois meios vem PRONTA do servidor (Preco::dados): o
+                             total do cartão é um gross-up, e recalculá-lo em JS divergiria
+                             em centavos do valor que a cobrança vai de fato ter. --}}
                         <div class="botoes-pagamento">
-                            <button class="btn-pix" onclick="pagarPlanoPix({{ $plano->id }}, {!! htmlspecialchars(json_encode($plano->nome), ENT_QUOTES) !!}, {{ $plano->valor }})"><i class="ph ph-qr-code"></i> PIX</button>
-                            <button class="btn-cartao" onclick="pagarPlanoCartao({{ $plano->id }}, {!! htmlspecialchars(json_encode($plano->nome), ENT_QUOTES) !!}, {{ $plano->valor }})"><i class="ph ph-credit-card"></i> Cartão</button>
+                            <button class="btn-pix" onclick="pagarPlanoPix({{ $plano->id }}, {!! htmlspecialchars(json_encode($plano->nome), ENT_QUOTES) !!}, {!! htmlspecialchars(json_encode(\App\Support\Preco::dados($plano->valor)), ENT_QUOTES) !!})"><i class="ph ph-qr-code"></i> PIX</button>
+                            <button class="btn-cartao" onclick="pagarPlanoCartao({{ $plano->id }}, {!! htmlspecialchars(json_encode($plano->nome), ENT_QUOTES) !!}, {!! htmlspecialchars(json_encode(\App\Support\Preco::dados($plano->valor)), ENT_QUOTES) !!})"><i class="ph ph-credit-card"></i> Cartão</button>
                         </div>
                     </div>
                 @endforeach
@@ -239,7 +254,8 @@
                         <div class="pr-nome">{{ $p->nome }}</div>
                         <div class="pr-esp"><i class="ph ph-barbell"></i> Personal Trainer</div>
                         @if($p->valor_secao)
-                            <div class="pr-valor">R$ {{ number_format($p->valor_secao, 2, ',', '.') }} <small>/ aula</small></div>
+                            {{-- Valor FINAL da aula (aula + taxa da plataforma). Ver App\Support\Preco. --}}
+                            <div class="pr-valor">R$ {{ \App\Support\Preco::fmt($p->valor_secao) }} <small>/ aula</small></div>
                         @endif
                         {{-- Reutiliza EXATAMENTE o mesmo fluxo de compra do perfil do personal:
                              cliente.index?personal=ID abre o modal de "Contratar Pacote / Aula Avulsa"
@@ -327,6 +343,7 @@
         <h3><i class="ph ph-qr-code"></i> PAGAMENTO PIX</h3>
         <p class="modal-sub" id="pixDescricao"></p>
         <p class="modal-valor" id="pixValor">Gerando QR Code...</p>
+        <p id="pixDetalhe" style="color:var(--text-muted); font-size:0.74rem; margin:-14px 0 16px;"></p>
         <p id="pixRecorrenteNota" style="display:none; color:#7cff00; font-size:0.78rem; font-weight:700; margin:0 0 12px; background:rgba(124,255,0,0.08); border:1px solid rgba(124,255,0,0.25); border-radius:10px; padding:8px 12px;">
             🔁 Assinatura mensal — uma nova cobrança PIX é gerada todo mês.
         </p>
@@ -348,6 +365,7 @@
         <h3><i class="ph ph-credit-card"></i> PAGAMENTO COM CARTÃO</h3>
         <p class="modal-sub" id="cartaoDescricao"></p>
         <p class="modal-valor" id="cartaoValor"></p>
+        <p id="cartaoDetalhe" style="color:var(--text-muted); font-size:0.74rem; margin:-14px 0 16px;"></p>
 
         <form class="form-cartao" id="formCartao" onsubmit="submeterCartao(event)" autocomplete="off">
             <div class="campo">
@@ -403,7 +421,10 @@
 <script>
     const ACADEMIA_ID       = {!! json_encode($academia->id, JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP) !!};
     const ACADEMIA_NOME     = {!! json_encode($academia->nome, JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP) !!};
-    const VALOR_MENSALIDADE = {!! json_encode((float) ($academia->valor_mensalidade ?? 0), JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP) !!};
+    // Quebra da mensalidade nos dois meios, calculada no SERVIDOR. O front não
+    // refaz a conta: o total do cartão é um gross-up sobre a taxa do Asaas e
+    // uma segunda implementação em JS mostraria um valor diferente do cobrado.
+    const MENSALIDADE = {!! json_encode(\App\Support\Preco::dados($academia->valor_mensalidade), JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP) !!};
     const CSRF          = '{{ csrf_token() }}';
     const CLIENTE_TEL   = {!! json_encode($cliente->whatsapp ?? '', JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP) !!};
     const CLIENTE_CEP   = {!! json_encode($cliente->cep ?? '', JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP) !!};
@@ -423,6 +444,7 @@
     function abrirModalPix(descricao) {
         document.getElementById('pixDescricao').textContent = descricao;
         document.getElementById('pixValor').textContent = 'Gerando QR Code...';
+        document.getElementById('pixDetalhe').textContent = '';
         document.getElementById('pixQr').src = '';
         document.getElementById('pixCopia').value = '';
         document.getElementById('pixStatus').style.display = 'none';
@@ -439,10 +461,23 @@
     }
 
     // Mensalidade base (sem plano): pagamento direto do valor mensal da academia.
-    function pagarMensalidadePix()    { pagarPlanoPix(null, 'Mensalidade', VALOR_MENSALIDADE); }
-    function pagarMensalidadeCartao() { pagarPlanoCartao(null, 'Mensalidade', VALOR_MENSALIDADE); }
+    function pagarMensalidadePix()    { pagarPlanoPix(null, 'Mensalidade', MENSALIDADE); }
+    function pagarMensalidadeCartao() { pagarPlanoCartao(null, 'Mensalidade', MENSALIDADE); }
 
-    async function pagarPlanoPix(planoId, planoNome, valor) {
+    const brl = (v) => 'R$ ' + parseFloat(v || 0).toFixed(2).replace('.', ',');
+
+    /**
+     * A linha de detalhe do checkout: de onde vem o valor que está sendo
+     * cobrado. `c` é um dos ramos de Preco::dados() (pix ou cartao).
+     */
+    function linhaDetalhe(c) {
+        if (!c) return '';
+        let txt = `Serviço ${brl(c.base)} + taxa SNR FIT ${brl(c.comissao)}`;
+        if (c.gateway > 0) txt += ` + taxa do cartão ${brl(c.gateway)}`;
+        return txt;
+    }
+
+    async function pagarPlanoPix(planoId, planoNome, precos) {
         abrirModalPix(planoId ? `Plano ${planoNome} — ${ACADEMIA_NOME}` : `Mensalidade — ${ACADEMIA_NOME}`);
         try {
             const body = { academia_id: ACADEMIA_ID };
@@ -457,7 +492,10 @@
 
             document.getElementById('pixQr').src = 'data:image/png;base64,' + data.pixQrCode;
             document.getElementById('pixCopia').value = data.pixPayload;
-            document.getElementById('pixValor').textContent = 'R$ ' + parseFloat(data.amount).toFixed(2).replace('.', ',');
+            // `data.amount` e `data.valores` vêm do servidor — é o valor que a
+            // cobrança tem de fato, não uma estimativa desta tela.
+            document.getElementById('pixValor').textContent = brl(data.amount);
+            document.getElementById('pixDetalhe').textContent = linhaDetalhe(data.valores || (precos && precos.pix));
             document.getElementById('pixRecorrenteNota').style.display = data.recorrente ? 'block' : 'none';
 
             pixPolling = setInterval(async () => {
@@ -483,7 +521,7 @@
     // ============ CARTÃO ============
     let cartaoCtx = null;
 
-    function pagarPlanoCartao(planoId, planoNome, valor) {
+    function pagarPlanoCartao(planoId, planoNome, precos) {
         const payload = { academia_id: ACADEMIA_ID };
         if (planoId) payload.plano_id = planoId;
         cartaoCtx = {
@@ -491,7 +529,8 @@
             payload,
         };
         document.getElementById('cartaoDescricao').textContent = planoId ? `Plano ${planoNome} — ${ACADEMIA_NOME}` : `Mensalidade — ${ACADEMIA_NOME}`;
-        document.getElementById('cartaoValor').textContent = 'R$ ' + parseFloat(valor).toFixed(2).replace('.', ',');
+        document.getElementById('cartaoValor').textContent = brl(precos?.cartao?.total);
+        document.getElementById('cartaoDetalhe').textContent = linhaDetalhe(precos?.cartao);
         document.getElementById('formCartao').reset();
         document.getElementById('cartaoErro').style.display = 'none';
         document.getElementById('cartaoSucesso').style.display = 'none';

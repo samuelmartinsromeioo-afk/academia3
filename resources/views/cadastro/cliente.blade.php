@@ -248,12 +248,25 @@
                 </div>
             </div>
 
+            {{-- min/max saem de CadastroHelper, a MESMA fonte da validação: o
+                 navegador já barra a data fora da faixa e o seletor nem abre
+                 nela. É só conveniência — quem decide é o servidor (um POST
+                 direto ignora o atributo). --}}
+            @php
+                $limiteNascimento = \App\Support\CadastroHelper::limitesNascimento(
+                    \App\Support\CadastroHelper::IDADE_MINIMA_ALUNO
+                );
+            @endphp
             <div class="form-group">
                 <label>Data de Nascimento</label>
                 <div class="input-wrapper">
                     <i class="ph ph-calendar"></i>
-                    <input type="date" name="idade" value="{{ old('idade') }}" required>
+                    <input type="date" name="idade" value="{{ old('idade') }}" required
+                           min="{{ $limiteNascimento['min'] }}" max="{{ $limiteNascimento['max'] }}">
                 </div>
+                <small style="display:block; margin-top:6px; font-size:.75rem; line-height:1.4; color:#9ca3af;">
+                    É preciso ter no mínimo {{ \App\Support\CadastroHelper::IDADE_MINIMA_ALUNO }} anos para criar uma conta.
+                </small>
             </div>
 
             <div class="form-group">

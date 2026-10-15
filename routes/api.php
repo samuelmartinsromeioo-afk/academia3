@@ -49,6 +49,18 @@ Route::prefix('v1')->group(function () {
     Route::get('/cupom/validar', [\App\Http\Controllers\Api\IndicacaoController::class, 'validar'])
         ->middleware('throttle:20,1');
 
+    /*
+     * A conta do preço (preço do profissional → o que o cliente paga, no Pix e
+     * no cartão). Pública porque é só aritmética sobre um valor que o próprio
+     * chamador manda, e com throttle pela mesma razão das de cima.
+     *
+     * Consumida pelo carrinho da loja no site e pelo app. NENHUM dos dois
+     * refaz a conta: o total do cartão é um gross-up e uma segunda fórmula no
+     * front mostraria um valor diferente do que a cobrança vai ter.
+     */
+    Route::get('/precos/cotar', [\App\Http\Controllers\Api\PrecoController::class, 'cotar'])
+        ->middleware('throttle:60,1');
+
     Route::get('/media/exercicio-video/{path}', [\App\Http\Controllers\Api\MediaController::class, 'exercicioVideo'])
         ->where('path', '.*');
 
@@ -63,7 +75,24 @@ Route::prefix('v1')->group(function () {
         Route::put('/perfil', [\App\Http\Controllers\Api\PerfilController::class, 'update']);
         Route::post('/perfil/foto', [\App\Http\Controllers\Api\PerfilController::class, 'foto']);
 
-        // Exclusão da própria conta (requisito da App Store — qualquer papel).
+        /*
+         * Direitos do titular dentro do app (qualquer papel). A exclusão é
+         * requisito da App Store; a exportação e a leitura dos consentimentos
+         * existem porque a Política afirma que o titular acessa, exporta e
+         * exclui "no app e no site" — e só a exclusão existia aqui.
+         *
+         * `exportar` tem throttle próprio: devolve o pacote inteiro do titular
+         * numa resposta, então é a rota mais cara da API por requisição, e
+         * ninguém exporta os próprios dados 60 vezes por minuto.
+         */
+        Route::get('/conta/exportar', [\App\Http\Controllers\Api\ContaController::class, 'exportar'])
+            ->middleware('throttle:10,1');
+        // Caminho principal no app: o pacote vai anexado por e-mail, porque
+        // salvar/compartilhar arquivo exigiria dependência nativa nova. Throttle
+        // mais apertado: cada chamada manda um e-mail com dado pessoal dentro.
+        Route::post('/conta/exportar/email', [\App\Http\Controllers\Api\ContaController::class, 'exportarPorEmail'])
+            ->middleware('throttle:5,10');
+        Route::get('/conta/consentimentos', [\App\Http\Controllers\Api\ContaController::class, 'consentimentos']);
         Route::delete('/conta', [\App\Http\Controllers\Api\ContaController::class, 'destroy']);
 
         /*
@@ -289,6 +318,10 @@ Route::prefix('v1')->group(function () {
         });
         Route::get('/anamnese', [\App\Http\Controllers\Api\ProgressoController::class, 'anamnese']);
         Route::post('/anamnese', [\App\Http\Controllers\Api\ProgressoController::class, 'salvarAnamnese']);
+        // Revogação do consentimento de saúde: apaga a anamnese SEM encerrar a
+        // conta. Sem esta rota, a única revogação possível pelo app era excluir
+        // a conta inteira — para tirar um dado, perder todos.
+        Route::delete('/anamnese', [\App\Http\Controllers\Api\ProgressoController::class, 'revogarAnamnese']);
 
         // Explorar e contratar (aluno)
         Route::prefix('explorar')->group(function () {
@@ -339,6 +372,18 @@ Route::prefix('v1')->group(function () {
             Route::get('/{id}/pix', [ApiPaymentController::class, 'pix'])->whereNumber('id');
             Route::get('/{id}/status', [ApiPaymentController::class, 'status'])->whereNumber('id');
         });
+
+        /*
+         * Assinaturas do aluno. O app CRIA recorrência (pacote mensal, plano de
+         * academia/studio) desde o começo e não tinha como listá-la nem
+         * cancelá-la: a rota de cancelamento do site resolve o dono por
+         * `session('cliente_id')`, que não existe num request Bearer. Resultado:
+         * assinatura contratada no app só se cancelava pelo site, contra a
+         * cláusula 8.2 dos Termos e o art. 4º, V, do Decreto nº 7.962/2013.
+         */
+        Route::get('/assinaturas', [ApiPaymentController::class, 'assinaturas']);
+        Route::post('/assinaturas/{id}/cancelar', [ApiPaymentController::class, 'cancelarAssinatura'])
+            ->whereNumber('id')->middleware('throttle:20,1');
     });
 });
 

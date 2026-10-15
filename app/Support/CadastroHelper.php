@@ -14,6 +14,98 @@ use Illuminate\Support\Facades\Log;
 class CadastroHelper
 {
     /**
+     * Idade mínima para abrir conta, em anos. Fonte ÚNICA da regra: as quatro
+     * portas de cadastro (web e app, aluno e personal), o `max` dos campos de
+     * data nos formulários, o aviso na tela e o catálogo que o app baixa em
+     * GET /cadastro/opcoes derivam todos daqui.
+     *
+     * Por que 18 para o aluno: a plataforma é um marketplace que cobra e
+     * repassa dinheiro, e menor de 18 não contrata sozinho (CC art. 166 I) —
+     * pacote, mensalidade e aula avulsa seriam negócios anuláveis. Além disso,
+     * tratar dado de criança/adolescente exige consentimento do responsável
+     * (LGPD art. 14), que nenhum dos dois cadastros coleta.
+     *
+     * Por que 21 para o personal: é regra da plataforma, mais estrita que a do
+     * aluno porque ele recebe repasse em conta própria (subconta Asaas, split
+     * 90/10) e responde tecnicamente pelo treino de terceiros.
+     *
+     * Não escreva 18 nem 21 em nenhum outro lugar: a regra em dois números
+     * iguais é exatamente como `0.10` se espalhou pela comissão (ver CLAUDE.md,
+     * "Revenue Model") e sobreviveu à correção.
+     */
+    public const IDADE_MINIMA_ALUNO = 18;
+
+    public const IDADE_MINIMA_PROFISSIONAL = 21;
+
+    /**
+     * Teto de plausibilidade da data de nascimento, em anos.
+     *
+     * Existe para o lado de cima: sem ele, um ano digitado errado ("0199",
+     * "1089") passa pela idade mínima com folga e grava um nascimento absurdo
+     * que depois reaparece como idade negativa/estranha na avaliação física
+     * (`AvaliacaoFisicaController` calcula a idade a partir desta coluna).
+     */
+    public const IDADE_MAXIMA_PLAUSIVEL = 110;
+
+    /**
+     * Janela de datas de nascimento aceitas, em Y-m-d.
+     *
+     * `max` = hoje menos a idade mínima: quem nasceu exatamente nesse dia
+     * completa a idade HOJE e entra (a comparação é inclusiva).
+     *
+     * Serve a validação, o `min`/`max` do <input type="date"> e o catálogo do
+     * app — os três lugares que precisam do mesmo corte.
+     *
+     * @return array{min: string, max: string}
+     */
+    public static function limitesNascimento(int $idadeMinima): array
+    {
+        return [
+            'min' => now()->subYears(self::IDADE_MAXIMA_PLAUSIVEL)->toDateString(),
+            'max' => now()->subYears($idadeMinima)->toDateString(),
+        ];
+    }
+
+    /**
+     * Regras de validação da data de nascimento (coluna `idade`, que guarda uma
+     * DATA e não um número de anos — o nome é histórico).
+     *
+     * Sem `required`/`sometimes` de propósito: a obrigatoriedade é decisão de
+     * cada porta, o corte de idade não é.
+     *
+     * @return array<int, string>
+     */
+    public static function regraNascimento(int $idadeMinima): array
+    {
+        $limites = self::limitesNascimento($idadeMinima);
+
+        return [
+            'date',
+            'before_or_equal:' . $limites['max'],
+            'after_or_equal:' . $limites['min'],
+        ];
+    }
+
+    /**
+     * Mensagens das regras acima.
+     *
+     * A padrão do Laravel para `before_or_equal` seria "deve ser uma data
+     * anterior ou igual a 2008-10-10": correta e inútil para quem está
+     * preenchendo — ninguém relaciona aquela data com a própria idade.
+     *
+     * @return array<string, string>
+     */
+    public static function mensagensNascimento(int $idadeMinima, string $campo = 'idade'): array
+    {
+        return [
+            "{$campo}.required"        => 'Informe sua data de nascimento.',
+            "{$campo}.date"            => 'Informe uma data de nascimento válida.',
+            "{$campo}.before_or_equal" => "É preciso ter no mínimo {$idadeMinima} anos para criar uma conta.",
+            "{$campo}.after_or_equal"  => 'Confira a data de nascimento: o ano informado não parece válido.',
+        ];
+    }
+
+    /**
      * Regra de validação do `sexo` do aluno, a partir de config('textos').
      *
      * Aceita maiúscula e minúscula porque o cadastro grava `strtolower` e a

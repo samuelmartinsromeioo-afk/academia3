@@ -21,6 +21,7 @@ class Payment extends Model
         'amount_total',
         'company_fee',
         'trainer_amount',
+        'gateway_fee',
         'stripe_payment_intent_id',
         'asaas_subscription_id',
         'status',
@@ -38,6 +39,7 @@ class Payment extends Model
         'amount_total'   => 'decimal:2',
         'company_fee'    => 'decimal:2',
         'trainer_amount' => 'decimal:2',
+        'gateway_fee'    => 'decimal:2',
         'paid_at'        => 'datetime',
         'next_billing_date' => 'date',
     ];

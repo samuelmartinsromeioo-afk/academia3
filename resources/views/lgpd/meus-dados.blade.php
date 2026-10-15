@@ -49,6 +49,15 @@
         <h1><i class="ph ph-shield-check"></i> MEUS DADOS</h1>
         <p class="subtitle">Seus direitos sobre os seus dados pessoais, conforme a LGPD.</p>
 
+        {{-- Confirmação ao titular. Sem isto, revogar o consentimento de saúde
+             apagava a anamnese e devolvia a mesma tela sem dizer nada — o
+             usuário não tinha como saber se a ação valeu. --}}
+        @if(session('sucesso'))
+            <div class="panel" style="border-color:rgba(0,230,118,0.4);">
+                <p style="margin:0;color:var(--green);"><i class="ph ph-check-circle"></i> {{ session('sucesso') }}</p>
+            </div>
+        @endif
+
         <div class="panel">
             <h2><i class="ph ph-file-lock"></i> Política de Privacidade</h2>
             <p>Entenda quais dados coletamos, por que, com quem compartilhamos e por quanto tempo guardamos.</p>
@@ -61,6 +70,62 @@
             <a href="{{ route('lgpd.exportar') }}" class="btn btn-primary"><i class="ph ph-download-simple"></i> Baixar meus dados</a>
         </div>
 
+        {{--
+            Consentimentos — a parte que faltava desta página.
+
+            Ela oferecia "ler", "exportar" e "excluir" e nenhum controle sobre
+            CONSENTIMENTO, embora a Política prometa revogação "a qualquer
+            momento, sem justificar" para saúde e marketing. Sem isto, revogar
+            saúde só era possível apagando a conta inteira, e revogar marketing
+            dependia de limpar cookies no navegador.
+        --}}
+        <div class="panel">
+            <h2><i class="ph ph-cookie"></i> Cookies e medição de anúncios</h2>
+            <p>
+                Cookies essenciais mantêm você autenticado e não dependem de escolha.
+                Os de <strong>medição de anúncios</strong> (Meta Pixel e API de Conversões)
+                só são ativados com o seu consentimento, e recusá-los não afeta nada do
+                que você usa aqui. Situação atual:
+                <strong style="color:{{ $cookiesAceito ? 'var(--green)' : 'var(--muted)' }};">
+                    {{ $cookiesAceito ? 'aceito' : 'recusado ou ainda não decidido' }}</strong>.
+            </p>
+            <button type="button" class="btn btn-ghost"
+                onclick="window.snrfitCookies ? window.snrfitCookies.abrir() : alert('A medição de anúncios não está configurada neste ambiente.')">
+                <i class="ph ph-sliders-horizontal"></i> Mudar minha escolha
+            </button>
+        </div>
+
+        @if($tipo === 'cliente')
+            <div class="panel">
+                <h2><i class="ph ph-heartbeat"></i> Dados de saúde (anamnese)</h2>
+                <p>
+                    A anamnese é <strong>dado pessoal sensível</strong> (art. 11 da LGPD) e é
+                    tratada com base no seu <strong>consentimento específico</strong>, dado no
+                    momento em que você a preenche. O preenchimento é opcional. Situação atual:
+                    <strong style="color:{{ $saudeConsentido ? 'var(--green)' : 'var(--muted)' }};">
+                        {{ $saudeConsentido ? 'consentimento ativo' : 'sem consentimento registrado' }}</strong>.
+                </p>
+                @if($temAnamnese)
+                    <p>
+                        Revogar apaga a anamnese e os dados de saúde dela
+                        <strong>sem encerrar a sua conta</strong>: você continua treinando,
+                        contratando e usando a Plataforma normalmente, e pode preenchê-la de
+                        novo quando quiser. Avaliações físicas, medidas e fotos de progresso
+                        são apagadas separadamente, nas telas em que você as registrou.
+                    </p>
+                    <form method="POST" action="{{ route('lgpd.revogar-saude') }}"
+                        onsubmit="return confirm('Revogar o consentimento e apagar sua anamnese? Sua conta continua ativa.')">
+                        @csrf
+                        <button type="submit" class="btn btn-ghost">
+                            <i class="ph ph-prohibit"></i> Revogar e apagar minha anamnese
+                        </button>
+                    </form>
+                @else
+                    <p class="subtitle" style="margin:0;">Você não tem anamnese preenchida — não há dado de saúde a revogar.</p>
+                @endif
+            </div>
+        @endif
+
         <div class="panel danger">
             <h2><i class="ph ph-warning"></i> Excluir minha conta</h2>
             <p>
@@ -71,6 +136,12 @@
             @if($errors->any())
                 <div class="err"><i class="ph ph-warning-circle"></i> {{ $errors->first() }}</div>
             @endif
+
+            <p>
+                Antes de encerrar, enviamos a <strong>confirmação por e-mail</strong> para o
+                endereço cadastrado — é o último aviso que chega a ele, porque depois da
+                exclusão o e-mail deixa de existir na nossa base.
+            </p>
 
             <form method="POST" action="{{ route('lgpd.excluir') }}" onsubmit="return confirm('Tem certeza? Esta ação é irreversível.')">
                 @csrf
@@ -86,6 +157,10 @@
             </form>
         </div>
     </div>
+
+    {{-- Só a gestão da ESCOLHA de cookies: este partial nunca carrega o Pixel,
+         e é por isso que pode entrar na página de privacidade. --}}
+    @include('partials.banner-cookies')
 </body>
 
 </html>

@@ -697,7 +697,7 @@
         <div id="carteiraSemConta" style="display:none; text-align:center; padding:10px 0;">
             <i class="ph ph-piggy-bank fa-2x" style="margin-bottom:12px; display:block; color: var(--primary);"></i>
             <p style="color: var(--text-muted); font-size:0.85rem; margin-bottom:18px;">
-                Ative os recebimentos para que as mensalidades dos planos caiam direto na sua conta (com repasse automático de 90%).
+                Ative os recebimentos para que as mensalidades dos planos caiam direto na sua conta — você recebe o valor que cadastrou, integral. A taxa de serviço da SNR FIT é somada ao preço que o aluno paga.
             </p>
             <p id="carteiraContaErro" style="display:none; color:#ff6b6b; font-size:0.82rem; background:rgba(255,107,107,0.1); border:1px solid rgba(255,107,107,0.3); border-radius:8px; padding:10px 14px; margin-bottom:14px;"></p>
             <button type="button" id="btnAtivarConta" onclick="ativarRecebimentos()" class="btn-save" style="margin-top:0;">

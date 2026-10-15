@@ -19,9 +19,14 @@ class PaymentResource extends JsonResource
         return [
             'id' => $this->id,
             'tipo' => $booking['tipo'] ?? null,
+            // A conta completa: o aluno pagou `amount_total`, o profissional
+            // recebeu `trainer_amount` (o preço dele, cheio), nós ganhamos
+            // `company_fee` e `gateway_fee` foi embora para a Asaas. O extrato
+            // do app precisa das quatro para a soma fechar na tela.
             'amount_total' => (float) $this->amount_total,
             'company_fee' => (float) $this->company_fee,
             'trainer_amount' => (float) $this->trainer_amount,
+            'gateway_fee' => (float) $this->gateway_fee,
             'status' => $this->status,
             'payment_method' => $this->payment_method,
             'recorrente' => ! empty($this->asaas_subscription_id),

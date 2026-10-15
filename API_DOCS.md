@@ -157,15 +157,34 @@ Autenticado. Retorna a avaliação se pertencer ao usuário do token (personal c
 
 ## 4. Pagamentos (Asaas)
 
-Regras de repasse — **idênticas ao site**, via `App\Services\AsaasService` (compartilhado entre web e API):
+Regras de repasse — **idênticas ao site**, via `App\Services\AsaasService` (compartilhado entre web e API).
 
-| Recebedor | Modelo |
-|---|---|
-| Personal | Split **90/10** — personal recebe 90% do valor bruto; a plataforma absorve a taxa Asaas |
-| Academia | Assinatura mensal com **repasse de 100%** (sem comissão da plataforma; só a taxa PIX) |
-| Studio (plano) | Assinatura mensal com split **90/10** |
+**A comissão da plataforma é ACRÉSCIMO ao preço, não desconto.** Vale igual para personal, academia, studio e loja:
 
-Pacote do personal, mensalidade/plano de academia e plano de studio = **assinatura mensal recorrente** (o Asaas gera uma nova cobrança PIX por mês; renovações são processadas pelo webhook). Aula avulsa, ficha e avaliação = **cobrança única**. Valor mínimo por cobrança: **R$ 10,00** (`422` abaixo disso).
+```
+preço do profissional R$ 100  →  cliente paga R$ 110  →  profissional recebe R$ 100 (integral)
+```
+
+Consequência para quem consome a API: **todo `valor_*` que a API devolve é o preço do PROFISSIONAL**, nunca o que o cliente paga. Não exiba esses valores direto numa tela de cliente — use `GET /api/v1/precos/cotar` (abaixo). No **cartão** a taxa do Asaas também é somada ao valor do cliente, por gross-up; no **PIX** ela sai da comissão da plataforma.
+
+Pacote do personal, mensalidade/plano de academia e plano de studio = **assinatura mensal recorrente** (o Asaas gera uma nova cobrança PIX por mês; renovações são processadas pelo webhook). Aula avulsa, ficha, avaliação e pedido de loja = **cobrança única**. O valor mínimo por cobrança é **derivado** da taxa do PIX (R$ 19,90 com os números de hoje) e vem em `precos/cotar`; abaixo dele a resposta é `422`.
+
+### GET /api/v1/precos/cotar
+**Pública** (throttle 60/min). A conta do preço, calculada no servidor — a única fonte que o app deve usar para exibir preço ao cliente.
+
+`?valor=100` devolve a quebra dos dois meios; **sem `valor`**, devolve só a regra (é a chamada que o app faz uma vez no boot, para desenhar listas sem uma requisição por item).
+
+```json
+{
+  "taxa": 0.1, "taxa_pct": 10.0, "minimo": 19.9,
+  "base": 100.0,
+  "pix":    { "base": 100.0, "comissao": 10.0, "gateway": 0.0,  "total": 110.0 },
+  "cartao": { "base": 100.0, "comissao": 10.0, "gateway": 6.29, "total": 116.29 },
+  "abaixo_do_minimo": false
+}
+```
+
+**Não reimplemente o cálculo do cartão no cliente.** `cartao.total` é um gross-up (`(base + comissão + taxa_fixa) / (1 − taxa_percentual)`), e uma segunda implementação dessa divisão divergiria em centavos do valor que a cobrança realmente tem — a tela prometeria um total e o checkout cobraria outro. O lado PIX é só uma soma e pode ser antecipado no cliente a partir de `taxa`. No app isso está encapsulado em `src/api/precos.js`.
 
 ### GET /api/v1/payments
 Autenticado. **Cliente:** cobranças que ele pagou/deve pagar. **Personal:** cobranças recebidas (onde ele é o `trainer`). Paginado (15 por página).
@@ -174,7 +193,7 @@ Autenticado. **Cliente:** cobranças que ele pagou/deve pagar. **Personal:** cob
 {
   "data": [
     {
-      "id": 101, "tipo": "pacote", "amount_total": 400.0, "company_fee": 40.0, "trainer_amount": 360.0,
+      "id": 101, "tipo": "pacote", "amount_total": 440.0, "company_fee": 40.0, "trainer_amount": 400.0, "gateway_fee": 0.0,
       "status": "pending", "payment_method": "pix", "recorrente": true,
       "asaas_payment_id": "pay_abc123", "asaas_subscription_id": "sub_xyz789",
       "paid_at": null, "next_billing_date": null, "created_at": "2026-07-08T10:00:00-03:00",
@@ -191,7 +210,7 @@ Autenticado. **Cliente:** cobranças que ele pagou/deve pagar. **Personal:** cob
 ### POST /api/v1/payments
 Somente **cliente**. Cria uma cobrança PIX. O corpo muda conforme o `contexto`:
 
-**a) Personal** (`contexto: "personal"`) — split 90/10:
+**a) Personal** (`contexto: "personal"`) — o personal recebe o preço integral:
 
 | Campo | Tipo | Obrigatório |
 |---|---|---|
@@ -203,7 +222,7 @@ Somente **cliente**. Cria uma cobrança PIX. O corpo muda conforme o `contexto`:
 | `pacote_avaliacao_id` **ou** `avaliacao_tipo` | — | para `tipo=avaliacao` (sem ambos usa o valor padrão do personal) |
 | `objetivos`, `condicoes_clinicas`, `nivel_experiencia`, `observacoes` | string | para `tipo=ficha` |
 
-**b) Academia** (`contexto: "academia"`) — assinatura mensal, 100% para a academia:
+**b) Academia** (`contexto: "academia"`) — assinatura mensal; a academia recebe a mensalidade integral:
 
 | Campo | Tipo | Obrigatório |
 |---|---|---|
@@ -211,7 +230,7 @@ Somente **cliente**. Cria uma cobrança PIX. O corpo muda conforme o `contexto`:
 | `academia_id` | integer | sim |
 | `plano_id` | integer | não (sem ele, cobra a mensalidade base) |
 
-**c) Studio** (`contexto: "studio_plano"`) — assinatura mensal, split 90/10:
+**c) Studio** (`contexto: "studio_plano"`) — assinatura mensal; o studio recebe o preço integral:
 
 | Campo | Tipo | Obrigatório |
 |---|---|---|
@@ -222,13 +241,18 @@ Somente **cliente**. Cria uma cobrança PIX. O corpo muda conforme o `contexto`:
 Resposta `201` (cobrança única):
 
 ```json
-{ "paymentId": 101, "asaasPaymentId": "pay_abc123", "pixPayload": "00020126...", "pixQrCode": "iVBORw0KGgo... (base64)", "amount": 80.0 }
+{ "paymentId": 101, "asaasPaymentId": "pay_abc123", "pixPayload": "00020126...", "pixQrCode": "iVBORw0KGgo... (base64)",
+  "amount": 88.0,
+  "valores": { "base": 80.0, "comissao": 8.0, "gateway": 0.0, "total": 88.0 } }
 ```
 
 Resposta `201` (assinatura — pacote/academia/studio):
 
 ```json
-{ "paymentId": 102, "asaasPaymentId": "pay_def456", "subscriptionId": "sub_xyz789", "pixPayload": "00020126...", "pixQrCode": "iVBORw0KGgo...", "amount": 400.0, "recorrente": true }
+{ "paymentId": 102, "asaasPaymentId": "pay_def456", "subscriptionId": "sub_xyz789", "pixPayload": "00020126...", "pixQrCode": "iVBORw0KGgo...",
+  "amount": 440.0,
+  "valores": { "base": 400.0, "comissao": 40.0, "gateway": 0.0, "total": 440.0 },
+  "recorrente": true }
 ```
 
 Erros: `422` valor abaixo do mínimo / plano inválido / personal não trabalha com a avaliação · `500` falha no Asaas.
@@ -240,7 +264,7 @@ Autenticado. Detalhes de uma cobrança do próprio usuário (`404` se não for d
 Autenticado (dono da cobrança). Retorna o QR code PIX gerado pelo Asaas — útil para reexibir uma cobrança pendente.
 
 ```json
-{ "paymentId": 101, "asaasPaymentId": "pay_abc123", "pixPayload": "00020126...", "pixQrCode": "iVBORw0KGgo...", "expirationDate": "2026-07-09 23:59:59", "amount": 80.0 }
+{ "paymentId": 101, "asaasPaymentId": "pay_abc123", "pixPayload": "00020126...", "pixQrCode": "iVBORw0KGgo...", "expirationDate": "2026-07-09 23:59:59", "amount": 88.0 }
 ```
 
 `422` se a cobrança não tiver QR disponível.
@@ -259,7 +283,7 @@ Somente **cliente** (dono da cobrança). Polling de confirmação — consulta o
 ## Observações de implementação
 
 - **Sanctum:** tabela `personal_access_tokens` (polimórfica — o token aponta para `Personal` ou `Cliente`). Migration: `2026_07_08_000001_create_personal_access_tokens_table.php`.
-- **Service compartilhado:** `app/Services/AsaasService.php` concentra split 90/10 (`montarSplit`), precificação (`resolverItemPersonal`/`resolverItemAcademia`/`validarStudioPlano`), assinaturas PIX e QR code. O `PaymentController` web delega para ele — comportamento inalterado.
+- **Service compartilhado:** `app/Services/AsaasService.php` concentra a conta do preço (`detalhar`/`calculateSplit`), o split com repasse integral (`montarSplit`), precificação (`resolverItemPersonal`/`resolverItemAcademia`/`validarStudioPlano`), assinaturas PIX e QR code. O `PaymentController` web delega para ele — comportamento inalterado.
 - **Webhook:** `POST /api/asaas-webhook` não foi alterado; os prefixos de `externalReference`/`idempotency_key` da API são os mesmos do web, então renovações e confirmações continuam fluindo pelo webhook normalmente.
 - **Rotas AJAX legadas** (`/api/criar-pagamento`, `/api/payments/history`, etc.) continuam funcionando por sessão web, sem mudanças.
 

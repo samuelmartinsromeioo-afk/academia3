@@ -188,8 +188,8 @@ class IndicacaoRevenueShareTest extends TestCase
 
     /**
      * Receita sem comissão registrada (nutri_cobrancas não tem a coluna, e linhas
-     * legadas podem ter zero) deriva a comissão da taxa do split em vez de
-     * creditar zero — zero apagaria o bônus de alguém silenciosamente.
+     * legadas podem ter zero) deriva a comissão do bruto em vez de creditar
+     * zero — zero apagaria o bônus de alguém silenciosamente.
      */
     public function test_comissao_ausente_e_derivada_em_vez_de_virar_zero(): void
     {
@@ -198,12 +198,28 @@ class IndicacaoRevenueShareTest extends TestCase
         Payment::create([
             'user_id' => $this->novoCliente('semfee@t.teste'),
             'trainer_id' => $this->indicado->id, 'membership_id' => $this->pacoteId,
-            'amount_total' => 1000.00, 'company_fee' => 0, 'trainer_amount' => 1000.00,
+            'amount_total' => 1100.00, 'company_fee' => 0, 'trainer_amount' => 1100.00,
             'status' => 'succeeded', 'paid_at' => now()->subDays(3),
         ]);
 
-        // Deriva 10% de 1.000 = 100 de comissão -> 10% dela = 10.
-        $this->assertEquals(10.00, $this->cupons->apurar($uso));
+        /*
+         * A comissão está EMBUTIDA no bruto, então extrai-se dividindo, não
+         * multiplicando: em R$ 1.100 a comissão foi R$ 100 (1100 × 1/11) e o
+         * bônus é 10% dela = R$ 10. `bruto × 10%` daria R$ 110 de comissão e
+         * R$ 11 de bônus — pagaria sobre dinheiro que nunca entrou. Era assim
+         * que a derivação funcionava enquanto a comissão era desconto.
+         *
+         * Escrito em função de `comissaoEmbutida()` e do `percentual` do
+         * config, nunca dos números: um 10,00 cravado aqui passaria a testar
+         * outra coisa no dia em que a comissão mudasse.
+         */
+        $comissao = \App\Services\AsaasService::comissaoEmbutida(1100.00);
+        $this->assertEquals(100.00, $comissao, 'a comissão embutida em R$ 1.100 é R$ 100');
+
+        $this->assertEquals(
+            round($comissao * (float) config('indicacao.percentual'), 2),
+            $this->cupons->apurar($uso)
+        );
     }
 
     /** Reentrega de webhook / reapuração não pode creditar duas vezes. */
@@ -420,11 +436,14 @@ class IndicacaoRevenueShareTest extends TestCase
             ->assertSee('2 receitas')
             ->assertSee('Pagamento na plataforma')
             // As três colunas abrem a conta inteira, receita por receita:
-            // faturado -> comissão da plataforma -> parte do indicador.
-            ->assertSee('Indicado faturou')
+            // o que o aluno pagou -> comissão da plataforma -> parte do indicador.
+            // O rótulo é "Aluno pagou" porque `bruto_valor` é o `amount_total`
+            // da cobrança, que com a comissão como acréscimo não é mais o que o
+            // indicado faturou.
+            ->assertSee('Aluno pagou')
             ->assertSee('Comissão SnrFit')
             ->assertSee('Sua parte')
-            ->assertSee('R$ 1.000,00')  // faturou
+            ->assertSee('R$ 1.000,00')  // pago pelo aluno
             ->assertSee('R$ 100,00')    // comissão
             ->assertSee('R$ 10,00')     // 10% da comissão
             ->assertSee('R$ 250,50')
@@ -470,13 +489,17 @@ class IndicacaoRevenueShareTest extends TestCase
             ->assertSee('Sobre qual valor incidem os 10%')
             // O que a base É, e o que ela NÃO é.
             ->assertSee('incidem sobre a COMISSÃO DA SNRFIT')
-            ->assertSee('não sobre o valor cheio que o indicado fatura')
-            // Ninguém paga o bônus do próprio bolso.
+            ->assertSee('não sobre o valor que o indicado vende')
+            // Ninguém paga o bônus do próprio bolso — e com a comissão sendo
+            // acréscimo, o indicado recebe o mesmo com ou sem o programa.
             ->assertSee('Nada do que você recebe sai do bolso de quem você indicou')
-            // A conta inteira, nas três linhas: 2.500 -> 250 -> 25.
-            ->assertSee('O indicado faturou')
+            // A conta inteira: o indicado recebe 2.500, o aluno paga 2.750,
+            // a comissão é 250 e o bônus 25.
+            ->assertSee('O indicado recebeu')
             ->assertSee('R$ 2.500,00')
-            ->assertSee('Comissão da SnrFit (10% disso)')
+            ->assertSee('Os alunos pagaram')
+            ->assertSee('R$ 2.750,00')
+            ->assertSee('Comissão da SnrFit (10% do preço)')
             ->assertSee('R$ 250,00')
             ->assertSee('Seu bônus — 10% da comissão')
             ->assertSee('R$ 25,00');
@@ -502,23 +525,55 @@ class IndicacaoRevenueShareTest extends TestCase
             ->assertSee('R$ 125,00');       // metade da comissão, recalculado
     }
 
-    /** A mesma conta precisa estar no texto legal, não só no painel. */
+    /**
+     * A mesma conta precisa estar no texto legal, não só no painel.
+     *
+     * A numeração da cláusula mudou de 8.5 para 9.3 na revisão jurídica dos
+     * Termos (versão 3.0), que inseriu a cláusula de identificação do titular
+     * como 0 e desdobrou pagamentos e cancelamento em 7 e 8. A asserção
+     * acompanha a numeração de propósito: os cinco documentos por perfil
+     * apontam para `#s9`, e um link para a cláusula errada é o tipo de defeito
+     * que só aparece quando alguém clica.
+     */
     public function test_termos_definem_e_exemplificam_a_base_de_calculo(): void
     {
-        $this->get(route('termos'))
-            ->assertOk()
-            ->assertSee('8.5. Base de cálculo e ajustes')
+        /*
+         * Comparação com o espaço em branco NORMALIZADO, não com `assertSee`.
+         * O texto legal é longo e quebra linha no fonte onde o parágrafo pedir;
+         * `assertSee` compara byte a byte e falha quando a frase atravessa uma
+         * quebra, o que transforma uma reformatação inofensiva do documento em
+         * teste vermelho — e ensina a equipe a ignorar este arquivo.
+         */
+        $html = $this->get(route('termos'))->assertOk()->getContent();
+        $texto = preg_replace('/\s+/u', ' ', strip_tags($html));
+
+        $frases = [
+            // O título da cláusula: os cinco documentos por perfil apontam para
+            // `#s9`, então a numeração faz parte do contrato de navegação.
+            '9.3. Base de cálculo',
             // A base, dita de forma juridicamente fechada.
-            ->assertSee('exclusivamente sobre a comissão da Plataforma')
-            ->assertSee('estruturalmente limitado à comissão efetivamente auferida')
+            'incide exclusivamente sobre a Taxa de Intermediação',
+            'estruturalmente limitado à Taxa de Intermediação',
             // E as leituras erradas, excluídas uma a uma.
-            ->assertSee('o valor bruto ou cheio da transação')
-            ->assertSee('do qual')
-            ->assertSee('é deduzido para o pagamento do bônus')
-            // O exemplo com os mesmos números do painel.
-            ->assertSee('R$ 2.500,00')
-            ->assertSee('R$ 250,00')
-            ->assertSee('R$ 25,00');
+            'o Valor Final pago pelo Aluno',
+            'o faturamento da conta indicada',
+            'nada é deduzido para custear o bônus',
+            // O exemplo, com os mesmos números do painel.
+            'R$ 2.500,00',
+            'R$ 250,00',
+            'R$ 25,00',
+            // Específico do modelo novo: o indicado recebe o preço cheio e é o
+            // aluno quem paga o acréscimo.
+            'R$ 2.750,00',
+        ];
+
+        foreach ($frases as $frase) {
+            $this->assertStringContainsString(
+                $frase,
+                $texto,
+                "Os Termos gerais deixaram de conter: \"{$frase}\""
+            );
+        }
     }
 
     public function test_admin_de_saques_exige_sessao_de_admin(): void

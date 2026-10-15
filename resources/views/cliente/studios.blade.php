@@ -252,7 +252,8 @@
                         </div>
 
                         <div class="card-footer">
-                            <div class="preco">R$ {{ number_format($studio->valor_aula ?? 0, 2, ',', '.') }} <small>/aula</small></div>
+                            {{-- Preço JÁ com a taxa da plataforma: é o que o aluno vai pagar no checkout. Ver App\Support\Preco. --}}
+                            <div class="preco">R$ {{ \App\Support\Preco::fmt($studio->valor_aula) }} <small>/aula</small></div>
                             <a href="{{ route('studios.detalhes', $studio->id) }}" class="btn-detalhes">Ver detalhes <i class="ph ph-arrow-right"></i></a>
                         </div>
                     </div>

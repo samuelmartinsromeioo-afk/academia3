@@ -51,9 +51,20 @@ class PaymentController extends Controller
         return app(AsaasService::class);
     }
 
-    private function montarSplit(?string $walletId, float $gross, array $ctx = [], string $billingType = 'PIX', float $rate = AsaasService::SPLIT_RATE): ?array
+    /**
+     * `$base` é o preço do PROFISSIONAL — o que ele recebe integralmente. O
+     * valor cobrado do cliente (preço + comissão + taxa de cartão) é derivado
+     * dentro do serviço; nenhum fluxo daqui calcula a conta por conta própria.
+     */
+    private function montarSplit(?string $walletId, float $base, array $ctx = [], string $billingType = 'PIX'): ?array
     {
-        return $this->asaasService()->montarSplit($walletId, $gross, $ctx, $billingType, $rate);
+        return $this->asaasService()->montarSplit($walletId, $base, $ctx, $billingType);
+    }
+
+    /** O que o cliente paga por um serviço de R$ `$base` no meio escolhido. */
+    private function valorCobrado(float $base, string $billingType = 'PIX'): float
+    {
+        return AsaasService::valorCobrado($base, $billingType);
     }
 
     private function garantirValorMinimo(float $value): void
@@ -184,11 +195,12 @@ class PaymentController extends Controller
 
         try {
             $asaasCustomerId = $this->obterOuCriarClienteAsaas($cliente);
+            $conta = AsaasService::detalhar($amount, 'PIX');
 
             $pixPayload = [
                 'customer' => $asaasCustomerId,
                 'billingType' => 'PIX',
-                'value' => $amount,
+                'value' => $conta['total'],
                 'dueDate' => now()->addDay()->format('Y-m-d'),
                 'description' => $description,
                 'externalReference' => 'cli_'.$clienteId.'_'.time(),
@@ -222,6 +234,7 @@ class PaymentController extends Controller
                 'amount_total' => $split['amount_total'],
                 'company_fee' => $split['company_fee'],
                 'trainer_amount' => $split['trainer_amount'],
+                'gateway_fee' => $split['gateway_fee'],
                 'stripe_payment_intent_id' => $asaasPaymentId,
                 'status' => 'pending',
                 'payment_method' => 'pix',
@@ -232,7 +245,8 @@ class PaymentController extends Controller
             Log::info('Asaas: pagamento Pix criado', [
                 'payment_id' => $payment->id,
                 'asaas_payment_id' => $asaasPaymentId,
-                'amount' => $amount,
+                'preco' => $conta['base'],
+                'cobrado' => $conta['total'],
                 'cliente_id' => $clienteId,
             ]);
 
@@ -241,7 +255,8 @@ class PaymentController extends Controller
                 'asaasPaymentId' => $asaasPaymentId,
                 'pixPayload' => $qrData['payload'] ?? '',
                 'pixQrCode' => $qrData['encodedImage'] ?? '',
-                'amount' => $amount,
+                'amount' => $conta['total'],
+                'valores' => $conta,
             ]);
 
         } catch (\Exception $e) {
@@ -357,7 +372,9 @@ class PaymentController extends Controller
                     \App\Services\AvisoService::academiaContratada(
                         \App\Models\Cadastro\Academia::find($booking['academia_id']),
                         $cliente,
-                        $payment->amount_total
+                        // O aviso vai para a ACADEMIA: o valor que interessa a
+                        // ela é o que ela recebe, não o total pago pelo aluno.
+                        $payment->trainer_amount
                     );
                 } catch (\Exception $e) {
                     Log::error('processarPagamentoConfirmado: academia falhou', [
@@ -381,7 +398,8 @@ class PaymentController extends Controller
                     \App\Services\AvisoService::studioPlanoContratado(
                         Studio::find($booking['studio_id']),
                         $cliente,
-                        $payment->amount_total
+                        // Aviso para o STUDIO: o valor que ele recebe.
+                        $payment->trainer_amount
                     );
                 } catch (\Exception $e) {
                     Log::error('processarPagamentoConfirmado: studio_plano falhou', [
@@ -495,7 +513,10 @@ class PaymentController extends Controller
                         'condicoes_clinicas' => $booking['condicoes_clinicas'] ?? null,
                         'nivel_experiencia' => $booking['nivel_experiencia'] ?? 'iniciante',
                         'observacoes' => $booking['observacoes_ficha'] ?? null,
-                        'valor' => $payment->amount_total,
+                        // O valor do SERVIÇO, que é o que o personal recebe —
+                        // não o total pago pelo aluno, que inclui a nossa
+                        // comissão. Esta solicitação é lida pelo personal.
+                        'valor' => $payment->trainer_amount,
                         'status' => 'pendente',
                         'payment_status' => 'pago',
                         'asaas_payment_id' => $payment->stripe_payment_intent_id,
@@ -547,7 +568,8 @@ class PaymentController extends Controller
                         'pacote_avaliacao_id' => $booking['avaliacao_pacote_id'] ?? null,
                         'observacoes' => $booking['observacoes_ficha'] ?? null,
                         'tipos' => $booking['avaliacao_tipos'] ?? null,
-                        'valor' => $payment->amount_total,
+                        // Idem: o que o personal recebe pela avaliação.
+                        'valor' => $payment->trainer_amount,
                         'payment_status' => 'pago',
                         'asaas_payment_id' => $payment->stripe_payment_intent_id,
                     ]);
@@ -920,14 +942,15 @@ class PaymentController extends Controller
     /**
      * Repassa para AsaasService::calculateSplit.
      *
-     * O default TEM de ser null, não `0.10`. Este wrapper sempre repassa o que
-     * recebe, então um default literal fazia o `$feeRate ??= feeRate()` lá
-     * dentro NUNCA executar — a derivação a partir de SPLIT_RATE existia e
-     * estava morta para todos os fluxos que passam por aqui.
+     * `$base` é o preço do profissional, e o segundo parâmetro é o MEIO de
+     * pagamento — não uma taxa. O `?float $feeRate` que ficava aqui foi
+     * removido junto com a taxa por cobrança: era o furo que mantinha um `0.10`
+     * literal vivo no cálculo (ver CLAUDE.md, "Revenue Model"), e agora não há
+     * segundo número que possa divergir.
      */
-    public function calculateSplit(float $amountTotal, ?float $feeRate = null): array
+    public function calculateSplit(float $base, string $billingType = 'PIX'): array
     {
-        return $this->asaasService()->calculateSplit($amountTotal, $feeRate);
+        return $this->asaasService()->calculateSplit($base, $billingType);
     }
 
     public function handleSuccessfulPayment(Payment $payment, $intent): void
@@ -1016,9 +1039,11 @@ class PaymentController extends Controller
     //
     // Fluxos COBRADOS COMO ASSINATURA MENSAL (cycle: MONTHLY), PIX e cartão,
     // com split replicado pelo Asaas em cada ciclo:
-    //   • Pacote do personal      → criarPagamento / criarPagamentoCartao (ramo 'pacote')  — split 90/10
-    //   • Plano/mensalidade da academia → criarPagamentoAcademia / criarPagamentoCartaoAcademia  — split 90/10
-    //   • Plano de studio         → criarPagamentoStudioPlano / criarPagamentoCartaoStudioPlano  — split 90/10
+    //   • Pacote do personal      → criarPagamento / criarPagamentoCartao (ramo 'pacote')
+    //   • Plano/mensalidade da academia → criarPagamentoAcademia / criarPagamentoCartaoAcademia
+    //   • Plano de studio         → criarPagamentoStudioPlano / criarPagamentoCartaoStudioPlano
+    // Em todos, o split repassa o preço INTEGRAL do profissional e a comissão
+    // da plataforma é o acréscimo cobrado do cliente (ver AsaasService).
     // Todos passam por criarAssinaturaPix()/criarAssinaturaCartao(), gravam o
     // subscription_id na tabela `subscriptions` (registrarAssinatura) e têm os
     // ciclos seguintes processados pelo webhook (processarRenovacaoAssinatura).
@@ -1033,21 +1058,26 @@ class PaymentController extends Controller
      * Cria uma assinatura mensal via PIX. A cada mês o Asaas gera uma nova
      * cobrança PIX (o aluno paga manualmente cada uma).
      */
-    private function criarAssinaturaPix($cliente, float $amount, string $description, string $extRefPrefix, string $idemPrefix, ?array $split, array $subFields, array $bookingData, ?float $companyFeeRate = null)
+    private function criarAssinaturaPix($cliente, float $amount, string $description, string $extRefPrefix, string $idemPrefix, ?array $split, array $subFields, array $bookingData)
     {
         return response()->json($this->asaasService()->criarAssinaturaPix(
-            $cliente, $amount, $description, $extRefPrefix, $idemPrefix, $split, $subFields, $bookingData, $companyFeeRate
+            $cliente, $amount, $description, $extRefPrefix, $idemPrefix, $split, $subFields, $bookingData
         ));
     }
 
     /**
      * Cria uma assinatura mensal no cartão de crédito. O Asaas debita
      * automaticamente todo mês usando o cartão tokenizado.
+     *
+     * `$amount` é a mensalidade do profissional. No cartão o cliente paga
+     * mensalidade + comissão + a taxa do Asaas, TODO mês — a taxa do cartão é
+     * por transação, e a assinatura gera uma transação por ciclo.
      */
-    private function criarAssinaturaCartao($cliente, float $amount, string $description, string $extRefPrefix, string $idemPrefix, ?array $split, array $subFields, array $bookingData, array $validated, ?float $companyFeeRate = null)
+    private function criarAssinaturaCartao($cliente, float $amount, string $description, string $extRefPrefix, string $idemPrefix, ?array $split, array $subFields, array $bookingData, array $validated)
     {
         try {
             $asaasCustomerId = $this->obterOuCriarClienteAsaas($cliente);
+            $conta = AsaasService::detalhar($amount, 'CREDIT_CARD');
 
             $cardNumber = preg_replace('/\D/', '', $validated['card_number']);
             $cpf = preg_replace('/\D/', '', $validated['cpf']);
@@ -1057,7 +1087,7 @@ class PaymentController extends Controller
             $payload = [
                 'customer' => $asaasCustomerId,
                 'billingType' => 'CREDIT_CARD',
-                'value' => $amount,
+                'value' => $conta['total'],
                 'nextDueDate' => now()->format('Y-m-d'),
                 'cycle' => 'MONTHLY',
                 'description' => $description,
@@ -1107,7 +1137,7 @@ class PaymentController extends Controller
             $status = 'PENDING';
 
             try {
-                $valores = $this->calculateSplit($amount, $companyFeeRate);
+                $valores = $this->calculateSplit($amount, 'CREDIT_CARD');
                 $this->registrarAssinatura($cliente->id, $subscriptionId, 'credit_card', $valores, $subFields, $bookingData, $subData['nextDueDate'] ?? null);
 
                 $firstPayment = $this->primeiraCobrancaAssinatura($subscriptionId);
@@ -1119,6 +1149,7 @@ class PaymentController extends Controller
                     'amount_total' => $valores['amount_total'],
                     'company_fee' => $valores['company_fee'],
                     'trainer_amount' => $valores['trainer_amount'],
+                    'gateway_fee' => $valores['gateway_fee'],
                     'stripe_payment_intent_id' => $asaasPaymentId,
                     'asaas_subscription_id' => $subscriptionId,
                     'status' => 'pending',
@@ -1144,6 +1175,8 @@ class PaymentController extends Controller
                     'subscriptionId' => $subscriptionId,
                     'status' => $status,
                     'confirmed' => $confirmed,
+                    'amount' => $conta['total'],
+                    'valores' => $conta,
                     'recorrente' => true,
                 ]);
             } catch (\Throwable $e) {
@@ -1210,6 +1243,11 @@ class PaymentController extends Controller
             'amount_total' => $sub->amount_total,
             'company_fee' => $sub->company_fee,
             'trainer_amount' => $sub->trainer_amount,
+            // Renovação herda a conta do ciclo original: a assinatura foi criada
+            // no Asaas com aquele valor e é ele que o aluno paga todo mês.
+            // Recalcular aqui faria o registro divergir da cobrança real se as
+            // taxas ou a comissão mudassem no meio de um contrato vigente.
+            'gateway_fee' => $sub->gateway_fee ?? 0,
             'stripe_payment_intent_id' => $asaasPaymentId,
             'asaas_subscription_id' => $sub->asaas_subscription_id,
             'status' => 'pending',
@@ -1225,8 +1263,14 @@ class PaymentController extends Controller
 
         // Rastreia a renovação como Purchase — server-to-server (webhook, sem browser).
         // event_id determinístico (purchase_{id}) dedup contra reentregas do webhook.
-        $fb = app(MetaConversionsService::class);
-        $fb->trackServer(
+        //
+        // O titular vai INTEIRO para o serviço, não um array de user_data já
+        // montado: é ele que precisa checar o consentimento de marketing do
+        // aluno (`consentimentos`), e com o array não havia quem checar — toda
+        // renovação ia para a Meta, inclusive de quem recusou o banner e de
+        // quem assinou pelo app, onde banner não existe. Sem consentimento isto
+        // devolve null e nada é enviado.
+        app(MetaConversionsService::class)->trackServer(
             'Purchase',
             [
                 'value'        => (float) ($payment->amount_total ?? 0),
@@ -1234,7 +1278,7 @@ class PaymentController extends Controller
                 'content_name' => 'Renovação de assinatura SnrFit',
                 'content_type' => 'subscription',
             ],
-            $fb->userDataFromModel(\App\Models\Cadastro\Cliente::find($sub->user_id)),
+            \App\Models\Cadastro\Cliente::find($sub->user_id),
             'purchase_' . $payment->id
         );
 
@@ -1294,8 +1338,34 @@ class PaymentController extends Controller
             return response()->json(['error' => 'Assinatura não encontrada.'], 404);
         }
 
+        return response()->json($this->cancelarAssinaturaDe($sub, 'site'));
+    }
+
+    /**
+     * Núcleo do cancelamento, compartilhado pelo site e pela API mobile.
+     *
+     * Existe porque o cancelamento só existia no site: a rota web resolve o
+     * dono por `session('cliente_id')`, e o app usa Bearer sem sessão. O
+     * resultado era uma armadilha — o app CRIA assinatura mensal
+     * (`Api\PaymentController::criarPagamentoPersonal`, pacote = recorrente) e
+     * não tinha como cancelá-la. Além de contrariar a cláusula 8.2 dos Termos
+     * ("pelo mesmo meio eletrônico da contratação") e o art. 4º, V, do Decreto
+     * nº 7.962/2013, assinatura sem saída dentro do app é reprovação na App
+     * Store por si.
+     *
+     * Quem chama é responsável por ter resolvido o DONO da assinatura — aqui
+     * não há como saber se veio de sessão ou de token.
+     */
+    public function cancelarAssinaturaDe(Subscription $sub, string $origem = 'site', bool $avisar = true): array
+    {
         if ($sub->status === 'canceled') {
-            return response()->json(['success' => true, 'ja_cancelada' => true]);
+            // Idempotente: cancelar duas vezes não é erro, e não reenvia a
+            // confirmação (o segundo toque costuma ser do usuário em dúvida).
+            return [
+                'success' => true,
+                'ja_cancelada' => true,
+                'acesso_ate' => $sub->acesso_ate ? \Carbon\Carbon::parse($sub->acesso_ate)->format('d/m/Y') : null,
+            ];
         }
 
         try {
@@ -1316,19 +1386,74 @@ class PaymentController extends Controller
         $sub->update(['status' => 'canceled']);
 
         // Sem novas cobranças, mas o acesso continua até o fim do período pago.
-        $this->recalcularAcessoCliente($clienteId);
+        $this->recalcularAcessoCliente($sub->user_id);
+
+        /*
+         * `$avisar = false` existe para UM caso: a exclusão de conta, que
+         * cancela as assinaturas do titular antes de anonimizá-lo. Lá, mandar
+         * um "assinatura cancelada" por assinatura e depois um "conta
+         * encerrada" seria três e-mails dizendo pedaços da mesma coisa — e o
+         * texto da exclusão já declara que as recorrências foram encerradas,
+         * que é o comprovante que importa. Ver ExclusaoDeConta.
+         */
+        if ($avisar) {
+            $this->confirmarCancelamento($sub);
+        }
 
         Log::info('Assinatura cancelada pelo aluno', [
             'subscription_id' => $sub->asaas_subscription_id,
-            'cliente_id' => $clienteId,
+            'cliente_id' => $sub->user_id,
             'tipo' => $sub->tipo,
+            'origem' => $origem,
             'acesso_ate' => $sub->acesso_ate,
         ]);
 
-        return response()->json([
+        return [
             'success' => true,
             'acesso_ate' => $sub->acesso_ate ? \Carbon\Carbon::parse($sub->acesso_ate)->format('d/m/Y') : null,
-        ]);
+        ];
+    }
+
+    /**
+     * Confirmação ESCRITA do cancelamento (Termos, cláusula 8.2).
+     *
+     * Os Termos prometem que "a Plataforma confirma o cancelamento por
+     * escrito", e nada era enviado: o método devolvia JSON e pronto. Num
+     * cancelamento de recorrência isso é o pior lugar para faltar comprovante,
+     * porque é exatamente o que o consumidor precisa quando discute uma
+     * cobrança posterior — e o art. 4º, V, do Decreto nº 7.962/2013 exige
+     * confirmação imediata do recebimento do pedido.
+     *
+     * Best-effort: aviso é efeito colateral de um fluxo concluído e não pode
+     * desfazer um cancelamento que já ocorreu.
+     */
+    private function confirmarCancelamento(Subscription $sub): void
+    {
+        try {
+            $cliente = $sub->cliente ?: \App\Models\Cadastro\Cliente::find($sub->user_id);
+            if (! $cliente) {
+                return;
+            }
+
+            $ate = $sub->acesso_ate ? \Carbon\Carbon::parse($sub->acesso_ate)->format('d/m/Y') : null;
+
+            $texto = "Sua assinatura foi cancelada, como você pediu. *Não haverá novas cobranças.*\n\n"
+                . ($ate
+                    ? "Você continua com acesso até *{$ate}*, que é o fim do período já pago.\n\n"
+                    : "O acesso segue até o fim do período já pago.\n\n")
+                . 'Guarde esta mensagem: ela é o seu comprovante do cancelamento.';
+
+            \App\Services\NotificacaoService::cliente(
+                $cliente,
+                'Assinatura cancelada — SNR FIT',
+                $texto
+            );
+        } catch (\Throwable $e) {
+            Log::warning('Falha ao confirmar cancelamento de assinatura', [
+                'subscription_id' => $sub->asaas_subscription_id,
+                'erro' => $e->getMessage(),
+            ]);
+        }
     }
 
     /**
@@ -1391,7 +1516,7 @@ class PaymentController extends Controller
             'academia_id' => $validated['academia_id'],
             'plano_id' => $planoId,
             'cliente_id' => $clienteId,
-        ]); // academia entra no split 90/10 do marketplace (taxa padrão, de SPLIT_RATE)
+        ]); // repasse integral à academia; a comissão é o acréscimo cobrado do aluno
     }
 
     /**
@@ -1542,10 +1667,12 @@ class PaymentController extends Controller
             $cep = preg_replace('/\D/', '', $validated['cep']);
             $telefone = preg_replace('/\D/', '', $validated['telefone']);
 
+            $conta = AsaasService::detalhar($amount, 'CREDIT_CARD');
+
             $ccPayload = [
                 'customer' => $asaasCustomerId,
                 'billingType' => 'CREDIT_CARD',
-                'value' => $amount,
+                'value' => $conta['total'],
                 'dueDate' => now()->format('Y-m-d'),
                 'description' => $description,
                 'externalReference' => 'cli_cc_'.$clienteId.'_'.time(),
@@ -1594,7 +1721,7 @@ class PaymentController extends Controller
             $status = $asaasData['status'] ?? 'PENDING';
 
             try {
-                $split = $this->calculateSplit($amount);
+                $split = $this->calculateSplit($amount, 'CREDIT_CARD');
                 $payment = Payment::create([
                     'user_id' => $clienteId,
                     'trainer_id' => $validated['personal_id'],
@@ -1602,6 +1729,7 @@ class PaymentController extends Controller
                     'amount_total' => $split['amount_total'],
                     'company_fee' => $split['company_fee'],
                     'trainer_amount' => $split['trainer_amount'],
+                    'gateway_fee' => $split['gateway_fee'],
                     'stripe_payment_intent_id' => $asaasPaymentId,
                     'status' => 'pending',
                     'payment_method' => 'credit_card',
@@ -1626,6 +1754,8 @@ class PaymentController extends Controller
                     'paymentId' => $payment->id,
                     'status' => $status,
                     'confirmed' => $confirmed,
+                    'amount' => $conta['total'],
+                    'valores' => $conta,
                 ]);
             } catch (\Throwable $e) {
                 return $this->respostaCobrancaCriadaSemRegistroLocal('cartão', $asaasPaymentId, null, $status, $e);
@@ -1683,7 +1813,7 @@ class PaymentController extends Controller
             'academia_id' => $validated['academia_id'],
             'plano_id' => $planoId,
             'cliente_id' => $clienteId,
-        ], $validated); // academia entra no split 90/10 do marketplace (taxa padrão, de SPLIT_RATE)
+        ], $validated); // repasse integral à academia; a comissão é o acréscimo cobrado do aluno
     }
 
     // ─────────────────────────────────────────────
@@ -1712,7 +1842,6 @@ class PaymentController extends Controller
 
     private function splitAcademia(\App\Models\Cadastro\Academia $academia, float $amount, string $billingType = 'PIX'): ?array
     {
-        // Academia entra no split padrão do marketplace: 90% para a academia, 10% de comissão da plataforma.
         return $this->montarSplit($academia->asaas_wallet_id, $amount, ['academia_id' => $academia->id], $billingType);
     }
 
@@ -1794,10 +1923,12 @@ class PaymentController extends Controller
         try {
             $asaasCustomerId = $this->obterOuCriarClienteAsaas($cliente);
 
+            $conta = AsaasService::detalhar($amount, 'PIX');
+
             $pixPayload = [
                 'customer' => $asaasCustomerId,
                 'billingType' => 'PIX',
-                'value' => $amount,
+                'value' => $conta['total'],
                 'dueDate' => now()->addDay()->format('Y-m-d'),
                 'description' => $description,
                 'externalReference' => 'stu_aula_'.$clienteId.'_'.$studio->id.'_'.time(),
@@ -1831,6 +1962,7 @@ class PaymentController extends Controller
                 'amount_total' => $valores['amount_total'],
                 'company_fee' => $valores['company_fee'],
                 'trainer_amount' => $valores['trainer_amount'],
+                'gateway_fee' => $valores['gateway_fee'],
                 'stripe_payment_intent_id' => $asaasPaymentId,
                 'status' => 'pending',
                 'payment_method' => 'pix',
@@ -1857,7 +1989,8 @@ class PaymentController extends Controller
                 'asaasPaymentId' => $asaasPaymentId,
                 'pixPayload' => $qrData['payload'] ?? '',
                 'pixQrCode' => $qrData['encodedImage'] ?? '',
-                'amount' => $amount,
+                'amount' => $conta['total'],
+                'valores' => $conta,
             ]);
 
         } catch (\Exception $e) {
@@ -1987,10 +2120,12 @@ class PaymentController extends Controller
         $cep = preg_replace('/\D/', '', $validated['cep']);
         $telefone = preg_replace('/\D/', '', $validated['telefone']);
 
+        $conta = AsaasService::detalhar($amount, 'CREDIT_CARD');
+
         $ccPayload = [
             'customer' => $asaasCustomerId,
             'billingType' => 'CREDIT_CARD',
-            'value' => $amount,
+            'value' => $conta['total'],
             'dueDate' => now()->format('Y-m-d'),
             'description' => $description,
             'externalReference' => 'stu_cc_'.$cliente->id.'_'.$studio->id.'_'.time(),
@@ -2039,7 +2174,7 @@ class PaymentController extends Controller
         $status = $asaasData['status'] ?? 'PENDING';
 
         try {
-            $valores = $this->calculateSplit($amount);
+            $valores = $this->calculateSplit($amount, 'CREDIT_CARD');
             $payment = Payment::create(array_merge([
                 'user_id' => $cliente->id,
                 'trainer_id' => null,
@@ -2048,6 +2183,7 @@ class PaymentController extends Controller
                 'amount_total' => $valores['amount_total'],
                 'company_fee' => $valores['company_fee'],
                 'trainer_amount' => $valores['trainer_amount'],
+                'gateway_fee' => $valores['gateway_fee'],
                 'stripe_payment_intent_id' => $asaasPaymentId,
                 'status' => 'pending',
                 'payment_method' => 'credit_card',
@@ -2072,6 +2208,8 @@ class PaymentController extends Controller
                 'paymentId' => $payment->id,
                 'status' => $status,
                 'confirmed' => $confirmed,
+                'amount' => $conta['total'],
+                'valores' => $conta,
             ]);
         } catch (\Throwable $e) {
             return $this->respostaCobrancaCriadaSemRegistroLocal('cartão studio', $asaasPaymentId, null, $status, $e);
@@ -2496,10 +2634,12 @@ class PaymentController extends Controller
         try {
             $asaasCustomerId = $this->obterOuCriarClienteAsaas($cliente);
 
+            $conta = AsaasService::detalhar($total, 'PIX');
+
             $pixPayload = [
                 'customer' => $asaasCustomerId,
                 'billingType' => 'PIX',
-                'value' => $total,
+                'value' => $conta['total'],
                 'dueDate' => now()->addDay()->format('Y-m-d'),
                 'description' => $description,
                 'externalReference' => 'loja_'.$clienteId.'_'.$loja->id.'_'.time(),
@@ -2524,13 +2664,14 @@ class PaymentController extends Controller
                 ->get($this->asaas()."/payments/{$asaasPaymentId}/pixQrCode");
             $qrData = $qrRes->json();
 
-            $valores = $this->calculateSplit($total);
+            $valores = $this->calculateSplit($total, 'PIX');
             $payment = Payment::create([
                 'user_id' => $clienteId,
                 'loja_id' => $loja->id,
                 'amount_total' => $valores['amount_total'],
                 'company_fee' => $valores['company_fee'],
                 'trainer_amount' => $valores['trainer_amount'],
+                'gateway_fee' => $valores['gateway_fee'],
                 'stripe_payment_intent_id' => $asaasPaymentId,
                 'status' => 'pending',
                 'payment_method' => 'pix',
@@ -2542,7 +2683,8 @@ class PaymentController extends Controller
                 'payment_id' => $payment->id,
                 'asaas_payment_id' => $asaasPaymentId,
                 'loja_id' => $loja->id,
-                'total' => $total,
+                'produtos' => $conta['base'],
+                'cobrado' => $conta['total'],
             ]);
 
             return response()->json([
@@ -2550,7 +2692,8 @@ class PaymentController extends Controller
                 'asaasPaymentId' => $asaasPaymentId,
                 'pixPayload' => $qrData['payload'] ?? '',
                 'pixQrCode' => $qrData['encodedImage'] ?? '',
-                'amount' => $total,
+                'amount' => $conta['total'],
+                'valores' => $conta,
             ]);
 
         } catch (\Exception $e) {
@@ -2620,10 +2763,12 @@ class PaymentController extends Controller
             $cep = preg_replace('/\D/', '', $validated['cep']);
             $telefone = preg_replace('/\D/', '', $validated['telefone']);
 
+            $conta = AsaasService::detalhar($total, 'CREDIT_CARD');
+
             $ccPayload = [
                 'customer' => $asaasCustomerId,
                 'billingType' => 'CREDIT_CARD',
-                'value' => $total,
+                'value' => $conta['total'],
                 'dueDate' => now()->format('Y-m-d'),
                 'description' => $description,
                 'externalReference' => 'loja_cc_'.$clienteId.'_'.$loja->id.'_'.time(),
@@ -2671,13 +2816,14 @@ class PaymentController extends Controller
             $status = $asaasData['status'] ?? 'PENDING';
 
             try {
-                $valores = $this->calculateSplit($total);
+                $valores = $this->calculateSplit($total, 'CREDIT_CARD');
                 $payment = Payment::create([
                     'user_id' => $clienteId,
                     'loja_id' => $loja->id,
                     'amount_total' => $valores['amount_total'],
                     'company_fee' => $valores['company_fee'],
                     'trainer_amount' => $valores['trainer_amount'],
+                    'gateway_fee' => $valores['gateway_fee'],
                     'stripe_payment_intent_id' => $asaasPaymentId,
                     'status' => 'pending',
                     'payment_method' => 'credit_card',
@@ -2701,6 +2847,8 @@ class PaymentController extends Controller
                     'paymentId' => $payment->id,
                     'status' => $status,
                     'confirmed' => $confirmed,
+                    'amount' => $conta['total'],
+                    'valores' => $conta,
                 ]);
             } catch (\Throwable $e) {
                 return $this->respostaCobrancaCriadaSemRegistroLocal('cartão loja', $asaasPaymentId, null, $status, $e);
@@ -2730,7 +2878,18 @@ class PaymentController extends Controller
             'loja_id' => $booking['loja_id'],
             'cliente_id' => $booking['cliente_id'],
             'payment_id' => $payment->id,
-            'valor_total' => $payment->amount_total,
+            /*
+             * `trainer_amount`, não `amount_total`: este é o pedido DA LOJA, e o
+             * total dele tem de ser a soma dos produtos — o mesmo número que
+             * `pedido_itens.subtotal` soma e que a loja recebe.
+             *
+             * Eram a mesma coisa enquanto a comissão era desconto. Com a
+             * comissão virando acréscimo, `amount_total` passou a incluir a
+             * nossa taxa (e a do cartão), e usá-lo aqui mostraria à loja um
+             * pedido de R$ 275 cujos itens somam R$ 250 — além de inflar o
+             * total no WhatsApp que ela recebe.
+             */
+            'valor_total' => $payment->trainer_amount,
             'entrega_tipo' => $booking['entrega_tipo'] ?? 'retirada',
             'entrega_nome' => $entrega['nome'] ?? null,
             'entrega_telefone' => $entrega['telefone'] ?? null,

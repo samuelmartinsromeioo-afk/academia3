@@ -57,7 +57,27 @@ class ChatController extends Controller
                  */
                 'texto' => $n->mensagem,
                 'lida' => (bool) $n->lida,
-                'criada_em' => $n->created_at?->toDateTimeString(),
+                /*
+                 * ISO-8601 COM fuso, não `toDateTimeString()`.
+                 *
+                 * `created_at` é gravado e serializado em UTC (config/app.php
+                 * fixa 'timezone' => 'UTC' de propósito, e o comentário de lá
+                 * explica por que não se troca). `toDateTimeString()` devolve
+                 * "2026-10-10 14:30:31" — a hora certa, mas SEM dizer em que
+                 * fuso ela está. O app então exibia 14:30 para um aviso criado
+                 * às 11:30 no Brasil: três horas no futuro, em toda linha da
+                 * lista.
+                 *
+                 * Com o offset explícito o aparelho resolve o instante e
+                 * desenha no fuso de quem está olhando — que é o único jeito
+                 * certo, já que o usuário pode estar em qualquer lugar.
+                 *
+                 * Trocar a CHAVE seria quebrar o app publicado; trocar o
+                 * FORMATO dela não é, porque a expressão que o app publicado
+                 * aplica aqui (`slice(0,16)` + `split('-').reverse()`) já
+                 * produzia texto quebrado nos dois formatos.
+                 */
+                'criada_em' => $n->created_at?->toIso8601String(),
             ]);
 
         return response()->json(['notificacoes' => $notificacoes]);

@@ -44,6 +44,12 @@ class Personal extends Authenticatable
         'senha',
         'email',
         'cref',
+        // Carimbo da conferência do CREF no conselho, gravado na aprovação do
+        // admin (AdminController@aprovar). Não vem de formulário público — é
+        // registro de ato administrativo nosso.
+        'cref_conferido_em',
+        'cref_conferido_por',
+        'cref_conferido_resultado',
         'crn',
         'especialidades',
         'modalidade',

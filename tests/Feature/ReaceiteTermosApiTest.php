@@ -116,6 +116,12 @@ class ReaceiteTermosApiTest extends TestCase
      */
     public function test_nova_versao_reabre_a_pendencia(): void
     {
+        // A versão vigente é LIDA, não escrita. Este teste tinha '2.1' cravado e
+        // quebrou no primeiro bump legítimo do config — passando a acusar uma
+        // mudança de versão como se fosse defeito na regra de reaceite, que é
+        // exatamente o que ele deveria estar medindo.
+        $vigenteAoAceitar = (string) config('termos.versao');
+
         $this->withHeaders($this->comToken())->postJson('/api/v1/termos/aceitar')->assertOk();
 
         config(['termos.versao' => '99.0']);
@@ -124,7 +130,7 @@ class ReaceiteTermosApiTest extends TestCase
             ->getJson('/api/v1/me')
             ->assertJsonPath('termos.precisa_aceitar', true)
             // O histórico continua: ele aceitou a anterior, e isso é prova.
-            ->assertJsonPath('termos.versao_aceita', '2.1');
+            ->assertJsonPath('termos.versao_aceita', $vigenteAoAceitar);
     }
 
     /** O resumo chega sem HTML: o app não tem como renderizar <strong>. */

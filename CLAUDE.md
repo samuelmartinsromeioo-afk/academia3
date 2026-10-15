@@ -88,19 +88,55 @@ Personal/Academia --< Avaliacoes
 
 `Agenda` is the central booking record. It holds `tipo_aula` (pacote vs. avulsa), `frequencia_pacote`, `valor_aula`, cancellation fields, and foreign keys to Personal, Cliente, and optionally Academia.
 
-### Revenue Model — 90/10 everywhere
+### Revenue Model — the commission is a MARKUP, not a discount
 
-**There is no SaaS subscription.** No role ever pays a monthly fee to use the platform. The single revenue model is a **marketplace split on every transaction: 90% to the professional/business, 10% platform commission.** This holds for *all* of them — personal trainer (package + single session), academia, studio, loja.
+**There is no SaaS subscription.** No role ever pays a monthly fee. The single revenue model is a **commission added on top of the professional's price and charged to the client**:
 
-The rate lives in exactly **one** place: `AsaasService::SPLIT_RATE` (0.90, what is sent to Asaas). `AsaasService::feeRate()` derives the platform's 10% from it (`round(1 - SPLIT_RATE, 6)` — plain `1 - 0.90` in floating point gives 0.09999999999999998) and is the default of `calculateSplit()`, which records `payments.company_fee`/`trainer_amount`. That default used to be a literal `0.10`, a second copy that could drift from the split; it is gone. **Don't reintroduce a literal** — the referral bonus now reads `feeRate()` too, so a stale copy would misprice real payouts.
+```
+personal asks R$ 100  →  client pays R$ 110  →  personal receives R$ 100 (in full)
+```
 
-**The fix to `calculateSplit()` alone was not enough, and that is the instructive part.** Nine other `0.10` literals survived it and silently neutralized the derivation. The worst was `PaymentController::calculateSplit(float $amountTotal, float $feeRate = 0.10)`, a thin wrapper around the service method: because it *always* forwarded an explicit value, the `$feeRate ??= feeRate()` inside `AsaasService` never ran for any flow going through the web controller. The other eight were the `$companyFeeRate = 0.10` defaults of `criarAssinaturaPix`/`criarAssinaturaCartao` (service + web controller) and five explicit `0.10` arguments at the academia/studio/pacote subscription call sites in both PaymentControllers. All are now `?float … = null`, where null means "the platform rate". **A numeric default on a fee-rate parameter is itself a second copy of the rule** — so `ComissaoSplitTest::test_nenhum_parametro_de_taxa_tem_default_literal` asserts by reflection that every one of those parameters defaults to `null`, and names the offender when it doesn't.
+This holds for *all* receivers — personal trainer (package + single session), academia, studio, loja. It replaced the old 90/10 split (charge R$ 100, pay out R$ 90) on 2026-10-13.
 
-Nothing was mispriced in production, because `round(1 - 0.90, 6)` is exactly `0.1` — the two numbers agreed. The damage would have appeared the day `SPLIT_RATE` changed: `montarSplit()` sends from the constant, so the real split would move while `payments.company_fee` stayed at 10%, and `company_fee` is the **base of the referral bonus**. The referrer would be paid on a commission that was never charged. `ComissaoSplitTest` pins both ends (`company_fee` == `feeRate()`, `trainer_amount` == `SPLIT_RATE`, and the value sent in the split == the value recorded) for the one-off, pacote and academia paths — written in terms of the constants, so the tests stay valid if the rate ever changes. Every charge is created in the *platform* Asaas account with a `split` array pointing at the receiver's `asaas_wallet_id`; `montarSplit()` picks `fixedValue` vs `percentualValue` so Asaas won't reject the split when the card fee eats the net.
+**`AsaasService::SPLIT_RATE` was removed, not repurposed.** "Split rate" and "markup" produce different numbers from the same `0.10`, and a surviving `SPLIT_RATE` would be read as the old meaning by anyone who missed the change. The one source of the number is now `config('taxas.comissao')`, read through `AsaasService::feeRate()`. **Never write `0.10` anywhere else** — `company_fee` is the base of the referral bonus, so a stale copy pays someone on a commission that was never charged.
 
-Note `academias.valor_mensalidade` is the price the **gym charges its students**, not something the gym pays us — it flows through the same split.
+Four methods on `AsaasService` hold the whole arithmetic, and they are `static` so Blade views and API resources can price without instantiating a service that talks HTTP:
 
-Known gap, deliberate: when a receiver has no `asaas_wallet_id`, `montarSplit()` returns `null` and the charge still goes through **without a split**, so 100% lands in the platform account and the payout is manual (`personal_saques`). If you change this, change it everywhere.
+| | |
+|---|---|
+| `feeRate()` | the commission rate (`config('taxas.comissao')`) |
+| `comissao($base)` | what the platform earns on a service priced `$base` |
+| `detalhar($base, $billingType)` | the whole bill: `['base', 'comissao', 'gateway', 'total']` |
+| `valorCobrado($base, $billingType)` | shorthand for `detalhar(...)['total']` |
+| `comissaoEmbutida($bruto)` | the inverse — the commission *inside* an amount already charged |
+
+Three consequences that must move together, and all of them already do:
+
+1. **`montarSplit()` sends `fixedValue` = the professional's full price.** It takes the *price*, never the charged amount, and the `percentualValue: 100` fallback is defensive only — by construction the net is `price + commission − fee`, always above the price. If it ever triggers it errs in favour of the **professional** (he takes the whole net, the platform nothing), because the opposite would pay him less than agreed.
+2. **On CARD the Asaas fee is passed to the client, as a gross-up.** `total = (base + comissao + fixa) / (1 − percentual)` — a *division*. Adding the fee "on the outside" (`base + comissao + percentual×base`) is wrong, because the fee applies to the already-increased total, and the platform would silently eat the difference. `ComissaoSplitTest` asserts the property, not the number: after Asaas takes its cut, the net is **exactly** `price + commission`. On PIX the fee comes out of our commission.
+3. **`UNDEFINED` (the Asaas hosted checkout) is priced as CARD.** In that mode the client picks the method *after* the charge exists; pricing it as PIX would leave the split's `fixedValue` above the net and Asaas would reject it at the end of the checkout, in the client's face. So we charge the ceiling. Whoever wants the PIX price picks PIX, where `billingType` really is `PIX`.
+
+**`payments.gateway_fee`** (migration `2026_10_13_000001`) exists so that difference has a name. The four columns answer four different questions and close the bill: `amount_total` (what the client paid) = `trainer_amount` (the professional's price, in full) + `company_fee` (**what we earned** — the referral base) + `gateway_fee` (what Asaas took on card; it passed through us and is not revenue). Folding the card fee into `company_fee` would inflate the referral bonus over money that was never ours; taking it out of `trainer_amount` would contradict the full payout the split actually sends.
+
+**The minimum charge is derived, not chosen.** `AsaasService::valorMinimo()` = `pix_fixa / feeRate` (R$ 19,90 with today's numbers). Below it the commission doesn't cover the PIX fee, the full payout doesn't fit in the net and Asaas rejects the split. The old `MIN_SPLIT_VALUE = 10.0` became unsound on the inversion (R$ 1 of commission against a R$ 1,99 fee) and is gone.
+
+**The gateway fees live in `config/taxas.php`** (`.env`: `ASAAS_TAXA_PIX`, `ASAAS_TAXA_CARTAO_*`), not in constants, because they are contract terms that vary per account. The defaults are Asaas's public table and are **deliberately conservative**: overestimating costs the platform a few cents, underestimating makes Asaas reject the split and the charge fails in front of the client.
+
+**No front recalculates the price.** `GET /api/v1/precos/cotar[?valor=]` (public, throttled) is the single source for both: with `valor` it returns the exact breakdown for both methods, without it just the rule (rate + minimum) — which is what the app loads once at boot to render lists without one request per item. `App\Support\Preco` is the Blade-side entry point (`fmt`, `taxa`, `dados`, `configJs`); the app's is `src/api/precos.js`. The PIX side *is* recomputed in JS (a plain sum), but the **card gross-up is never** — a second implementation of a division diverges by cents and the screen would promise a total the charge doesn't have.
+
+**What the client sees is always the final price** (vitrines, detail pages, app lists), with the composition spelled out at checkout. The store cart is the one exception and for an arithmetic reason: the fee is a *line* there, not baked into each product, because `sum(round(p·1.1))` ≠ `round(sum(p)·1.1)` and the lines would disagree with the total.
+
+**Watch out for `amount_total` read as "what the professional earned".** It stopped meaning that. The inversion needed fixes in five places that had conflated them, and the loja one was caught by a test: `pedidos.valor_total` (the order the store reads and gets on WhatsApp, which must match `pedido_itens.subtotal`), `SolicitacaoFicha.valor`, `SolicitacaoAvaliacao.valor`, the value in `AvisoService::academiaContratada`/`studioPlanoContratado`, and the admin's "faturamento do studio". All now read `trainer_amount`. `amount_total` is correct for: refunds, Meta `Purchase`, the client's own statements and the payment e-mails.
+
+The history worth keeping: the rate once existed in **nine** copies of `0.10` across both PaymentControllers and `AsaasService` — the worst being `calculateSplit(float $amountTotal, float $feeRate = 0.10)`, a wrapper that always forwarded an explicit value, so the `$feeRate ??= feeRate()` inside the service never ran for any web flow. They were reduced to `?float … = null`, and the inversion removed the parameters entirely: **a per-charge fee parameter is itself a second copy of the rule.** `ComissaoSplitTest::test_nenhum_metodo_de_cobranca_aceita_taxa_por_parametro` now asserts by reflection that no cobrança method accepts one at all.
+
+`ComissaoSplitTest` pins **three** ends together, which is the point: the `value` sent to Asaas, the `fixedValue` of the split, and the row recorded in `payments`. It reads the faked HTTP payload, not just the DB row — a test that only checked the row would stay green with the record right and the charge wrong.
+
+Note `academias.valor_mensalidade` is the price the **gym charges its students**, not something the gym pays us — the student pays it plus the commission, and the gym receives it whole.
+
+Known gap, deliberate: when a receiver has no `asaas_wallet_id`, `montarSplit()` returns `null` and the charge still goes through **without a split**, so everything lands in the platform account and the payout is manual (`personal_saques`) — for the full `trainer_amount`, which is now the whole price. If you change this, change it everywhere.
+
+**Active subscriptions created before the inversion were deliberately left alone.** They live at Asaas with the old value and a 90% split, and they keep running that way until the student cancels or re-contracts. Rewriting the value of a subscription in flight would raise a student's monthly bill by 10% without them asking.
 
 ### Financial Calculation
 
@@ -147,7 +183,7 @@ Editable UI/marketing strings (labels, especialidades) live in `config/textos.ph
 
 ### Tela de "cadastro recebido"
 
-Every signup that waits for admin approval (Personal, Academia, Studio, Loja) redirects to `cadastro.sucesso` with `->with('cad_tipo', ...)`, instead of dropping a flash message on the login page. `resources/views/cadastro/sucesso.blade.php` is a thin renderer: the whole welcome message (title, paragraphs, three highlight cards) comes from `config('textos.boas_vindas.{cad_tipo}')`, falling back to `padrao` when the flash is gone (F5 on the page). Paragraphs are printed with `{!! !!}` so `<strong>` survives — it is our copy from config, never user input, so nothing from a form may be interpolated there. The copy must not mention the 90/10 split, a contract, or a monthly fee; there is none (see *Revenue Model*). Cliente signup doesn't need approval and still goes straight to login.
+Every signup that waits for admin approval (Personal, Academia, Studio, Loja) redirects to `cadastro.sucesso` with `->with('cad_tipo', ...)`, instead of dropping a flash message on the login page. `resources/views/cadastro/sucesso.blade.php` is a thin renderer: the whole welcome message (title, paragraphs, three highlight cards) comes from `config('textos.boas_vindas.{cad_tipo}')`, falling back to `padrao` when the flash is gone (F5 on the page). Paragraphs are printed with `{!! !!}` so `<strong>` survives — it is our copy from config, never user input, so nothing from a form may be interpolated there. The copy must not mention the commission, a contract, or a monthly fee; the first is not the professional cost it used to look like and the other two do not exist (see *Revenue Model*). Cliente signup doesn't need approval and still goes straight to login.
 
 ### Cadastro — paridade site ↔ app
 
@@ -174,6 +210,20 @@ Duas decisões dentro disso: **`sexo` é `sometimes|required`, não `required`**
 **Lacuna conhecida que sobrou:** os **pacotes de avaliação física** (`PacoteAvaliacao`) só são gerenciáveis pelo site — `POST/PUT/DELETE personal/avaliacao-fisica/pacotes` não têm equivalente na API. O personal consegue ajustar a *tabela de preços* pelo app (`POST /personal/precos`), mas não criar/editar/apagar os pacotes nomeados. Fechar isso exige os 3 endpoints **e** uma tela no app — backend sozinho seria mais uma funcionalidade write-only.
 
 **Nenhum cadastro do app dispara `CompleteRegistration` no Meta** (o web dispara nos cinco). Isso é uma lacuna conhecida, não um esquecimento: `MetaConversionsService::trackServer()` existe e funcionaria, mas o app não tem o banner de consentimento que o web tem, e `META_REQUIRE_CONSENT=true` é o padrão — disparar dali seria furar o gate de LGPD que o projeto construiu de propósito. Se for para fechar essa lacuna, o caminho é consentimento no app primeiro.
+
+### Idade mínima — 18 para o aluno, 21 para o personal
+
+`CadastroHelper::IDADE_MINIMA_ALUNO` (18) e `IDADE_MINIMA_PROFISSIONAL` (21) são a **fonte única**. Delas saem: as regras das quatro portas de cadastro (`Cadastro\{Cliente,Personal}Controller@store`, `Api\AuthController@register`, `Api\RegisterController@personal`), o `min`/`max` do `<input type="date">` nos dois formulários, o aviso na tela e o `idade_minima` de `GET /api/v1/cadastro/opcoes` que o app baixa. **Não escreva 18 nem 21 em outro lugar** — é a mesma armadilha do `0.10` da comissão, que sobreviveu à própria correção em nove cópias.
+
+A coluna é `idade` mas guarda uma **data de nascimento** (nome histórico, nas duas tabelas). `regraNascimento()` monta `date` + `before_or_equal:hoje-N` + `after_or_equal:hoje-110`; `limitesNascimento()` devolve a mesma faixa para o atributo do campo, para o navegador e o servidor nunca discordarem. O limite é **inclusivo**: quem completa a idade **hoje** entra. O teto de 110 anos existe para o lado de cima — um ano digitado errado passa pela idade mínima com folga e grava um nascimento absurdo que só reaparece como idade estranha na avaliação física, que calcula a idade a partir desta coluna.
+
+Academia, studio e loja **não entram nisso**: são pessoa jurídica (CNPJ) e nenhum dos dois cadastros coleta nascimento de um responsável. Não há o que validar ali.
+
+**`idade` saiu do grupo `sometimes|required` da API, e é a única que saiu.** `sexo` e `cep` continuam `sometimes` por compatibilidade com o binário publicado na loja, que não os envia — o raciocínio original (ver *paridade site ↔ app*) é que uma conta sem esses campos é uma conta incompleta que o próprio aluno termina depois. **Esse raciocínio não transfere para a idade:** ali o campo deixou de ser completude de dado e passou a ser a trava, e com `sometimes` bastava **omitir** o campo para não haver trava nenhuma — e o app antigo omite. Uma trava com saída não é trava, e conta de menor de idade não é "conta pela metade": não se completa, se recusa. O preço é conhecido e aceito: quem estiver no app antigo recebe 422 até atualizar, e por isso a mensagem de `idade.required` na API manda **atualizar o app** em vez de pedir para preencher um campo que naquela tela não existe.
+
+O app valida antes de enviar (`erroNascimento()` em `utils/br.js`, que espelha a regra inclusive na borda), mas **com o número vindo de `/cadastro/opcoes`**, não escrito no binário: uma cópia dentro de um app já publicado fica velha no dia em que o corte mudar, e aí o app deixa passar o que o servidor recusa. No cadastro de personal a checagem roda **antes** da foto, para não mandar escolher e subir imagem antes de dizer que a idade não permite.
+
+`tests/Feature/IdadeMinimaCadastroTest.php` fixa tudo isso, com todas as datas calculadas de `now()` e das constantes — nunca cravadas. Um teste com `2008-10-10` escrito à mão passa a testar outra idade a cada ano, e um teste com `18` cravado continuaria verde justamente no dia em que o corte mudasse.
 
 ### Trava de `APP_DEBUG` — duas camadas, e `APP_ENV` é a que importa
 
@@ -219,27 +269,64 @@ A coluna do corpo do aviso é **`mensagem`** (`notificacoes`: `destinatario_tipo
 
 **A lição que vale além deste campo:** um smoke test de status 200 não pega isto, e o `SmokeAppEndpointsTest` de fato passava com o bug no lugar. Quando a tela depende do **valor** de um campo, afirme o valor. `NotificacaoApiTest` compara o corpo que a API entrega com o que o site lê da mesma linha, então a divergência não pode voltar sem alguém ver.
 
+**`criada_em` vai em ISO-8601 COM fuso (`toIso8601String()`), nunca `toDateTimeString()`.** Mesmo campo, segundo bug, descoberto depois: `config('app.timezone')` é **UTC** de propósito (ver o comentário em `config/app.php`, que explica por que não se troca). `toDateTimeString()` devolvia a hora certa **sem dizer em que fuso ela estava**, e o JS interpreta string com espaço como hora *local* — então um aviso criado 11:30 no Brasil era desenhado como **14:30, três horas no futuro, em toda linha da lista**. Não havia como o app acertar sem adivinhar a config do servidor. Com o offset explícito o aparelho resolve o instante e desenha no fuso de quem está olhando, que é o único jeito certo — o usuário pode estar em qualquer lugar. Trocar a *chave* quebraria o app publicado; trocar o *formato* não, porque a expressão que o app publicado aplicava neste campo já produzia texto quebrado nos dois formatos. `NotificacaoApiTest::test_criada_em_informa_o_fuso` afirma as duas coisas: que o fuso vem, e que o instante entregue é o mesmo que está gravado.
+
+**Lacuna deliberada:** o push sempre manda `data = ['tela' => 'Notificacoes']` (`Notificacao::para`), e a API **não** expõe `url` nem `icone`. Então todo aviso leva à *lista*, nunca ao assunto — "nova mensagem de X" abre Avisos, não a conversa. Fechar isso não é expor `url`: a coluna guarda uma rota **web** (`route('chat.conversa', …)`), que não existe no app. Exigiria um campo de destino que os dois lados entendam (ex.: `destino: {tela, params}`) decidido em `AvisoService`/`Notificacao::para`, mais o mapeamento no app — e o app publicado ignoraria o campo novo até atualizar, o que é aceitável porque o fallback já é a lista.
+
+#### Sinal de aviso novo DENTRO do app
+
+`GET /notificacoes/nao-lidas` existe desde sempre e o app **nunca o chamava**; `QuickAccessRow` (`components/UI.js`) já desenhava `item.badge` com estilo pronto e **nenhuma tela passava o valor**. As duas metades da mesma funcionalidade estavam construídas e desconectadas, então o atalho "Avisos" ficava idêntico com 0 ou com 12 pendências: fora do banner na tela de bloqueio, o app não dava **nenhum** sinal de que havia aviso novo — quem descartasse o push ou abrisse o app direto não ficava sabendo. É o mesmo modo de falha que `personals.modalidade` teve (dado coletado que ninguém lê), aqui na direção inversa: UI pronta que ninguém alimenta.
+
+O contador mora no `AppContext` (`avisosNaoLidos` / `recarregarAvisos`), não na tela, porque quem o exibe é a **Home** e quem o zera é a tela de Avisos — e o push que chega precisa mexer nos dois. Falha de rede **mantém** o valor anterior em vez de zerar: zerar esconderia aviso que existe.
+
+Também faltava o listener de notificação **recebida**: só havia o de *toque* (`addNotificationResponseReceivedListener`). Com o app aberto o banner aparecia e nada dentro do app reagia. Agora `aoReceberNotificacao` (`notifications/push.js`) atualiza o contador e a lista aberta.
+
+Ainda não ligado, de propósito: `shouldSetBadge: false` no handler — o número no ícone do app exige o `badge` dentro do payload do push (o Expo não soma sozinho), ou seja, o backend teria de contar as não lidas na hora do envio. É uma mudança no `ExpoPushService`, não no app.
+
+#### Avisos PROATIVOS — os únicos que alcançam quem não está no app
+
+Quase todo aviso do projeto é **reativo**: dispara de um controller, porque alguém fez algo. Dos pontos que chamam `Notificacao::para`/`NotificacaoService`, **só dois são agendados** — `personal:lembrete-diario` e `aluno:lembrete-aula`. São os únicos avisos que a plataforma gera por iniciativa própria, e por isso os únicos em que o push tem valor real (o usuário não está olhando).
+
+**O lembrete do aluno não existia.** O personal era avisado ~90 min antes do primeiro compromisso desde o começo, e o aluno — que é quem precisa sair de casa, levar roupa e chegar no horário — não recebia **nada**. O módulo de reposição inteiro existe para remediar a falta depois que ela acontece.
+
+Três armadilhas que o comando do personal tinha, e que o novo evita (`app/Console/Commands/LembreteAulaAluno.php`):
+
+1. **A conta de horário tem de passar por `AgendaService::agora()`/`inicioDaAula()`.** `agendas.hora_inicio` é hora de parede do Brasil, `app.timezone` é UTC. O comando antigo usava `Carbon::now()`/`Carbon::today()` e montava o início da aula com `Carbon::parse()` sem fuso — medido minuto a minuto, **o lembrete de uma aula das 07:00 disparava entre 02:20 e 02:40 da manhã**. `Carbon::today()` em UTC também erra a *data* da agenda entre 21:00 e meia-noite no Brasil. `AgendaService` já tinha os helpers certos; este comando nunca recebeu a correção.
+2. **Push não pode depender do WhatsApp.** A consulta filtrava `whereNotNull('whatsapp')` e havia um `return self::FAILURE` quando `WHATSAPP_TOKEN`/`WHATSAPP_PHONE_NUMBER_ID` faltavam — chaves que **não estavam no `.env.example`**. Ou seja: a única notificação proativa da plataforma ficava desligada por uma credencial que ninguém sabia que precisava configurar, e personal sem número não recebia nem push. A falta agora só desliga o canal WhatsApp.
+3. **A reserva do envio vem ANTES do envio, e é atômica (`Cache::add`).** O agendador roda a cada 5 min dentro de uma janela de 20, então quatro rodadas tocam a mesma aula. O código antigo gravava a chave *depois*, e só se `$enviado` fosse true — mas `$enviado` reflete apenas WhatsApp/e-mail, não o push: um personal sem WhatsApp cujo e-mail falhasse recebia **quatro pushes** do mesmo lembrete. Reserve por aula (o aluno pode ter duas no dia), não por pessoa.
+
+`tests/Feature/LembreteAulaTest.php` fixa a **hora** do disparo, não só o conteúdo — congela o relógio em UTC e define a aula em hora de parede, que é exatamente a combinação onde o erro aparecia.
+
+**O que ainda não existe de proativo** (lacunas conhecidas, não esquecimento): nada de reengajamento do aluno que parou de treinar; nenhum disparo em massa/promocional — `ExpoPushService::enviar()`, o método que já faz lotes de 100 tokens, **nunca é chamado**, só `paraDestinatario()`; e `celebracoes:retrospectivas` roda diariamente mas apenas *enfileira* para o app exibir no próximo acesso, sem push. Para promoção faltam ainda duas coisas que não existem em nenhum lugar do banco: **preferência/opt-out de notificação** e separação entre marketing e transacional — exigência de política da Apple/Google e base legal distinta na LGPD (o aceite dos Termos não cobre marketing).
+
+#### `Screen` é o dono do "puxar para atualizar"
+
+O app tinha **60+ telas e nenhum `RefreshControl`** — a única forma de recarregar qualquer coisa era sair da tela e voltar. Como `components/UI.js > Screen` é o dono do `ScrollView` de todas elas, o gesto virou uma prop opcional ali: `onRefresh` (deve devolver Promise; o spinner fica até resolver). Ligado em `Notificacoes` e `Home`; nas outras é uma linha. Só funciona com `scroll` (o padrão) — `View` não tem `refreshControl`.
+
 ### Referral Coupons ("Indique e ganhe")
 
 Every account (Personal, Cliente, Academia, Studio, Loja) gets a personal referral code and can enter someone else's at signup. Tracking + bonus only — it does **not** change any amount charged.
 
 **The bonus is revenue share, not a fixed amount.** The referrer earns `config('indicacao.percentual')` (**10%**) of the **platform's commission** on everything the **referred** account bills during a window of `config('indicacao.janela_dias')` (**35 days**) counted from the referred account's **approval** — see the base-of-calculation block below, it is 10% of our 10%. The accrued amount can only be **withdrawn** after that window closes — and only if the referred account also has `config('indicacao.meta_alunos')` (6) students won through the platform. There is **no fixed R$ 30 bonus** any more; `cupons.bonus_valor` stays 0 on `indicacao` coupons (it still carries the fixed value of admin `promocional` campaigns).
 
-**The base is the PLATFORM'S COMMISSION** (`payments.company_fee`) — it is **10% of our 10%**, not 10% of the gross. The base is **not** the referred account's gross revenue, **not** what the professional takes home, and the bonus never comes out of their 90% split. On a referred account that bills R$ 2.500 inside the window:
+**The base is the PLATFORM'S COMMISSION** (`payments.company_fee`) — it is **10% of our 10%**, not 10% of what was charged. The base is **not** the referred account's revenue, **not** what the professional takes home, and the bonus never touches their payout. On a referred account that sells R$ 2.500 of services inside the window:
 
 | | |
 |---|---|
-| Gross billed by the referred account | R$ 2.500,00 (not the base) |
-| Goes to the professional (90% split) | R$ 2.250,00 — untouched |
+| Sold by the referred account | R$ 2.500,00 (not the base) |
+| Goes to the professional (in full) | R$ 2.500,00 — untouched |
+| Paid by the students | R$ 2.750,00 (price + commission) |
 | **Platform commission (10%)** | **R$ 250,00 ← the base** |
 | Referrer's bonus (10% of the commission) | R$ 25,00 |
 | Platform keeps | R$ 225,00 |
 
-So the bonus is effectively **1% of gross**, and the platform still earns 9% of gross during the window. Because the bonus is carved out of the commission, it is **structurally capped** by it: it can never exceed what actually came in, which is why `CupomService::percentual()` clamps to `[0, 1]` (1.0 = the whole commission). `config('indicacao.percentual')` is the one number that moves the split between the two: 0.10 → R$ 25 referrer / R$ 225 platform; 0.50 → R$ 125 each.
+So the bonus is effectively **1% of what the referred account sells**, and the platform still keeps 9%. Because the commission is a markup rather than a discount, the referred account receives exactly the same with or without the programme. Because the bonus is carved out of the commission, it is **structurally capped** by it: it can never exceed what actually came in, which is why `CupomService::percentual()` clamps to `[0, 1]` (1.0 = the whole commission). `config('indicacao.percentual')` is the one number that moves the split between the two: 0.10 → R$ 25 referrer / R$ 225 platform; 0.50 → R$ 125 each.
 
-`AsaasService::feeRate()` (derived from `SPLIT_RATE`, not a second literal) is the commission rate, and it is also now the default of `calculateSplit()` — there used to be a `0.10` literal there, which was the second copy of the same rule.
+`AsaasService::feeRate()` (from `config('taxas.comissao')`, never a second literal) is the commission rate.
 
-`indicacao_creditos.base_valor` is the **commission**; `bruto_valor` carries the gross alongside it **purely for display**, so the extrato can show the whole chain (faturou → comissão → sua parte). It is null on credits written before that column and enters no calculation. When a receita has no usable recorded commission (legacy rows may hold zero), `CupomService::comissao()` derives it from `feeRate()` rather than crediting zero — zero would silently erase someone's bonus, and a recorded value above the gross would pay out more than came in, so both are rejected.
+`indicacao_creditos.base_valor` is the **commission**; `bruto_valor` carries `payments.amount_total` alongside it **purely for display**, so the extrato can show the whole chain (aluno pagou → comissão → sua parte). It is null on credits written before that column and enters no calculation. When a receita has no usable recorded commission (legacy rows may hold zero), `CupomService::comissao()` derives it rather than crediting zero — zero would silently erase someone's bonus, and a recorded value above the gross would pay out more than came in, so both are rejected.
+
+**That derivation is `comissaoEmbutida()`, not `bruto × feeRate()`.** With the commission as a markup, the gross *contains* it, so it comes out by dividing: in R$ 110 the commission was R$ 10 (110 × 1/11), not R$ 11. Multiplying would pay the referrer on money that never came in. It only ever reaches rows with no usable `company_fee`; rows from the old model land there with a few cents of drift, and accepting that beats keeping two derivations and picking one by payment date.
 
 The arithmetic is spelled out in five places that must stay in sync: the header comment of `config/indicacao.php`, the "Sobre qual valor incidem os 10%" block on `/indicacoes`, the "Regra atual" card on `/admin/indicacoes`, clause **8.5** of the terms (plus the one-paragraph version in each of the four role-specific terms), and here. The panel and the terms both **compute** the worked example from `percentual` × `feeRate()` × `config('indicacao.exemplo_base')` instead of hardcoding R$ 25 — a hardcoded example starts lying the day the percentage changes, and nobody opens a view when editing a config.
 
@@ -292,7 +379,7 @@ Seven layers stop an over-transfer, each sufficient on its own:
 
 `AsaasWebhookController::validarSaque()` holds that policy, and it is **fail-closed**:
 - `type: TRANSFER` → `IndicacaoSaqueService::autorizarTransferencia()` approves only when the `externalReference` (`indicacao_saque:{id}`) resolves to a saque in `processando`, the `value` matches to the cent, the `transfer.id` matches what we stored, and the `pixAddressKey` matches the key the owner registered. Anything else is `REFUSED` and logged.
-- `type: PAYMENT_SPLIT` → **APPROVED**. Splits are the 90/10 core and are defined by us at charge creation; refusing here would halt every payout on the platform. Don't "harden" this into a refusal.
+- `type: PAYMENT_SPLIT` → **APPROVED**. Splits are the core of the payout model and are defined by us at charge creation; refusing here would halt every payout on the platform. Don't "harden" this into a refusal.
 - any other type (BILL, PIX_QR_CODE, PIX_REFUND, MOBILE_PHONE_RECHARGE) → `REFUSED`; the platform never emits them.
 - `personal_saque:{id}` → `autorizarSaquePersonal()`, verified against `personal_saques` (value + a `CREATING`/`PENDING` status).
 
@@ -426,6 +513,14 @@ Personal@if($p->cref) ... @endif   {{-- @if is literal; the @endif is orphaned -
 ```
 
 Use `@php`/ternary for inline conditions, or put whitespace before the directive. This has already caused a hard syntax error once, in a receipt view.
+
+#### `@php($x = ...)` does not exist in Laravel 10 — always use `@php ... @endphp`
+
+The one-line form was **removed in Laravel 9**, and the failure mode is the worst kind: Blade still rewrites `@php` into `<?php`, so `@php($x = 1)` compiles to **`<?php($x = 1)`** — an opened PHP tag that is never closed. Everything after it in the template stops being markup and is parsed as PHP until the next `?>`, which is whatever `@endphp` happens to come next, **hundreds of lines below**.
+
+So the error surfaces nowhere near the cause. In `cadastro/personal.blade.php` the symptom was `Undefined variable $espPersonal` at line 698 — because the *real* `@php` block at 502 had been swallowed and never ran. The page was a blank 500; the only thing that pointed at the truth was reading the compiled file in `storage/framework/views/` and seeing the literal `@php` sitting next to a bare `?>`.
+
+Two things follow: `@php ... @endphp` always, even for a single assignment; and **when a Blade page 500s with an undefined variable that is plainly assigned above it, go read the compiled view** — the template is lying to you about where the PHP block starts.
 
 #### Shared partials over duplicated markup
 

@@ -16,27 +16,48 @@ class LembreteDiarioPersonal extends Command
     protected $signature   = 'personal:lembrete-diario';
     protected $description = 'Envia WhatsApp para cada personal com seus compromissos do dia';
 
-    public function handle(): int
+    public function handle(\App\Services\AgendaService $agendaService): int
     {
-        $hoje = Carbon::today();
-        $agora = Carbon::now();
+        /*
+         * Fuso do NEGÓCIO, não UTC.
+         *
+         * `agendas.hora_inicio` é hora de parede do Brasil e `app.timezone` é
+         * UTC (ver o comentário em config/app.php). Isto usava `Carbon::now()`
+         * e `Carbon::today()` e montava `$primeiraHora` com `Carbon::parse()`
+         * sem fuso, ou seja, comparava 07:00 (parede) com um "agora" 3h
+         * adiantado. Efeito: a janela de 80–100 min caía ~4h30 antes da aula —
+         * o lembrete de uma aula das 07:00 disparava por volta das 02:30 da
+         * manhã, quando disparava.
+         */
+        $agora = $agendaService->agora();
+        $hoje = $agora->copy()->startOfDay();
 
-        $personais = Personal::whereNotNull('whatsapp')
-            ->where('whatsapp', '!=', '')
-            ->where('status', 'aprovado')
-            ->get();
+        /*
+         * Sem o filtro de WhatsApp.
+         *
+         * A consulta exigia `whatsapp` preenchido, então personal sem número
+         * não recebia nem o PUSH — que não precisa de número nenhum. O canal
+         * (`NotificacaoService`) já entrega pelo que existir em cada conta:
+         * in-app e push sempre, WhatsApp e e-mail quando houver.
+         */
+        $personais = Personal::where('status', 'aprovado')->get();
 
         if ($personais->isEmpty()) {
-            $this->info('Nenhum personal com WhatsApp cadastrado.');
+            $this->info('Nenhum personal aprovado.');
             return self::SUCCESS;
         }
 
-        $token         = config('services.whatsapp.token');
-        $phoneNumberId = config('services.whatsapp.phone_number_id');
-
-        if (!$token || !$phoneNumberId) {
-            $this->error('Meta WhatsApp não configurado no .env (WHATSAPP_TOKEN e WHATSAPP_PHONE_NUMBER_ID).');
-            return self::FAILURE;
+        /*
+         * A falta de credencial da Meta NÃO aborta mais o comando.
+         *
+         * Antes havia um `return self::FAILURE` aqui, antes de qualquer envio —
+         * e `WHATSAPP_TOKEN`/`WHATSAPP_PHONE_NUMBER_ID` não estavam nem no
+         * `.env.example`. Ou seja: a única notificação proativa da plataforma
+         * ficava desligada por uma credencial que ninguém sabia que precisava
+         * existir, mesmo o push não dependendo dela. Agora só avisamos no log.
+         */
+        if (! config('services.whatsapp.token') || ! config('services.whatsapp.phone_number_id')) {
+            $this->warn('Meta WhatsApp não configurado (WHATSAPP_TOKEN / WHATSAPP_PHONE_NUMBER_ID): seguindo só com push, in-app e e-mail.');
         }
 
         foreach ($personais as $personal) {
@@ -52,17 +73,29 @@ class LembreteDiarioPersonal extends Command
                 continue;
             }
 
-            // Só envia entre 80 e 100 minutos antes do primeiro compromisso do dia
-            $primeiraHora = Carbon::parse($hoje->format('Y-m-d') . ' ' . $agendas->first()->hora_inicio);
+            // Só envia entre 80 e 100 minutos antes do primeiro compromisso do
+            // dia. `inicioDaAula` monta o momento no fuso do negócio — é o que
+            // torna esta subtração válida.
+            $primeiraHora = $agendaService->inicioDaAula($agendas->first());
             $minutosRestantes = $agora->diffInMinutes($primeiraHora, false);
 
             if ($minutosRestantes < 80 || $minutosRestantes > 100) {
                 continue;
             }
 
-            // Controle de duplicidade: não envia mais de uma vez por dia por personal
-            $cacheKey = "lembrete_enviado_{$personal->id}_{$hoje->format('Y-m-d')}";
-            if (Cache::has($cacheKey)) {
+            /*
+             * Reserva ANTES de enviar, e atômica.
+             *
+             * Era `Cache::has` + `Cache::put` só quando `$enviado` fosse true —
+             * e `$enviado` reflete apenas WhatsApp/e-mail, não o push. Um
+             * personal sem WhatsApp cujo e-mail falhasse recebia push a cada
+             * rodada de 5 min durante os 20 min da janela: quatro pushes do
+             * mesmo lembrete. `Cache::add` grava só se a chave não existir e
+             * devolve false caso contrário, então a reserva é a própria
+             * condição.
+             */
+            $cacheKey = "lembrete_enviado_{$personal->id}_{$agora->format('Y-m-d')}";
+            if (! Cache::add($cacheKey, true, $agora->copy()->endOfDay())) {
                 $this->line("↷ {$personal->nome} (já enviado hoje)");
                 continue;
             }
@@ -80,13 +113,14 @@ class LembreteDiarioPersonal extends Command
                 [$primeiroNome, $agendas->count(), $primeiroHorario]
             );
 
-            if ($enviado) {
-                Cache::put($cacheKey, true, now()->addHours(2));
-                Log::info("Lembrete enviado ao personal {$personal->id} ({$personal->nome})");
-                $this->line("✓ {$personal->nome}");
-            } else {
-                $this->warn("✗ {$personal->nome}: falha no envio");
-            }
+            // A reserva já foi feita acima. `$enviado` diz apenas se WhatsApp ou
+            // e-mail saíram: o aviso in-app e o push vão de qualquer forma
+            // (NotificacaoService::conta → Notificacao::para), então "falso"
+            // aqui não é lembrete perdido e não deve liberar um reenvio.
+            Log::info("Lembrete enviado ao personal {$personal->id} ({$personal->nome})", [
+                'whatsapp_ou_email' => $enviado,
+            ]);
+            $this->line(($enviado ? '✓' : '◐') . " {$personal->nome}");
 
             usleep(500000);
         }

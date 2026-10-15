@@ -15,14 +15,24 @@ class PaymentTest extends TestCase
 
     // ── Split calculation ─────────────────────────────────────────────────────
 
-    public function test_calculate_split_90_10(): void
+    /**
+     * A comissão é ACRÉSCIMO: o profissional recebe o preço cheio e o cliente
+     * paga preço + comissão. Era o contrário (cobrava-se 100 e repassava-se 90),
+     * e é por isso que este teste mudou de nome junto com a regra.
+     *
+     * A conta detalhada por caminho de cobrança vive em ComissaoSplitTest, que
+     * também confere o que é ENVIADO ao Asaas. Aqui fica só o contrato do
+     * wrapper do controller.
+     */
+    public function test_calculate_split_acrescenta_a_comissao_ao_preco(): void
     {
         $controller = new PaymentController();
         $split      = $controller->calculateSplit(100.00);
 
-        $this->assertEquals(100.00, $split['amount_total']);
+        $this->assertEquals(100.00, $split['trainer_amount'], 'o profissional recebe o preço integral');
         $this->assertEquals(10.00,  $split['company_fee']);
-        $this->assertEquals(90.00,  $split['trainer_amount']);
+        $this->assertEquals(110.00, $split['amount_total'], 'o cliente paga preço + comissão');
+        $this->assertEquals(0.00,   $split['gateway_fee'], 'no Pix a taxa do gateway é da plataforma');
     }
 
     public function test_split_no_rounding_discrepancy(): void
@@ -30,9 +40,20 @@ class PaymentTest extends TestCase
         $controller = new PaymentController();
         $split      = $controller->calculateSplit(333.33);
 
+        // No Pix as três colunas fecham: total = repasse + comissão.
         $this->assertEquals(
             $split['amount_total'],
             round($split['company_fee'] + $split['trainer_amount'], 2)
+        );
+
+        // No cartão entra a quarta parcela (a taxa repassada ao cliente), e a
+        // identidade passa a incluí-la. É o motivo de `gateway_fee` existir:
+        // sem ela a diferença não teria nome e seria somada na comissão,
+        // inflando a base do bônus de indicação.
+        $cartao = $controller->calculateSplit(333.33, 'CREDIT_CARD');
+        $this->assertEquals(
+            $cartao['amount_total'],
+            round($cartao['company_fee'] + $cartao['trainer_amount'] + $cartao['gateway_fee'], 2)
         );
     }
 

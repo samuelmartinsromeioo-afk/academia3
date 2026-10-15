@@ -460,7 +460,7 @@
                 <i class="ph ph-check-circle" style="color: var(--primary); font-size: 1.2rem;"></i>
                 <div>
                     <p style="margin: 0; font-weight: 700; color: #fff; font-size: 0.9rem;">Conta Asaas configurada</p>
-                    <p style="margin: 0; color: #a0a0a0; font-size: 0.75rem;">Split de pagamentos ativo — 90% vai direto para a carteira deste studio.</p>
+                    <p style="margin: 0; color: #a0a0a0; font-size: 0.75rem;">Split de pagamentos ativo — o preço cheio do studio vai direto para a carteira dele; a comissão da plataforma é o acréscimo cobrado do aluno.</p>
                     <p style="margin: 4px 0 0; color: #a0a0a0; font-size: 0.72rem; font-family: monospace;">Wallet ID: {{ $studio->asaas_wallet_id }}</p>
                 </div>
             </div>

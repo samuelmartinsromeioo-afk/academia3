@@ -303,12 +303,19 @@
                 ) }}
             </div>
             <ul class="bc-linhas">
+                {{-- "Recebeu", não "faturou": com a comissão virando acréscimo, o
+                     indicado recebe o preço cheio e o aluno paga o preço + a nossa
+                     parte. As duas linhas aparecem para a conta fechar na tela. --}}
                 <li>
-                    <span class="bc-rotulo">O indicado faturou</span>
+                    <span class="bc-rotulo">O indicado recebeu</span>
                     <span class="bc-valor">{{ $dinheiro($exBase) }}</span>
                 </li>
                 <li>
-                    <span class="bc-rotulo">Comissão da SnrFit ({{ $taxaTexto }} disso)</span>
+                    <span class="bc-rotulo">Os alunos pagaram</span>
+                    <span class="bc-valor">{{ $dinheiro($exBase + $exComissao) }}</span>
+                </li>
+                <li>
+                    <span class="bc-rotulo">Comissão da SnrFit ({{ $taxaTexto }} do preço)</span>
                     <span class="bc-valor">{{ $dinheiro($exComissao) }}</span>
                 </li>
                 <li class="bc-destaque">
@@ -515,7 +522,11 @@
                                                 <tr>
                                                     <th>Data</th>
                                                     <th>Origem</th>
-                                                    <th>Indicado faturou</th>
+                                                    {{-- `bruto_valor` é o `amount_total` da cobrança, ou seja o que
+                                                         o ALUNO pagou (preço do indicado + comissão). Depois da
+                                                         inversão do modelo, chamar isso de "o indicado faturou"
+                                                         passou a ser falso: ele faturou o preço, sem a nossa parte. --}}
+                                                    <th>Aluno pagou</th>
                                                     <th>Comissão SnrFit</th>
                                                     <th>Sua parte</th>
                                                 </tr>

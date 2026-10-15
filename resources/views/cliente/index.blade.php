@@ -1020,7 +1020,8 @@
                             <i class="ph ph-map-pin"></i> {{ $academia->cidade }} - {{ $academia->estado }}
                         </span>
                         <div style="margin-top: 5px; font-weight: 700; color: #fff;">
-                            Mensalidade: R$ {{ number_format($academia->valor_mensalidade, 2, ',', '.') }}
+                            {{-- Já com a taxa de serviço: é o que o aluno paga. Ver App\Support\Preco. --}}
+                            Mensalidade: R$ {{ \App\Support\Preco::fmt($academia->valor_mensalidade) }}
                         </div>
                     </div>
 
@@ -1515,6 +1516,72 @@
         }
     });
 
+    /* ============ PREÇO QUE O ALUNO PAGA ============
+     *
+     * Todo `valor_*` que vem do servidor nesta página é o preço do
+     * PROFISSIONAL — o que ele recebe. O aluno paga esse preço + a comissão da
+     * plataforma, e é o valor com a comissão que precisa aparecer em tela,
+     * inclusive nos cards da vitrine: mostrar o preço cru aqui e cobrar outro
+     * no checkout faz o acréscimo parecer pegadinha do profissional.
+     *
+     * A taxa vem do SERVIDOR (`config('taxas.comissao')`), nunca escrita neste
+     * script — um 0.10 cravado aqui ficaria velho no dia em que a comissão
+     * mudasse, e a vitrine passaria a prometer um preço que o checkout não
+     * cobra. Mesmo arranjo do `idade_minima` em /cadastro/opcoes.
+     *
+     * No CARTÃO não se calcula nada aqui: o total inclui a taxa do Asaas, que é
+     * um gross-up (divisão, não soma), e a conta é pedida ao servidor em
+     * `valorCartaoNaTela()`. Uma segunda implementação da fórmula em JS
+     * divergiria em centavos do valor realmente cobrado.
+     */
+    const TAXA_SNRFIT = {!! json_encode(\App\Support\Preco::configJs()['taxa'], JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP) !!};
+
+    /** Preço do profissional → o que o aluno paga no Pix (mesma conta do PHP). */
+    function precoAluno(base) {
+        const b = parseFloat(base) || 0;
+        return b + Math.round(b * TAXA_SNRFIT * 100) / 100;
+    }
+
+    /** `precoAluno` formatado: `R$ 110,00`. */
+    function precoAlunoBR(base) {
+        return 'R$ ' + precoAluno(base).toFixed(2).replace('.', ',');
+    }
+
+    /** A comissão embutida, para a linha "serviço X + taxa Y". */
+    function taxaAluno(base) {
+        return Math.round((parseFloat(base) || 0) * TAXA_SNRFIT * 100) / 100;
+    }
+
+    const linhaDetalhePix = (base) =>
+        `Serviço R$ ${(parseFloat(base) || 0).toFixed(2).replace('.', ',')} + taxa SNR FIT R$ ${taxaAluno(base).toFixed(2).replace('.', ',')}`;
+
+    /**
+     * Preenche valor + detalhe de um modal de CARTÃO com a cotação do servidor.
+     * Enquanto a resposta não chega, mostra o total do Pix (sempre menor que o
+     * do cartão) — nunca um número maior do que será cobrado.
+     */
+    async function valorCartaoNaTela(base, idValor, idDetalhe) {
+        const elV = document.getElementById(idValor);
+        const elD = idDetalhe ? document.getElementById(idDetalhe) : null;
+        if (elV) elV.textContent = precoAlunoBR(base);
+        if (elD) elD.textContent = 'Calculando a taxa do cartão...';
+
+        try {
+            const r = await fetch('/api/v1/precos/cotar?valor=' + encodeURIComponent((parseFloat(base) || 0).toFixed(2)));
+            if (!r.ok) throw new Error();
+            const d = await r.json();
+            const c = d.cartao;
+            if (elV) elV.textContent = 'R$ ' + c.total.toFixed(2).replace('.', ',');
+            if (elD) {
+                elD.textContent = `Serviço R$ ${c.base.toFixed(2).replace('.', ',')}`
+                    + ` + taxa SNR FIT R$ ${c.comissao.toFixed(2).replace('.', ',')}`
+                    + ` + taxa do cartão R$ ${c.gateway.toFixed(2).replace('.', ',')}`;
+            }
+        } catch (_) {
+            if (elD) elD.textContent = 'A taxa do cartão é somada ao total na cobrança.';
+        }
+    }
+
     // ============ DADOS DOS PERSONALS ============
     window.personalsData = {
         @foreach($personals as $p)
@@ -1670,27 +1737,31 @@
         // Sem valor definido = o personal não trabalha com esse serviço
         const valorFicha = parseFloat(personal.valor_ficha) || 0;
 
+        // Todos os valores exibidos passam por precoAlunoBR: é o que o aluno paga.
         document.getElementById('detalhesResumo').innerHTML = `
             <div class="detalhes-resumo-card">
                 <i class="ph ph-currency-dollar"></i>
                 <div class="label">Aula Avulsa</div>
-                <div class="valor">R$ ${parseFloat(personal.valor_secao).toFixed(2).replace('.', ',')}</div>
+                <div class="valor">${precoAlunoBR(personal.valor_secao)}</div>
             </div>
             <div class="detalhes-resumo-card">
                 <i class="ph ph-package"></i>
                 <div class="label">Pacote a partir de</div>
-                <div class="valor">${menorPacote > 0 ? 'R$ ' + parseFloat(menorPacote).toFixed(2).replace('.', ',') : '-'}</div>
+                <div class="valor">${menorPacote > 0 ? precoAlunoBR(menorPacote) : '-'}</div>
             </div>
             <div class="detalhes-resumo-card">
                 <i class="ph ph-clipboard-text"></i>
                 <div class="label">Ficha Personalizada</div>
-                <div class="valor" ${valorFicha > 0 ? '' : 'style="color: var(--text-muted); font-size: 0.8rem;"'}>${valorFicha > 0 ? 'R$ ' + valorFicha.toFixed(2).replace('.', ',') : 'Não oferece'}</div>
+                <div class="valor" ${valorFicha > 0 ? '' : 'style="color: var(--text-muted); font-size: 0.8rem;"'}>${valorFicha > 0 ? precoAlunoBR(valorFicha) : 'Não oferece'}</div>
             </div>
             <div class="detalhes-resumo-card">
                 <i class="ph ph-heartbeat"></i>
                 <div class="label">Avaliação Física</div>
-                <div class="valor" ${menorAvaliacao > 0 ? '' : 'style="color: var(--text-muted); font-size: 0.8rem;"'}>${menorAvaliacao > 0 ? 'A partir de R$ ' + parseFloat(menorAvaliacao).toFixed(2).replace('.', ',') : 'Não oferece'}</div>
+                <div class="valor" ${menorAvaliacao > 0 ? '' : 'style="color: var(--text-muted); font-size: 0.8rem;"'}>${menorAvaliacao > 0 ? 'A partir de ' + precoAlunoBR(menorAvaliacao) : 'Não oferece'}</div>
             </div>
+            <p style="grid-column:1/-1; color:var(--text-muted); font-size:0.72rem; margin:2px 0 0;">
+                Valores já com a taxa de serviço da SNR FIT. No cartão, a taxa da operadora é somada.
+            </p>
         `;
 
         // Só oferece os botões dos serviços que o personal realmente precificou
@@ -1734,7 +1805,7 @@
 
         fichaPersonalId = id;
         document.getElementById('nomeFichaPersonal').innerText = 'Solicitar Ficha — ' + nome;
-        document.getElementById('fichaValorDisplay').textContent = 'R$ ' + v.toFixed(2).replace('.', ',');
+        document.getElementById('fichaValorDisplay').textContent = precoAlunoBR(v);
         document.getElementById('fichaObjetivos').value = '';
         document.getElementById('fichaCondicoes').value = '';
         document.getElementById('fichaNivel').value = 'iniciante';
@@ -1768,7 +1839,8 @@
 
         document.getElementById('pixQrCodeImg').src = '';
         document.getElementById('pixCopiaCola').value = '';
-        document.getElementById('pixValor').textContent = 'R$ ' + valor.toFixed(2).replace('.', ',');
+        document.getElementById('pixValor').textContent = precoAlunoBR(valor);
+        document.getElementById('pixDetalhe').textContent = linhaDetalhePix(valor);
         document.getElementById('pixStatusMsg').style.display = 'none';
         document.getElementById('modalPix').style.display = 'flex';
         clearInterval(pixPollingInterval);
@@ -1784,6 +1856,8 @@
 
             document.getElementById('pixQrCodeImg').src = 'data:image/png;base64,' + pix.pixQrCode;
             document.getElementById('pixCopiaCola').value = pix.pixPayload;
+            // O servidor é a autoridade sobre o valor cobrado — o que foi
+            // desenhado antes era só a antecipação da mesma conta.
             document.getElementById('pixValor').textContent = 'R$ ' + parseFloat(pix.amount).toFixed(2).replace('.', ',');
 
             pixPollingInterval = setInterval(async () => {
@@ -1818,7 +1892,7 @@
         };
 
         document.getElementById('cartaoDescricao').textContent = 'Ficha Personalizada — ' + (personal?.nome || 'Personal');
-        document.getElementById('cartaoValor').textContent = 'R$ ' + valor.toFixed(2).replace('.', ',');
+        valorCartaoNaTela(valor, 'cartaoValor', 'cartaoDetalhe');
         resetarFormCartao();
         document.getElementById('cartaoTelefone').value = {!! json_encode($cliente->whatsapp ?? '', JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP) !!};
         document.getElementById('cartaoCEP').value = '{{ $cliente->cep ?? '' }}';
@@ -1877,7 +1951,7 @@
                 const chips = (p.tipos || []).map(t => '<span class="avf-chip">' + avfEsc(meta[t]?.label || t) + '</span>').join('');
                 html += '<div class="avf-opt" data-kind="pacote" data-id="' + p.id + '" data-valor="' + p.valor + '" data-label="' + avfEsc(p.nome) + '">'
                     + '<div style="flex:1; min-width:0;"><div class="avf-opt-nome">' + avfEsc(p.nome) + '</div><div class="avf-chips">' + chips + '</div></div>'
-                    + '<div class="avf-opt-valor">' + moneyBR(p.valor) + '</div></div>';
+                    + '<div class="avf-opt-valor">' + precoAlunoBR(p.valor) + '</div></div>';
             });
             html += '</div>';
         }
@@ -1891,7 +1965,7 @@
             if (preco > 0) {
                 avulsas += '<div class="avf-opt" data-kind="avulso" data-tipo="' + t + '" data-valor="' + preco + '" data-label="' + avfEsc(label) + '">'
                     + '<div class="avf-opt-nome"><i class="ph ' + icon + '"></i> ' + avfEsc(label) + '</div>'
-                    + '<div class="avf-opt-valor">' + moneyBR(preco) + '</div></div>';
+                    + '<div class="avf-opt-valor">' + precoAlunoBR(preco) + '</div></div>';
             } else if (emPacote[t]) {
                 avulsas += '<div class="avf-opt avf-disabled"><div class="avf-opt-nome"><i class="ph ' + icon + '"></i> ' + avfEsc(label) + '</div>'
                     + '<div class="avf-na">Disponível só no pacote</div></div>';
@@ -1950,7 +2024,8 @@
         fecharAvFisicaModal();
         document.getElementById('pixQrCodeImg').src = '';
         document.getElementById('pixCopiaCola').value = '';
-        document.getElementById('pixValor').textContent = moneyBR(valor);
+        document.getElementById('pixValor').textContent = precoAlunoBR(valor);
+        document.getElementById('pixDetalhe').textContent = linhaDetalhePix(valor);
         document.getElementById('pixStatusMsg').style.display = 'none';
         document.getElementById('modalPix').style.display = 'flex';
         clearInterval(pixPollingInterval);
@@ -1999,7 +2074,7 @@
         };
 
         document.getElementById('cartaoDescricao').textContent = (avFisicaSelecao.label || 'Avaliação Física') + ' — ' + (personal?.nome || 'Personal');
-        document.getElementById('cartaoValor').textContent = moneyBR(valor);
+        valorCartaoNaTela(valor, 'cartaoValor', 'cartaoDetalhe');
         resetarFormCartao();
         document.getElementById('cartaoTelefone').value = {!! json_encode($cliente->whatsapp ?? '', JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP) !!};
         document.getElementById('cartaoCEP').value = '{{ $cliente->cep ?? '' }}';
@@ -2289,7 +2364,7 @@
         container.innerHTML = pacotesData.map((pacote, idx) => `
             <div class="pacote-item" onclick="selecionarPacote(${pacote.frequencia}, ${pacote.valor_mensal}, ${idx}, ${pacote.id || 0})">
                 <span class="pacote-freq">${pacote.frequencia}x na semana</span>
-                <span class="pacote-valor">R$ ${(pacote.valor_mensal).toFixed(2).replace('.', ',')}</span>
+                <span class="pacote-valor">${precoAlunoBR(pacote.valor_mensal)}</span>
             </div>
         `).join('');
     }
@@ -2910,6 +2985,9 @@
             document.getElementById('pixQrCodeImg').src = 'data:image/png;base64,' + data.pixQrCode;
             document.getElementById('pixCopiaCola').value = data.pixPayload;
             document.getElementById('pixValor').textContent = 'R$ ' + parseFloat(data.amount).toFixed(2).replace('.', ',');
+            if (data.valores) {
+                document.getElementById('pixDetalhe').textContent = linhaDetalhePix(data.valores.base);
+            }
             document.getElementById('pixRecorrenteNota').style.display = data.recorrente ? 'block' : 'none';
             document.getElementById('modalPix').style.display = 'flex';
 
@@ -2962,6 +3040,7 @@
 
         <h3 style="color:var(--primary); font-size:1.1rem; font-weight:900; margin:0 0 4px;">PAGAMENTO VIA PIX</h3>
         <p id="pixValor" style="color:#fff; font-size:1.5rem; font-weight:700; margin:0 0 20px;"></p>
+        <p id="pixDetalhe" style="color:#a0a0a0; font-size:0.74rem; margin:-14px 0 18px;"></p>
 
         <p id="pixRecorrenteNota" style="display:none; color:#7cff00; font-size:0.78rem; font-weight:700; margin:-10px 0 16px; background:rgba(124,255,0,0.08); border:1px solid rgba(124,255,0,0.25); border-radius:10px; padding:8px 12px;">
             🔁 Assinatura mensal — uma nova cobrança PIX é gerada todo mês.
@@ -3005,6 +3084,7 @@
         <h3 style="color:#7cff00; font-size:1.1rem; font-weight:900; margin:0 0 4px;">PAGAMENTO VIA PIX</h3>
         <p id="pixAcademiaDescricao" style="color:#a0a0a0; font-size:0.8rem; margin:0 0 8px;"></p>
         <p id="pixAcademiaValor" style="color:#fff; font-size:1.5rem; font-weight:700; margin:0 0 20px;"></p>
+        <p id="pixAcademiaDetalhe" style="color:#a0a0a0; font-size:0.74rem; margin:-14px 0 18px;"></p>
         <p style="color:#7cff00; font-size:0.78rem; font-weight:700; margin:-10px 0 16px; background:rgba(124,255,0,0.08); border:1px solid rgba(124,255,0,0.25); border-radius:10px; padding:8px 12px;">
             🔁 Assinatura mensal — uma nova cobrança PIX é gerada todo mês.
         </p>
@@ -3044,7 +3124,7 @@
                             </div>
                         </div>
                         <div style="text-align:right; flex-shrink:0;">
-                            <div style="font-size:1.2rem; font-weight:900; color:#fff;">R$ ${parseFloat(p.valor).toFixed(2).replace('.', ',')}</div>
+                            <div style="font-size:1.2rem; font-weight:900; color:#fff;">${precoAlunoBR(p.valor)}</div>
                             <small style="color:#a0a0a0;">/mês</small>
                         </div>
                     </div>
@@ -3075,6 +3155,7 @@
 
         document.getElementById('pixAcademiaDescricao').textContent = `Plano ${planoNome} — ${academiaNome}`;
         document.getElementById('pixAcademiaValor').textContent = 'Gerando QR Code...';
+        document.getElementById('pixAcademiaDetalhe').textContent = linhaDetalhePix(valor);
         document.getElementById('pixAcademiaQr').src = '';
         document.getElementById('pixAcademiaCopia').value = '';
         document.getElementById('pixAcademiaStatus').style.display = 'none';
@@ -3091,7 +3172,11 @@
 
             document.getElementById('pixAcademiaQr').src = 'data:image/png;base64,' + data.pixQrCode;
             document.getElementById('pixAcademiaCopia').value = data.pixPayload;
+            // Valor do servidor: é o que a cobrança tem de fato.
             document.getElementById('pixAcademiaValor').textContent = 'R$ ' + parseFloat(data.amount).toFixed(2).replace('.', ',');
+            if (data.valores) {
+                document.getElementById('pixAcademiaDetalhe').textContent = linhaDetalhePix(data.valores.base);
+            }
 
             pixAcademiaPolling = setInterval(async () => {
                 try {
@@ -3142,6 +3227,7 @@
         <h3 style="color:#fff; font-size:1.1rem; font-weight:900; margin:0 0 4px;"><i class="ph ph-credit-card" style="color:var(--primary);"></i> PAGAMENTO COM CARTÃO</h3>
         <p id="cartaoDescricao" style="color:#a0a0a0; font-size:0.8rem; margin:0 0 4px;"></p>
         <p id="cartaoValor" style="color:#fff; font-size:1.4rem; font-weight:700; margin:0 0 20px;"></p>
+        <p id="cartaoDetalhe" style="color:#a0a0a0; font-size:0.74rem; margin:-14px 0 18px;"></p>
 
         <form id="formCartao" onsubmit="submeterCartao(event)" autocomplete="off">
 
@@ -3248,7 +3334,7 @@
 
         const valorNum = parseFloat(document.getElementById('pacote_valor').value) || 0;
         document.getElementById('cartaoDescricao').textContent = 'Pacote com personal';
-        document.getElementById('cartaoValor').textContent = 'R$ ' + valorNum.toFixed(2).replace('.', ',');
+        valorCartaoNaTela(valorNum, 'cartaoValor', 'cartaoDetalhe');
         resetarFormCartao();
         document.getElementById('cartaoTelefone').value = {!! json_encode($cliente->whatsapp ?? '', JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP) !!};
         document.getElementById('cartaoCEP').value = '{{ $cliente->cep ?? '' }}';
@@ -3262,7 +3348,7 @@
         };
 
         document.getElementById('cartaoDescricao').textContent = `Plano ${planoNome} — ${academiaNome}`;
-        document.getElementById('cartaoValor').textContent = 'R$ ' + parseFloat(valor).toFixed(2).replace('.', ',');
+        valorCartaoNaTela(valor, 'cartaoValor', 'cartaoDetalhe');
         resetarFormCartao();
         document.getElementById('cartaoTelefone').value = {!! json_encode($cliente->whatsapp ?? '', JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP) !!};
         document.getElementById('cartaoCEP').value = '{{ $cliente->cep ?? '' }}';
@@ -3389,7 +3475,8 @@
 
         document.getElementById('pixQrCodeImg').src = '';
         document.getElementById('pixCopiaCola').value = '';
-        document.getElementById('pixValor').textContent = 'R$ ' + parseFloat(valorSecao).toFixed(2).replace('.', ',');
+        document.getElementById('pixValor').textContent = precoAlunoBR(valorSecao);
+        document.getElementById('pixDetalhe').textContent = linhaDetalhePix(valorSecao);
         document.getElementById('pixStatusMsg').style.display = 'none';
         document.getElementById('modalPix').style.display = 'flex';
         clearInterval(pixPollingInterval);
@@ -3457,7 +3544,7 @@
         };
 
         document.getElementById('cartaoDescricao').textContent = 'Aula Avulsa — ' + personalNome;
-        document.getElementById('cartaoValor').textContent = 'R$ ' + parseFloat(valorSecao).toFixed(2).replace('.', ',');
+        valorCartaoNaTela(valorSecao, 'cartaoValor', 'cartaoDetalhe');
         resetarFormCartao();
         document.getElementById('cartaoTelefone').value = {!! json_encode($cliente->whatsapp ?? '', JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP) !!};
         document.getElementById('cartaoCEP').value = '{{ $cliente->cep ?? '' }}';

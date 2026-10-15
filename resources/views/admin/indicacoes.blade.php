@@ -128,7 +128,7 @@
             <div class="stat-valor">{{ rtrim(rtrim(number_format($percentual * 100, 1, ',', '.'), '0'), ',') }}%</div>
             <div class="stat-nota">
                 da COMISSÃO da plataforma em {{ $janelaDias }} dias · libera com {{ $meta }} alunos
-                <br>≈ {{ rtrim(rtrim(number_format($percentual * \App\Services\AsaasService::feeRate() * 100, 2, ',', '.'), '0'), ',') }}% do bruto do indicado
+                <br>≈ {{ rtrim(rtrim(number_format($percentual * \App\Services\AsaasService::feeRate() * 100, 2, ',', '.'), '0'), ',') }}% do que o indicado vende
             </div>
         </div>
     </div>

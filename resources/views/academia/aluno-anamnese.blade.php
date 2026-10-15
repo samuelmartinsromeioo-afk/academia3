@@ -83,6 +83,40 @@
         <form method="POST" action="{{ route('academia.alunos.anamnese.salvar', $cliente->id) }}">
             @csrf
 
+            {{--
+                Declaração da academia, não consentimento do aluno — ninguém
+                consente pelo outro. Aqui o dado de saúde entra sem que o
+                titular toque em nada, e antes disto não se exigia nem
+                registrava nada nesse caminho. A declaração fica gravada com a
+                identidade da academia, o IP e a data, e a responsabilidade
+                pela veracidade é dela (cláusula 6 dos Termos da Academia).
+            --}}
+            <div class="panel" style="border-color:rgba(124,255,0,0.45);">
+                <div class="panel-title"><i class="ph ph-shield-check"></i> Autorização do aluno</div>
+                <p style="font-size:0.85rem; color:#cfcfcf; line-height:1.6; margin-bottom:14px;">
+                    A anamnese é <strong style="color:var(--primary);">dado pessoal sensível</strong>
+                    (art. 11 da LGPD). Para registrá-la em nome de
+                    <strong>{{ $cliente->nome }}</strong>, a academia precisa ter obtido a
+                    autorização dele — e é a academia que responde por essa afirmação.
+                </p>
+                <label style="display:flex; gap:12px; align-items:flex-start; cursor:pointer; font-size:0.88rem; line-height:1.55;">
+                    <input type="checkbox" name="consentimento_titular" value="1" required
+                        {{ old('consentimento_titular') ? 'checked' : '' }}
+                        style="margin-top:4px; width:20px; height:20px; accent-color:var(--primary); flex:0 0 auto;">
+                    <span>
+                        <strong style="color:var(--primary);">Declaro</strong> que
+                        <strong>{{ $cliente->nome }}</strong> autorizou o registro e o uso destes dados
+                        de saúde para a montagem e o acompanhamento do treino dele, e que essa
+                        autorização foi colhida por esta academia.
+                        <br>
+                        <span style="color:var(--text-muted); font-size:0.8rem;">
+                            O aluno pode revogar essa autorização quando quiser, pelo app ou pelo site,
+                            em "Privacidade e meus dados" — e a anamnese é apagada.
+                        </span>
+                    </span>
+                </label>
+            </div>
+
             <div class="panel">
                 <div class="panel-title"><i class="ph ph-target"></i> Objetivos</div>
                 <label class="lbl">Objetivo principal</label>

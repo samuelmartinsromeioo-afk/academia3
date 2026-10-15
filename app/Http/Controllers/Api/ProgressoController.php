@@ -6,10 +6,13 @@ use App\Http\Controllers\Api\Concerns\ResolvesApiUser;
 use App\Http\Controllers\Controller;
 use App\Models\Anamnese;
 use App\Models\Cadastro\RegistroExercicio;
+use App\Models\Consentimento;
 use App\Models\FotoProgresso;
 use App\Models\MedidaCorporal;
 use App\Models\Meta;
+use App\Services\AvisoService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 
 /**
@@ -203,7 +206,13 @@ class ProgressoController extends Controller
 
         $anamnese = Anamnese::where('cliente_id', $cliente->id)->first();
 
-        return response()->json(['anamnese' => $anamnese]);
+        return response()->json([
+            'anamnese' => $anamnese,
+            // O app precisa saber o estado do consentimento para desenhar a
+            // caixa já marcada em quem só está editando — e para mostrar o
+            // botão de revogar somente a quem tem o que revogar.
+            'consentimento' => Consentimento::concedido($cliente, Consentimento::TIPO_SAUDE),
+        ]);
     }
 
     // POST /api/v1/anamnese
@@ -211,42 +220,114 @@ class ProgressoController extends Controller
     {
         $cliente = $this->clienteAutenticado($request);
 
-        $request->validate([
-            'objetivo_principal'    => 'nullable|string|max:255',
-            'nivel_atividade'       => 'nullable|in:sedentario,leve,moderado,intenso',
-            'historico_lesoes'      => 'nullable|string',
-            'restricoes_medicas'    => 'nullable|string',
-            'doencas_preexistentes' => 'nullable|string',
-            'medicamentos'          => 'nullable|string',
-            'cirurgias'             => 'nullable|string',
-            'parq_observacoes'      => 'nullable|string',
-            'observacoes'           => 'nullable|string',
-        ]);
-
-        $anamnese = Anamnese::updateOrCreate(
-            ['cliente_id' => $cliente->id],
+        $request->validate(
             [
-                'objetivo_principal'    => $request->objetivo_principal,
-                'nivel_atividade'       => $request->nivel_atividade,
-                'historico_lesoes'      => $request->historico_lesoes,
-                'restricoes_medicas'    => $request->restricoes_medicas,
-                'doencas_preexistentes' => $request->doencas_preexistentes,
-                'medicamentos'          => $request->medicamentos,
-                'cirurgias'             => $request->cirurgias,
-                'parq_1'                => $request->boolean('parq_1'),
-                'parq_2'                => $request->boolean('parq_2'),
-                'parq_3'                => $request->boolean('parq_3'),
-                'parq_4'                => $request->boolean('parq_4'),
-                'parq_5'                => $request->boolean('parq_5'),
-                'parq_6'                => $request->boolean('parq_6'),
-                'parq_7'                => $request->boolean('parq_7'),
-                'parq_observacoes'      => $request->parq_observacoes,
-                'observacoes'           => $request->observacoes,
-                'preenchida_em'         => now(),
-            ]
+                /*
+                 * Consentimento destacado para dado sensível (art. 11, I) —
+                 * mesma regra do site (`Cadastro\AnamneseController@salvar`).
+                 *
+                 * `accepted` e SEM `sometimes`, o que quebra o binário já
+                 * publicado na loja (ele não manda o campo). É a mesma decisão
+                 * tomada na idade mínima e pela mesma razão: `sometimes`
+                 * tornaria a trava opcional — bastaria omitir o campo —, e aqui
+                 * o campo não é completude de dado, é a BASE LEGAL do
+                 * tratamento. Anamnese sem consentimento não é "anamnese pela
+                 * metade" que o aluno termina depois; é tratamento de dado
+                 * sensível sem fundamento, e não se grava. Daí a mensagem
+                 * mandar ATUALIZAR O APP, em vez de pedir para marcar uma caixa
+                 * que naquela tela não existe.
+                 */
+                'consentimento'         => 'accepted',
+                'objetivo_principal'    => 'nullable|string|max:255',
+                'nivel_atividade'       => 'nullable|in:sedentario,leve,moderado,intenso',
+                'historico_lesoes'      => 'nullable|string',
+                'restricoes_medicas'    => 'nullable|string',
+                'doencas_preexistentes' => 'nullable|string',
+                'medicamentos'          => 'nullable|string',
+                'cirurgias'             => 'nullable|string',
+                'parq_observacoes'      => 'nullable|string',
+                'observacoes'           => 'nullable|string',
+            ],
+            ['consentimento.accepted' => 'Atualize o app para continuar: a anamnese passou a exigir o consentimento de uso dos dados de saúde.']
         );
 
+        // Consentimento e dado na MESMA transação, consentimento primeiro — ver
+        // o comentário em Cadastro\AnamneseController@salvar.
+        $anamnese = DB::transaction(function () use ($cliente, $request) {
+            Consentimento::registrar(
+                $cliente,
+                Consentimento::TIPO_SAUDE,
+                true,
+                $request,
+                Consentimento::ORIGEM_APP
+            );
+
+            return Anamnese::updateOrCreate(
+                ['cliente_id' => $cliente->id],
+                [
+                    'objetivo_principal'    => $request->objetivo_principal,
+                    'nivel_atividade'       => $request->nivel_atividade,
+                    'historico_lesoes'      => $request->historico_lesoes,
+                    'restricoes_medicas'    => $request->restricoes_medicas,
+                    'doencas_preexistentes' => $request->doencas_preexistentes,
+                    'medicamentos'          => $request->medicamentos,
+                    'cirurgias'             => $request->cirurgias,
+                    'parq_1'                => $request->boolean('parq_1'),
+                    'parq_2'                => $request->boolean('parq_2'),
+                    'parq_3'                => $request->boolean('parq_3'),
+                    'parq_4'                => $request->boolean('parq_4'),
+                    'parq_5'                => $request->boolean('parq_5'),
+                    'parq_6'                => $request->boolean('parq_6'),
+                    'parq_7'                => $request->boolean('parq_7'),
+                    'parq_observacoes'      => $request->parq_observacoes,
+                    'observacoes'           => $request->observacoes,
+                    'preenchida_em'         => now(),
+                ]
+            );
+        });
+
         return response()->json(['success' => true, 'message' => 'Anamnese salva com sucesso! 💪', 'anamnese' => $anamnese]);
+    }
+
+    /**
+     * DELETE /api/v1/anamnese — revoga o consentimento e apaga a anamnese.
+     *
+     * Espelha `Cadastro\LgpdController::revogarSaude`. Não encerra a conta: o
+     * aluno continua treinando e contratando, só sem dado de saúde aqui. Antes
+     * desta rota, a Política prometia revogação "a qualquer momento" e o único
+     * caminho real era excluir a conta inteira — para tirar um dado, perder
+     * todos.
+     */
+    public function revogarAnamnese(Request $request)
+    {
+        $cliente = $this->clienteAutenticado($request);
+
+        // Revogação registrada ANTES da exclusão e na mesma transação: o livro
+        // de consentimentos é o que explica por que o dado existiu e por que
+        // deixou de existir. Apagar o dado e perder o registro do ato seria
+        // pior do que não apagar.
+        DB::transaction(function () use ($cliente, $request) {
+            Consentimento::registrar(
+                $cliente,
+                Consentimento::TIPO_SAUDE,
+                false,
+                $request,
+                Consentimento::ORIGEM_APP
+            );
+
+            Anamnese::where('cliente_id', $cliente->id)->delete();
+        });
+
+        // Fora da transação, de propósito: o aviso é efeito colateral de um ato
+        // já consumado e não pode desfazê-lo se o e-mail falhar. O texto vive em
+        // AvisoService para o site e o app dizerem a mesma coisa.
+        AvisoService::consentimentoSaudeRevogado($cliente);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Consentimento revogado e anamnese apagada. Sua conta continua ativa, '
+                . 'e enviamos a confirmação para o seu e-mail.',
+        ]);
     }
 
     // ===================== HELPERS =====================

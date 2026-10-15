@@ -161,26 +161,51 @@ class AdminController extends Controller
     }
 
     // ✅ APROVAR PERSONAL
-   public function aprovar($id)
+   public function aprovar(Request $request, $id)
 {
     Log::info("========== INICIANDO APROVAÇÃO ==========");
     Log::info("ID: " . $id);
     Log::info("Admin ID: " . session('admin_id'));
-    
+
     if (!session('admin_id')) {
         Log::error("Sem sessão admin!");
         return redirect()->route('login.index');
     }
- 
+
+    /*
+     * A aprovação exige a conferência do CREF no conselho, e a registra.
+     *
+     * Os Termos (cláusula 3.3 geral e cláusula 2 do personal) afirmam que a
+     * aprovação é "conferência cadastral de plausibilidade". Era verdade na
+     * intenção: nada no formulário pedia a conferência do registro
+     * profissional e nada no banco guardava se ela ocorreu — então, depois,
+     * não havia como saber se alguém olhou o CREF ou se o botão foi clicado.
+     * Num litígio sobre profissional sem habilitação é exatamente esse
+     * registro que separa diligência de negligência.
+     *
+     * `accepted` e não `boolean`: o admin tem de afirmar, não apenas enviar o
+     * campo.
+     */
+    $dadosConferencia = $request->validate(
+        [
+            'cref_conferido' => 'accepted',
+            'cref_conferido_resultado' => 'nullable|string|max:120',
+        ],
+        ['cref_conferido.accepted' => 'Confirme que o CREF foi conferido no conselho antes de aprovar.']
+    );
+
     try {
         $personal = Personal::findOrFail($id);
         Log::info("Personal encontrado: " . $personal->nome);
         Log::info("Status antes: " . $personal->status);
-        
+
         $resultado = $personal->update([
             'status' => 'aprovado',
             'data_aprovacao' => now(),
-            'motivo_rejeicao' => null
+            'motivo_rejeicao' => null,
+            'cref_conferido_em' => now(),
+            'cref_conferido_por' => session('admin_id'),
+            'cref_conferido_resultado' => $dadosConferencia['cref_conferido_resultado'] ?? null,
         ]);
 
         Log::info("Update retornou: " . ($resultado ? 'TRUE' : 'FALSE'));
@@ -533,11 +558,15 @@ class AdminController extends Controller
 
         $studio = Studio::withCount('clientes')->findOrFail($id);
 
+        // `trainer_amount` = o que o studio recebeu. `amount_total` inclui a
+        // nossa comissão e a taxa do cartão, e chamar isso de "faturamento do
+        // studio" infla o número. É a mesma coluna que o StudioController (web
+        // e API) já soma no painel do próprio studio.
         $faturamentoMes = \App\Models\Payment::where('studio_id', $id)
             ->where('status', 'paid')
             ->whereMonth('paid_at', now()->month)
             ->whereYear('paid_at', now()->year)
-            ->sum('amount_total');
+            ->sum('trainer_amount');
 
         return view('admin.studios.detalhes', [
             'studio' => $studio,

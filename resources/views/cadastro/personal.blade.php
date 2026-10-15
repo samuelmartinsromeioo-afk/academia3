@@ -385,12 +385,24 @@
                 </span>
             </div>
 
+            {{-- min/max da mesma fonte da validação (CadastroHelper). O corte do
+                 profissional é mais alto que o do aluno; o atributo é só
+                 conveniência, quem decide é o servidor. --}}
+            @php
+                $limiteNascimento = \App\Support\CadastroHelper::limitesNascimento(
+                    \App\Support\CadastroHelper::IDADE_MINIMA_PROFISSIONAL
+                );
+            @endphp
             <div class="form-group">
                 <label>Data de Nascimento</label>
                 <div class="input-wrapper">
                     <i class="ph ph-calendar"></i>
-                    <input type="date" name="idade" value="{{ old('idade') }}" required>
+                    <input type="date" name="idade" value="{{ old('idade') }}" required
+                           min="{{ $limiteNascimento['min'] }}" max="{{ $limiteNascimento['max'] }}">
                 </div>
+                <small style="display:block; margin-top:6px; font-size:.78rem; line-height:1.4; color:#9ca3af;">
+                    O cadastro de profissional exige no mínimo {{ \App\Support\CadastroHelper::IDADE_MINIMA_PROFISSIONAL }} anos.
+                </small>
             </div>
 
             <div class="form-group">

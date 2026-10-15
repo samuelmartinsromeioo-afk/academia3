@@ -316,12 +316,21 @@ class CupomService
      * A comissão da plataforma naquela receita — a base do bônus.
      *
      * Prefere o valor REGISTRADO (`payments.company_fee`), que é o que a
-     * plataforma de fato apurou naquela cobrança. Só deriva da taxa do split
-     * quando não há registro (nutri_cobrancas, que não tem a coluna) ou quando o
-     * registrado é absurdo — zero/negativo com bruto positivo, ou maior que o
-     * próprio bruto, sinal de linha legada ou erro operacional. Derivar é
-     * preferível a creditar zero: zero apagaria silenciosamente o bônus de
-     * alguém, e um valor acima do bruto pagaria mais do que entrou.
+     * plataforma de fato apurou naquela cobrança. Só deriva quando não há
+     * registro (nutri_cobrancas, que não tem a coluna) ou quando o registrado é
+     * absurdo — zero/negativo com bruto positivo, ou maior que o próprio bruto,
+     * sinal de linha legada ou erro operacional. Derivar é preferível a creditar
+     * zero: zero apagaria silenciosamente o bônus de alguém, e um valor acima do
+     * bruto pagaria mais do que entrou.
+     *
+     * A derivação usa `comissaoEmbutida()`, não `bruto × feeRate()`. A diferença
+     * nasceu quando a comissão virou ACRÉSCIMO ao preço do profissional: o bruto
+     * passou a contê-la, então multiplicar pela taxa superestima (em R$ 110 daria
+     * R$ 11, quando a comissão foi R$ 10) e o bônus sairia sobre dinheiro que
+     * nunca entrou. Isso só alcança linhas sem `company_fee` utilizável; as do
+     * modelo antigo (comissão descontada do bruto) caem aqui com desvio de
+     * centavos, e aceitá-lo é melhor que manter duas derivações e escolher a
+     * certa pela data do pagamento.
      */
     private function comissao(float $bruto, $comissaoRegistrada): float
     {
@@ -331,7 +340,7 @@ class CupomService
             return round($registrada, 2);
         }
 
-        return round($bruto * AsaasService::feeRate(), 2);
+        return AsaasService::comissaoEmbutida($bruto);
     }
 
     /**

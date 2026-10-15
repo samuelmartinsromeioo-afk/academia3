@@ -25,38 +25,173 @@ use Illuminate\Support\Facades\Log;
  */
 class AsaasService
 {
-    /** Fração do valor bruto repassada ao recebedor do split (personal/studio/loja). */
-    public const SPLIT_RATE = 0.90;
+    // ─────────────────────────────────────────────
+    // PREÇO — a comissão é ACRÉSCIMO, não desconto
+    // ─────────────────────────────────────────────
+
+    /*
+     * O profissional recebe o preço que ele pediu, CHEIO. A comissão da
+     * plataforma é somada por cima e cobrada do cliente:
+     *
+     *     personal pede R$ 100  →  cliente paga R$ 110  →  personal recebe R$ 100
+     *
+     * Era o contrário até aqui (`SPLIT_RATE = 0.90`: cobrava-se R$ 100 e
+     * repassava-se R$ 90). A constante antiga foi REMOVIDA em vez de
+     * reaproveitada, de propósito — "taxa de split" e "markup" produzem valores
+     * diferentes a partir do mesmo 0.10, e um `SPLIT_RATE` sobrevivente seria
+     * lido como o antigo por quem não acompanhou a mudança.
+     *
+     * Consequências que precisam andar juntas e estão todas abaixo:
+     *  - `montarSplit()` manda o preço INTEGRAL do profissional (fixedValue);
+     *  - a taxa do Asaas no cartão é embutida no valor cobrado do cliente
+     *    (gross-up), porque é ele que escolhe o meio caro;
+     *  - a taxa do Pix sai da nossa comissão — e é ela que define o valor
+     *    mínimo de uma cobrança (ver valorMinimo()).
+     *
+     * Métodos de preço são STATIC por necessidade: as vitrines (Blade), os
+     * resources da API e o app precisam do preço final sem instanciar um
+     * serviço que fala HTTP.
+     */
 
     /**
-     * Fração do bruto que FICA com a plataforma (a comissão). É derivada de
-     * SPLIT_RATE, não um segundo número: mexer no split move as duas pontas
-     * juntas e nenhuma cópia fica para trás.
+     * A comissão da plataforma, em fração do preço do profissional.
      *
-     * O `round` existe porque 1 - 0.90 em ponto flutuante dá 0.09999999999999998.
+     * É o ÚNICO lugar onde esse número existe (`config('taxas.comissao')`).
+     * Nunca escreva 0.10 em outro arquivo: `company_fee` é a base do bônus de
+     * indicação, e uma cópia velha paga sobre uma comissão que não foi cobrada.
      */
     public static function feeRate(): float
     {
-        return round(1 - self::SPLIT_RATE, 6);
+        return max(0.0, (float) config('taxas.comissao', 0.10));
+    }
+
+    /** Quanto a plataforma ganha num serviço de R$ `$base`. */
+    public static function comissao(float $base): float
+    {
+        return round($base * self::feeRate(), 2);
     }
 
     /**
-     * Valor bruto mínimo de uma cobrança. Abaixo disso o split por fixedValue
-     * (90% do bruto) pode superar o líquido (bruto − taxa Asaas) e a Asaas
-     * recusaria a cobrança. Ver garantirValorMinimo() e montarSplit().
+     * O inverso de comissao(): a comissão EMBUTIDA num valor já cobrado.
+     *
+     * Serve para reconstituir a comissão de uma cobrança sem `company_fee`
+     * registrado (ver CupomService::comissao). Não é `bruto * feeRate()` — o
+     * bruto já contém o acréscimo, então dividir é diferente de multiplicar:
+     * em R$ 110 a comissão é R$ 10 (110 × 1/11), não R$ 11.
      */
-    public const MIN_SPLIT_VALUE = 10.0;
+    public static function comissaoEmbutida(float $bruto): float
+    {
+        $taxa = self::feeRate();
+
+        return round($bruto * $taxa / (1 + $taxa), 2);
+    }
 
     /**
-     * Taxa estimada (conservadora) do cartão de crédito no Asaas, usada apenas
-     * para decidir se o split por fixedValue (90% do bruto) ainda cabe no
-     * líquido. A taxa real é cobrada pelo Asaas; aqui só evitamos montar um
-     * split que a Asaas recusaria. O cartão tem taxa percentual ALTA + fixa,
-     * bem maior que a do PIX — por isso o fallback abaixo.
+     * O que o cliente paga por um serviço de R$ `$base`: preço do profissional
+     * + comissão + (no cartão) a taxa do Asaas.
      */
-    public const CARD_FEE_RATE = 0.0499;  // ≈4,99%
+    public static function valorCobrado(float $base, string $billingType = 'PIX'): float
+    {
+        return self::detalhar($base, $billingType)['total'];
+    }
 
-    public const CARD_FEE_FIXED = 0.49;   // R$ 0,49 por transação
+    /**
+     * A conta inteira, para exibir no checkout e para gravar em payments.
+     *
+     * `gateway` só é diferente de zero no cartão, e é um GROSS-UP: o valor
+     * cobrado tem de ser grande o bastante para que, DEPOIS de o Asaas
+     * descontar a taxa dele, ainda sobrem o preço do profissional + a nossa
+     * comissão. Resolver `bruto = base + comissão + (bruto × p + f)` em `bruto`
+     * dá a divisão abaixo — somar a taxa "por fora" (base + comissão + p×base)
+     * erra, porque a taxa incide sobre o total já acrescido.
+     *
+     * @return array{base:float, comissao:float, gateway:float, total:float}
+     */
+    public static function detalhar(float $base, string $billingType = 'PIX'): array
+    {
+        $base = round($base, 2);
+        $comissao = self::comissao($base);
+        $liquidoNecessario = $base + $comissao;
+
+        if (! self::ehCartao($billingType)) {
+            // Pix: a taxa fixa do Asaas sai da nossa comissão, não do cliente.
+            return [
+                'base' => $base,
+                'comissao' => $comissao,
+                'gateway' => 0.0,
+                'total' => round($liquidoNecessario, 2),
+            ];
+        }
+
+        // Clamp defensivo: um percentual mal configurado (≥ 1) faria a divisão
+        // estourar ou virar negativa, e isso aqui decide quanto se cobra de uma
+        // pessoa. Acima de 50% é config errado, não contrato ruim.
+        $percentual = max(0.0, min(0.5, (float) config('taxas.asaas.cartao_percentual', 0.0499)));
+        $fixa = max(0.0, (float) config('taxas.asaas.cartao_fixa', 0.49));
+
+        $total = round(($liquidoNecessario + $fixa) / (1 - $percentual), 2);
+
+        return [
+            'base' => $base,
+            'comissao' => $comissao,
+            'gateway' => round($total - $liquidoNecessario, 2),
+            'total' => $total,
+        ];
+    }
+
+    /**
+     * `UNDEFINED` (checkout hospedado do Asaas) conta como CARTÃO aqui, e a
+     * escolha é deliberada: nesse modo quem decide o meio é o cliente, já na
+     * tela do Asaas, depois de a cobrança existir. Precificar pelo Pix e
+     * receber no cartão deixaria o `fixedValue` do split acima do líquido — a
+     * Asaas recusa, e a falha aparece na cara do cliente no fim do checkout.
+     * Então cobramos o teto. Quem quer o preço do Pix escolhe Pix (o app e o
+     * site oferecem os dois); nesse caminho o billingType é `PIX` de verdade.
+     */
+    private static function ehCartao(string $billingType): bool
+    {
+        return in_array($billingType, ['CREDIT_CARD', 'DEBIT_CARD', 'UNDEFINED'], true);
+    }
+
+    /** O que o Asaas cobra de nós para processar uma cobrança de R$ `$bruto`. */
+    public static function taxaAsaas(float $bruto, string $billingType = 'PIX'): float
+    {
+        if (! self::ehCartao($billingType)) {
+            return round((float) config('taxas.asaas.pix_fixa', 1.99), 2);
+        }
+
+        $percentual = max(0.0, min(0.5, (float) config('taxas.asaas.cartao_percentual', 0.0499)));
+        $fixa = max(0.0, (float) config('taxas.asaas.cartao_fixa', 0.49));
+
+        return round($bruto * $percentual + $fixa, 2);
+    }
+
+    /**
+     * Preço mínimo de um serviço, DERIVADO — não um número escolhido.
+     *
+     * No Pix a taxa do Asaas sai da nossa comissão, então abaixo do ponto em
+     * que a comissão cobre essa taxa o repasse integral não cabe no líquido e a
+     * Asaas recusa o split. Com comissão de 10% e Pix de R$ 1,99 isso dá
+     * R$ 19,90 — e o antigo mínimo de R$ 10 ficaria furado (em R$ 10 a comissão
+     * é R$ 1 e a taxa é R$ 1,99: a plataforma pagaria para trabalhar).
+     */
+    public static function valorMinimo(): float
+    {
+        $taxa = self::feeRate();
+        $pix = (float) config('taxas.asaas.pix_fixa', 1.99);
+
+        if ($taxa <= 0) {
+            // Plataforma sem comissão: não há de onde tirar a taxa do Pix. O
+            // split cai no fallback percentual (ver montarSplit) e o mínimo
+            // deixa de ter função.
+            return self::PISO_ABSOLUTO;
+        }
+
+        return max(self::PISO_ABSOLUTO, round(ceil($pix / $taxa * 100) / 100, 2));
+    }
+
+    /** Piso de sanidade para o mínimo derivado (cobrança de centavos não existe). */
+    private const PISO_ABSOLUTO = 5.0;
 
     private function asaas(): string
     {
@@ -76,21 +211,23 @@ class AsaasService
     // ─────────────────────────────────────────────
 
     /**
-     * Monta o split do marketplace usando fixedValue: o recebedor fica com 90%
-     * do valor BRUTO da cobrança e a plataforma (conta principal, dona da
-     * cobrança) absorve a taxa Asaas e mantém o restante.
+     * Monta o split do marketplace: o recebedor fica com o preço INTEGRAL que
+     * ele pediu (`fixedValue` = o próprio preço), e a plataforma — dona da
+     * cobrança — fica com a comissão que foi acrescentada por cima e absorve a
+     * taxa Asaas do Pix.
      *
-     * Fallback de segurança para percentualValue (90% sobre o líquido, calculado
-     * pela própria Asaas):
-     *  - sempre que o bruto for menor que MIN_SPLIT_VALUE; e
-     *  - no CARTÃO, sempre que 90% do bruto (fixedValue) não couber no líquido
-     *    estimado após a taxa do cartão. Sem isso a Asaas recusaria o split do
-     *    cartão (taxa bem maior que a do PIX), enquanto a cobrança poderia já
-     *    ter sido criada — origem de erros 500 no fluxo de cartão.
+     * `$base` é o preço do PROFISSIONAL, não o valor cobrado do cliente. Quem
+     * chama nunca precisa saber o valor final: ele é derivado aqui e em
+     * detalhar(), a partir do mesmo lugar.
      *
-     * O comportamento do PIX permanece inalterado (só o teste de mínimo).
+     * O fallback para `percentualValue: 100` é defensivo e, com o mínimo de
+     * valorMinimo() respeitado, não deve acontecer: por construção o líquido é
+     * `preço + comissão − taxa`, sempre acima do preço. Se acontecer (config de
+     * taxa editada para um valor que inverte a conta), ele erra em favor do
+     * PROFISSIONAL — ele recebe todo o líquido e a plataforma, nada — porque o
+     * contrário seria entregar menos do que foi combinado com ele.
      */
-    public function montarSplit(?string $walletId, float $gross, array $ctx = [], string $billingType = 'PIX', float $rate = self::SPLIT_RATE): ?array
+    public function montarSplit(?string $walletId, float $base, array $ctx = [], string $billingType = 'PIX'): ?array
     {
         if (! $walletId) {
             Log::warning('Asaas: split não aplicado — recebedor sem walletId', $ctx);
@@ -98,29 +235,22 @@ class AsaasService
             return null;
         }
 
-        $fixedValue = round($gross * $rate, 2);
-        $usePercentual = $gross < self::MIN_SPLIT_VALUE;
+        $base = round($base, 2);
+        $bruto = self::valorCobrado($base, $billingType);
+        $liquido = round($bruto - self::taxaAsaas($bruto, $billingType), 2);
 
-        if ($billingType === 'CREDIT_CARD') {
-            $estimatedNet = $gross - ($gross * self::CARD_FEE_RATE + self::CARD_FEE_FIXED);
-            if ($fixedValue > $estimatedNet) {
-                $usePercentual = true;
-            }
+        if ($base > $liquido) {
+            Log::warning('Asaas: repasse integral não cabe no líquido — split caiu para percentual', array_merge($ctx, [
+                'preco' => $base,
+                'bruto' => $bruto,
+                'liquido' => $liquido,
+                'billing_type' => $billingType,
+            ]));
+
+            return [['walletId' => $walletId, 'percentualValue' => 100.0]];
         }
 
-        // Repasse de 100% (sem comissão da plataforma): o fixedValue = bruto
-        // nunca cabe no líquido (sempre há taxa do Asaas), então deixamos a
-        // própria Asaas calcular o percentual sobre o líquido — o recebedor
-        // arca apenas com a taxa do cartão/PIX.
-        if ($rate >= 1.0) {
-            $usePercentual = true;
-        }
-
-        if ($usePercentual) {
-            return [['walletId' => $walletId, 'percentualValue' => round($rate * 100, 2)]];
-        }
-
-        return [['walletId' => $walletId, 'fixedValue' => $fixedValue]];
+        return [['walletId' => $walletId, 'fixedValue' => $base]];
     }
 
     public function splitPersonal(Personal $personal, float $amount, string $billingType = 'PIX'): ?array
@@ -135,37 +265,49 @@ class AsaasService
 
     public function splitAcademia(Academia $academia, float $amount, string $billingType = 'PIX'): ?array
     {
-        // Academia entra no split padrão do marketplace: 90% para a academia, 10% de comissão da plataforma.
         return $this->montarSplit($academia->asaas_wallet_id, $amount, ['academia_id' => $academia->id], $billingType);
     }
 
-    /** Valores gravados localmente na tabela payments (bruto, comissão, repasse). */
-    public function calculateSplit(float $amountTotal, ?float $feeRate = null): array
+    /**
+     * Os valores gravados localmente (payments/subscriptions), a partir do
+     * preço do profissional.
+     *
+     * As quatro colunas fecham a conta e cada uma responde uma pergunta
+     * diferente — por isso `gateway_fee` existe em vez de ser somada na
+     * comissão:
+     *
+     *     amount_total   o que o cliente pagou
+     *     trainer_amount o que o profissional recebeu (o preço dele, cheio)
+     *     company_fee    o que a plataforma GANHOU  ← base do bônus de indicação
+     *     gateway_fee    o que a Asaas levou no cartão (passou por nós, não é nosso)
+     *
+     * Jogar a taxa do cartão em `company_fee` inflaria o bônus de indicação
+     * sobre dinheiro que nunca foi receita nossa.
+     */
+    public function calculateSplit(float $base, string $billingType = 'PIX'): array
     {
-        // Sem argumento, usa a taxa derivada de SPLIT_RATE — antes havia aqui um
-        // 0.10 literal, que era a segunda cópia da mesma regra.
-        $feeRate ??= self::feeRate();
-
-        $companyFee = round($amountTotal * $feeRate, 2);
-        $trainerAmount = round($amountTotal - $companyFee, 2);
+        $conta = self::detalhar($base, $billingType);
 
         return [
-            'amount_total' => $amountTotal,
-            'company_fee' => $companyFee,
-            'trainer_amount' => $trainerAmount,
+            'amount_total' => $conta['total'],
+            'company_fee' => $conta['comissao'],
+            'trainer_amount' => $conta['base'],
+            'gateway_fee' => $conta['gateway'],
         ];
     }
 
     /**
-     * Barra cobranças abaixo do valor mínimo. Necessário porque o split por
-     * fixedValue (90% do bruto) só cabe no líquido quando o bruto é alto o
-     * suficiente para a plataforma absorver a taxa Asaas com os 10% restantes.
+     * Barra serviços abaixo do mínimo. O limite não é estético: abaixo dele a
+     * comissão não cobre a taxa do Pix, o repasse integral não cabe no líquido
+     * e a Asaas recusaria o split. Ver valorMinimo().
      */
     public function garantirValorMinimo(float $value): void
     {
-        if ($value < self::MIN_SPLIT_VALUE) {
+        $minimo = self::valorMinimo();
+
+        if ($value < $minimo) {
             abort(response()->json([
-                'error' => 'O valor mínimo para pagamento é R$ '.number_format(self::MIN_SPLIT_VALUE, 2, ',', '.').'.',
+                'error' => 'O valor mínimo para pagamento é R$ '.number_format($minimo, 2, ',', '.').'.',
             ], 422));
         }
     }
@@ -299,6 +441,10 @@ class AsaasService
      * Cria uma cobrança PIX única no Asaas + registro local em payments e
      * devolve o payload/QR code prontos para o front (web ou mobile).
      *
+     * `$amount` é o PREÇO DO PROFISSIONAL. O valor cobrado do cliente (preço +
+     * comissão + taxa de cartão) é derivado aqui — quem chama não calcula nada,
+     * e por isso nenhum dos ~20 pontos de entrada precisou aprender a conta.
+     *
      * $paymentFields: colunas extras de payments (trainer_id, studio_id, loja_id,
      * membership_id...). $idemPrefix/$extRef seguem os prefixos do fluxo web para
      * o webhook e a conciliação continuarem funcionando igual.
@@ -307,11 +453,12 @@ class AsaasService
     {
         try {
             $asaasCustomerId = $this->obterOuCriarClienteAsaas($cliente);
+            $conta = self::detalhar($amount, $billingType);
 
             $pixPayload = [
                 'customer' => $asaasCustomerId,
                 'billingType' => $billingType,
-                'value' => $amount,
+                'value' => $conta['total'],
                 'dueDate' => now()->addDay()->format('Y-m-d'),
                 'description' => $description,
                 'externalReference' => $extRef,
@@ -337,12 +484,13 @@ class AsaasService
             // QR Pix só faz sentido quando a cobrança é Pix.
             $qrData = $billingType === 'PIX' ? $this->pixQrCode($asaasPaymentId) : [];
 
-            $valores = $this->calculateSplit($amount);
+            $valores = $this->calculateSplit($amount, $billingType);
             $payment = Payment::create(array_merge([
                 'user_id' => $cliente->id,
                 'amount_total' => $valores['amount_total'],
                 'company_fee' => $valores['company_fee'],
                 'trainer_amount' => $valores['trainer_amount'],
+                'gateway_fee' => $valores['gateway_fee'],
                 'stripe_payment_intent_id' => $asaasPaymentId,
                 'status' => 'pending',
                 'payment_method' => $billingType === 'PIX' ? 'pix' : 'card',
@@ -354,7 +502,8 @@ class AsaasService
                 'payment_id' => $payment->id,
                 'asaas_payment_id' => $asaasPaymentId,
                 'billing_type' => $billingType,
-                'amount' => $amount,
+                'preco' => $conta['base'],
+                'cobrado' => $conta['total'],
                 'cliente_id' => $cliente->id,
             ]);
 
@@ -364,7 +513,11 @@ class AsaasService
                 'pixPayload' => $qrData['payload'] ?? '',
                 'pixQrCode' => $qrData['encodedImage'] ?? '',
                 'invoiceUrl' => $invoiceUrl,
-                'amount' => $amount,
+                // `amount` é o que o cliente PAGA — é com ele que o front
+                // desenha o valor do QR code. `valores` leva a quebra para a
+                // tela poder dizer de onde veio o acréscimo.
+                'amount' => $conta['total'],
+                'valores' => $conta,
             ];
         } catch (\Illuminate\Http\Exceptions\HttpResponseException $e) {
             throw $e;
@@ -376,10 +529,12 @@ class AsaasService
     }
 
     /**
-     * Cobrança avulsa do marketplace (conta da plataforma) com split 90/10 para o
-     * recebedor. Não cria registro Payment — a confirmação é feita por quem chama,
-     * casando o externalReference no webhook. Usada na consulta do nutricionista.
-     * Retorna ['asaasPaymentId','invoiceUrl'] ou [] em caso de falha.
+     * Cobrança avulsa do marketplace (conta da plataforma) com repasse integral
+     * ao recebedor. Não cria registro Payment — a confirmação é feita por quem
+     * chama, casando o externalReference no webhook. Usada na consulta do
+     * nutricionista. Retorna ['asaasPaymentId','invoiceUrl'] ou [] em falha.
+     *
+     * `$amount` é o preço do profissional; o cliente paga preço + comissão.
      */
     public function criarCobrancaAvulsaComSplit(Cliente $cliente, float $amount, string $description, string $extRef, ?array $split, string $billingType = 'UNDEFINED'): array
     {
@@ -391,7 +546,7 @@ class AsaasService
             $payload = [
                 'customer' => $asaasCustomerId,
                 'billingType' => $billingType, // UNDEFINED = checkout escolhe Pix/cartão/boleto
-                'value' => $amount,
+                'value' => self::valorCobrado($amount, $billingType),
                 'dueDate' => now()->addDays(3)->format('Y-m-d'),
                 'description' => $description,
                 'externalReference' => $extRef,
@@ -431,21 +586,22 @@ class AsaasService
      * cobrança PIX (o aluno paga manualmente cada uma). Devolve o array de
      * dados da primeira cobrança (payload/QR) para o front.
      *
-     * `$companyFeeRate` null = usa a taxa da plataforma derivada de SPLIT_RATE.
-     * O default ERA `0.10` literal, e isso anulava na prática a derivação do
-     * `calculateSplit`: todo caminho de assinatura gravava `company_fee` a 10%
-     * fixo enquanto o split ENVIADO ao Asaas saía de SPLIT_RATE. Só passe um
-     * valor aqui se a intenção for realmente uma taxa diferente da padrão.
+     * `$amount` é a mensalidade do PROFISSIONAL; o cliente paga mensalidade +
+     * comissão. O parâmetro `$companyFeeRate` que existia aqui foi REMOVIDO:
+     * ele era a porta por onde um `0.10` literal reentrava no cálculo (ver o
+     * histórico em CLAUDE.md, "Revenue Model"). Não há mais taxa por cobrança
+     * — só a da plataforma, em `config('taxas.comissao')`.
      */
-    public function criarAssinaturaPix(Cliente $cliente, float $amount, string $description, string $extRefPrefix, string $idemPrefix, ?array $split, array $subFields, array $bookingData, ?float $companyFeeRate = null, string $billingType = 'PIX'): array
+    public function criarAssinaturaPix(Cliente $cliente, float $amount, string $description, string $extRefPrefix, string $idemPrefix, ?array $split, array $subFields, array $bookingData, string $billingType = 'PIX'): array
     {
         try {
             $asaasCustomerId = $this->obterOuCriarClienteAsaas($cliente);
+            $conta = self::detalhar($amount, $billingType);
 
             $payload = [
                 'customer' => $asaasCustomerId,
                 'billingType' => $billingType,
-                'value' => $amount,
+                'value' => $conta['total'],
                 'nextDueDate' => now()->format('Y-m-d'),
                 'cycle' => 'MONTHLY',
                 'description' => $description,
@@ -483,7 +639,7 @@ class AsaasService
 
             $qrData = $billingType === 'PIX' ? $this->pixQrCode($asaasPaymentId) : [];
 
-            $valores = $this->calculateSplit($amount, $companyFeeRate);
+            $valores = $this->calculateSplit($amount, $billingType);
             $this->registrarAssinatura($cliente->id, $subscriptionId, $billingType === 'PIX' ? 'pix' : 'card', $valores, $subFields, $bookingData, $subData['nextDueDate'] ?? null);
 
             $payment = Payment::create(array_merge([
@@ -491,6 +647,7 @@ class AsaasService
                 'amount_total' => $valores['amount_total'],
                 'company_fee' => $valores['company_fee'],
                 'trainer_amount' => $valores['trainer_amount'],
+                'gateway_fee' => $valores['gateway_fee'],
                 'stripe_payment_intent_id' => $asaasPaymentId,
                 'asaas_subscription_id' => $subscriptionId,
                 'status' => 'pending',
@@ -513,7 +670,8 @@ class AsaasService
                 'pixPayload' => $qrData['payload'] ?? '',
                 'pixQrCode' => $qrData['encodedImage'] ?? '',
                 'invoiceUrl' => $invoiceUrl,
-                'amount' => $amount,
+                'amount' => $conta['total'],
+                'valores' => $conta,
                 'recorrente' => true,
             ];
         } catch (\Illuminate\Http\Exceptions\HttpResponseException $e) {
@@ -555,6 +713,7 @@ class AsaasService
                 'amount_total' => $valores['amount_total'],
                 'company_fee' => $valores['company_fee'],
                 'trainer_amount' => $valores['trainer_amount'],
+                'gateway_fee' => $valores['gateway_fee'] ?? 0,
                 'status' => 'active',
                 'next_due_date' => $nextDueDate,
                 'booking_data' => json_encode($bookingData),

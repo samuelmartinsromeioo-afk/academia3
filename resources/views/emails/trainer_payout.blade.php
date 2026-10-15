@@ -29,7 +29,7 @@
 
             <div class="amount-box">
                 <div class="amount">R$ {{ number_format($payout->amount, 2, ',', '.') }}</div>
-                <div class="label">Valor líquido a receber (90% do total)</div>
+                <div class="label">Valor a receber — o preço integral do seu serviço</div>
             </div>
 
             <h3 style="color:#333;">Detalhes</h3>

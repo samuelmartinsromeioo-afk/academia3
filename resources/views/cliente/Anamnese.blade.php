@@ -74,12 +74,43 @@
 
         <div style="background:rgba(124,255,0,0.08); border:1px solid rgba(124,255,0,0.35); border-radius:12px; padding:14px 16px; margin-bottom:18px; font-size:0.82rem; color:#cfcfcf; line-height:1.5;">
             <i class="ph ph-shield-check" style="color:var(--primary);"></i>
-            São <strong>dados sensíveis de saúde</strong>. Ao salvar, você <strong>consente</strong> com o uso dessas informações pelo seu personal para montar um treino seguro, conforme a
-            <a href="{{ route('lgpd.politica') }}" target="_blank" style="color:var(--primary);">Política de Privacidade</a>. Você pode editá-las ou removê-las quando quiser.
+            São <strong>dados sensíveis de saúde</strong> (art. 11 da LGPD). Quem os vê é apenas o
+            profissional que te atende — e a equipe técnica da academia ou studio, se você for aluno
+            de uma. <strong>Nunca</strong> são usados para publicidade nem enviados a ferramentas de
+            marketing. Detalhes na
+            <a href="{{ route('lgpd.politica') }}" target="_blank" style="color:var(--primary);">Política de Privacidade</a>.
+            Preencher é <strong>opcional</strong>: você pode usar a Plataforma sem isto.
         </div>
 
         <form method="POST" action="{{ route('anamnese.salvar') }}">
             @csrf
+
+            {{--
+                Consentimento DESTACADO (art. 11, I). O que havia aqui era só o
+                aviso acima, com a frase "ao salvar, você consente" — ou seja,
+                consentimento tácito, por clicar no botão, e sem registro
+                nenhum no banco. Para dado sensível não serve: precisa de ato
+                próprio e inequívoco, e de prova de que ele ocorreu — hoje
+                gravada em `consentimentos`, na mesma transação da anamnese.
+            --}}
+            <div class="panel" style="border-color:rgba(124,255,0,0.45);">
+                <label style="display:flex; gap:12px; align-items:flex-start; cursor:pointer; font-size:0.9rem; line-height:1.55;">
+                    <input type="checkbox" name="consentimento" value="1" required
+                        {{ old('consentimento') ? 'checked' : '' }}
+                        style="margin-top:4px; width:20px; height:20px; accent-color:var(--primary); flex:0 0 auto;">
+                    <span>
+                        <strong style="color:var(--primary);">Consinto</strong> que a SNR FIT trate os meus
+                        dados de saúde informados abaixo, com a finalidade <strong>exclusiva</strong> de
+                        permitir que o profissional que me atende monte e acompanhe um treino seguro.
+                        <br>
+                        <span style="color:var(--muted); font-size:0.82rem;">
+                            Posso revogar a qualquer momento, sem justificar, em
+                            <a href="{{ route('lgpd.meus-dados') }}" style="color:var(--primary);">Privacidade e meus dados</a> —
+                            a anamnese é apagada e a minha conta continua ativa.
+                        </span>
+                    </span>
+                </label>
+            </div>
 
             <div class="panel">
                 <div class="panel-title"><i class="ph ph-target"></i> Objetivos</div>

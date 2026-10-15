@@ -468,13 +468,74 @@
                     </div>
                 </div>
 
+                {{--
+                    CREF com a conferência a um clique.
+
+                    O admin já aprova cada personal à mão (todo cadastro nasce
+                    `pendente`), e a parte que ele não tinha era ONDE conferir:
+                    descobrir qual dos 20+ conselhos regionais atende aquele
+                    estado e achar a página de consulta. Isso virava uma busca
+                    no Google por cadastro — ou, na prática, nenhuma conferência.
+
+                    O link não afirma que o registro é verdadeiro: ele leva à
+                    fonte que pode dizer isso. A distinção está nos Termos do
+                    Personal (cláusula 2) e é o que impede a Plataforma de
+                    assumir uma garantia de habilitação que não tem como dar.
+                --}}
+                @php
+                    $crefPartes = \App\Support\Cref::partes($personal->cref);
+                    $crefUf = $crefPartes['uf'] ?? null;
+                    $crefRegional = $crefUf ? (config('cref.regional')[$crefUf] ?? null) : null;
+                    $crefConsulta = $crefUf
+                        ? (config('cref.consulta')[$crefUf] ?? config('cref.fallback'))
+                        : config('cref.fallback');
+                    $crefMapeado = $crefUf && isset(config('cref.consulta')[$crefUf]);
+                @endphp
+
                 <div class="info-item">
                     <div class="info-icon">
                         <i class="ph ph-identification-badge"></i>
                     </div>
                     <div class="info-content">
                         <h3>CREF</h3>
-                        <p>{{ $personal->cref ?? 'Não informado' }}</p>
+                        <p>
+                            {{ $personal->cref ?? 'Não informado' }}
+                            @if($crefPartes && $crefPartes['categoria'])
+                                <span style="opacity:.7; font-size:.85em;">
+                                    · {{ \App\Support\Cref::categoriaLabel($personal->cref) }}
+                                </span>
+                            @endif
+                        </p>
+
+                        @if($crefPartes)
+                            <p style="margin-top:8px; font-size:.82rem; line-height:1.6;">
+                                <span style="opacity:.75;">
+                                    Formato válido. Conselho:
+                                    <strong>{{ $crefRegional ?? 'não identificado' }}</strong>.
+                                    {{ $crefMapeado
+                                        ? 'Confira a matrícula ' . $crefPartes['matricula'] . ' na consulta pública:'
+                                        : 'Sem link direto para esta UF — use a busca nacional do CONFEF:' }}
+                                </span>
+                                <br>
+                                <a href="{{ $crefConsulta }}" target="_blank" rel="noopener"
+                                   style="color:var(--primary); font-weight:800;">
+                                    <i class="ph ph-arrow-square-out"></i>
+                                    Conferir no {{ $crefMapeado ? ($crefRegional ?? 'conselho') : 'CONFEF' }}
+                                </a>
+                            </p>
+                            <p style="margin-top:6px; font-size:.76rem; opacity:.6; line-height:1.5;">
+                                A validação automática confere apenas o <strong>formato</strong>.
+                                Registro existente e <strong>ativo</strong> só o conselho confirma —
+                                é esta conferência que sustenta a aprovação.
+                            </p>
+                        @else
+                            <p style="margin-top:8px; font-size:.82rem; color:#ff8a8a; line-height:1.6;">
+                                <i class="ph ph-warning"></i>
+                                <strong>Formato inválido ou ausente.</strong> Este cadastro é anterior
+                                à validação de CREF — não dá para localizar a matrícula no conselho sem
+                                pedir o número correto ao profissional.
+                            </p>
+                        @endif
                     </div>
                 </div>
 
@@ -548,8 +609,42 @@
     @if($personal->status === 'pendente')
         <h2 class="section-title">Ações</h2>
         <div class="action-buttons">
-            <form method="POST" action="{{ route('admin.personals.aprovar', $personal->id) }}">
+            {{--
+                A aprovação passa a exigir a conferência do CREF, e a registra.
+
+                Os Termos afirmam que a aprovação é "conferência cadastral". A
+                afirmação era verdadeira na intenção e improvável na prática:
+                nada no formulário pedia a conferência e nada no banco guardava
+                se ela aconteceu. Num litígio sobre profissional sem
+                habilitação, é justamente esse registro que separa diligência de
+                negligência.
+
+                O campo de resultado é texto curto de propósito: o que o
+                conselho informa varia ("ativo", "ativo - categoria G",
+                "suspenso"), e uma lista fechada obrigaria o admin a encaixar a
+                realidade em opções nossas.
+            --}}
+            <form method="POST" action="{{ route('admin.personals.aprovar', $personal->id) }}"
+                  style="flex:1 1 320px;">
                 @csrf
+                <div style="background:rgba(124,255,0,0.06); border:1px solid rgba(124,255,0,0.3);
+                            border-radius:12px; padding:14px 16px; margin-bottom:12px;">
+                    <label style="display:flex; gap:10px; align-items:flex-start; cursor:pointer;
+                                  font-size:.85rem; line-height:1.55;">
+                        <input type="checkbox" name="cref_conferido" value="1" required
+                               style="margin-top:3px; width:18px; height:18px; accent-color:var(--primary); flex:0 0 auto;">
+                        <span>
+                            <strong>Conferi o CREF {{ $personal->cref }}</strong>
+                            @if($crefRegional) no {{ $crefRegional }} @endif
+                            e o registro está regular.
+                        </span>
+                    </label>
+                    <input type="text" name="cref_conferido_resultado" maxlength="120"
+                           placeholder="O que o conselho informou (ex.: ativo, categoria G)"
+                           style="width:100%; margin-top:10px; padding:9px 11px; border-radius:8px;
+                                  background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.12);
+                                  color:#fff; font-size:.82rem; font-family:inherit;">
+                </div>
                 <button type="submit" class="btn-approve">
                     <i class="ph ph-check"></i> Aprovar Cadastro
                 </button>
@@ -588,7 +683,7 @@
                 <i class="ph ph-check-circle" style="color: var(--primary); font-size: 1.2rem;"></i>
                 <div>
                     <p style="margin: 0; font-weight: 700; color: #fff; font-size: 0.9rem;">Conta Asaas configurada</p>
-                    <p style="margin: 0; color: #a0a0a0; font-size: 0.75rem;">Split de pagamentos ativo — 90% vai direto para a carteira deste personal.</p>
+                    <p style="margin: 0; color: #a0a0a0; font-size: 0.75rem;">Split de pagamentos ativo — o preço cheio do personal vai direto para a carteira dele; a comissão da plataforma é o acréscimo cobrado do aluno.</p>
                     <p style="margin: 4px 0 0; color: #a0a0a0; font-size: 0.72rem; font-family: monospace;">Wallet ID: {{ $personal->asaas_wallet_id }}</p>
                 </div>
             </div>

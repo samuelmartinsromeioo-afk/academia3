@@ -9,10 +9,18 @@ use Illuminate\Http\Request;
 /**
  * Painel de devoluções do admin.
  *
- * O estorno não é automático de propósito: a cobrança nasce dividida 90/10 e os
- * 90% já estão na carteira do personal, então pedir refund na API pode ser
- * recusado por saldo ou deixar a subconta dele negativa. Aqui fica a lista do
- * que é devido; o admin devolve por fora (Pix, painel do Asaas) e dá baixa.
+ * O estorno não é automático de propósito: a cobrança nasce **dividida na
+ * origem** e o preço do profissional já está na carteira dele, então pedir
+ * refund na API pode ser recusado por saldo ou deixar a subconta negativa. Aqui
+ * fica a lista do que é devido; o admin devolve por fora (Pix, painel do Asaas)
+ * e dá baixa.
+ *
+ * O texto anterior descrevia o split como "90/10", com "os 90% na carteira do
+ * personal". Essa divisão **deixou de existir em 13/10/2026**: a comissão passou
+ * a ser acréscimo ao preço, o profissional recebe o preço INTEGRAL que cadastrou
+ * e o aluno paga preço + comissão. O raciocínio do método não muda (o dinheiro
+ * do profissional já saiu), mas os números mudaram — e comentário com número
+ * velho é o que faz o próximo leitor calcular o estorno errado.
  */
 class EstornoController extends Controller
 {

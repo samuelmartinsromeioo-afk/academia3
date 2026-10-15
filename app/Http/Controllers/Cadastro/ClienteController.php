@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Cadastro;
 
 use App\Http\Controllers\Controller;
 use App\Services\MetaConversionsService;
+use App\Support\CadastroHelper;
 use App\Models\Cadastro\Cliente;
 use App\Models\Cadastro\Personal;
 use App\Models\Cadastro\Academia as Academia;
@@ -362,7 +363,9 @@ class ClienteController extends Controller
             'email'              => 'required|email|max:255|unique:clientes,email',
             'senha'              => 'required|string|min:8|max:255',
             'whatsapp'           => 'nullable|string|max:20',
-            'idade'              => 'required|date',
+            // Data de nascimento (a coluna chama `idade` por histórico). O corte
+            // de 18 anos sai de CadastroHelper, igual ao app — ver lá o porquê.
+            'idade'              => array_merge(['required'], CadastroHelper::regraNascimento(CadastroHelper::IDADE_MINIMA_ALUNO)),
             // Lista única em config('textos.profissional.sexos'): a cópia que
             // vivia aqui divergiu do <select> do formulário e a terceira opção
             // ("Outro") era recusada na validação.
@@ -387,10 +390,10 @@ class ClienteController extends Controller
             // regra sobre campo inexistente só engana quem lê depois.
             'aceita_termos'      => 'required|accepted',
             'cupom'              => $cupons->regraValidacao(),
-        ], [
+        ], array_merge([
             'aceita_termos.required' => 'Você deve concordar com os Termos de Uso',
             'aceita_termos.accepted' => 'Você deve concordar com os Termos de Uso',
-        ]);
+        ], CadastroHelper::mensagensNascimento(CadastroHelper::IDADE_MINIMA_ALUNO)));
 
         // Fora do create(): `cupom` não é coluna de clientes.
         $codigoCupom = \Illuminate\Support\Arr::pull($validated, 'cupom');

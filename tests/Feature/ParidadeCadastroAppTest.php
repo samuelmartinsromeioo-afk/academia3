@@ -81,16 +81,23 @@ class ParidadeCadastroAppTest extends TestCase
     }
 
     /**
-     * App ANTIGO (sem nascimento/sexo/CEP) continua conseguindo cadastrar.
+     * App ANTIGO (sem sexo/CEP) continua conseguindo cadastrar — mas NÃO sem a
+     * data de nascimento.
      *
-     * A regra é `sometimes|required`, e isso é compatibilidade de versão, não
-     * relaxamento: entre o deploy do servidor e a atualização chegar ao
-     * aparelho existe a revisão da Apple — dias. Com `required`, todo cadastro
-     * de quem está no binário antigo voltaria 422 nessa janela. Cadastro
-     * perdido é usuário perdido; conta sem nascimento é conta que o próprio
-     * aluno completa depois, agora que o perfil é editável nos dois lados.
+     * `sexo` e `cep` são `sometimes|required` por compatibilidade de versão,
+     * não por relaxamento: entre o deploy do servidor e a atualização chegar ao
+     * aparelho existe a revisão da Apple — dias — e nessa janela `required`
+     * devolveria 422 em todo cadastro feito pelo binário antigo. Cadastro
+     * perdido é usuário perdido, e conta sem sexo/CEP é conta que o próprio
+     * aluno completa depois (o perfil é editável nos dois lados).
+     *
+     * `idade` ESTAVA nesse grupo e saiu quando passou a existir idade mínima
+     * (ver IdadeMinimaCadastroTest): com `sometimes`, omitir o campo era não
+     * ter trava nenhuma — e o app antigo omite. A conta de um menor não é
+     * "conta pela metade que se completa depois", então aqui o raciocínio da
+     * compatibilidade não se aplica e o 422 é o comportamento certo.
      */
-    public function test_app_antigo_sem_nascimento_e_sexo_ainda_cadastra(): void
+    public function test_app_antigo_sem_sexo_e_cep_ainda_cadastra_mas_nascimento_e_exigido(): void
     {
         /*
          * O payload LITERAL do binário publicado (snrfit-app, RegisterScreen
@@ -98,7 +105,7 @@ class ParidadeCadastroAppTest extends TestCase
          * que não pode quebrar durante a revisão da Apple, então o teste manda
          * exatamente o que o aparelho manda, nem um campo a mais.
          */
-        $this->postJson('/api/v1/register', [
+        $antigo = [
             'nome' => 'Aluno App Antigo',
             'email' => 'appantigo@teste.com',
             'senha' => 'senha12345',
@@ -107,10 +114,22 @@ class ParidadeCadastroAppTest extends TestCase
             'cupom' => null,
             'aceita_termos' => true,
             'device_name' => 'snrfit-app',
-        ])->assertStatus(201);
+        ];
 
+        $this->postJson('/api/v1/register', $antigo)
+            ->assertStatus(422)
+            ->assertJsonValidationErrors('idade');
+
+        // Acrescentando SÓ o nascimento, o resto do payload antigo passa: a
+        // ausência de sexo e CEP continua tolerada.
+        $this->postJson('/api/v1/register', $antigo + ['idade' => '1995-07-14'])
+            ->assertStatus(201);
+
+        // O firstOrFail já prova que a conta nasceu sem sexo nem CEP no payload
+        // (a coluna `sexo` é um enum NOT NULL e fica no default do banco).
         $c = Cliente::where('email', 'appantigo@teste.com')->firstOrFail();
-        $this->assertNull($c->idade, 'sem o campo, nada deve ser inventado para a data de nascimento');
+        $this->assertSame('1995-07-14', $c->idade);
+        $this->assertNull($c->cep);
         $this->assertSame('Online', $c->modalidade_preferida);
     }
 

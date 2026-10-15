@@ -60,6 +60,45 @@ class AvisoService
         return $horaInicio ? $texto . ' às ' . substr($horaInicio, 0, 5) : $texto;
     }
 
+    // ───────────────────── PRIVACIDADE (LGPD) ─────────────────────
+
+    /**
+     * O titular revogou o consentimento de dados de saúde → confirma por escrito.
+     *
+     * Disparado dos DOIS lados (site em `Cadastro\LgpdController::revogarSaude`,
+     * app em `Api\ProgressoController::revogarAnamnese`), que é exatamente a
+     * situação que este arquivo existe para resolver: o texto de um ato
+     * irreversível não pode ter duas versões.
+     *
+     * A confirmação é promessa expressa da cláusula 12 dos Termos, e aqui ela
+     * tem função prática além da formal: a revogação apaga a anamnese e
+     * **não tem como ser desfeita**, então o titular precisa de um registro do
+     * que pediu, de quando pediu e — a parte que mais gera suporte — de que a
+     * sua CONTA continua ativa. Sem essa última frase, quem revoga fica em
+     * dúvida se perdeu o acesso.
+     */
+    public static function consentimentoSaudeRevogado(?Cliente $cliente): void
+    {
+        if (! $cliente) {
+            return;
+        }
+
+        self::seguro('consentimento_saude_revogado', function () use ($cliente) {
+            NotificacaoService::cliente(
+                $cliente,
+                'Consentimento de dados de saúde revogado — SNR FIT',
+                "Você revogou o consentimento de uso dos seus dados de saúde, e a sua "
+                . "*anamnese foi apagada*.\n\n"
+                . "*A sua conta continua ativa.* Você segue treinando, contratando e usando o "
+                . "app e o site normalmente — só não temos mais dado de saúde seu guardado.\n\n"
+                . "Pode preencher a anamnese de novo quando quiser. Lembre que, sem ela, o "
+                . "profissional monta o seu treino sem conhecer lesões, restrições ou "
+                . "medicamentos: informe isso diretamente a ele.\n\n"
+                . 'Guarde esta mensagem: ela é o seu comprovante da revogação.'
+            );
+        });
+    }
+
     // ───────────────────────── AGENDA ─────────────────────────
 
     /**
@@ -124,6 +163,55 @@ class AvisoService
                 $justificativa
             );
         }
+    }
+
+    /**
+     * A aula do aluno começa em ~1h30 → lembra o ALUNO.
+     *
+     * Fecha uma assimetria que durou desde o começo: o personal recebia
+     * `personal:lembrete-diario` 90 min antes do primeiro compromisso e o aluno
+     * não recebia **nada** — ele é o lado que precisa sair de casa, levar roupa
+     * e chegar no horário, e era justamente quem não era lembrado. Falta de
+     * aluno é o problema que o módulo de reposição inteiro existe para remediar
+     * depois do fato.
+     *
+     * Único aviso realmente PROATIVO do aluno: não há clique dele nem de
+     * ninguém por trás, é a plataforma alcançando quem não está no app — que é
+     * o único momento em que o push tem valor de verdade.
+     *
+     * O texto traz a modalidade porque é o que decide o que a pessoa faz nos
+     * próximos minutos: ir até a academia ou abrir o vídeo (ver Agenda::MODALIDADES
+     * e os três níveis de modalidade no CLAUDE.md). `null` = não informada, e aí
+     * não se afirma nada em vez de chutar "Presencial".
+     */
+    public static function aulaComecaEmBreve(?Cliente $cliente, ?Personal $personal, Agenda $agenda): void
+    {
+        if (! $cliente) {
+            return;
+        }
+
+        self::seguro('aula_comeca_em_breve', function () use ($cliente, $personal, $agenda) {
+            $hora = substr((string) $agenda->hora_inicio, 0, 5);
+            $nome = $personal->nome ?? 'seu personal';
+            $online = $agenda->modalidade === 'Online';
+
+            $local = match (true) {
+                $online => "A aula é *online*. Deixe o aparelho pronto e combine o link com {$nome}.",
+                $agenda->modalidade === 'Presencial' => "A aula é *presencial*" . ($agenda->academia?->nome ? " na *{$agenda->academia->nome}*" : '') . '. Dá tempo de se arrumar e sair.',
+                // Sem modalidade registrada: não inventa. Aulas antigas e
+                // profissionais híbridos sem escolha do aluno caem aqui.
+                default => "Confirme com {$nome} se é presencial ou online.",
+            };
+
+            NotificacaoService::cliente(
+                $cliente,
+                'Sua aula é daqui a pouco — SnrFit',
+                "⏰ *Aula às {$hora}*\n\n"
+                . "Você tem aula com {$nome} hoje às *{$hora}*.\n\n"
+                . $local
+                . "\n\nNão vai conseguir? Avise agora para liberar o horário."
+            );
+        });
     }
 
     // ──────────────────────── PAGAMENTOS ────────────────────────

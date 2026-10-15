@@ -85,7 +85,14 @@ class AcademiaPagamentoTest extends TestCase
             'subscriptionId' => 'sub_pix_1',
             'recorrente' => true,
         ]);
-        $this->assertEquals(99.90, $resp->json('amount'));
+        // `amount` é o que o ALUNO paga: o plano (R$ 99,90) + a comissão da
+        // plataforma. A academia recebe os R$ 99,90 cheios — a comissão é
+        // acréscimo, não desconto.
+        $this->assertEquals(
+            \App\Services\AsaasService::valorCobrado(99.90),
+            $resp->json('amount')
+        );
+        $this->assertEquals(99.90, $resp->json('valores.base'));
 
         $this->assertDatabaseHas('payments', [
             'user_id' => $this->clienteId,
@@ -189,7 +196,12 @@ class AcademiaPagamentoTest extends TestCase
             ]);
 
         $resp->assertOk();
-        $this->assertEquals(150, $resp->json('amount'));
+        // Mensalidade base de R$ 150 + comissão: a academia recebe os 150.
+        $this->assertEquals(
+            \App\Services\AsaasService::valorCobrado(150),
+            $resp->json('amount')
+        );
+        $this->assertEquals(150, $resp->json('valores.base'));
 
         $this->assertDatabaseHas('payments', [
             'user_id' => $this->clienteId,

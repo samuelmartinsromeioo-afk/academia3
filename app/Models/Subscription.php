@@ -22,6 +22,7 @@ class Subscription extends Model
         'amount_total',
         'company_fee',
         'trainer_amount',
+        'gateway_fee',
         'payment_method',
         'status',
         'next_due_date',
@@ -33,6 +34,7 @@ class Subscription extends Model
         'amount_total'   => 'decimal:2',
         'company_fee'    => 'decimal:2',
         'trainer_amount' => 'decimal:2',
+        'gateway_fee'    => 'decimal:2',
         'next_due_date'  => 'date',
         'acesso_ate'     => 'date',
     ];

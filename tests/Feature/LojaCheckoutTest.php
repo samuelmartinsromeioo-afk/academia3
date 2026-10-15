@@ -94,13 +94,16 @@ class LojaCheckoutTest extends TestCase
             'pixPayload' => 'PIXLOJA123',
             'pixQrCode' => 'BASE64IMG',
             'asaasPaymentId' => 'loja_pay_1',
-            'amount' => 250,
+            // Os produtos somam R$ 250 e a loja recebe os R$ 250; o cliente
+            // paga isso + a comissão da plataforma.
+            'amount' => \App\Services\AsaasService::valorCobrado(250),
         ]);
 
         $this->assertDatabaseHas('payments', [
             'user_id' => $this->clienteId,
             'loja_id' => $this->loja->id,
-            'amount_total' => 250,
+            'amount_total' => \App\Services\AsaasService::valorCobrado(250),
+            'trainer_amount' => 250,
             'payment_method' => 'pix',
             'status' => 'pending',
         ]);
@@ -148,7 +151,20 @@ class LojaCheckoutTest extends TestCase
         $this->assertNotNull($payment);
         $this->assertEquals('succeeded', $payment->status);
 
-        // Pedido criado com endereço de entrega.
+        // No cartão o cliente paga produtos + comissão + taxa da operadora, e a
+        // loja recebe os R$ 200 dos produtos, integrais.
+        $this->assertEquals(200, (float) $payment->trainer_amount);
+        $this->assertGreaterThan(200, (float) $payment->amount_total);
+        $this->assertGreaterThan(0, (float) $payment->gateway_fee, 'no cartão a taxa é repassada ao cliente');
+
+        /*
+         * Pedido criado com endereço de entrega — e `valor_total` é a soma dos
+         * PRODUTOS, não o total cobrado. É o pedido que a loja lê (e recebe por
+         * WhatsApp), então ele tem de fechar com `pedido_itens.subtotal` abaixo.
+         * Enquanto a comissão era desconto os dois números coincidiam; a
+         * inversão separou-os, e usar `amount_total` aqui mostraria à loja um
+         * pedido de R$ 226 cujos itens somam R$ 200.
+         */
         $this->assertDatabaseHas('pedidos', [
             'loja_id' => $this->loja->id,
             'cliente_id' => $this->clienteId,

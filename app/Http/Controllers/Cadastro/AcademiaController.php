@@ -219,17 +219,51 @@ class AcademiaController extends Controller
             return redirect()->route('academia.alunos')->with('error', 'Aluno não encontrado.');
         }
 
-        $request->validate([
-            'objetivo_principal'    => 'nullable|string|max:255',
-            'nivel_atividade'       => 'nullable|in:sedentario,leve,moderado,intenso',
-            'historico_lesoes'      => 'nullable|string',
-            'restricoes_medicas'    => 'nullable|string',
-            'doencas_preexistentes' => 'nullable|string',
-            'medicamentos'          => 'nullable|string',
-            'cirurgias'             => 'nullable|string',
-            'parq_observacoes'      => 'nullable|string',
-            'observacoes'           => 'nullable|string',
-        ]);
+        $request->validate(
+            [
+                /*
+                 * DECLARAÇÃO do estabelecimento, não consentimento do titular.
+                 *
+                 * Aqui o dado de saúde do aluno entra na Plataforma sem que ele
+                 * toque em nada — a academia preenche pelo painel. Antes não se
+                 * exigia nem registrava absolutamente nada nesse caminho, de
+                 * modo que dado sensível de terceiro era gravado sem base legal
+                 * demonstrável, justamente o que o art. 11 veda e o que a
+                 * Política afirma não acontecer.
+                 *
+                 * Não é a academia que "consente" — ninguém consente pelo
+                 * outro. Ela DECLARA ter colhido o consentimento do aluno
+                 * presencialmente, e a declaração fica registrada com a
+                 * identidade dela (`declarado_por`), IP e data. A base legal
+                 * continua sendo o consentimento do titular; o que isto cria é
+                 * responsabilidade da academia pela veracidade do que afirmou,
+                 * que é o que a cláusula 6 do documento dela já lhe atribui
+                 * como controladora dessa parcela. E o aluno revoga pelo
+                 * caminho normal, no app ou no site, como se tivesse
+                 * preenchido ele mesmo.
+                 */
+                'consentimento_titular' => 'accepted',
+                'objetivo_principal'    => 'nullable|string|max:255',
+                'nivel_atividade'       => 'nullable|in:sedentario,leve,moderado,intenso',
+                'historico_lesoes'      => 'nullable|string',
+                'restricoes_medicas'    => 'nullable|string',
+                'doencas_preexistentes' => 'nullable|string',
+                'medicamentos'          => 'nullable|string',
+                'cirurgias'             => 'nullable|string',
+                'parq_observacoes'      => 'nullable|string',
+                'observacoes'           => 'nullable|string',
+            ],
+            ['consentimento_titular.accepted' => 'Confirme que o aluno autorizou o uso dos dados de saúde dele.']
+        );
+
+        \App\Models\Consentimento::registrar(
+            $cliente,
+            \App\Models\Consentimento::TIPO_SAUDE,
+            true,
+            $request,
+            \App\Models\Consentimento::ORIGEM_ESTABELECIMENTO,
+            $academia
+        );
 
         Anamnese::updateOrCreate(
             ['cliente_id' => $cliente->id],

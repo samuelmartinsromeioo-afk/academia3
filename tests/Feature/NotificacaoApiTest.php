@@ -85,6 +85,46 @@ class NotificacaoApiTest extends TestCase
         $this->assertNotNull($doApp, 'O app recebeu o corpo vazio — provavelmente leu uma coluna que não existe.');
     }
 
+    /**
+     * `criada_em` tem de dizer em QUE FUSO está.
+     *
+     * Era `toDateTimeString()` — "2026-10-10 14:30:31", a hora certa sem
+     * nenhuma marca de fuso. Como `config('app.timezone')` é UTC de propósito,
+     * um aviso criado às 11:30 no Brasil chegava ao app como 14:30 e era
+     * desenhado assim: **três horas no futuro, em toda linha da lista**. O JS
+     * ainda interpreta string com espaço como hora LOCAL, então não havia como
+     * o app acertar sem adivinhar a configuração do servidor.
+     *
+     * Este teste afirma o que faltava: o instante é identificável. Nenhum dos
+     * outros testes olhava para este campo, e foi por isso que o erro passou.
+     */
+    public function test_criada_em_informa_o_fuso(): void
+    {
+        $aluno = $this->aluno();
+        $token = $aluno->createToken('app', ['cliente'])->plainTextToken;
+
+        Notificacao::para('cliente', $aluno->id, 'Aviso', self::TEXTO);
+
+        $criadaEm = $this->withHeaders($this->headers($token))
+            ->getJson('/api/v1/notificacoes')
+            ->assertOk()
+            ->json('notificacoes.0.criada_em');
+
+        $this->assertMatchesRegularExpression(
+            '/(Z|[+-]\d{2}:?\d{2})$/',
+            (string) $criadaEm,
+            'criada_em saiu sem fuso: o app não consegue saber o instante e exibe a hora do servidor como se fosse local.'
+        );
+
+        // E o instante tem de ser o mesmo que está gravado, não um deslocado.
+        $gravado = Notificacao::where('destinatario_id', $aluno->id)->latest()->first()->created_at;
+        $this->assertSame(
+            $gravado->getTimestamp(),
+            \Carbon\Carbon::parse($criadaEm)->getTimestamp(),
+            'O instante entregue ao app não é o mesmo que foi gravado.'
+        );
+    }
+
     public function test_contador_de_nao_lidas_e_marcar_como_lida(): void
     {
         $aluno = $this->aluno();
