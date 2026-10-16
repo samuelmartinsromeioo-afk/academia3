@@ -14,13 +14,47 @@
 --}}
 @php
     $avisoSub = $conta ?? null;
-    $mostrarAviso = $avisoSub
-        && method_exists($avisoSub, 'podeReceberPagamento')
-        && ! $avisoSub->podeReceberPagamento();
-    $detalheSub = $mostrarAviso ? $avisoSub->detalheSubconta() : null;
+    $temTrait = $avisoSub && method_exists($avisoSub, 'podeReceberPagamento');
+
+    // Chave inválida é um problema DIFERENTE de conta não aprovada, e os dois
+    // precisam de textos diferentes — ver o bloco de chave mais abaixo.
+    $chaveQuebrada = $temTrait && $avisoSub->chaveSubcontaInvalida();
+    $mostrarAviso = $temTrait && ! $avisoSub->podeReceberPagamento();
+    $detalheSub = ($mostrarAviso || $chaveQuebrada) ? $avisoSub->detalheSubconta() : null;
 @endphp
 
-@if($mostrarAviso)
+@if($chaveQuebrada)
+    {{--
+        Credencial da subconta inválida.
+
+        NÃO diz "os alunos não conseguem contratar", porque conseguem: a
+        cobrança usa a chave da plataforma e o split só referencia o walletId.
+        O que quebra é saldo e saque, que usam a chave dele. Dizer que a venda
+        parou seria mentira e geraria o ticket errado.
+    --}}
+    <div style="background:rgba(255,193,7,0.10); border:1px solid rgba(255,193,7,0.45);
+                border-radius:14px; padding:18px 20px; margin-bottom:24px;">
+        <div style="display:flex; align-items:center; gap:10px; margin-bottom:10px;">
+            <i class="ph ph-warning" style="color:#ffc107; font-size:1.2rem;"></i>
+            <strong style="color:#ffc107; font-size:0.95rem;">
+                Saldo e saque temporariamente indisponíveis
+            </strong>
+        </div>
+
+        <p style="font-size:0.88rem; line-height:1.6; color:#cfcfcf; margin-bottom:12px;">
+            Suas <strong>vendas continuam normais</strong> — os alunos conseguem contratar e
+            pagar, e o seu dinheiro continua entrando na sua conta de recebimentos.
+            O que está indisponível é a <strong>consulta de saldo e o pedido de saque</strong>
+            aqui pelo painel, por um problema de credencial no nosso lado.
+        </p>
+        <p style="font-size:0.84rem; color:var(--text-muted); margin:0;">
+            Já estamos cientes e vamos regularizar. Enquanto isso, você consegue acompanhar o
+            saldo direto no app do Asaas. Se precisar sacar com urgência, fale com
+            <a href="mailto:{{ \App\Support\Empresa::get('email_suporte') }}"
+               style="color:var(--primary);">{{ \App\Support\Empresa::get('email_suporte') }}</a>.
+        </p>
+    </div>
+@elseif($mostrarAviso)
     <div style="background:rgba(255,82,82,0.10); border:1px solid rgba(255,82,82,0.45);
                 border-radius:14px; padding:18px 20px; margin-bottom:24px;">
         <div style="display:flex; align-items:center; gap:10px; margin-bottom:10px;">

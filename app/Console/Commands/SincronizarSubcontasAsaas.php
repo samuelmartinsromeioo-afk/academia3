@@ -56,7 +56,7 @@ class SincronizarSubcontasAsaas extends Command
             return self::SUCCESS;
         }
 
-        $resumo = ['aprovadas' => 0, 'bloqueadas' => 0, 'falhas' => 0];
+        $resumo = ['aprovadas' => 0, 'bloqueadas' => 0, 'falhas' => 0, 'chave_invalida' => 0];
 
         foreach ($contas as [$papel, $conta]) {
             $antes = $conta->asaas_account_status;
@@ -64,7 +64,20 @@ class SincronizarSubcontasAsaas extends Command
 
             if (! $situacao['ok']) {
                 $resumo['falhas']++;
-                $this->line("  <error>falha</error> {$papel}#{$conta->id}: {$situacao['erro']}");
+
+                // 401 é a NOSSA chave que não serve, não instabilidade do
+                // Asaas — e já foi gravado como INVALID_KEY. Separar os dois no
+                // resumo evita que um problema permanente se esconda entre
+                // falhas de rede, que é o que aconteceu até aqui.
+                if ($situacao['auth_falhou'] ?? false) {
+                    $resumo['chave_invalida']++;
+                    $forma = $situacao['chave']['forma'] ?? '?';
+                    $this->line("  <error>chave inválida</error> {$papel}#{$conta->id} ({$forma})"
+                        .' — vende normal, mas não vê saldo nem saca.'
+                        ."  Detalhe: php artisan asaas:diagnosticar-subconta --{$papel}={$conta->id}");
+                } else {
+                    $this->line("  <error>falha</error> {$papel}#{$conta->id}: {$situacao['erro']}");
+                }
 
                 continue;
             }
@@ -92,9 +105,17 @@ class SincronizarSubcontasAsaas extends Command
 
         $this->newLine();
         $this->info(sprintf(
-            'Sincronizadas %d: %d aprovadas, %d bloqueadas, %d falhas.',
-            count($contas), $resumo['aprovadas'], $resumo['bloqueadas'], $resumo['falhas']
+            'Sincronizadas %d: %d aprovadas, %d bloqueadas, %d falhas (%d por chave inválida).',
+            count($contas), $resumo['aprovadas'], $resumo['bloqueadas'],
+            $resumo['falhas'], $resumo['chave_invalida']
         ));
+
+        if ($resumo['chave_invalida'] > 0) {
+            $this->newLine();
+            $this->warn('Chave inválida NÃO é conta pendente: a credencial que guardamos não serve.');
+            $this->line('Esses profissionais continuam VENDENDO (a cobrança usa a chave da');
+            $this->line('plataforma), mas não conseguem ver saldo nem sacar. Não melhora sozinho.');
+        }
 
         return self::SUCCESS;
     }

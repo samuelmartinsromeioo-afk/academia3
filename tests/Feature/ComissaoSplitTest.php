@@ -535,6 +535,27 @@ class ComissaoSplitTest extends TestCase
         $this->assertStringContainsString('cadastro de recebimentos', $msg);
     }
 
+    /**
+     * Chave da subconta inválida NÃO impede receber — e é contraintuitivo.
+     *
+     * A cobrança usa a chave da PLATAFORMA e o split só referencia o walletId;
+     * nada nesse caminho toca a chave do profissional. Quem usa são saldo e
+     * saque. Bloquear a venda aqui puniria duas vezes quem já está sem
+     * conseguir sacar, por um motivo sem relação com a cobrança.
+     */
+    public function test_chave_invalida_nao_impede_receber(): void
+    {
+        $semChave = $this->personalComWallet('wal_chave_ruim', AsaasService::STATUS_CHAVE_INVALIDA);
+
+        $this->assertTrue($semChave->podeReceberPagamento(), 'chave quebrada não pode parar a venda');
+        $this->assertTrue($semChave->chaveSubcontaInvalida(), 'mas o estado não pode ficar invisível');
+        $this->assertFalse($semChave->subcontaAprovada());
+
+        $split = app(AsaasService::class)->montarSplit($semChave, 100.00);
+        $this->assertNotNull($split);
+        $this->assertSame(100.00, $split[0]['fixedValue']);
+    }
+
     /** Erro desconhecido do Asaas não é repassado cru: cai no padrão nosso. */
     public function test_erro_desconhecido_nao_vaza(): void
     {

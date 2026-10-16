@@ -48,7 +48,31 @@ trait TemSubcontaAsaas
             return true; // nunca sincronizado — ver o item 3 acima
         }
 
+        /*
+         * Chave da subconta inválida NÃO impede receber, e isso é o oposto do
+         * que a intuição diz.
+         *
+         * A cobrança é criada com a chave da PLATAFORMA e o split só referencia
+         * o `walletId` — nada nesse caminho usa a chave do profissional. Quem
+         * usa são saldo e saque. Então uma chave quebrada deixa ele sem ver o
+         * dinheiro e sem sacar, mas vendendo normalmente; bloquear a venda aqui
+         * puniria duas vezes quem já está prejudicado, e por um motivo que não
+         * tem relação com a cobrança.
+         *
+         * O estado não fica invisível: `subcontaAprovada()` segue falso e o
+         * painel dele mostra o aviso próprio.
+         */
+        if ($this->asaas_account_status === AsaasService::STATUS_CHAVE_INVALIDA) {
+            return true;
+        }
+
         return $this->asaas_account_status === AsaasService::STATUS_APROVADA;
+    }
+
+    /** A chave guardada não serve: saldo e saque estão quebrados para ele. */
+    public function chaveSubcontaInvalida(): bool
+    {
+        return $this->asaas_account_status === AsaasService::STATUS_CHAVE_INVALIDA;
     }
 
     /** A subconta existe E foi confirmada como aprovada. */
@@ -111,6 +135,30 @@ trait TemSubcontaAsaas
      */
     public function registrarSituacaoSubconta(array $situacao): void
     {
+        /*
+         * Falha de AUTENTICAÇÃO é exceção à regra de não gravar em erro.
+         *
+         * A regra geral existe para não apagar o que já se sabia por causa de
+         * um timeout. Mas 401 não é instabilidade: é a nossa chave que não
+         * serve, e isso não melhora sozinho. Sem gravar, a conta ficaria como
+         * "nunca sincronizado" para sempre — indistinguível de uma conta nova
+         * e, portanto, invisível. Era exatamente o que acontecia com dois
+         * profissionais cujo saldo e saque estavam quebrados sem ninguém saber.
+         */
+        if (($situacao['auth_falhou'] ?? false) === true) {
+            $this->forceFill([
+                'asaas_account_status' => AsaasService::STATUS_CHAVE_INVALIDA,
+                'asaas_status_detalhe' => json_encode([
+                    'erro' => $situacao['erro'] ?? null,
+                    // Só a forma e o prefixo da chave — nunca a credencial.
+                    'chave' => $situacao['chave'] ?? null,
+                ], JSON_UNESCAPED_UNICODE),
+                'asaas_status_em' => now(),
+            ])->save();
+
+            return;
+        }
+
         if (! ($situacao['ok'] ?? false)) {
             return;
         }

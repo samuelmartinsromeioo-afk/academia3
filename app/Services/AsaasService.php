@@ -223,6 +223,29 @@ class AsaasService
     public const STATUS_APROVADA = 'APPROVED';
 
     /**
+     * Não foi possível verificar: a chave da subconta que guardamos é inválida.
+     *
+     * NÃO é o mesmo que reprovada, e a diferença tem consequência prática
+     * oposta à intuição:
+     *
+     *  - a COBRANÇA usa a chave da PLATAFORMA e só referencia o `walletId`, de
+     *    modo que o split continua funcionando normalmente — esse profissional
+     *    segue vendendo e recebendo;
+     *  - SALDO e SAQUE usam a chave da SUBCONTA, então esses dois estão
+     *    quebrados para ele agora.
+     *
+     * Por isso este status não bloqueia pagamento (bloquear pararia a venda de
+     * quem recebe bem) mas também não pode ficar invisível: é defeito real,
+     * com dinheiro parado que o profissional não consegue sacar.
+     *
+     * Causa mais provável: a chave foi cifrada com outro APP_KEY (base copiada
+     * entre ambientes, ou APP_KEY rotacionada). `getAsaasApiKeyDecrypted()`
+     * engole o DecryptException e devolve o TEXTO CIFRADO como se fosse a
+     * chave — que o Asaas recusa com 401. Ver `classificarChaveSubconta()`.
+     */
+    public const STATUS_CHAVE_INVALIDA = 'INVALID_KEY';
+
+    /**
      * Mensagem de erro do Asaas traduzida para quem está comprando.
      *
      * O Asaas devolve texto escrito para quem INTEGRA, não para quem contrata
@@ -272,17 +295,6 @@ class AsaasService
         return $padrao;
     }
 
-    /**
-     * O Asaas recusou porque a conta do RECEBEDOR não está apta?
-     *
-     * Serve para dois efeitos que a mensagem traduzida não dá: avisar o admin
-     * (é venda perdida, não erro do comprador) e marcar a subconta como
-     * suspeita para a próxima sincronização.
-     *
-     * Casa por trechos estáveis do texto, não pela frase inteira: o Asaas
-     * inclui o walletId no meio dela, então comparar string completa nunca
-     * casaria.
-     */
     /**
      * O Asaas recusou por conta bloqueada APESAR da trava: avisa quem pode agir.
      *
@@ -394,6 +406,7 @@ class AsaasService
         $vazio = [
             'ok' => false, 'erro' => null, 'geral' => null,
             'status' => [], 'pendencias' => [], 'onboarding_url' => null,
+            'auth_falhou' => false, 'chave' => null,
         ];
 
         $chave = $this->chaveDaSubconta($conta);
@@ -407,8 +420,21 @@ class AsaasService
             $res = Http::withHeaders($headers)->timeout(15)->get($this->asaas().'/myAccount/status');
 
             if ($res->failed()) {
+                /*
+                 * 401 é diferente de "não deu": é a NOSSA chave que não serve.
+                 *
+                 * Falha de rede é transitória e a próxima varredura resolve;
+                 * chave inválida é permanente e nunca vai se resolver sozinha,
+                 * então precisa de rótulo próprio — senão fica como "nunca
+                 * sincronizado" para sempre, indistinguível de uma conta nova.
+                 */
+                $auth = $res->status() === 401;
+
                 return array_merge($vazio, [
                     'erro' => 'HTTP '.$res->status().' — '.substr($res->body(), 0, 200),
+                    'auth_falhou' => $auth,
+                    'geral' => $auth ? self::STATUS_CHAVE_INVALIDA : null,
+                    'chave' => $auth ? self::classificarChaveSubconta($conta) : null,
                 ]);
             }
 
@@ -478,6 +504,61 @@ class AsaasService
      * o correto. Tratar os dois casos aqui evita espalhar try/catch de Crypt
      * por todo chamador.
      */
+    /**
+     * Diz POR QUE a chave da subconta não serve, sem nunca imprimir a chave.
+     *
+     * Existe porque "401 invalid_access_token" sozinho não distingue três
+     * causas com consertos completamente diferentes:
+     *
+     *  - `cifrada_ilegivel` — a chave foi cifrada com OUTRO APP_KEY (base
+     *    copiada entre ambientes, ou APP_KEY rotacionada).
+     *    `getAsaasApiKeyDecrypted()` engole o DecryptException e devolve o
+     *    TEXTO CIFRADO como se fosse a chave, e é esse blob que vai no header.
+     *    É a causa mais provável, e o conserto é recriar a subconta — a chave
+     *    original não é recuperável.
+     *  - `ambiente_errado` — chave de sandbox contra produção (ou o inverso).
+     *    O Asaas prefixa as chaves com `$aact_`; sandbox e produção têm
+     *    prefixos distintos. Conserto: apontar o ambiente certo.
+     *  - `texto_puro` — chave legível, formato plausível, mas recusada. Aí foi
+     *    revogada no painel do Asaas e precisa ser regerada.
+     *
+     * @return array{forma:string, prefixo:string, tamanho:int}
+     */
+    public static function classificarChaveSubconta($conta): array
+    {
+        $bruta = (string) ($conta->asaas_api_key ?? '');
+
+        if ($bruta === '') {
+            return ['forma' => 'ausente', 'prefixo' => '', 'tamanho' => 0];
+        }
+
+        // `eyJpdiI6` é o começo do payload base64 do Crypt do Laravel.
+        $pareceCifrada = str_starts_with($bruta, 'eyJpdiI6');
+
+        $decifrada = null;
+        try {
+            $decifrada = Crypt::decryptString($bruta);
+        } catch (\Throwable $e) {
+            $decifrada = null;
+        }
+
+        if ($pareceCifrada && $decifrada === null) {
+            // Cifrada mas ilegível com o APP_KEY atual: o blob cifrado é o que
+            // está sendo enviado ao Asaas como token.
+            return ['forma' => 'cifrada_ilegivel', 'prefixo' => substr($bruta, 0, 8), 'tamanho' => strlen($bruta)];
+        }
+
+        $efetiva = $decifrada ?? $bruta;
+        $forma = str_starts_with($efetiva, '$aact_') ? 'texto_puro' : 'formato_inesperado';
+
+        return [
+            'forma' => $forma,
+            // Só o prefixo: identifica o ambiente sem revelar a credencial.
+            'prefixo' => substr($efetiva, 0, 12),
+            'tamanho' => strlen($efetiva),
+        ];
+    }
+
     private function chaveDaSubconta($conta): ?string
     {
         if (empty($conta->asaas_api_key)) {

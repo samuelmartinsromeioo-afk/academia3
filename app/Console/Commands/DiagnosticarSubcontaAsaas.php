@@ -120,6 +120,39 @@ class DiagnosticarSubcontaAsaas extends Command
         if (! $situacao['ok']) {
             $this->error('  Falha ao consultar o Asaas: '.$situacao['erro']);
 
+            /*
+             * 401 merece explicação própria: "chave inválida" sozinho manda o
+             * leitor adivinhar entre causas com consertos diferentes. E a
+             * consequência também é contraintuitiva — ele CONTINUA vendendo.
+             */
+            if ($situacao['auth_falhou'] ?? false) {
+                $chave = $situacao['chave'] ?? [];
+                $this->newLine();
+                $this->line('  <comment>A chave que guardamos não serve.</comment>');
+                $this->line('    forma    : '.($chave['forma'] ?? '?'));
+                $this->line('    prefixo  : '.($chave['prefixo'] ?? '?').'…');
+                $this->line('    tamanho  : '.($chave['tamanho'] ?? 0).' caracteres');
+                $this->newLine();
+
+                $diagnostico = match ($chave['forma'] ?? '') {
+                    'cifrada_ilegivel' => 'Cifrada com OUTRO APP_KEY (base copiada entre ambientes, '
+                        ."ou APP_KEY rotacionada).\n    O texto cifrado está indo como token. "
+                        .'A chave original NÃO é recuperável: recrie a subconta pelo painel do admin.',
+                    'texto_puro' => 'Formato de chave do Asaas, legível — então foi REVOGADA no painel '
+                        ."do Asaas.\n    Gere uma nova chave e regrave pelo painel do admin.",
+                    'ausente' => 'Não há chave gravada.',
+                    default => 'Formato inesperado. Pode ser chave de SANDBOX contra produção '
+                        .'(ou o inverso): confira ASAAS_URL e a origem da chave.',
+                };
+                $this->line('    <error>=> '.$diagnostico.'</error>');
+
+                $this->newLine();
+                $this->line('  <comment>Consequência (contraintuitiva):</comment>');
+                $this->line('    - COBRANÇA e SPLIT seguem funcionando: usam a chave da plataforma');
+                $this->line('      e o walletId. Este profissional continua vendendo normalmente.');
+                $this->line('    - SALDO e SAQUE estão quebrados para ele: usam a chave da subconta.');
+            }
+
             return;
         }
 
