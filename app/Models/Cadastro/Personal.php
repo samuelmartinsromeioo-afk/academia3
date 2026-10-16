@@ -18,6 +18,7 @@ class Personal extends Authenticatable
     use HasApiTokens;
     use \App\Models\Concerns\TemCupomIndicacao;
     use \App\Models\Concerns\AceitaTermos;
+    use \App\Models\Concerns\TemSubcontaAsaas;
     use \App\Models\Concerns\TemSeloPioneiro;
 
     protected $table = 'personals';

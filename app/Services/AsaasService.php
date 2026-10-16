@@ -10,6 +10,7 @@ use App\Models\Cadastro\Studio;
 use App\Models\Cadastro\StudioPlano;
 use App\Models\Payment;
 use App\Models\Subscription;
+use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
@@ -207,6 +208,294 @@ class AsaasService
     }
 
     // ─────────────────────────────────────────────
+    // SITUAÇÃO CADASTRAL DA SUBCONTA
+    // ─────────────────────────────────────────────
+
+    /**
+     * Veredito do Asaas para subconta apta a receber (`general` do
+     * /myAccount/status). É o único valor que libera split.
+     *
+     * Mora aqui, e não na trait `TemSubcontaAsaas`, por uma limitação da
+     * versão: traits só aceitam constantes a partir do PHP 8.2 e o projeto
+     * roda 8.1. Este também é o lugar mais defensável — a constante é
+     * vocabulário do Asaas, e `AsaasService` é quem fala com ele.
+     */
+    public const STATUS_APROVADA = 'APPROVED';
+
+    /**
+     * Mensagem de erro do Asaas traduzida para quem está comprando.
+     *
+     * O Asaas devolve texto escrito para quem INTEGRA, não para quem contrata
+     * um treino. O caso que originou isto:
+     *
+     *   "Não é possível fazer split para wallet
+     *    [82947cc6-d275-4ceb-b55c-7df09867066b], pois a mesma está bloqueada.
+     *    Favor entrar em contato com o Suporte Técnico."
+     *
+     * Esse texto ia inteiro para o modal do app. Três problemas de uma vez: o
+     * aluno não entende, não tem o que fazer a respeito, e a mensagem manda ele
+     * procurar o suporte do ASAAS — com quem ele não tem relação nenhuma. De
+     * quebra expõe um identificador interno do recebedor.
+     *
+     * Aqui as falhas conhecidas viram frases acionáveis. O que não for
+     * reconhecido NÃO é repassado cru: cai no `$padrao` de quem chamou, porque
+     * um texto de API de terceiro na cara do usuário é sempre pior do que uma
+     * frase genérica nossa. O detalhe técnico vive no log, que é onde serve.
+     */
+    public static function mensagemDeErro(?array $corpo, string $padrao): string
+    {
+        $bruto = $corpo['errors'][0]['description'] ?? null;
+
+        if (! $bruto) {
+            return $padrao;
+        }
+
+        if (self::ehBloqueioDeRecebedor($corpo)) {
+            return 'Este profissional ainda está finalizando o cadastro de recebimentos '
+                .'e não pode receber pagamentos no momento. Tente novamente mais tarde '
+                .'ou escolha outro profissional.';
+        }
+
+        $texto = mb_strtolower($bruto);
+
+        // Falhas de cartão: o texto do Asaas aqui já é dirigido ao portador e
+        // é acionável ("saldo insuficiente"), então vale repassar o sentido.
+        if (str_contains($texto, 'cartão') || str_contains($texto, 'cartao') || str_contains($texto, 'credit')) {
+            return $bruto;
+        }
+
+        if (str_contains($texto, 'customer') || str_contains($texto, 'cpf') || str_contains($texto, 'cnpj')) {
+            return 'Não foi possível validar os seus dados de cobrança. '
+                .'Confira CPF e e-mail no seu perfil e tente de novo.';
+        }
+
+        return $padrao;
+    }
+
+    /**
+     * O Asaas recusou porque a conta do RECEBEDOR não está apta?
+     *
+     * Serve para dois efeitos que a mensagem traduzida não dá: avisar o admin
+     * (é venda perdida, não erro do comprador) e marcar a subconta como
+     * suspeita para a próxima sincronização.
+     *
+     * Casa por trechos estáveis do texto, não pela frase inteira: o Asaas
+     * inclui o walletId no meio dela, então comparar string completa nunca
+     * casaria.
+     */
+    /**
+     * O Asaas recusou por conta bloqueada APESAR da trava: avisa quem pode agir.
+     *
+     * Acontece na corrida entre a última sincronização e a cobrança — o status
+     * local dizia APPROVED e o Asaas bloqueou no meio. É venda perdida, não
+     * erro do comprador, e ninguém ficaria sabendo: o aluno desiste e o
+     * profissional nunca descobre por que parou de vender.
+     *
+     * Faz duas coisas: marca a subconta como suspeita, para a próxima
+     * sincronização confirmar e para a trava passar a valer já na próxima
+     * tentativa; e avisa o admin. Best-effort — é reação a uma cobrança que já
+     * falhou e não pode falhar por cima.
+     */
+    public static function reportarBloqueioDeRecebedor($recebedor, ?array $corpo, array $ctx = []): void
+    {
+        if (! self::ehBloqueioDeRecebedor($corpo)) {
+            return;
+        }
+
+        try {
+            Log::channel('security')->error('Asaas: split recusado por conta bloqueada', array_merge($ctx, [
+                'recebedor' => $recebedor ? class_basename($recebedor) : null,
+                'id' => $recebedor->id ?? null,
+                'status_local' => $recebedor->asaas_account_status ?? null,
+                'asaas' => $corpo['errors'][0]['description'] ?? null,
+            ]));
+
+            if ($recebedor && method_exists($recebedor, 'registrarSituacaoSubconta')) {
+                // O Asaas acabou de dizer que não aceita. Marcar BLOCKED agora
+                // faz a trava valer na próxima tentativa, sem esperar a
+                // varredura — e a varredura corrige o rótulo exato depois.
+                $recebedor->forceFill([
+                    'asaas_account_status' => 'BLOCKED',
+                    'asaas_status_em' => now(),
+                ])->save();
+            }
+
+            if ($admin = config('services.admin.email')) {
+                \App\Services\NotificacaoService::enviar(
+                    null,
+                    $admin,
+                    'Admin',
+                    'Venda bloqueada: subconta Asaas recusou o split',
+                    'O Asaas recusou uma cobrança porque a conta de recebimentos do profissional '
+                    ."está bloqueada.\n\n"
+                    .'Profissional: '.($recebedor->nome ?? '?').' ('.($recebedor->id ?? '?').")\n"
+                    .'Mensagem do Asaas: '.($corpo['errors'][0]['description'] ?? '?')."\n\n"
+                    .'Para ver o motivo e o link de regularização, rode no servidor:'
+                    ."\nphp artisan asaas:diagnosticar-subconta --personal=".($recebedor->id ?? '')
+                );
+            }
+        } catch (\Throwable $e) {
+            Log::warning('Asaas: falha ao reportar bloqueio de recebedor', ['erro' => $e->getMessage()]);
+        }
+    }
+
+    /**
+     * O recebedor por trás dos campos de uma assinatura.
+     *
+     * `criarAssinaturaPix` recebe o split já montado, não o modelo — então
+     * quando o Asaas recusa lá dentro, é por `$subFields` que se descobre de
+     * quem era a conta. As chaves são as mesmas gravadas em `subscriptions`.
+     */
+    private function recebedorDosCampos(array $subFields)
+    {
+        return match (true) {
+            ! empty($subFields['trainer_id']) => Personal::find($subFields['trainer_id']),
+            ! empty($subFields['academia_id']) => Academia::find($subFields['academia_id']),
+            ! empty($subFields['studio_id']) => Studio::find($subFields['studio_id']),
+            default => null,
+        };
+    }
+
+    public static function ehBloqueioDeRecebedor(?array $corpo): bool
+    {
+        $bruto = mb_strtolower($corpo['errors'][0]['description'] ?? '');
+
+        if ($bruto === '') {
+            return false;
+        }
+
+        return (str_contains($bruto, 'split') && str_contains($bruto, 'bloquead'))
+            || str_contains($bruto, 'wallet')
+                && (str_contains($bruto, 'bloquead') || str_contains($bruto, 'inativ'));
+    }
+
+    /**
+     * Situação cadastral da subconta de um recebedor, direto no Asaas.
+     *
+     * Existe porque o erro de split não diz o motivo. Quando a subconta não
+     * está aprovada, o Asaas recusa a cobrança com "Não é possível fazer split
+     * para wallet [...], pois a mesma está bloqueada" — que informa QUE está
+     * bloqueada e nunca POR QUE. Sem isto, descobrir a causa exigia abrir o
+     * painel do Asaas conta por conta.
+     *
+     * **Usa a chave da PRÓPRIA SUBCONTA, não a da plataforma.** `/myAccount/*`
+     * responde sobre a conta dona do token: com a chave da plataforma ele
+     * devolveria a situação da conta-mãe, que está sempre aprovada — um
+     * diagnóstico que erra em silêncio e sempre diz que está tudo bem.
+     *
+     * Nunca lança: é consulta de diagnóstico e de rotina, chamada por comando
+     * agendado e por tela de painel. Falha de rede devolve `ok => false` com o
+     * motivo, e quem chama decide o que fazer.
+     *
+     * @return array{ok:bool, erro:?string, geral:?string, status:array, pendencias:array, onboarding_url:?string}
+     */
+    public function situacaoSubconta($conta): array
+    {
+        $vazio = [
+            'ok' => false, 'erro' => null, 'geral' => null,
+            'status' => [], 'pendencias' => [], 'onboarding_url' => null,
+        ];
+
+        $chave = $this->chaveDaSubconta($conta);
+        if (! $chave) {
+            return array_merge($vazio, ['erro' => 'recebedor sem chave de subconta gravada']);
+        }
+
+        $headers = ['access_token' => $chave, 'Content-Type' => 'application/json'];
+
+        try {
+            $res = Http::withHeaders($headers)->timeout(15)->get($this->asaas().'/myAccount/status');
+
+            if ($res->failed()) {
+                return array_merge($vazio, [
+                    'erro' => 'HTTP '.$res->status().' — '.substr($res->body(), 0, 200),
+                ]);
+            }
+
+            $status = $res->json() ?: [];
+
+            /*
+             * `general` é o veredito que o split obedece. Os outros campos
+             * (commercialInfo, bankAccountInfo, documentation) são as partes
+             * que o compõem — e são eles que dizem ONDE está a pendência, que é
+             * a informação acionável para o profissional.
+             */
+            $geral = $status['general'] ?? null;
+
+            // Documentos pendentes e link de regularização. Falha aqui não
+            // invalida o diagnóstico: o status já é a resposta principal.
+            $pendencias = [];
+            $onboarding = null;
+            try {
+                $docs = Http::withHeaders($headers)->timeout(15)->get($this->asaas().'/myAccount/documents');
+                if ($docs->successful()) {
+                    $corpo = $docs->json() ?: [];
+                    $onboarding = $corpo['onboardingUrl'] ?? null;
+
+                    foreach (($corpo['data'] ?? []) as $doc) {
+                        if (($doc['status'] ?? null) === 'APPROVED') {
+                            continue;
+                        }
+                        $pendencias[] = trim(sprintf(
+                            '%s — %s',
+                            $doc['type'] ?? 'documento',
+                            $doc['status'] ?? 'pendente'
+                        ));
+                    }
+                }
+            } catch (\Throwable $e) {
+                Log::warning('Asaas: falha ao listar documentos da subconta', [
+                    'conta' => class_basename($conta),
+                    'id' => $conta->id,
+                    'erro' => $e->getMessage(),
+                ]);
+            }
+
+            return [
+                'ok' => true,
+                'erro' => null,
+                'geral' => $geral,
+                'status' => [
+                    'general' => $geral,
+                    'commercialInfo' => $status['commercialInfo'] ?? null,
+                    'bankAccountInfo' => $status['bankAccountInfo'] ?? null,
+                    'documentation' => $status['documentation'] ?? null,
+                ],
+                'pendencias' => $pendencias,
+                'onboarding_url' => $onboarding,
+            ];
+        } catch (\Throwable $e) {
+            return array_merge($vazio, ['erro' => $e->getMessage()]);
+        }
+    }
+
+    /**
+     * Chave da subconta, decifrada quando houver cifra.
+     *
+     * `Personal` tem helper próprio (e tolera chave legada em texto puro);
+     * academia, studio e loja gravam em texto puro desde sempre
+     * (`AdminController`), então a tentativa de decifrar falha e o valor cru é
+     * o correto. Tratar os dois casos aqui evita espalhar try/catch de Crypt
+     * por todo chamador.
+     */
+    private function chaveDaSubconta($conta): ?string
+    {
+        if (empty($conta->asaas_api_key)) {
+            return null;
+        }
+
+        if (method_exists($conta, 'getAsaasApiKeyDecrypted')) {
+            return $conta->getAsaasApiKeyDecrypted();
+        }
+
+        try {
+            return Crypt::decryptString($conta->asaas_api_key);
+        } catch (\Throwable $e) {
+            return $conta->asaas_api_key;
+        }
+    }
+
+    // ─────────────────────────────────────────────
     // SPLIT
     // ─────────────────────────────────────────────
 
@@ -227,12 +516,43 @@ class AsaasService
      * PROFISSIONAL — ele recebe todo o líquido e a plataforma, nada — porque o
      * contrário seria entregar menos do que foi combinado com ele.
      */
-    public function montarSplit(?string $walletId, float $base, array $ctx = [], string $billingType = 'PIX'): ?array
+    public function montarSplit($recebedor, float $base, array $ctx = [], string $billingType = 'PIX'): ?array
     {
+        $walletId = $recebedor->asaas_wallet_id ?? null;
+
         if (! $walletId) {
             Log::warning('Asaas: split não aplicado — recebedor sem walletId', $ctx);
 
             return null;
+        }
+
+        /*
+         * TRAVA: subconta não aprovada não recebe split.
+         *
+         * Aqui, e não nos dez pontos de entrada de cobrança, por um motivo
+         * prático: todos eles terminam nesta função, e uma guarda espalhada em
+         * dez lugares é uma guarda que o décimo primeiro ponto vai esquecer.
+         * Foi por isso que a assinatura passou a receber o RECEBEDOR em vez do
+         * walletId solto — com a string não havia como consultar nada.
+         *
+         * Aborta em vez de devolver null. Null significa "siga sem split", e o
+         * dinheiro cairia inteiro na conta da plataforma, criando uma dívida
+         * manual com alguém cuja conta está bloqueada — pior que falhar, porque
+         * o aluno paga e ninguém percebe que o repasse não tem para onde ir.
+         *
+         * Sem esta trava a cobrança seguia até o Asaas, que recusava com
+         * "Não é possível fazer split para wallet [...], pois a mesma está
+         * bloqueada" — texto que ia cru para o modal do app.
+         */
+        if (method_exists($recebedor, 'podeReceberPagamento') && ! $recebedor->podeReceberPagamento()) {
+            Log::warning('Asaas: cobrança barrada — subconta do recebedor não está apta', array_merge($ctx, [
+                'status' => $recebedor->asaas_account_status,
+                'verificado_em' => $recebedor->asaas_status_em,
+            ]));
+
+            abort(response()->json([
+                'error' => $recebedor->motivoNaoRecebe(),
+            ], 422));
         }
 
         $base = round($base, 2);
@@ -255,17 +575,17 @@ class AsaasService
 
     public function splitPersonal(Personal $personal, float $amount, string $billingType = 'PIX'): ?array
     {
-        return $this->montarSplit($personal->asaas_wallet_id, $amount, ['personal_id' => $personal->id], $billingType);
+        return $this->montarSplit($personal, $amount, ['personal_id' => $personal->id], $billingType);
     }
 
     public function splitStudio(Studio $studio, float $amount, string $billingType = 'PIX'): ?array
     {
-        return $this->montarSplit($studio->asaas_wallet_id, $amount, ['studio_id' => $studio->id], $billingType);
+        return $this->montarSplit($studio, $amount, ['studio_id' => $studio->id], $billingType);
     }
 
     public function splitAcademia(Academia $academia, float $amount, string $billingType = 'PIX'): ?array
     {
-        return $this->montarSplit($academia->asaas_wallet_id, $amount, ['academia_id' => $academia->id], $billingType);
+        return $this->montarSplit($academia, $amount, ['academia_id' => $academia->id], $billingType);
     }
 
     /**
@@ -472,9 +792,15 @@ class AsaasService
                 ->post($this->asaas().'/payments', $pixPayload);
 
             if ($paymentRes->failed()) {
-                Log::error("Asaas {$logContext}: falha ao criar pagamento", ['body' => $paymentRes->json()]);
+                $corpoErro = $paymentRes->json();
+                Log::error("Asaas {$logContext}: falha ao criar pagamento", ['body' => $corpoErro]);
 
-                abort(response()->json(['error' => 'Falha ao gerar cobrança. Tente novamente.'], 500));
+                // O corpo do erro era descartado: a causa ficava só no log e o
+                // usuário levava sempre "tente novamente" — conselho inútil
+                // quando o problema é a conta do recebedor estar bloqueada.
+                abort(response()->json([
+                    'error' => self::mensagemDeErro($corpoErro, 'Falha ao gerar cobrança. Tente novamente.'),
+                ], 500));
             }
 
             $asaasPaymentId = $paymentRes->json()['id'];
@@ -615,8 +941,25 @@ class AsaasService
             $subData = $subRes->json();
 
             if (! empty($subData['errors'])) {
-                $errMsg = $subData['errors'][0]['description'] ?? 'Falha ao criar assinatura.';
+                $errMsg = AsaasService::mensagemDeErro($subData, 'Falha ao criar assinatura.');
                 Log::error('Asaas assinatura PIX: falha', ['body' => $subData]);
+
+                /*
+                 * Este é o caminho exato do defeito relatado: pacote de personal
+                 * vira assinatura mensal, o split é recusado por conta
+                 * bloqueada e, até aqui, a descrição crua do Asaas — com
+                 * walletId dentro — era repassada ao app com 422.
+                 *
+                 * A trava de `montarSplit` deve impedir que se chegue aqui;
+                 * quando chega, é porque o status local estava desatualizado
+                 * (corrida com a sincronização). Reportar marca a subconta e
+                 * avisa o admin, para a próxima tentativa já ser barrada antes.
+                 */
+                self::reportarBloqueioDeRecebedor(
+                    $this->recebedorDosCampos($subFields),
+                    $subData,
+                    ['fluxo' => 'assinatura_pix', 'cliente_id' => $cliente->id]
+                );
 
                 abort(response()->json(['error' => $errMsg], 422));
             }
@@ -813,11 +1156,11 @@ class AsaasService
             $res = Http::withHeaders($this->asaasHeaders())
                 ->timeout(30)
                 ->post($this->asaas().'/transfers', [
-                    'operationType'     => 'PIX',
-                    'value'             => round($valor, 2),
-                    'pixAddressKey'     => $chavePix,
+                    'operationType' => 'PIX',
+                    'value' => round($valor, 2),
+                    'pixAddressKey' => $chavePix,
                     'pixAddressKeyType' => $tipoChave,
-                    'description'       => $descricao,
+                    'description' => $descricao,
                     'externalReference' => $externalReference,
                 ]);
         } catch (\Throwable $e) {
@@ -826,7 +1169,7 @@ class AsaasService
             // automática — a conciliação é pelo externalReference.
             Log::critical('Asaas transferência: exceção — estado INDETERMINADO, conciliar por externalReference', [
                 'external_reference' => $externalReference,
-                'erro'               => $e->getMessage(),
+                'erro' => $e->getMessage(),
             ]);
 
             return ['ok' => false, 'erro' => 'Falha de comunicação com o Asaas.', 'indeterminado' => true];
@@ -835,9 +1178,9 @@ class AsaasService
         // 409 = transferência duplicada (mesmo valor/chave nos últimos 15 min).
         if ($res->status() === 409) {
             return [
-                'ok'        => false,
+                'ok' => false,
                 'duplicado' => true,
-                'erro'      => 'O Asaas recusou como transferência duplicada. Aguarde 15 minutos.',
+                'erro' => 'O Asaas recusou como transferência duplicada. Aguarde 15 minutos.',
             ];
         }
 
@@ -848,8 +1191,8 @@ class AsaasService
         if (! empty($data['errors'])) {
             Log::warning('Asaas transferência: erro de negócio', [
                 'external_reference' => $externalReference,
-                'status'             => $res->status(),
-                'errors'             => $data['errors'],
+                'status' => $res->status(),
+                'errors' => $data['errors'],
             ]);
 
             return ['ok' => false, 'erro' => $data['errors'][0]['description'] ?? 'Falha ao transferir.'];
@@ -858,7 +1201,7 @@ class AsaasService
         if ($res->failed() || empty($data['id'])) {
             Log::error('Asaas transferência: falha HTTP', [
                 'external_reference' => $externalReference,
-                'status'             => $res->status(),
+                'status' => $res->status(),
             ]);
 
             return ['ok' => false, 'erro' => 'Falha ao transferir. Tente novamente.'];
@@ -867,20 +1210,20 @@ class AsaasService
         // A02 — nunca logamos a chave Pix de destino, só metadados.
         Log::info('Asaas transferência criada', [
             'external_reference' => $externalReference,
-            'transfer_id'        => $data['id'],
-            'status'             => $data['status'] ?? null,
-            'authorized'         => $data['authorized'] ?? null,
-            'valor'              => round($valor, 2),
+            'transfer_id' => $data['id'],
+            'status' => $data['status'] ?? null,
+            'authorized' => $data['authorized'] ?? null,
+            'valor' => round($valor, 2),
         ]);
 
         return [
-            'ok'         => true,
-            'id'         => (string) $data['id'],
-            'status'     => (string) ($data['status'] ?? 'PENDING'),
+            'ok' => true,
+            'id' => (string) $data['id'],
+            'status' => (string) ($data['status'] ?? 'PENDING'),
             // false = conta exige token SMS; a transferência fica parada até
             // alguém confirmar no painel do Asaas.
             'authorized' => (bool) ($data['authorized'] ?? true),
-            'receipt'    => $data['transactionReceiptUrl'] ?? null,
+            'receipt' => $data['transactionReceiptUrl'] ?? null,
         ];
     }
 

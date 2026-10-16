@@ -707,6 +707,10 @@
             </a>
         </div>
 
+        {{-- Antes de tudo: sem conta de recebimentos aprovada ele não vende, e
+             precisa saber ao abrir o painel — não pelos alunos sumindo. --}}
+        @include('partials.aviso-subconta', ['conta' => $personal])
+
         <div class="ed-eyebrow"><span class="ed-num">01</span> <span id="snrSaud">Olá</span>, {{ explode(' ', trim($personal->nome))[0] }} — bora pra cima</div>
         @include('partials.brand-greeting-js')
         <header style="margin-bottom: 30px; display: flex; justify-content: space-between; align-items: flex-end; gap:16px; flex-wrap:wrap;">

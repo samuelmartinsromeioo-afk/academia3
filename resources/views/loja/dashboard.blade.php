@@ -243,6 +243,10 @@
 
 <div class="container">
 
+        {{-- Sem conta de recebimentos aprovada não há venda: o aviso
+             vem antes de tudo, para não descobrir pelo aluno sumindo. --}}
+        @include('partials.aviso-subconta', ['conta' => $loja])
+
     @if(session('success'))
         <div class="alert alert-success"><i class="ph ph-check-circle"></i> {{ session('success') }}</div>
     @endif

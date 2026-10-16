@@ -41,6 +41,21 @@ class Kernel extends ConsoleKernel
         // transferência não chegou por webhook. Frequente de propósito — enquanto
         // um saque fica em `processando`, o bônus do indicador está preso nele.
         $schedule->command('indicacoes:conciliar-saques')->everyTenMinutes()->withoutOverlapping();
+
+        /*
+         * Situação cadastral das subcontas Asaas, que é o que decide se um
+         * profissional pode receber. O webhook de conta já avisa na hora da
+         * mudança; esta varredura é a rede para webhook perdido e para as
+         * contas que já estavam bloqueadas antes de existir webhook — essas
+         * nunca geram evento, porque não há mudança a notificar.
+         *
+         * Duas vezes ao dia basta: aprovação no Asaas leva horas ou dias. Os
+         * NÃO aprovados são reconsultados de hora em hora porque são quem tem
+         * venda travada agora — cada hora a mais de atraso é uma contratação
+         * que não acontece depois que o Asaas já liberou.
+         */
+        $schedule->command('asaas:sincronizar-subcontas')->twiceDaily(5, 17)->withoutOverlapping();
+        $schedule->command('asaas:sincronizar-subcontas --urgentes')->hourly()->withoutOverlapping();
     }
 
     /**

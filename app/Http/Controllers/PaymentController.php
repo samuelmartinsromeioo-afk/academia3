@@ -55,10 +55,15 @@ class PaymentController extends Controller
      * `$base` é o preço do PROFISSIONAL — o que ele recebe integralmente. O
      * valor cobrado do cliente (preço + comissão + taxa de cartão) é derivado
      * dentro do serviço; nenhum fluxo daqui calcula a conta por conta própria.
+     *
+     * `$recebedor` é o MODELO (personal, academia, studio, loja), não o
+     * walletId: é dele que o serviço tira o status da subconta para barrar
+     * cobrança de quem não pode receber. Ver a trava em
+     * `AsaasService::montarSplit`.
      */
-    private function montarSplit(?string $walletId, float $base, array $ctx = [], string $billingType = 'PIX'): ?array
+    private function montarSplit($recebedor, float $base, array $ctx = [], string $billingType = 'PIX'): ?array
     {
-        return $this->asaasService()->montarSplit($walletId, $base, $ctx, $billingType);
+        return $this->asaasService()->montarSplit($recebedor, $base, $ctx, $billingType);
     }
 
     /** O que o cliente paga por um serviço de R$ `$base` no meio escolhido. */
@@ -184,7 +189,7 @@ class PaymentController extends Controller
 
         // Pacote = assinatura mensal recorrente (nova cobrança PIX a cada mês).
         if ($validated['tipo'] === 'pacote') {
-            $split = $this->montarSplit($personal->asaas_wallet_id, $amount, ['personal_id' => $personal->id]);
+            $split = $this->montarSplit($personal, $amount, ['personal_id' => $personal->id]);
 
             return $this->criarAssinaturaPix($cliente, $amount, $description, 'cli', 'sub_cli', $split, [
                 'tipo' => 'pacote',
@@ -206,7 +211,7 @@ class PaymentController extends Controller
                 'externalReference' => 'cli_'.$clienteId.'_'.time(),
             ];
 
-            if ($split = $this->montarSplit($personal->asaas_wallet_id, $amount, ['personal_id' => $personal->id])) {
+            if ($split = $this->montarSplit($personal, $amount, ['personal_id' => $personal->id])) {
                 $pixPayload['split'] = $split;
             }
 
@@ -214,9 +219,24 @@ class PaymentController extends Controller
                 ->post($this->asaas().'/payments', $pixPayload);
 
             if ($paymentRes->failed()) {
-                Log::error('Asaas: falha ao criar pagamento', ['body' => $paymentRes->json()]);
+                $corpoErro = $paymentRes->json();
+                Log::error('Asaas: falha ao criar pagamento', ['body' => $corpoErro]);
 
-                return response()->json(['error' => 'Falha ao gerar cobrança. Tente novamente.'], 500);
+                /*
+                 * O corpo do erro do Asaas era DESCARTADO aqui: a causa ia só
+                 * para o log e o usuário recebia sempre "Falha ao gerar
+                 * cobrança. Tente novamente." — que manda tentar de novo
+                 * justamente quando tentar de novo não resolve, como no caso de
+                 * subconta do recebedor bloqueada.
+                 *
+                 * `mensagemDeErro` traduz o que é acionável e mantém o genérico
+                 * para o resto, sem nunca repassar texto cru do Asaas.
+                 */
+                AsaasService::reportarBloqueioDeRecebedor($personal, $corpoErro, ['fluxo' => 'avulsa_pix', 'personal_id' => $personal->id]);
+
+                return response()->json([
+                    'error' => AsaasService::mensagemDeErro($corpoErro, 'Falha ao gerar cobrança. Tente novamente.'),
+                ], 500);
             }
 
             $asaasPayment = $paymentRes->json();
@@ -747,7 +767,7 @@ class PaymentController extends Controller
         $data = $res->json();
 
         if (! empty($data['errors'])) {
-            $errMsg = $data['errors'][0]['description'] ?? 'Falha ao processar saque.';
+            $errMsg = AsaasService::mensagemDeErro($data, 'Falha ao processar saque.');
             Log::error('Asaas saque: falha', ['personal_id' => $personalId, 'body' => $data]);
             $saque->update(['status' => 'FAILED']);
 
@@ -869,7 +889,7 @@ class PaymentController extends Controller
         // Erros de negócio do Asaas (saldo insuficiente, chave Pix inválida, etc.)
         // chegam em data.errors[].description — repassamos a descrição ao front.
         if (! empty($data['errors'])) {
-            $errMsg = $data['errors'][0]['description'] ?? 'Falha ao processar o saque.';
+            $errMsg = AsaasService::mensagemDeErro($data, 'Falha ao processar o saque.');
             Log::warning('Saque subconta: erro Asaas', [
                 'personal_id' => $personalId,
                 'status'      => $res->status(),
@@ -1117,7 +1137,7 @@ class PaymentController extends Controller
             $subData = $subRes->json();
 
             if (! empty($subData['errors'])) {
-                $errMsg = $subData['errors'][0]['description'] ?? 'Falha ao processar cartão.';
+                $errMsg = AsaasService::mensagemDeErro($subData, 'Falha ao processar cartão.');
                 Log::error('Asaas assinatura cartão: falha', ['body' => $subData]);
 
                 return response()->json(['error' => $errMsg], 422);
@@ -1650,7 +1670,7 @@ class PaymentController extends Controller
 
         // Pacote = assinatura mensal recorrente (débito automático no cartão).
         if ($validated['tipo'] === 'pacote') {
-            $split = $this->montarSplit($personal->asaas_wallet_id, $amount, ['personal_id' => $personal->id], 'CREDIT_CARD');
+            $split = $this->montarSplit($personal, $amount, ['personal_id' => $personal->id], 'CREDIT_CARD');
 
             return $this->criarAssinaturaCartao($cliente, $amount, $description, 'cli_cc', 'sub_cli_cc', $split, [
                 'tipo' => 'pacote',
@@ -1693,7 +1713,7 @@ class PaymentController extends Controller
                 ],
             ];
 
-            if ($split = $this->montarSplit($personal->asaas_wallet_id, $amount, ['personal_id' => $personal->id], 'CREDIT_CARD')) {
+            if ($split = $this->montarSplit($personal, $amount, ['personal_id' => $personal->id], 'CREDIT_CARD')) {
                 $ccPayload['split'] = $split;
             }
 
@@ -1703,7 +1723,7 @@ class PaymentController extends Controller
             $asaasData = $paymentRes->json();
 
             if (! empty($asaasData['errors'])) {
-                $errMsg = $asaasData['errors'][0]['description'] ?? 'Falha ao processar cartão.';
+                $errMsg = AsaasService::mensagemDeErro($asaasData, 'Falha ao processar cartão.');
                 Log::error('Asaas cartão: falha', ['body' => $asaasData]);
 
                 return response()->json(['error' => $errMsg], 422);
@@ -1837,12 +1857,12 @@ class PaymentController extends Controller
 
     private function splitStudio(Studio $studio, float $amount, string $billingType = 'PIX'): ?array
     {
-        return $this->montarSplit($studio->asaas_wallet_id, $amount, ['studio_id' => $studio->id], $billingType);
+        return $this->montarSplit($studio, $amount, ['studio_id' => $studio->id], $billingType);
     }
 
     private function splitAcademia(\App\Models\Cadastro\Academia $academia, float $amount, string $billingType = 'PIX'): ?array
     {
-        return $this->montarSplit($academia->asaas_wallet_id, $amount, ['academia_id' => $academia->id], $billingType);
+        return $this->montarSplit($academia, $amount, ['academia_id' => $academia->id], $billingType);
     }
 
     // ─────────────────────────────────────────────
@@ -1942,9 +1962,24 @@ class PaymentController extends Controller
                 ->post($this->asaas().'/payments', $pixPayload);
 
             if ($paymentRes->failed()) {
-                Log::error('Asaas studio aula: falha ao criar pagamento', ['body' => $paymentRes->json()]);
+                $corpoErro = $paymentRes->json();
+                Log::error('Asaas studio aula: falha ao criar pagamento', ['body' => $corpoErro]);
 
-                return response()->json(['error' => 'Falha ao gerar cobrança. Tente novamente.'], 500);
+                /*
+                 * O corpo do erro do Asaas era DESCARTADO aqui: a causa ia só
+                 * para o log e o usuário recebia sempre "Falha ao gerar
+                 * cobrança. Tente novamente." — que manda tentar de novo
+                 * justamente quando tentar de novo não resolve, como no caso de
+                 * subconta do recebedor bloqueada.
+                 *
+                 * `mensagemDeErro` traduz o que é acionável e mantém o genérico
+                 * para o resto, sem nunca repassar texto cru do Asaas.
+                 */
+                AsaasService::reportarBloqueioDeRecebedor($studio, $corpoErro, ['fluxo' => 'studio_aula_pix', 'studio_id' => $studio->id]);
+
+                return response()->json([
+                    'error' => AsaasService::mensagemDeErro($corpoErro, 'Falha ao gerar cobrança. Tente novamente.'),
+                ], 500);
             }
 
             $asaasPaymentId = $paymentRes->json()['id'];
@@ -2156,7 +2191,7 @@ class PaymentController extends Controller
         $asaasData = $paymentRes->json();
 
         if (! empty($asaasData['errors'])) {
-            $errMsg = $asaasData['errors'][0]['description'] ?? 'Falha ao processar cartão.';
+            $errMsg = AsaasService::mensagemDeErro($asaasData, 'Falha ao processar cartão.');
             Log::error('Asaas cartão studio: falha', ['body' => $asaasData]);
 
             return response()->json(['error' => $errMsg], 422);
@@ -2285,7 +2320,7 @@ class PaymentController extends Controller
         $data = $res->json();
 
         if (! empty($data['errors'])) {
-            $errMsg = $data['errors'][0]['description'] ?? 'Falha ao processar saque.';
+            $errMsg = AsaasService::mensagemDeErro($data, 'Falha ao processar saque.');
             Log::error('Asaas saque studio: falha', ['studio_id' => $studioId, 'body' => $data]);
 
             return response()->json(['error' => $errMsg], 422);
@@ -2367,7 +2402,7 @@ class PaymentController extends Controller
                 return response()->json(['success' => true]);
             }
 
-            $errMsg = $data['errors'][0]['description'] ?? 'Resposta inesperada da Asaas.';
+            $errMsg = AsaasService::mensagemDeErro($data, 'Resposta inesperada da Asaas.');
             Log::warning('Asaas: falha ao criar subconta da academia', ['academia_id' => $academia->id, 'response' => $data]);
 
             return response()->json(['error' => $errMsg], 422);
@@ -2445,7 +2480,7 @@ class PaymentController extends Controller
         $data = $res->json();
 
         if (! empty($data['errors'])) {
-            $errMsg = $data['errors'][0]['description'] ?? 'Falha ao processar saque.';
+            $errMsg = AsaasService::mensagemDeErro($data, 'Falha ao processar saque.');
             Log::error('Asaas saque academia: falha', ['academia_id' => $academiaId, 'body' => $data]);
 
             return response()->json(['error' => $errMsg], 422);
@@ -2476,7 +2511,7 @@ class PaymentController extends Controller
 
     private function splitLoja(Loja $loja, float $amount, string $billingType = 'PIX'): ?array
     {
-        return $this->montarSplit($loja->asaas_wallet_id, $amount, ['loja_id' => $loja->id], $billingType);
+        return $this->montarSplit($loja, $amount, ['loja_id' => $loja->id], $billingType);
     }
 
     /**
@@ -2653,9 +2688,24 @@ class PaymentController extends Controller
                 ->post($this->asaas().'/payments', $pixPayload);
 
             if ($paymentRes->failed()) {
-                Log::error('Asaas loja: falha ao criar pagamento', ['body' => $paymentRes->json()]);
+                $corpoErro = $paymentRes->json();
+                Log::error('Asaas loja: falha ao criar pagamento', ['body' => $corpoErro]);
 
-                return response()->json(['error' => 'Falha ao gerar cobrança. Tente novamente.'], 500);
+                /*
+                 * O corpo do erro do Asaas era DESCARTADO aqui: a causa ia só
+                 * para o log e o usuário recebia sempre "Falha ao gerar
+                 * cobrança. Tente novamente." — que manda tentar de novo
+                 * justamente quando tentar de novo não resolve, como no caso de
+                 * subconta do recebedor bloqueada.
+                 *
+                 * `mensagemDeErro` traduz o que é acionável e mantém o genérico
+                 * para o resto, sem nunca repassar texto cru do Asaas.
+                 */
+                AsaasService::reportarBloqueioDeRecebedor($loja, $corpoErro, ['fluxo' => 'loja_pix', 'loja_id' => $loja->id]);
+
+                return response()->json([
+                    'error' => AsaasService::mensagemDeErro($corpoErro, 'Falha ao gerar cobrança. Tente novamente.'),
+                ], 500);
             }
 
             $asaasPaymentId = $paymentRes->json()['id'];
@@ -2799,7 +2849,7 @@ class PaymentController extends Controller
             $asaasData = $paymentRes->json();
 
             if (! empty($asaasData['errors'])) {
-                $errMsg = $asaasData['errors'][0]['description'] ?? 'Falha ao processar cartão.';
+                $errMsg = AsaasService::mensagemDeErro($asaasData, 'Falha ao processar cartão.');
                 Log::error('Asaas cartão loja: falha', ['body' => $asaasData]);
 
                 return response()->json(['error' => $errMsg], 422);
@@ -3051,7 +3101,7 @@ class PaymentController extends Controller
                 return response()->json(['success' => true]);
             }
 
-            $errMsg = $data['errors'][0]['description'] ?? 'Resposta inesperada da Asaas.';
+            $errMsg = AsaasService::mensagemDeErro($data, 'Resposta inesperada da Asaas.');
             Log::warning('Asaas: falha ao criar subconta da loja', ['loja_id' => $loja->id, 'response' => $data]);
 
             return response()->json(['error' => $errMsg], 422);
@@ -3129,7 +3179,7 @@ class PaymentController extends Controller
         $data = $res->json();
 
         if (! empty($data['errors'])) {
-            $errMsg = $data['errors'][0]['description'] ?? 'Falha ao processar saque.';
+            $errMsg = AsaasService::mensagemDeErro($data, 'Falha ao processar saque.');
             Log::error('Asaas saque loja: falha', ['loja_id' => $lojaId, 'body' => $data]);
 
             return response()->json(['error' => $errMsg], 422);

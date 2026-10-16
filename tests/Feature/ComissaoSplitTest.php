@@ -427,8 +427,15 @@ class ComissaoSplitTest extends TestCase
         $preco = 1000.00;
         $asaas = app(AsaasService::class);
 
+        /*
+         * `montarSplit` passou a receber o RECEBEDOR, não o walletId solto: é
+         * dele que sai o status da subconta, usado para barrar cobrança de
+         * conta bloqueada. Aqui o recebedor está aprovado e com wallet.
+         */
+        $recebedor = $this->personalComWallet('wal_teste_1', AsaasService::STATUS_APROVADA);
+
         foreach (['PIX', 'CREDIT_CARD'] as $meio) {
-            $split = $asaas->montarSplit('wal_teste_1', $preco, [], $meio);
+            $split = $asaas->montarSplit($recebedor, $preco, [], $meio);
             $valores = $asaas->calculateSplit($preco, $meio);
 
             $this->assertNotNull($split, "com walletId o split tem de ser montado ({$meio})");
@@ -443,5 +450,99 @@ class ComissaoSplitTest extends TestCase
                 "o repasse não pode variar com o meio de pagamento ({$meio})"
             );
         }
+    }
+
+    /** Personal com subconta no status informado. */
+    private function personalComWallet(string $wallet, ?string $status): Personal
+    {
+        $p = Personal::create([
+            'nome' => 'PT Split', 'email' => 'split'.uniqid().'@teste.local',
+            'senha' => bcrypt('senha12345'), 'cpf' => '52998224725',
+            'cref' => '123456-G/SP', 'idade' => '1990-01-01',
+            'valor_secao' => 100, 'status' => 'aprovado',
+            'cep' => '87000-000', 'rua' => 'R', 'bairro' => 'B',
+            'cidade' => 'Maringá', 'estado' => 'PR', 'complemento' => '1', 'foto' => '',
+            'asaas_wallet_id' => $wallet,
+        ]);
+        $p->forceFill(['asaas_account_status' => $status])->save();
+
+        return $p;
+    }
+
+    // ── Subconta bloqueada: a cobrança não sai ──────────────────────────
+
+    /**
+     * Recebedor com subconta NÃO aprovada não gera split — gera 422.
+     *
+     * Antes disto a cobrança ia até o Asaas, que recusava com "Não é possível
+     * fazer split para wallet [...], pois a mesma está bloqueada", e esse
+     * texto chegava cru no modal do app: com identificador interno dentro e
+     * mandando o ALUNO falar com o suporte do Asaas.
+     */
+    public function test_subconta_bloqueada_barra_a_cobranca(): void
+    {
+        $bloqueado = $this->personalComWallet('wal_bloqueada', 'PENDING');
+
+        try {
+            app(AsaasService::class)->montarSplit($bloqueado, 100.00, ['personal_id' => $bloqueado->id]);
+            $this->fail('cobrança de subconta bloqueada tinha de ser barrada');
+        } catch (\Illuminate\Http\Exceptions\HttpResponseException $e) {
+            $resposta = $e->getResponse();
+            $corpo = json_decode($resposta->getContent(), true);
+
+            $this->assertSame(422, $resposta->getStatusCode());
+
+            // O que o ALUNO lê. Nada de walletId, nada de status cru do Asaas.
+            $this->assertStringContainsString('cadastro de recebimentos', $corpo['error']);
+            $this->assertStringNotContainsString('wal_bloqueada', $corpo['error']);
+            $this->assertStringNotContainsString('PENDING', $corpo['error']);
+        }
+    }
+
+    /**
+     * Status NULL (nunca sincronizado) NÃO barra.
+     *
+     * É a situação de toda conta no instante em que a coluna nasceu vazia.
+     * Tratar null como bloqueio pararia o pagamento da plataforma inteira num
+     * deploy — por isso só um status conhecido e diferente de APPROVED trava.
+     */
+    public function test_subconta_nunca_sincronizada_nao_barra(): void
+    {
+        $semStatus = $this->personalComWallet('wal_sem_status', null);
+
+        $split = app(AsaasService::class)->montarSplit($semStatus, 100.00);
+
+        $this->assertNotNull($split);
+        $this->assertSame('wal_sem_status', $split[0]['walletId']);
+    }
+
+    /** A mensagem crua do Asaas nunca chega ao usuário. */
+    public function test_erro_de_wallet_bloqueada_e_traduzido(): void
+    {
+        $corpo = ['errors' => [[
+            'code' => 'invalid_split',
+            'description' => 'Não é possível fazer split para wallet '
+                . '[82947cc6-d275-4ceb-b55c-7df09867066b], pois a mesma está bloqueada. '
+                . 'Favor entrar em contato com o Suporte Técnico.',
+        ]]];
+
+        $this->assertTrue(AsaasService::ehBloqueioDeRecebedor($corpo));
+
+        $msg = AsaasService::mensagemDeErro($corpo, 'Falha ao gerar cobrança.');
+
+        $this->assertStringNotContainsString('82947cc6', $msg, 'o walletId não pode vazar para o usuário');
+        $this->assertStringNotContainsString('Suporte Técnico', $msg, 'não mandar o aluno ao suporte do Asaas');
+        $this->assertStringContainsString('cadastro de recebimentos', $msg);
+    }
+
+    /** Erro desconhecido do Asaas não é repassado cru: cai no padrão nosso. */
+    public function test_erro_desconhecido_nao_vaza(): void
+    {
+        $corpo = ['errors' => [['description' => 'Internal gateway failure code 9912 at node eu-3']]];
+
+        $this->assertSame(
+            'Falha ao gerar cobrança.',
+            AsaasService::mensagemDeErro($corpo, 'Falha ao gerar cobrança.')
+        );
     }
 }

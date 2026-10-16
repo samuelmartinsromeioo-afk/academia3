@@ -50,6 +50,33 @@ class AsaasWebhookController extends Controller
             return $this->conciliarTransferencia($request, $event);
         }
 
+        // ── Eventos de situação da subconta ───────────────────────────────────
+        //
+        // O Asaas avisa aqui quando a análise cadastral de uma subconta muda de
+        // estado (ACCOUNT_STATUS_*). É o que destrava — ou trava — a venda do
+        // profissional, porque split para wallet não aprovada é recusado.
+        //
+        // O evento diz QUE mudou, não o estado final de cada parte do cadastro.
+        // Então não tentamos deduzir o status do nome do evento: reconsultamos
+        // `/myAccount/status` com a chave da subconta e gravamos o que o Asaas
+        // responder. Deduzir daria um mapa de nomes de evento para manter em
+        // sincronia com uma API de terceiro — a consulta não tem esse problema.
+        //
+        // Fail-closed como os demais: sem token válido, não processa.
+        if (is_string($event) && str_starts_with($event, 'ACCOUNT_STATUS')) {
+            if (! $tokenValido) {
+                Log::channel('security')->warning('Asaas: evento de conta REJEITADO — token ausente ou inválido', [
+                    'event' => $event,
+                    'token_config' => (bool) $expectedToken,
+                    'ip' => $request->ip(),
+                ]);
+
+                return response()->json(['error' => 'Unauthorized'], 401);
+            }
+
+            return $this->atualizarSituacaoSubconta($request, $event);
+        }
+
         // Eventos de pagamento também exigem token válido (fail-closed): confirmar
         // um pagamento libera acesso/booking sem cobrança real, então NUNCA
         // processamos um evento a partir de uma requisição não autenticada. Sem
@@ -235,6 +262,68 @@ class AsaasWebhookController extends Controller
      * Aplica o desfecho de uma transferência (TRANSFER_DONE/FAILED/CANCELLED…) ao
      * saque de indicação correspondente. Idempotente pelo serviço.
      */
+    /**
+     * Reconsulta e grava a situação cadastral da subconta que mudou de estado.
+     *
+     * O Asaas identifica a conta pelo `id` da subconta (o mesmo que guardamos
+     * em `asaas_account_id` na criação). Procuramos nos quatro papéis porque
+     * qualquer um deles pode ter subconta.
+     *
+     * Responde 200 mesmo quando não reconhece a conta: o webhook não é nosso
+     * mecanismo de verdade — a varredura `asaas:sincronizar-subcontas` corrige
+     * depois — e devolver erro faria o Asaas reentregar indefinidamente um
+     * evento de uma conta que não é nossa (sandbox, conta apagada, outro
+     * ambiente apontando para a mesma URL).
+     */
+    private function atualizarSituacaoSubconta(Request $request, string $event)
+    {
+        $conta = $request->input('account', []);
+        $accountId = $conta['id'] ?? $request->input('id');
+
+        Log::info('Asaas: evento de situação de subconta', [
+            'event' => $event,
+            'account_id' => $accountId,
+        ]);
+
+        if (! $accountId) {
+            return response()->json(['received' => true]);
+        }
+
+        $papeis = [
+            'personal' => \App\Models\Cadastro\Personal::class,
+            'academia' => \App\Models\Cadastro\Academia::class,
+            'studio'   => \App\Models\Cadastro\Studio::class,
+            'loja'     => \App\Models\Cadastro\Loja::class,
+        ];
+
+        foreach ($papeis as $papel => $classe) {
+            $recebedor = $classe::where('asaas_account_id', $accountId)->first();
+            if (! $recebedor) {
+                continue;
+            }
+
+            $antes = $recebedor->asaas_account_status;
+            $situacao = $recebedor->sincronizarSubconta();
+
+            Log::info('Asaas: subconta reconsultada após webhook', [
+                'papel' => $papel,
+                'id' => $recebedor->id,
+                'de' => $antes,
+                'para' => $situacao['geral'] ?? null,
+                'ok' => $situacao['ok'],
+            ]);
+
+            return response()->json(['received' => true]);
+        }
+
+        Log::warning('Asaas: evento de conta sem recebedor correspondente', [
+            'account_id' => $accountId,
+            'event' => $event,
+        ]);
+
+        return response()->json(['received' => true]);
+    }
+
     private function conciliarTransferencia(Request $request, string $event)
     {
         $transfer = (array) $request->input('transfer', []);

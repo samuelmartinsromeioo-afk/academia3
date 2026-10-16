@@ -321,7 +321,7 @@ class PaymentController extends Controller
             'observacao' => $validated['observacao'] ?? null,
         ];
 
-        $split = $this->asaas->montarSplit($loja->asaas_wallet_id, $total, ['loja_id' => $loja->id], $billingType);
+        $split = $this->asaas->montarSplit($loja, $total, ['loja_id' => $loja->id], $billingType);
 
         $result = $this->asaas->criarCobrancaPixAvulsa(
             $cliente,

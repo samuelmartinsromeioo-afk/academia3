@@ -209,6 +209,13 @@ class ExplorarController extends Controller
             'total_avaliacoes' => $p->avaliacoes->count(),
             'pioneiro' => $p->eh_pioneiro,
             'distancia_km' => $p->distancia_km !== null ? round((float) $p->distancia_km, 1) : null,
+            /*
+             * Pode receber pagamento agora? O app usa para desabilitar o botão
+             * de contratar em vez de deixar o aluno chegar ao checkout e tomar
+             * erro do Asaas — que era o comportamento até aqui.
+             */
+            'pode_receber' => $p->podeReceberPagamento(),
+            'motivo_nao_recebe' => $p->motivoNaoRecebe(),
         ]);
 
         /*
@@ -633,6 +640,13 @@ class ExplorarController extends Controller
                 // em que decide contratar.
                 'especialidades' => array_values(array_filter(array_map('trim', (array) $personal->especialidades))),
                 'valor_secao' => $personal->valor_secao !== null ? (float) $personal->valor_secao : null,
+                /*
+                 * Pode receber pagamento agora? O app usa para desabilitar o botão
+                 * de contratar em vez de deixar o aluno chegar ao checkout e tomar
+                 * erro do Asaas — que era o comportamento até aqui.
+                 */
+                'pode_receber' => $personal->podeReceberPagamento(),
+                'motivo_nao_recebe' => $personal->motivoNaoRecebe(),
             ], $this->blocoAvaliacoes('personal', $personal, $cliente)),
             'pacotes' => $pacotes->map(fn ($p) => [
                 'id' => $p->id,
