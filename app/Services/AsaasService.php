@@ -456,17 +456,43 @@ class AsaasService
                 $docs = Http::withHeaders($headers)->timeout(15)->get($this->asaas().'/myAccount/documents');
                 if ($docs->successful()) {
                     $corpo = $docs->json() ?: [];
-                    $onboarding = $corpo['onboardingUrl'] ?? null;
 
+                    /*
+                     * `onboardingUrl` fica DENTRO de cada item de `data`, não na
+                     * raiz da resposta — conferido na referência do Asaas
+                     * (`GET /v3/myAccount/documents`: a raiz tem `rejectReasons`
+                     * e `data`). Lido da raiz, como estava, dava sempre null: o
+                     * painel do profissional caía no texto "fale com o suporte"
+                     * mesmo quando havia link de regularização disponível.
+                     */
                     foreach (($corpo['data'] ?? []) as $doc) {
-                        if (($doc['status'] ?? null) === 'APPROVED') {
+                        $situacao = $doc['status'] ?? null;
+
+                        if ($onboarding === null && ! empty($doc['onboardingUrl'])) {
+                            $onboarding = $doc['onboardingUrl'];
+                        }
+
+                        // APPROVED está resolvido; IGNORED é documento que o
+                        // Asaas dispensou para este perfil — listar qualquer um
+                        // dos dois manda o profissional atrás do que não falta.
+                        if (in_array($situacao, ['APPROVED', 'IGNORED'], true)) {
                             continue;
                         }
+
+                        // `title` é a descrição que o Asaas escreve para humanos
+                        // ("Documento de identificação"); `type` é o enum
+                        // (`IDENTIFICATION`). Quem lê isto é o profissional.
                         $pendencias[] = trim(sprintf(
                             '%s — %s',
-                            $doc['type'] ?? 'documento',
-                            $doc['status'] ?? 'pendente'
+                            $doc['title'] ?? $doc['type'] ?? 'documento',
+                            $situacao ?? 'pendente'
                         ));
+                    }
+
+                    // Motivo da reprovação, quando houver: é a informação mais
+                    // acionável da resposta inteira e estava sendo ignorada.
+                    if (! empty($corpo['rejectReasons'])) {
+                        $pendencias[] = 'Motivo da reprovação: '.$corpo['rejectReasons'];
                     }
                 }
             } catch (\Throwable $e) {
@@ -816,6 +842,30 @@ class AsaasService
     // CLIENTE ASAAS
     // ─────────────────────────────────────────────
 
+    /**
+     * O cliente no Asaas: acha pelo e-mail ou cria.
+     *
+     * ─── A LINHA QUE EXPLODIA EM SILÊNCIO ───────────────────────────────────
+     *
+     * Era `return $create->json()['id'];` sem NENHUMA verificação. Quando o
+     * Asaas recusava a criação (HTTP 400 + `errors[]`, sem `id`), o acesso à
+     * chave inexistente virava `ErrorException` — o Laravel converte warning em
+     * exceção — e o `catch (\Exception)` do checkout a transformava em
+     * **"Erro interno. Tente novamente."**, sem log nenhum.
+     *
+     * Resultado: a causa real (o que o Asaas respondeu) era descartada antes de
+     * qualquer um poder lê-la. O corpo da resposta agora vai para o log sempre,
+     * e o usuário recebe 422 com uma frase que diz o que fazer.
+     *
+     * ─── `cpfCnpj` É OBRIGATÓRIO NA API DO ASAAS ────────────────────────────
+     *
+     * `POST /v3/customers` declara `"required": ["name", "cpfCnpj"]`. A tabela
+     * `clientes` NÃO tem coluna de CPF — nenhum dos dois cadastros o coleta —
+     * então ele não tem de onde sair, e é por isso que o campo vai condicional:
+     * mandar `cpfCnpj => null` é pior que omitir (o Asaas valida o formato do
+     * que foi enviado). Enquanto não houver CPF do aluno, a criação de cliente
+     * novo depende de o Asaas aceitar sem ele.
+     */
     public function obterOuCriarClienteAsaas(Cliente $cliente): string
     {
         $search = Http::withHeaders($this->asaasHeaders())
@@ -825,13 +875,43 @@ class AsaasService
             return $search->json()['data'][0]['id'];
         }
 
+        $payload = [
+            'name' => $cliente->nome,
+            'email' => $cliente->email,
+            // Deixa o cliente rastreável no painel do Asaas a partir do nosso
+            // id — a busca acima é por e-mail, que o aluno pode trocar.
+            'externalReference' => 'cliente_'.$cliente->id,
+        ];
+
+        if ($cpf = preg_replace('/\D/', '', (string) ($cliente->cpf ?? ''))) {
+            $payload['cpfCnpj'] = $cpf;
+        }
+
         $create = Http::withHeaders($this->asaasHeaders())
-            ->post($this->asaas().'/customers', [
-                'name' => $cliente->nome,
-                'email' => $cliente->email,
+            ->post($this->asaas().'/customers', $payload);
+
+        $id = $create->json()['id'] ?? null;
+
+        if (! $id) {
+            $corpo = $create->json();
+
+            Log::error('Asaas: falha ao criar cliente', [
+                'cliente_id' => $cliente->id,
+                'http' => $create->status(),
+                'tem_cpf' => isset($payload['cpfCnpj']),
+                'body' => $corpo,
             ]);
 
-        return $create->json()['id'];
+            abort(response()->json([
+                'error' => self::mensagemDeErro(
+                    $corpo,
+                    'Não foi possível validar os seus dados de cobrança. '
+                    .'Confira nome e e-mail no seu perfil e tente de novo.'
+                ),
+            ], 422));
+        }
+
+        return (string) $id;
     }
 
     // ─────────────────────────────────────────────

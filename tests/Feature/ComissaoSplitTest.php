@@ -598,6 +598,58 @@ class ComissaoSplitTest extends TestCase
         Http::assertNotSent(fn ($req) => str_ends_with($req->url(), '/payments'));
     }
 
+    /**
+     * Cliente recusado pelo Asaas vira 422 explicado, não 500 mudo.
+     *
+     * `obterOuCriarClienteAsaas()` terminava em `return $create->json()['id'];`
+     * sem verificar nada. Quando o Asaas recusava a criação (400 + `errors[]`,
+     * sem `id`), o acesso à chave inexistente virava `ErrorException` — o
+     * Laravel converte warning em exceção — e o `catch (\Exception)` do checkout
+     * devolvia "Erro interno. Tente novamente.". Sem log: o corpo da resposta
+     * do Asaas, que é a única coisa que dizia a causa, era descartado antes de
+     * alguém poder lê-lo.
+     *
+     * O caso é real e não hipotético: `POST /v3/customers` declara
+     * `"required": ["name", "cpfCnpj"]` e a tabela `clientes` não tem CPF.
+     */
+    public function test_cliente_recusado_pelo_asaas_nao_vira_erro_interno(): void
+    {
+        // `Http::fake()` ACUMULA stubs e o primeiro registrado vence — o de
+        // `setUp()` responde a tudo. Trocar a factory é o que dá a este teste
+        // um Asaas só dele.
+        Http::swap(new \Illuminate\Http\Client\Factory);
+        Http::fake(function ($request) {
+            // Busca por e-mail: não achou ninguém.
+            if ($request->method() === 'GET') {
+                return Http::response(['data' => []], 200);
+            }
+
+            // Criação recusada, exatamente como o Asaas recusa.
+            return Http::response([
+                'errors' => [['code' => 'invalid_cpfCnpj', 'description' => 'O CPF ou CNPJ informado é inválido.']],
+            ], 400);
+        });
+
+        $resposta = $this->withSession(['cliente_id' => $this->cliente->id])
+            ->postJson('/api/criar-pagamento', [
+                'personal_id' => $this->personal->id,
+                'tipo' => 'aula_avulsa',
+                'data' => now()->addDays(2)->format('Y-m-d'),
+                'hora_inicio' => '08:00',
+                'hora_fim' => '09:00',
+            ]);
+
+        $resposta->assertStatus(422);
+
+        $erro = $resposta->json('error');
+        $this->assertNotNull($erro, 'a resposta precisa dizer algo');
+        $this->assertStringNotContainsString('Erro interno', $erro);
+        // Nem o código nem o texto cru do Asaas chegam a quem está comprando.
+        $this->assertStringNotContainsString('cpfCnpj', $erro);
+
+        $this->assertDatabaseMissing('payments', ['user_id' => $this->cliente->id]);
+    }
+
     /** Erro desconhecido do Asaas não é repassado cru: cai no padrão nosso. */
     public function test_erro_desconhecido_nao_vaza(): void
     {
