@@ -49,7 +49,9 @@ class ComissaoSplitTest extends TestCase
     use DatabaseTransactions;
 
     private Cliente $cliente;
+
     private Personal $personal;
+
     private string $token;
 
     protected function setUp(): void
@@ -102,7 +104,7 @@ class ComissaoSplitTest extends TestCase
 
     private function comToken(): array
     {
-        return ['Authorization' => 'Bearer ' . $this->token, 'Accept' => 'application/json'];
+        return ['Authorization' => 'Bearer '.$this->token, 'Accept' => 'application/json'];
     }
 
     private function ultimoPagamento(): Payment
@@ -297,7 +299,7 @@ class ComissaoSplitTest extends TestCase
                     $p->getName(),
                     $proibidos,
                     "{$classe}::{$metodo}() voltou a aceitar \${$p->getName()}: a comissão tem de vir"
-                        . " de config('taxas.comissao') via AsaasService::feeRate(), nunca do chamador"
+                        ." de config('taxas.comissao') via AsaasService::feeRate(), nunca do chamador"
                 );
             }
         }
@@ -522,8 +524,8 @@ class ComissaoSplitTest extends TestCase
         $corpo = ['errors' => [[
             'code' => 'invalid_split',
             'description' => 'Não é possível fazer split para wallet '
-                . '[82947cc6-d275-4ceb-b55c-7df09867066b], pois a mesma está bloqueada. '
-                . 'Favor entrar em contato com o Suporte Técnico.',
+                .'[82947cc6-d275-4ceb-b55c-7df09867066b], pois a mesma está bloqueada. '
+                .'Favor entrar em contato com o Suporte Técnico.',
         ]]];
 
         $this->assertTrue(AsaasService::ehBloqueioDeRecebedor($corpo));
@@ -554,6 +556,46 @@ class ComissaoSplitTest extends TestCase
         $split = app(AsaasService::class)->montarSplit($semChave, 100.00);
         $this->assertNotNull($split);
         $this->assertSame(100.00, $split[0]['fixedValue']);
+    }
+
+    /**
+     * O 422 do split tem de SAIR do controller — e por três semanas não saía.
+     *
+     * `montarSplit()` barra o recebedor inapto com `abort(422)`, que viaja como
+     * `HttpResponseException`. Mas a chamada acontece DENTRO do `try` do
+     * checkout, cujo `catch (\Exception)` a engolia: `HttpResponseException`
+     * estende `RuntimeException`, logo estende `Exception`. O aluno recebia
+     * **500 "Erro interno. Tente novamente."** no lugar da frase que explica o
+     * que houve — e, pior, um 500 convida a tentar de novo, exatamente o que
+     * não resolve quando o cadastro do profissional é que está pendente.
+     *
+     * Por isso o teste bate na ROTA, não em `montarSplit()`: o teste de unidade
+     * acima continuava verde com o bug no lugar, porque o defeito não estava em
+     * quem lança, e sim em quem escuta.
+     */
+    public function test_bloqueio_do_split_chega_ao_aluno_como_422_e_nao_como_500(): void
+    {
+        Http::fake(); // nenhuma chamada deve chegar ao Asaas: barra antes disso
+
+        $bloqueado = $this->personalComWallet('wal_bloqueada_http', 'PENDING');
+
+        $resposta = $this->withSession(['cliente_id' => $this->cliente->id])
+            ->postJson('/api/criar-pagamento', [
+                'personal_id' => $bloqueado->id,
+                'tipo' => 'aula_avulsa',
+                'data' => now()->addDays(2)->format('Y-m-d'),
+                'hora_inicio' => '08:00',
+                'hora_fim' => '09:00',
+            ]);
+
+        $resposta->assertStatus(422);
+        $this->assertStringContainsString('cadastro de recebimentos', $resposta->json('error'));
+
+        // A cobrança não pode ter sido criada. Não dá para exigir silêncio
+        // total: `obterOuCriarClienteAsaas()` roda antes do split, então o
+        // cliente chega a ser registrado no Asaas — isso é inofensivo e
+        // idempotente. O que não pode existir é o POST /payments.
+        Http::assertNotSent(fn ($req) => str_ends_with($req->url(), '/payments'));
     }
 
     /** Erro desconhecido do Asaas não é repassado cru: cai no padrão nosso. */

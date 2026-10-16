@@ -11,16 +11,15 @@ use App\Models\Cadastro\PedidoItem;
 use App\Models\Cadastro\Personal;
 use App\Models\Cadastro\Produto;
 use App\Models\Cadastro\Studio;
-use App\Models\Cadastro\StudioPlano;
 use App\Models\MembershipConfirmation;
 use App\Models\Payment;
-use App\Services\MetaConversionsService;
 use App\Models\PersonalSaque;
 use App\Models\Subscription;
 use App\Models\TrainerPayout;
 use App\Services\AsaasService;
+use App\Services\MetaConversionsService;
+use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
@@ -38,6 +37,27 @@ class PaymentController extends Controller
             'access_token' => config('services.asaas.key'),
             'Content-Type' => 'application/json',
         ];
+    }
+
+    /**
+     * Resposta genérica de erro interno — com o log que permite descobrir a causa.
+     *
+     * Existe porque `['error' => $e->getMessage()]` não bastava. Toda falha
+     * inesperada do checkout chegava ao usuário como "Erro interno. Tente
+     * novamente." e ao log como uma frase solta, sem classe nem origem: uma
+     * `QueryException` por coluna que falta e um timeout de rede ficavam
+     * indistinguíveis, e o diagnóstico virava leitura de código por adivinhação.
+     * Classe + arquivo:linha é o que separa os dois em um olhar.
+     */
+    private function falhaInterna(\Throwable $e, string $fluxo, array $ctx = [])
+    {
+        Log::error("Asaas: exception em {$fluxo}", $ctx + [
+            'excecao' => get_class($e),
+            'erro' => $e->getMessage(),
+            'onde' => $e->getFile().':'.$e->getLine(),
+        ]);
+
+        return response()->json(['error' => 'Erro interno. Tente novamente.'], 500);
     }
 
     /**
@@ -279,10 +299,26 @@ class PaymentController extends Controller
                 'valores' => $conta,
             ]);
 
+        } catch (HttpResponseException $e) {
+            /*
+             * `HttpResponseException` é o sinal do Laravel de que a resposta JÁ
+             * foi decidida — é como viajam `abort()` e a validação. Deixá-la cair
+             * no `catch (\Exception)` abaixo troca uma mensagem precisa por "Erro
+             * interno. Tente novamente.", que manda repetir justamente quando
+             * repetir não resolve.
+             *
+             * Aqui é concreto: `montarSplit()` responde 422 ("este profissional
+             * ainda está finalizando o cadastro de recebimentos") quando a
+             * subconta do recebedor não está apta, e esse 422 chegava ao aluno
+             * como 500. Os demais `catch` deste controller repetem este par pela
+             * mesma razão.
+             */
+            throw $e;
         } catch (\Exception $e) {
-            Log::error('Asaas: exception ao criar pagamento', ['error' => $e->getMessage()]);
-
-            return response()->json(['error' => 'Erro interno. Tente novamente.'], 500);
+            return $this->falhaInterna($e, 'cobrança Pix do personal', [
+                'personal_id' => $personal->id ?? null,
+                'cliente_id' => $clienteId ?? null,
+            ]);
         }
     }
 
@@ -337,15 +373,15 @@ class PaymentController extends Controller
         $fb = app(MetaConversionsService::class);
         // event_id determinístico: se o cliente recarregar /pagamento/sucesso, o
         // mesmo id é reenviado e a Meta deduplica (evita inflar compras/receita).
-        $eventId = $pagamento ? 'purchase_' . $pagamento->id : null;
+        $eventId = $pagamento ? 'purchase_'.$pagamento->id : null;
 
         return redirect()->route('cliente.index')
             ->with('success', 'Pagamento confirmado! Seu pacote foi contratado com sucesso.')
             ->with('fb_event', $fb->track(
                 'Purchase',
                 [
-                    'value'        => (float) ($pagamento->amount_total ?? 0),
-                    'currency'     => 'BRL',
+                    'value' => (float) ($pagamento->amount_total ?? 0),
+                    'currency' => 'BRL',
                     'content_name' => 'Pagamento SnrFit',
                     'content_type' => 'pacote',
                 ],
@@ -745,8 +781,8 @@ class PaymentController extends Controller
         // fail-closed e recusa transferência que não casa com registro nosso.
         $saque = PersonalSaque::create([
             'personal_id' => $personalId,
-            'value'       => (float) $validated['valor'],
-            'status'      => 'CREATING',
+            'value' => (float) $validated['valor'],
+            'status' => 'CREATING',
         ]);
         $saque->update(['external_reference' => 'personal_saque:'.$saque->id]);
 
@@ -782,8 +818,8 @@ class PaymentController extends Controller
         }
 
         $saque->update([
-            'asaas_transfer_id'       => $data['id'] ?? null,
-            'status'                  => $data['status'] ?? 'PENDING',
+            'asaas_transfer_id' => $data['id'] ?? null,
+            'status' => $data['status'] ?? 'PENDING',
             'transaction_receipt_url' => $data['transactionReceiptUrl'] ?? null,
         ]);
 
@@ -823,8 +859,8 @@ class PaymentController extends Controller
         }
 
         $validated = $request->validate([
-            'value'             => 'required|numeric|min:0.01',
-            'pixAddressKey'     => 'required|string|max:255',
+            'value' => 'required|numeric|min:0.01',
+            'pixAddressKey' => 'required|string|max:255',
             'pixAddressKeyType' => 'required|in:CPF,CNPJ,EMAIL,PHONE,EVP',
         ]);
 
@@ -849,8 +885,8 @@ class PaymentController extends Controller
         // fail-closed e recusa o que não casa com registro nosso.
         $saque = PersonalSaque::create([
             'personal_id' => $personalId,
-            'value'       => (float) $validated['value'],
-            'status'      => 'CREATING',
+            'value' => (float) $validated['value'],
+            'status' => 'CREATING',
         ]);
         $saque->update(['external_reference' => 'personal_saque:'.$saque->id]);
 
@@ -859,10 +895,10 @@ class PaymentController extends Controller
                 'access_token' => $apiKey,
                 'Content-Type' => 'application/json',
             ])->post($this->asaas().'/transfers', [
-                'value'             => (float) $validated['value'],
-                'pixAddressKey'     => $validated['pixAddressKey'],
+                'value' => (float) $validated['value'],
+                'pixAddressKey' => $validated['pixAddressKey'],
                 'pixAddressKeyType' => $validated['pixAddressKeyType'],
-                'operationType'     => 'PIX',
+                'operationType' => 'PIX',
                 'externalReference' => $saque->external_reference,
             ]);
         } catch (\Throwable $e) {
@@ -892,8 +928,8 @@ class PaymentController extends Controller
             $errMsg = AsaasService::mensagemDeErro($data, 'Falha ao processar o saque.');
             Log::warning('Saque subconta: erro Asaas', [
                 'personal_id' => $personalId,
-                'status'      => $res->status(),
-                'errors'      => $data['errors'],
+                'status' => $res->status(),
+                'errors' => $data['errors'],
             ]);
             $saque->update(['status' => 'FAILED']);
 
@@ -908,24 +944,24 @@ class PaymentController extends Controller
         }
 
         $saque->update([
-            'asaas_transfer_id'       => $data['id'] ?? null,
-            'status'                  => $data['status'] ?? 'PENDING',
+            'asaas_transfer_id' => $data['id'] ?? null,
+            'status' => $data['status'] ?? 'PENDING',
             'transaction_receipt_url' => $data['transactionReceiptUrl'] ?? null,
         ]);
 
         Log::info('Saque subconta realizado', [
             'personal_id' => $personalId,
-            'saque_id'    => $saque->id,
+            'saque_id' => $saque->id,
             'transfer_id' => $data['id'] ?? null,
-            'status'      => $data['status'] ?? null,
+            'status' => $data['status'] ?? null,
         ]);
 
         return response()->json([
-            'success'    => true,
-            'id'         => $data['id'] ?? null,
-            'status'     => $data['status'] ?? 'PENDING',
+            'success' => true,
+            'id' => $data['id'] ?? null,
+            'status' => $data['status'] ?? 'PENDING',
             'receiptUrl' => $data['transactionReceiptUrl'] ?? null,
-            'saque_id'   => $saque->id,
+            'saque_id' => $saque->id,
         ]);
     }
 
@@ -1203,11 +1239,11 @@ class PaymentController extends Controller
                 return $this->respostaCobrancaCriadaSemRegistroLocal('assinatura cartão', $asaasPaymentId, $subscriptionId, $status, $e);
             }
 
+        } catch (HttpResponseException $e) {
+            throw $e; // resposta já decidida (ex.: 422 do split) — ver o catch em `criarPagamentoPix`
         } catch (\Exception $e) {
             // Falha ANTES de a assinatura existir (rede/timeout/etc.): 500 legítimo.
-            Log::error('Asaas assinatura cartão: exception', ['error' => $e->getMessage()]);
-
-            return response()->json(['error' => 'Erro interno. Tente novamente.'], 500);
+            return $this->falhaInterna($e, 'assinatura no cartão');
         }
     }
 
@@ -1293,13 +1329,13 @@ class PaymentController extends Controller
         app(MetaConversionsService::class)->trackServer(
             'Purchase',
             [
-                'value'        => (float) ($payment->amount_total ?? 0),
-                'currency'     => 'BRL',
+                'value' => (float) ($payment->amount_total ?? 0),
+                'currency' => 'BRL',
                 'content_name' => 'Renovação de assinatura SnrFit',
                 'content_type' => 'subscription',
             ],
             \App\Models\Cadastro\Cliente::find($sub->user_id),
-            'purchase_' . $payment->id
+            'purchase_'.$payment->id
         );
 
         Log::info('Assinatura renovada e processada', [
@@ -1458,10 +1494,10 @@ class PaymentController extends Controller
             $ate = $sub->acesso_ate ? \Carbon\Carbon::parse($sub->acesso_ate)->format('d/m/Y') : null;
 
             $texto = "Sua assinatura foi cancelada, como você pediu. *Não haverá novas cobranças.*\n\n"
-                . ($ate
+                .($ate
                     ? "Você continua com acesso até *{$ate}*, que é o fim do período já pago.\n\n"
                     : "O acesso segue até o fim do período já pago.\n\n")
-                . 'Guarde esta mensagem: ela é o seu comprovante do cancelamento.';
+                .'Guarde esta mensagem: ela é o seu comprovante do cancelamento.';
 
             \App\Services\NotificacaoService::cliente(
                 $cliente,
@@ -1781,11 +1817,11 @@ class PaymentController extends Controller
                 return $this->respostaCobrancaCriadaSemRegistroLocal('cartão', $asaasPaymentId, null, $status, $e);
             }
 
+        } catch (HttpResponseException $e) {
+            throw $e; // resposta já decidida (ex.: 422 do split) — ver o catch em `criarPagamentoPix`
         } catch (\Exception $e) {
             // Falha ANTES de a cobrança existir (rede/timeout/etc.): 500 legítimo.
-            Log::error('Asaas cartão: exception', ['error' => $e->getMessage()]);
-
-            return response()->json(['error' => 'Erro interno. Tente novamente.'], 500);
+            return $this->falhaInterna($e, 'cobrança no cartão');
         }
     }
 
@@ -2028,10 +2064,10 @@ class PaymentController extends Controller
                 'valores' => $conta,
             ]);
 
+        } catch (HttpResponseException $e) {
+            throw $e; // resposta já decidida (ex.: 422 do split) — ver o catch em `criarPagamentoPix`
         } catch (\Exception $e) {
-            Log::error('Asaas studio aula: exception', ['error' => $e->getMessage()]);
-
-            return response()->json(['error' => 'Erro interno. Tente novamente.'], 500);
+            return $this->falhaInterna($e, 'aula de studio no Pix', ['studio_id' => $studio->id ?? null]);
         }
     }
 
@@ -2139,10 +2175,10 @@ class PaymentController extends Controller
 
         try {
             return $this->processarCartaoStudio($cliente, $studio, $amount, $description, $validated, $bookingData, []);
+        } catch (HttpResponseException $e) {
+            throw $e; // resposta já decidida (ex.: 422 do split) — ver o catch em `criarPagamentoPix`
         } catch (\Exception $e) {
-            Log::error('Asaas cartão studio aula: exception', ['error' => $e->getMessage()]);
-
-            return response()->json(['error' => 'Erro interno. Tente novamente.'], 500);
+            return $this->falhaInterna($e, 'aula de studio no cartão', ['studio_id' => $studio->id ?? null]);
         }
     }
 
@@ -2746,10 +2782,10 @@ class PaymentController extends Controller
                 'valores' => $conta,
             ]);
 
+        } catch (HttpResponseException $e) {
+            throw $e; // resposta já decidida (ex.: 422 do split) — ver o catch em `criarPagamentoPix`
         } catch (\Exception $e) {
-            Log::error('Asaas loja: exception', ['error' => $e->getMessage()]);
-
-            return response()->json(['error' => 'Erro interno. Tente novamente.'], 500);
+            return $this->falhaInterna($e, 'pedido da loja no Pix', ['loja_id' => $loja->id ?? null]);
         }
     }
 
@@ -2904,11 +2940,11 @@ class PaymentController extends Controller
                 return $this->respostaCobrancaCriadaSemRegistroLocal('cartão loja', $asaasPaymentId, null, $status, $e);
             }
 
+        } catch (HttpResponseException $e) {
+            throw $e; // resposta já decidida (ex.: 422 do split) — ver o catch em `criarPagamentoPix`
         } catch (\Exception $e) {
             // Falha ANTES de a cobrança existir (rede/timeout/etc.): 500 legítimo.
-            Log::error('Asaas cartão loja: exception', ['error' => $e->getMessage()]);
-
-            return response()->json(['error' => 'Erro interno. Tente novamente.'], 500);
+            return $this->falhaInterna($e, 'pedido da loja no cartão', ['loja_id' => $loja->id ?? null]);
         }
     }
 
