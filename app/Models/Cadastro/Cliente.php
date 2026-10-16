@@ -11,14 +11,16 @@ use Laravel\Sanctum\HasApiTokens;
 // Laravel, então nada muda no fluxo Blade existente.
 class Cliente extends Authenticatable
 {
-    use HasApiTokens;
-    use \App\Models\Concerns\TemCupomIndicacao;
     use \App\Models\Concerns\AceitaTermos;
+    use \App\Models\Concerns\TemCupomIndicacao;
+    use HasApiTokens;
 
     protected $primaryKey = 'id';
+
     protected $table = 'clientes';
 
     public $incrementing = true;
+
     protected $keyType = 'int';
 
     /** Nunca expor a senha em JSON (API/resources). */
@@ -32,11 +34,13 @@ class Cliente extends Authenticatable
         return $this->senha;
     }
 
-
     protected $fillable = [
         'nome',
         'id',
         'email',
+        // Só dígitos. Pedido no checkout, não no cadastro — ver a migration
+        // 2026_10_16_000001_add_cpf_to_clientes.
+        'cpf',
         'academia_id',
         'filial_id',
         'senha',
@@ -65,84 +69,91 @@ class Cliente extends Authenticatable
         'studio_plano_id',
         'studio_plano_ativo',
     ];
+
     protected $casts = [
         'aceita_termos' => 'boolean',
         'data_aceitacao_termos' => 'datetime',
     ];
 
-        /**
-         * Modalidades de profissional que atendem a preferência deste aluno.
-         *
-         * Quem é `Híbrido` atende presencial E online, então entra nas duas
-         * preferências — mesma regra do filtro da vitrine. Sem preferência
-         * declarada devolve lista vazia, que significa "não filtra nada".
-         *
-         * @return array<int, string>
-         */
-        public function modalidadesCompativeis(): array
-        {
-            return self::compativeisCom($this->modalidade_preferida);
+    /**
+     * Modalidades de profissional que atendem a preferência deste aluno.
+     *
+     * Quem é `Híbrido` atende presencial E online, então entra nas duas
+     * preferências — mesma regra do filtro da vitrine. Sem preferência
+     * declarada devolve lista vazia, que significa "não filtra nada".
+     *
+     * @return array<int, string>
+     */
+    public function modalidadesCompativeis(): array
+    {
+        return self::compativeisCom($this->modalidade_preferida);
+    }
+
+    /**
+     * A mesma regra, para uma preferência que NÃO está neste modelo.
+     *
+     * Existe porque a vitrine do app filtra no SQL a partir do
+     * `?modalidade=` recebido, que tem precedência sobre a preferência
+     * salva (igual ao web) e portanto não sai de um Cliente. Sem este
+     * ponto de entrada estático a alternativa seria repetir
+     * `[$pref, 'Híbrido']` na query — uma terceira cópia da regra, que é
+     * exatamente o que o comentário do método acima pede para não fazer.
+     *
+     * @return array<int, string>
+     */
+    public static function compativeisCom(?string $preferida): array
+    {
+        if (blank($preferida)) {
+            return [];
         }
 
-        /**
-         * A mesma regra, para uma preferência que NÃO está neste modelo.
-         *
-         * Existe porque a vitrine do app filtra no SQL a partir do
-         * `?modalidade=` recebido, que tem precedência sobre a preferência
-         * salva (igual ao web) e portanto não sai de um Cliente. Sem este
-         * ponto de entrada estático a alternativa seria repetir
-         * `[$pref, 'Híbrido']` na query — uma terceira cópia da regra, que é
-         * exatamente o que o comentário do método acima pede para não fazer.
-         *
-         * @return array<int, string>
-         */
-        public static function compativeisCom(?string $preferida): array
-        {
-            if (blank($preferida)) {
-                return [];
-            }
+        return [$preferida, 'Híbrido'];
+    }
 
-            return [$preferida, 'Híbrido'];
+    /** Este profissional atende do jeito que o aluno quer? */
+    public function atendidoPor(?string $modalidadeDoProfissional): bool
+    {
+        $compativeis = $this->modalidadesCompativeis();
+
+        // Sem preferência, qualquer um serve.
+        if ($compativeis === []) {
+            return true;
         }
 
-        /** Este profissional atende do jeito que o aluno quer? */
-        public function atendidoPor(?string $modalidadeDoProfissional): bool
-        {
-            $compativeis = $this->modalidadesCompativeis();
-
-            // Sem preferência, qualquer um serve.
-            if ($compativeis === []) {
-                return true;
-            }
-
-            // Profissional que não declarou modalidade não é descartado: a
-            // ausência do dado dele não é escolha do aluno, e esconder o
-            // profissional por isso puniria quem só não preencheu o cadastro.
-            if (blank($modalidadeDoProfissional)) {
-                return true;
-            }
-
-            return in_array($modalidadeDoProfissional, $compativeis, true);
+        // Profissional que não declarou modalidade não é descartado: a
+        // ausência do dado dele não é escolha do aluno, e esconder o
+        // profissional por isso puniria quem só não preencheu o cadastro.
+        if (blank($modalidadeDoProfissional)) {
+            return true;
         }
 
-        public function personal() {
-            return $this->belongsTo(\App\Models\Cadastro\Personal::class, 'personal_id');
-        }
+        return in_array($modalidadeDoProfissional, $compativeis, true);
+    }
 
-        public function studio() {
-            return $this->belongsTo(\App\Models\Cadastro\Studio::class, 'studio_id');
-        }
+    public function personal()
+    {
+        return $this->belongsTo(\App\Models\Cadastro\Personal::class, 'personal_id');
+    }
 
-        public function filial() {
-            return $this->belongsTo(\App\Models\Cadastro\Filial::class, 'filial_id');
-        }
+    public function studio()
+    {
+        return $this->belongsTo(\App\Models\Cadastro\Studio::class, 'studio_id');
+    }
 
-        public function studioPlano() {
-            return $this->belongsTo(\App\Models\Cadastro\StudioPlano::class, 'studio_plano_id');
-        }
+    public function filial()
+    {
+        return $this->belongsTo(\App\Models\Cadastro\Filial::class, 'filial_id');
+    }
 
-        public function anamnese() {
-            return $this->hasOne(\App\Models\Anamnese::class, 'cliente_id');
-        }
+    public function studioPlano()
+    {
+        return $this->belongsTo(\App\Models\Cadastro\StudioPlano::class, 'studio_plano_id');
+    }
+
+    public function anamnese()
+    {
+        return $this->hasOne(\App\Models\Anamnese::class, 'cliente_id');
+    }
+
     use HasFactory;
 }

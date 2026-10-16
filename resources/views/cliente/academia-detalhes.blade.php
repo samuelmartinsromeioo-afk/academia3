@@ -482,13 +482,9 @@
         try {
             const body = { academia_id: ACADEMIA_ID };
             if (planoId) body.plano_id = planoId;
-            const res = await fetch('/api/criar-pagamento-academia', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': CSRF },
-                body: JSON.stringify(body),
-            });
-            const data = await res.json();
-            if (!res.ok) throw new Error(data.error || 'Erro ao gerar pagamento.');
+            // `criarCobranca` (partials/cpf-checkout) pede o CPF e repete a
+            // chamada quando o servidor responde `precisa_cpf`.
+            const data = await criarCobranca(body, '/api/criar-pagamento-academia');
 
             document.getElementById('pixQr').src = 'data:image/png;base64,' + data.pixQrCode;
             document.getElementById('pixCopia').value = data.pixPayload;
@@ -633,5 +629,6 @@
         if (e.target === document.getElementById('modalCartao')) fecharModalCartao();
     });
 </script>
+@include('partials.cpf-checkout')
 </body>
 </html>

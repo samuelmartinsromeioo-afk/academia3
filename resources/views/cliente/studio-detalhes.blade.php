@@ -788,13 +788,9 @@
     async function iniciarPix(endpoint, payload, descricao, msgSucesso, precos) {
         abrirModalPix(descricao);
         try {
-            const res = await fetch(endpoint, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': CSRF },
-                body: JSON.stringify(payload),
-            });
-            const data = await res.json();
-            if (!res.ok) throw new Error(data.error || 'Erro ao gerar pagamento.');
+            // `criarCobranca` (partials/cpf-checkout) pede o CPF e repete a
+            // chamada quando o servidor responde `precisa_cpf`.
+            const data = await criarCobranca(payload, endpoint);
 
             document.getElementById('pixQr').src = 'data:image/png;base64,' + data.pixQrCode;
             document.getElementById('pixCopia').value = data.pixPayload;
@@ -978,5 +974,6 @@
         if (e.target === document.getElementById('modalCartao')) fecharModalCartao();
     });
 </script>
+@include('partials.cpf-checkout')
 </body>
 </html>

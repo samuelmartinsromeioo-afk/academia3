@@ -650,6 +650,92 @@ class ComissaoSplitTest extends TestCase
         $this->assertDatabaseMissing('payments', ['user_id' => $this->cliente->id]);
     }
 
+    /**
+     * Sem CPF, a cobrança para com `precisa_cpf` — o sinal que o front espera.
+     *
+     * `POST /v3/customers` exige `cpfCnpj` e o cadastro do aluno não coleta
+     * documento de propósito (quem só usa a parte gratuita não entrega CPF).
+     * Então o pedido acontece no checkout, e o 422 precisa trazer a flag: sem
+     * ela o front não tem como saber que deve abrir o campo e repetir, e a
+     * mensagem viraria mais um beco sem saída.
+     */
+    public function test_sem_cpf_a_cobranca_pede_o_cpf_em_vez_de_falhar(): void
+    {
+        $this->assertNull($this->cliente->cpf, 'o cadastro não coleta CPF');
+
+        $resposta = $this->chamarCobranca();
+
+        $resposta->assertStatus(422);
+        $this->assertTrue($resposta->json('precisa_cpf'), 'o front precisa deste sinal para abrir o campo');
+    }
+
+    /**
+     * Com o CPF informado, cobra E GUARDA — para não pedir de novo.
+     *
+     * Guardar é metade do recurso: sem isso o aluno reinformaria o documento a
+     * cada compra, o que é pior do que tê-lo pedido no cadastro.
+     */
+    public function test_cpf_informado_no_checkout_fica_guardado(): void
+    {
+        $this->chamarCobranca(['cpf' => '529.982.247-25'])->assertOk();
+
+        // Só dígitos: é o formato que o Asaas espera e o que a coluna guarda.
+        $this->assertSame('52998224725', $this->cliente->fresh()->cpf);
+
+        $enviado = collect(Http::recorded())
+            ->first(fn ($par) => $par[0]->method() === 'POST' && str_ends_with($par[0]->url(), '/customers'));
+
+        $this->assertNotNull($enviado, 'o cliente tinha de ser criado no Asaas');
+        $this->assertSame('52998224725', $enviado[0]->data()['cpfCnpj']);
+
+        // A segunda compra não pode pedir nada: o CPF já está gravado.
+        $this->chamarCobranca()->assertOk();
+    }
+
+    /** CPF malformado é recusado aqui, não lá no Asaas. */
+    public function test_cpf_invalido_e_recusado_com_mensagem_propria(): void
+    {
+        $resposta = $this->chamarCobranca(['cpf' => '111.111.111-11']);
+
+        $resposta->assertStatus(422);
+        $this->assertStringContainsString('CPF inválido', $resposta->json('error'));
+        $this->assertTrue($resposta->json('precisa_cpf'));
+        $this->assertNull($this->cliente->fresh()->cpf, 'CPF inválido não pode ser gravado');
+    }
+
+    /** Cobrança de aula avulsa pela porta web, com o corpo mínimo válido. */
+    private function chamarCobranca(array $extra = [])
+    {
+        // Cliente ainda não existe no Asaas: força o caminho de criação, que é
+        // o único que precisa de CPF.
+        Http::swap(new \Illuminate\Http\Client\Factory);
+        Http::fake(function ($request) {
+            $url = $request->url();
+            if (str_contains($url, '/customers') && $request->method() === 'GET') {
+                return Http::response(['data' => []], 200);
+            }
+            if (str_contains($url, '/customers')) {
+                return Http::response(['id' => 'cus_novo'], 200);
+            }
+            if (str_contains($url, '/pixQrCode')) {
+                return Http::response(['payload' => 'PIX', 'encodedImage' => 'IMG'], 200);
+            }
+
+            // Id único por cobrança: `payments.idempotency_key` é derivada
+            // dele, então repetir faria a segunda cobrança do teste colidir.
+            return Http::response(['id' => 'pay_'.uniqid()], 200);
+        });
+
+        return $this->withSession(['cliente_id' => $this->cliente->id])
+            ->postJson('/api/criar-pagamento', array_merge([
+                'personal_id' => $this->personal->id,
+                'tipo' => 'aula_avulsa',
+                'data' => now()->addDays(2)->format('Y-m-d'),
+                'hora_inicio' => '08:00',
+                'hora_fim' => '09:00',
+            ], $extra));
+    }
+
     /** Erro desconhecido do Asaas não é repassado cru: cai no padrão nosso. */
     public function test_erro_desconhecido_nao_vaza(): void
     {

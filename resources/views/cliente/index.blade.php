@@ -1555,6 +1555,9 @@
     const linhaDetalhePix = (base) =>
         `Serviço R$ ${(parseFloat(base) || 0).toFixed(2).replace('.', ',')} + taxa SNR FIT R$ ${taxaAluno(base).toFixed(2).replace('.', ',')}`;
 
+    // `criarCobranca()` e o modal de CPF vêm de `partials/cpf-checkout`,
+    // incluído no fim desta página e nas outras três telas que cobram.
+
     /**
      * Preenche valor + detalhe de um modal de CARTÃO com a cotação do servidor.
      * Enquanto a resposta não chega, mostra o total do Pix (sempre menor que o
@@ -1846,13 +1849,7 @@
         clearInterval(pixPollingInterval);
 
         try {
-            const res = await fetch('/api/criar-pagamento', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}' },
-                body: JSON.stringify(payload),
-            });
-            const pix = await res.json();
-            if (!res.ok) throw new Error(pix.error || 'Erro ao gerar pagamento.');
+            const pix = await criarCobranca(payload);
 
             document.getElementById('pixQrCodeImg').src = 'data:image/png;base64,' + pix.pixQrCode;
             document.getElementById('pixCopiaCola').value = pix.pixPayload;
@@ -2031,13 +2028,7 @@
         clearInterval(pixPollingInterval);
 
         try {
-            const res = await fetch('/api/criar-pagamento', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}' },
-                body: JSON.stringify(payload),
-            });
-            const pix = await res.json();
-            if (!res.ok) throw new Error(pix.error || 'Erro ao gerar pagamento.');
+            const pix = await criarCobranca(payload);
 
             document.getElementById('pixQrCodeImg').src = 'data:image/png;base64,' + pix.pixQrCode;
             document.getElementById('pixCopiaCola').value = pix.pixPayload;
@@ -2972,14 +2963,7 @@
         };
 
         try {
-            const response = await fetch('/api/criar-pagamento', {
-                method:  'POST',
-                headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}' },
-                body: JSON.stringify(payload),
-            });
-
-            const data = await response.json();
-            if (!response.ok) throw new Error(data.error || 'Erro ao gerar pagamento.');
+            const data = await criarCobranca(payload);
 
             // Exibe modal Pix
             document.getElementById('pixQrCodeImg').src = 'data:image/png;base64,' + data.pixQrCode;
@@ -3034,6 +3018,8 @@
 </script>
 
 {{-- MODAL PIX (Asaas) --}}
+@include('partials.cpf-checkout')
+
 <div id="modalPix" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.88); z-index:99999; flex-direction:column; justify-content:center; align-items:center; backdrop-filter:blur(6px); padding:20px;">
     <div style="background:#16181d; border:1px solid rgba(255,255,255,0.08); border-radius:20px; padding:32px; max-width:420px; width:100%; text-align:center; position:relative;">
         <button onclick="fecharModalPix()" style="position:absolute; top:16px; right:16px; background:none; border:none; color:#a0a0a0; font-size:1.2rem; cursor:pointer;">✕</button>
@@ -3482,21 +3468,15 @@
         clearInterval(pixPollingInterval);
 
         try {
-            const res = await fetch('/api/criar-pagamento', {
-                method:  'POST',
-                headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}' },
-                body: JSON.stringify({
-                    tipo:         'aula_avulsa',
-                    personal_id:  personalId,
-                    data:         data,
-                    hora_inicio:  horaInicio,
-                    hora_fim:     horaFim,
-                    academia_nome: academiaNome,
-                    modalidade:   modalidade,
-                }),
+            const pix = await criarCobranca({
+                tipo:         'aula_avulsa',
+                personal_id:  personalId,
+                data:         data,
+                hora_inicio:  horaInicio,
+                hora_fim:     horaFim,
+                academia_nome: academiaNome,
+                modalidade:   modalidade,
             });
-            const pix = await res.json();
-            if (!res.ok) throw new Error(pix.error || 'Erro ao gerar pagamento.');
 
             document.getElementById('pixQrCodeImg').src = 'data:image/png;base64,' + pix.pixQrCode;
             document.getElementById('pixCopiaCola').value = pix.pixPayload;

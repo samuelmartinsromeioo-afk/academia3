@@ -1084,9 +1084,21 @@ class PaymentController extends Controller
         \App\Services\WhatsAppService::notificar($telefone, $mensagem, $template, $params);
     }
 
+    /**
+     * Um só ponto para o CPF, e é por isso que ele está aqui.
+     *
+     * Os ~14 fluxos de cobrança deste controller terminam todos nesta
+     * delegação. Ler o CPF do request aqui cobre os quatorze de uma vez; pôr a
+     * leitura em cada ponto de entrada seria a mesma armadilha do `0.10` da
+     * comissão — a décima quinta cobrança criada amanhã esqueceria.
+     *
+     * O campo só vem preenchido quando o aluno ACABOU de informá-lo no
+     * checkout; nas vezes seguintes já está gravado em `clientes.cpf` e este
+     * argumento chega null, sem pedir nada de novo a ninguém.
+     */
     private function obterOuCriarClienteAsaas(\App\Models\Cadastro\Cliente $cliente): string
     {
-        return $this->asaasService()->obterOuCriarClienteAsaas($cliente);
+        return $this->asaasService()->obterOuCriarClienteAsaas($cliente, request()->input('cpf'));
     }
 
     // ─────────────────────────────────────────────

@@ -599,13 +599,9 @@
         document.getElementById('pixDescricao').textContent = `Pedido — ${LOJA_NOME}`;
         abrirModalPix();
         try {
-            const res = await fetch('/api/criar-pagamento-loja', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': CSRF },
-                body: JSON.stringify(montarPayload()),
-            });
-            const data = await res.json();
-            if (!res.ok) throw new Error(data.error || 'Erro ao gerar pagamento.');
+            // `criarCobranca` (partials/cpf-checkout) pede o CPF e repete a
+            // chamada quando o servidor responde `precisa_cpf`.
+            const data = await criarCobranca(montarPayload(), '/api/criar-pagamento-loja');
 
             document.getElementById('pixQr').src = 'data:image/png;base64,' + data.pixQrCode;
             document.getElementById('pixCopia').value = data.pixPayload;
@@ -740,5 +736,6 @@
         if (e.target === document.getElementById('modalCartao')) fecharModalCartao();
     });
 </script>
+@include('partials.cpf-checkout')
 </body>
 </html>

@@ -859,14 +859,14 @@ class AsaasService
      *
      * ─── `cpfCnpj` É OBRIGATÓRIO NA API DO ASAAS ────────────────────────────
      *
-     * `POST /v3/customers` declara `"required": ["name", "cpfCnpj"]`. A tabela
-     * `clientes` NÃO tem coluna de CPF — nenhum dos dois cadastros o coleta —
-     * então ele não tem de onde sair, e é por isso que o campo vai condicional:
-     * mandar `cpfCnpj => null` é pior que omitir (o Asaas valida o formato do
-     * que foi enviado). Enquanto não houver CPF do aluno, a criação de cliente
-     * novo depende de o Asaas aceitar sem ele.
+     * `POST /v3/customers` declara `"required": ["name", "cpfCnpj"]`, e a
+     * tabela `clientes` não tinha o campo. O CPF é pedido no CHECKOUT — ver
+     * `garantirCpfDoCliente()` logo abaixo, que é quem resolve de onde ele vem.
+     *
+     * A busca por e-mail roda ANTES e é o que mascarava o defeito: quem já
+     * existia no Asaas passava direto, e só aluno novo quebrava.
      */
-    public function obterOuCriarClienteAsaas(Cliente $cliente): string
+    public function obterOuCriarClienteAsaas(Cliente $cliente, ?string $cpfInformado = null): string
     {
         $search = Http::withHeaders($this->asaasHeaders())
             ->get($this->asaas().'/customers', ['email' => $cliente->email]);
@@ -878,14 +878,11 @@ class AsaasService
         $payload = [
             'name' => $cliente->nome,
             'email' => $cliente->email,
+            'cpfCnpj' => $this->garantirCpfDoCliente($cliente, $cpfInformado),
             // Deixa o cliente rastreável no painel do Asaas a partir do nosso
             // id — a busca acima é por e-mail, que o aluno pode trocar.
             'externalReference' => 'cliente_'.$cliente->id,
         ];
-
-        if ($cpf = preg_replace('/\D/', '', (string) ($cliente->cpf ?? ''))) {
-            $payload['cpfCnpj'] = $cpf;
-        }
 
         $create = Http::withHeaders($this->asaasHeaders())
             ->post($this->asaas().'/customers', $payload);
@@ -912,6 +909,78 @@ class AsaasService
         }
 
         return (string) $id;
+    }
+
+    /**
+     * O CPF do aluno, exigido pelo Asaas — guardado na primeira vez que ele paga.
+     *
+     * Por que no checkout e não no cadastro: quem só usa a parte gratuita
+     * nunca precisa entregar documento (minimização de dado, LGPD art. 6º,
+     * III), e exigir no cadastro quebraria o app já publicado na loja, que não
+     * manda o campo. O fluxo de cartão já pedia o CPF do portador na hora de
+     * pagar; aqui o valor passa a ser GUARDADO, então é pedido uma vez só.
+     *
+     * Quando não há CPF nenhum, responde 422 com `precisa_cpf: true`. Essa
+     * flag é o contrato com o front: é ela que diz "abra o campo de CPF e
+     * repita a chamada", em vez de obrigar toda tela de pagamento a exibir um
+     * campo que a maioria dos alunos não precisa preencher duas vezes.
+     *
+     * Só é chamado DEPOIS da busca por e-mail, ou seja, só quando o cliente
+     * precisa mesmo ser criado. Essa ordem é o que impede a exigência de
+     * alcançar quem já paga hoje: quem já tem cliente no Asaas nunca passa
+     * por aqui, e o app publicado na loja — que não manda `cpf` — continua
+     * funcionando para ele.
+     */
+    private function garantirCpfDoCliente(Cliente $cliente, ?string $informado): string
+    {
+        if ($cpf = $this->capturarCpfDoCliente($cliente, $informado)) {
+            return $cpf;
+        }
+
+        abort(response()->json([
+            'error' => 'Para gerar a cobrança precisamos do seu CPF. '
+                .'Ele é exigido pelo processador de pagamentos e fica guardado para as próximas vezes.',
+            'precisa_cpf' => true,
+        ], 422));
+    }
+
+    /**
+     * Guarda o CPF que o aluno informou e devolve o que vale agora — sem
+     * nunca barrar ninguém.
+     *
+     * Separado de `garantirCpfDoCliente()` por uma razão concreta: os pontos
+     * de entrada querem APROVEITAR o CPF quando ele vem, mas não podem exigir.
+     * Exigir na porta alcançaria também quem já tem cliente criado no Asaas e
+     * nunca precisou informar documento — inclusive quem está no app já
+     * publicado na loja, que não manda o campo. Seria quebrar quem paga hoje
+     * para consertar quem não consegue pagar.
+     *
+     * CPF malformado aborta, e aqui a exceção é certa: o aluno DIGITOU algo,
+     * então há o que corrigir na tela. Ignorar em silêncio mandaria um número
+     * errado ao Asaas e a falha voltaria disfarçada de outra coisa.
+     */
+    public function capturarCpfDoCliente(Cliente $cliente, ?string $informado): ?string
+    {
+        $guardado = preg_replace('/\D/', '', (string) ($cliente->cpf ?? ''));
+        $novo = preg_replace('/\D/', '', (string) $informado);
+
+        if ($novo === '') {
+            return $guardado ?: null;
+        }
+
+        if (! \App\Support\CadastroHelper::validarCPF($novo)) {
+            abort(response()->json([
+                'error' => 'CPF inválido. Confira os números e tente de novo.',
+                'precisa_cpf' => true,
+            ], 422));
+        }
+
+        // Grava só quando muda, para não escrever no banco a cada cobrança.
+        if ($novo !== $guardado) {
+            $cliente->forceFill(['cpf' => $novo])->save();
+        }
+
+        return $novo;
     }
 
     // ─────────────────────────────────────────────

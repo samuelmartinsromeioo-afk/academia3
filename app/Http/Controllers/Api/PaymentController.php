@@ -83,7 +83,24 @@ class PaymentController extends Controller
         $dados = $request->validate([
             'contexto' => 'required|in:personal,academia,studio_plano,loja',
             'metodo' => 'nullable|in:pix,cartao',
+            // Opcional porque só é necessário na PRIMEIRA cobrança da vida do
+            // aluno; depois fica gravado. Obrigatório fosse, todo app já
+            // publicado na loja tomaria 422.
+            'cpf' => 'nullable|string|min:11|max:18',
         ]);
+
+        /*
+         * O CPF é exigido pelo Asaas para CRIAR o cliente, e os quatro
+         * contextos abaixo passam todos por lá. Captura-se aqui, na porta
+         * única, para não repetir a regra em cada um.
+         *
+         * Capturar, não exigir: quem já tem cliente criado no Asaas nunca
+         * chega à criação, e exigir na porta derrubaria justamente quem já
+         * paga hoje pelo app publicado na loja, que não manda o campo. Quem de
+         * fato precisar recebe 422 com `precisa_cpf: true` lá adiante — o
+         * sinal para o app abrir o campo e repetir a chamada.
+         */
+        $this->asaas->capturarCpfDoCliente($cliente, $dados['cpf'] ?? null);
 
         // 'cartao' → billingType UNDEFINED: o Asaas gera um checkout hospedado
         // (invoiceUrl) onde o cliente escolhe crédito/débito. 'pix' (padrão) segue
