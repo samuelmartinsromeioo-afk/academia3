@@ -84,6 +84,9 @@
         <ul>
             <li><strong>Controlador:</strong> {{ $emp('razao_social') }}</li>
             <li><strong>CNPJ:</strong> {{ $emp('cnpj') }}</li>
+            @if($endereco = \App\Support\Empresa::enderecoCompleto())
+                <li><strong>Endereço:</strong> {{ $endereco }}</li>
+            @endif
             <li><strong>Encarregado pelo Tratamento de Dados Pessoais (DPO):</strong>
                 {{ $emp('dpo_nome') }} —
                 <a href="mailto:{{ $emp('dpo_email') }}">{{ $emp('dpo_email') }}</a></li>

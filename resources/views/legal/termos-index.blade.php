@@ -96,6 +96,16 @@
     <ul>
         <li><strong>Razão social:</strong> {{ $emp('razao_social') }}</li>
         <li><strong>CNPJ:</strong> {{ $emp('cnpj') }}</li>
+        {{--
+            Endereço físico em local de destaque é exigência do art. 2º, I e
+            II, do Decreto nº 7.962/2013 — e a sua ausência é infração ao CDC
+            por si, além de enfraquecer as cláusulas 14 e 15 deste contrato.
+            Sai de `Empresa::enderecoCompleto()`, que omite parte pendente em
+            vez de imprimir placeholder.
+        --}}
+        @if($endereco = \App\Support\Empresa::enderecoCompleto())
+            <li><strong>Endereço:</strong> {{ $endereco }}</li>
+        @endif
         <li><strong>Atendimento (SAC):</strong> <a href="mailto:{{ $emp('email_suporte') }}">{{ $emp('email_suporte') }}</a></li>
         <li><strong>Encarregado pelo Tratamento de Dados Pessoais (LGPD, art. 41):</strong>
             {{ $emp('dpo_nome') }} — <a href="mailto:{{ $emp('dpo_email') }}">{{ $emp('dpo_email') }}</a></li>
@@ -1418,15 +1428,25 @@
             <strong>seu domicílio</strong> (art. 101, I, do Código de Defesa do Consumidor), não sendo
             oponível a ele qualquer eleição de foro diversa.</li>
         {{--
-            A comarca não é nomeada porque o endereço do titular não é divulgado
-            (ver o bloco sobre endereço e telefone em `config/empresa.php`). Fica
-            determinável pelo registro no CNPJ, que é público — um foro eleito que
-            o aderente não consegue identificar não é eleição válida, e um
-            placeholder `[COMARCA]` num contrato em vigor é pior ainda.
+            A comarca passou a ser NOMEADA em 2026-10-19, quando o endereço da
+            sede foi divulgado. Sai de `Empresa::comarca()`, que a DERIVA de
+            `cidade`/`uf` — nunca de um campo próprio, que poderia discordar da
+            sede e tornar a eleição inválida.
+
+            Sem cidade conhecida, volta ao texto "comarca da sede, conforme o
+            registro no CNPJ": determinável e válido. Um placeholder
+            `[COMARCA]` num contrato em vigor seria pior que os dois.
         --}}
-        <li><strong>Relações não consumeristas</strong> (Profissionais e estabelecimentos no exercício
-            da sua atividade econômica): fica eleito o foro da <strong>comarca da sede da SNR FIT</strong>,
-            conforme consta do seu registro no CNPJ, com renúncia a qualquer outro.</li>
+        @if($comarca = \App\Support\Empresa::comarca())
+            <li><strong>Relações não consumeristas</strong> (Profissionais e estabelecimentos no exercício
+                da sua atividade econômica): fica eleito o foro da
+                <strong>comarca de {{ $comarca }}</strong>, sede da SNR FIT, com renúncia a
+                qualquer outro.</li>
+        @else
+            <li><strong>Relações não consumeristas</strong> (Profissionais e estabelecimentos no exercício
+                da sua atividade econômica): fica eleito o foro da <strong>comarca da sede da SNR FIT</strong>,
+                conforme consta do seu registro no CNPJ, com renúncia a qualquer outro.</li>
+        @endif
         <li><strong>Solução amigável:</strong> incentivamos o contato prévio pelo nosso atendimento e,
             para consumidores, o uso da plataforma pública
             <a href="https://www.consumidor.gov.br" target="_blank" rel="noopener">consumidor.gov.br</a>,

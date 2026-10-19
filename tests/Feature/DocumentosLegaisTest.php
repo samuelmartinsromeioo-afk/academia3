@@ -247,9 +247,15 @@ class DocumentosLegaisTest extends TestCase
      * saem de `config/empresa.php` e o teste cobra o **valor**, não a palavra
      * "CNPJ": a asserção antiga passava com o campo vazio ao lado do rótulo.
      *
-     * Endereço físico e telefone saíram dos documentos por decisão do titular —
-     * ver o bloco que registra isso em `config/empresa.php`. Por isso não são
-     * cobrados aqui.
+     * O ENDEREÇO voltou a ser cobrado em 2026-10-19, quando o titular o
+     * informou. É o item do art. 2º que custava mais caro estando ausente: a
+     * falta é infração ao CDC por si e enfraquece as cláusulas 14 e 15 do
+     * próprio contrato. Telefone segue não divulgado, por decisão, e por isso
+     * segue fora.
+     *
+     * A asserção é sobre `enderecoCompleto()`, não sobre os campos soltos,
+     * porque é a string montada que o leitor vê — e é nela que uma parte
+     * pendente poderia aparecer como `[CEP]`.
      */
     public function test_documentos_identificam_o_titular(): void
     {
@@ -263,7 +269,60 @@ class DocumentosLegaisTest extends TestCase
                     "A rota [{$rota}] tem de exibir `empresa.{$campo}`."
                 );
             }
+
+            $this->assertStringContainsString(
+                \App\Support\Empresa::enderecoCompleto(),
+                $html,
+                "A rota [{$rota}] tem de exibir o endereço da sede (Decreto 7.962/2013, art. 2º, I e II)."
+            );
         }
+    }
+
+    /**
+     * A comarca do foro é a da sede, e sai DERIVADA de `cidade`/`uf`.
+     *
+     * Um campo próprio para a comarca poderia discordar da sede divulgada, e
+     * foro eleito que não corresponde à sede registrada não é eleição válida.
+     * Por isso o teste afirma a relação entre as duas coisas, não o nome da
+     * cidade: trocar a sede no config tem de mover as duas juntas.
+     */
+    public function test_comarca_do_foro_acompanha_a_sede(): void
+    {
+        $comarca = \App\Support\Empresa::comarca();
+
+        $this->assertNotNull($comarca, 'Com cidade/uf no config, a comarca tem de ser nomeável.');
+        $this->assertStringContainsString(\App\Support\Empresa::get('cidade'), $comarca);
+        $this->assertStringContainsString(\App\Support\Empresa::get('uf'), $comarca);
+
+        $this->assertStringContainsString(
+            'comarca de '.$comarca,
+            $this->html('termos'),
+            'A cláusula 21 tem de nomear a comarca da sede.'
+        );
+    }
+
+    /**
+     * Parte pendente do endereço é OMITIDA, nunca impressa como `[CEP]`.
+     *
+     * A convenção do colchete vale para o dado que, faltando, tornaria a frase
+     * FALSA — razão social ou CNPJ inventado é declaração falsa, e ali o
+     * placeholder visível é o certo. Endereço sem CEP não afirma nada errado:
+     * é só menos completo. Este teste fixa a diferença, que é o motivo de
+     * `enderecoCompleto()` existir em vez de uma concatenação na view.
+     */
+    public function test_endereco_omite_parte_pendente_em_vez_de_imprimir_colchete(): void
+    {
+        config(['empresa.cep' => '[CEP]']);
+
+        $endereco = \App\Support\Empresa::enderecoCompleto();
+
+        $this->assertStringNotContainsString('[', $endereco);
+        $this->assertStringNotContainsString('CEP', $endereco);
+        $this->assertStringContainsString(\App\Support\Empresa::get('endereco'), $endereco);
+
+        // Com CEP conhecido ele entra, rotulado.
+        config(['empresa.cep' => '31730-400']);
+        $this->assertStringContainsString('CEP 31730-400', \App\Support\Empresa::enderecoCompleto());
     }
 
     /**

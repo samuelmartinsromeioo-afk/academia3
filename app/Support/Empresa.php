@@ -14,17 +14,82 @@ class Empresa
     /**
      * Campos sem os quais a identificação legal está incompleta.
      *
-     * `endereco`/`cidade`/`uf`/`cep`/`comarca`/`telefone` saíram daqui porque
-     * saíram do config — ver o bloco sobre endereço e telefone em
-     * `config/empresa.php`, que registra a decisão e o que ela custa.
+     * O endereço voltou em 2026-10-19 (ver o bloco em `config/empresa.php`).
+     *
+     * Três ausências desta lista, por três motivos diferentes:
+     *
+     *  - `telefone` continua não divulgado, por decisão do titular.
+     *  - `comarca` é DERIVADA de `cidade`/`uf`. Campo derivado na lista de
+     *    obrigatórios seria uma segunda cópia do dado esperando para divergir.
+     *  - `cep` **não é requisito legal**. O art. 2º, I e II, do Decreto nº
+     *    7.962/2013 exige "endereço físico", e rua + número + bairro + cidade
+     *    + UF já é um endereço físico — localiza a empresa e define a comarca.
+     *    O CEP é completude, não identificação, e por isso a sua falta não
+     *    pode tornar `incompleto()` verdadeiro: isso deixaria um teste
+     *    vermelho em permanência, que é como um sinal de alarme deixa de ser
+     *    lido. Ele segue como placeholder visível no config para quem for
+     *    preencher, e `enderecoCompleto()` o omite enquanto não vier.
      */
     private const OBRIGATORIOS = [
         'razao_social', 'cnpj', 'dpo_nome',
+        'endereco', 'numero', 'bairro', 'cidade', 'uf',
     ];
 
     public static function get(string $chave): string
     {
         return (string) config("empresa.{$chave}", '');
+    }
+
+    /**
+     * Endereço da sede em uma linha, para a seção de identificação.
+     *
+     * Parte pendente é OMITIDA, não impressa como `[CEP]`. A convenção do
+     * colchete existe para o dado que, faltando, tornaria a frase falsa — uma
+     * razão social ou um CNPJ inventado é declaração falsa, e ali o
+     * placeholder visível é o certo. Um endereço sem CEP não afirma nada de
+     * errado: é só menos completo. Então o documento público mostra o
+     * endereço verdadeiro que se tem, e quem mantém o sistema continua vendo
+     * a falta por `incompleto()`/`lacunas()`.
+     */
+    public static function enderecoCompleto(): string
+    {
+        $rua = self::pendente('endereco') ? '' : self::get('endereco');
+        $numero = self::pendente('numero') ? '' : self::get('numero');
+        $bairro = self::pendente('bairro') ? '' : self::get('bairro');
+        $cidade = self::pendente('cidade') ? '' : self::get('cidade');
+        $uf = self::pendente('uf') ? '' : self::get('uf');
+        $cep = self::pendente('cep') ? '' : self::get('cep');
+
+        $logradouro = trim($rua.($numero !== '' ? ', '.$numero : ''));
+        $municipio = trim($cidade.($uf !== '' ? '/'.$uf : ''), '/');
+
+        return implode(' — ', array_filter([
+            $logradouro,
+            $bairro,
+            $municipio,
+            $cep !== '' ? 'CEP '.$cep : '',
+        ], fn ($p) => trim((string) $p) !== ''));
+    }
+
+    /**
+     * Comarca do foro da sede, para a cláusula 21 dos Termos.
+     *
+     * Derivada de `cidade`/`uf` de propósito: a comarca É a da sede, e um
+     * campo próprio no config permitiria que os dois discordassem — um foro
+     * eleito que não corresponde à sede registrada não é eleição válida.
+     * Devolve null quando a cidade não é conhecida, e aí a cláusula volta a
+     * dizer "comarca da sede, conforme o registro no CNPJ", que é
+     * determinável e continua válido.
+     */
+    public static function comarca(): ?string
+    {
+        if (self::pendente('cidade') || self::get('cidade') === '') {
+            return null;
+        }
+
+        $uf = self::pendente('uf') ? '' : self::get('uf');
+
+        return self::get('cidade').($uf !== '' ? '/'.$uf : '');
     }
 
     /**
