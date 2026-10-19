@@ -237,16 +237,16 @@ class ProgressoController extends Controller
                  * mandar ATUALIZAR O APP, em vez de pedir para marcar uma caixa
                  * que naquela tela não existe.
                  */
-                'consentimento'         => 'accepted',
-                'objetivo_principal'    => 'nullable|string|max:255',
-                'nivel_atividade'       => 'nullable|in:sedentario,leve,moderado,intenso',
-                'historico_lesoes'      => 'nullable|string',
-                'restricoes_medicas'    => 'nullable|string',
+                'consentimento' => 'accepted',
+                'objetivo_principal' => 'nullable|string|max:255',
+                'nivel_atividade' => 'nullable|in:sedentario,leve,moderado,intenso',
+                'historico_lesoes' => 'nullable|string',
+                'restricoes_medicas' => 'nullable|string',
                 'doencas_preexistentes' => 'nullable|string',
-                'medicamentos'          => 'nullable|string',
-                'cirurgias'             => 'nullable|string',
-                'parq_observacoes'      => 'nullable|string',
-                'observacoes'           => 'nullable|string',
+                'medicamentos' => 'nullable|string',
+                'cirurgias' => 'nullable|string',
+                'parq_observacoes' => 'nullable|string',
+                'observacoes' => 'nullable|string',
             ],
             ['consentimento.accepted' => 'Atualize o app para continuar: a anamnese passou a exigir o consentimento de uso dos dados de saúde.']
         );
@@ -265,23 +265,23 @@ class ProgressoController extends Controller
             return Anamnese::updateOrCreate(
                 ['cliente_id' => $cliente->id],
                 [
-                    'objetivo_principal'    => $request->objetivo_principal,
-                    'nivel_atividade'       => $request->nivel_atividade,
-                    'historico_lesoes'      => $request->historico_lesoes,
-                    'restricoes_medicas'    => $request->restricoes_medicas,
+                    'objetivo_principal' => $request->objetivo_principal,
+                    'nivel_atividade' => $request->nivel_atividade,
+                    'historico_lesoes' => $request->historico_lesoes,
+                    'restricoes_medicas' => $request->restricoes_medicas,
                     'doencas_preexistentes' => $request->doencas_preexistentes,
-                    'medicamentos'          => $request->medicamentos,
-                    'cirurgias'             => $request->cirurgias,
-                    'parq_1'                => $request->boolean('parq_1'),
-                    'parq_2'                => $request->boolean('parq_2'),
-                    'parq_3'                => $request->boolean('parq_3'),
-                    'parq_4'                => $request->boolean('parq_4'),
-                    'parq_5'                => $request->boolean('parq_5'),
-                    'parq_6'                => $request->boolean('parq_6'),
-                    'parq_7'                => $request->boolean('parq_7'),
-                    'parq_observacoes'      => $request->parq_observacoes,
-                    'observacoes'           => $request->observacoes,
-                    'preenchida_em'         => now(),
+                    'medicamentos' => $request->medicamentos,
+                    'cirurgias' => $request->cirurgias,
+                    'parq_1' => $request->boolean('parq_1'),
+                    'parq_2' => $request->boolean('parq_2'),
+                    'parq_3' => $request->boolean('parq_3'),
+                    'parq_4' => $request->boolean('parq_4'),
+                    'parq_5' => $request->boolean('parq_5'),
+                    'parq_6' => $request->boolean('parq_6'),
+                    'parq_7' => $request->boolean('parq_7'),
+                    'parq_observacoes' => $request->parq_observacoes,
+                    'observacoes' => $request->observacoes,
+                    'preenchida_em' => now(),
                 ]
             );
         });
@@ -326,7 +326,7 @@ class ProgressoController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Consentimento revogado e anamnese apagada. Sua conta continua ativa, '
-                . 'e enviamos a confirmação para o seu e-mail.',
+                .'e enviamos a confirmação para o seu e-mail.',
         ]);
     }
 
@@ -338,6 +338,7 @@ class ProgressoController extends Controller
         foreach (array_keys(MedidaCorporal::CAMPOS) as $campo) {
             $json[$campo] = $m->$campo !== null ? (float) $m->$campo : null;
         }
+
         return $json;
     }
 

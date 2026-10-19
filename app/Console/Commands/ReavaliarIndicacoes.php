@@ -26,11 +26,11 @@ class ReavaliarIndicacoes extends Command
 
     public function handle(CupomService $cupons): int
     {
-        $meta       = (int) config('indicacao.meta_alunos', 6);
-        $dias       = (int) config('indicacao.janela_dias', 35);
+        $meta = (int) config('indicacao.meta_alunos', 6);
+        $dias = (int) config('indicacao.janela_dias', 35);
         $percentual = (float) config('indicacao.percentual', 0.10) * 100;
-        $liberados  = 0;
-        $vistos     = 0;
+        $liberados = 0;
+        $vistos = 0;
 
         // Em lotes: cada indicação consulta os pagamentos do indicado na janela.
         CupomUso::pendentes()

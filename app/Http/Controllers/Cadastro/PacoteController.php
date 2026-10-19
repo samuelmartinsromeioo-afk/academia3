@@ -37,16 +37,16 @@ class PacoteController extends Controller
         $pacotesCriados = 0;
         foreach ($request->precos as $frequencia => $valor) {
             // Converte para float e verifica se é válido
-            $valorFloat = (float)$valor;
+            $valorFloat = (float) $valor;
 
-            if (!empty($valor) && $valorFloat > 0) {
+            if (! empty($valor) && $valorFloat > 0) {
                 Pacote::updateOrCreate(
                     [
                         'personal_id' => $personalId,
-                        'frequencia' => $frequencia
+                        'frequencia' => $frequencia,
                     ],
                     [
-                        'valor_mensal' => $valorFloat
+                        'valor_mensal' => $valorFloat,
                     ]
                 );
                 $pacotesCriados++;

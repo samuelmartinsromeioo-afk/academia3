@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Hash;
 class Admin extends Model
 {
     protected $table = 'admins';
+
     public $timestamps = true;
 
     protected $fillable = [

@@ -250,8 +250,8 @@ class IdadeMinimaCadastroTest extends TestCase
             $limites = CadastroHelper::limitesNascimento($minima);
             $regra = CadastroHelper::regraNascimento($minima);
 
-            $this->assertContains('before_or_equal:' . $limites['max'], $regra);
-            $this->assertContains('after_or_equal:' . $limites['min'], $regra);
+            $this->assertContains('before_or_equal:'.$limites['max'], $regra);
+            $this->assertContains('after_or_equal:'.$limites['min'], $regra);
             $this->assertSame(now()->subYears($minima)->toDateString(), $limites['max']);
         }
     }
@@ -265,12 +265,12 @@ class IdadeMinimaCadastroTest extends TestCase
     {
         $this->get(route('form.cliente'))
             ->assertOk()
-            ->assertSee('max="' . CadastroHelper::limitesNascimento(CadastroHelper::IDADE_MINIMA_ALUNO)['max'] . '"', false)
-            ->assertSee('no mínimo ' . CadastroHelper::IDADE_MINIMA_ALUNO . ' anos');
+            ->assertSee('max="'.CadastroHelper::limitesNascimento(CadastroHelper::IDADE_MINIMA_ALUNO)['max'].'"', false)
+            ->assertSee('no mínimo '.CadastroHelper::IDADE_MINIMA_ALUNO.' anos');
 
         $this->get(route('form.personal'))
             ->assertOk()
-            ->assertSee('max="' . CadastroHelper::limitesNascimento(CadastroHelper::IDADE_MINIMA_PROFISSIONAL)['max'] . '"', false)
-            ->assertSee('no mínimo ' . CadastroHelper::IDADE_MINIMA_PROFISSIONAL . ' anos');
+            ->assertSee('max="'.CadastroHelper::limitesNascimento(CadastroHelper::IDADE_MINIMA_PROFISSIONAL)['max'].'"', false)
+            ->assertSee('no mínimo '.CadastroHelper::IDADE_MINIMA_PROFISSIONAL.' anos');
     }
 }

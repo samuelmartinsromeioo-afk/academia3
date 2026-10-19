@@ -114,9 +114,9 @@ class FichaTreinoController extends Controller
         foreach ($ficha->exercicios as $exercicio) {
             $dados = $registros[$exercicio->id] ?? [];
 
-            $peso       = array_key_exists('peso', $dados) ? $dados['peso'] : $exercicio->peso;
+            $peso = array_key_exists('peso', $dados) ? $dados['peso'] : $exercicio->peso;
             $repeticoes = array_key_exists('repeticoes', $dados) ? $dados['repeticoes'] : $exercicio->repeticoes;
-            $series     = array_key_exists('series', $dados) ? $dados['series'] : $exercicio->series;
+            $series = array_key_exists('series', $dados) ? $dados['series'] : $exercicio->series;
 
             $pesoFinal = ($peso === '' || $peso === null) ? null : (float) $peso;
 
@@ -127,8 +127,8 @@ class FichaTreinoController extends Controller
                     ->max('peso');
 
                 if ($maxAnterior !== null && $pesoFinal > (float) $maxAnterior) {
-                    $recordes[] = $exercicio->nome_exercicio . ' — '
-                        . rtrim(rtrim(number_format($pesoFinal, 2, ',', '.'), '0'), ',') . ' kg';
+                    $recordes[] = $exercicio->nome_exercicio.' — '
+                        .rtrim(rtrim(number_format($pesoFinal, 2, ',', '.'), '0'), ',').' kg';
 
                     $aumento = round($pesoFinal - (float) $maxAnterior, 1);
                     if ($aumento > 0 && ($topCarga === null || $aumento > $topCarga['aumento'])) {
@@ -140,12 +140,12 @@ class FichaTreinoController extends Controller
             RegistroExercicio::updateOrCreate(
                 ['treino_concluido_id' => $treino->id, 'nome_exercicio' => $exercicio->nome_exercicio],
                 [
-                    'cliente_id'         => $cliente->id,
+                    'cliente_id' => $cliente->id,
                     'exercicio_ficha_id' => $exercicio->id,
-                    'data_treino'        => $data,
-                    'peso'               => $pesoFinal,
-                    'repeticoes'         => ($repeticoes === '' || $repeticoes === null) ? null : $repeticoes,
-                    'series'             => ($series === '' || $series === null) ? null : $series,
+                    'data_treino' => $data,
+                    'peso' => $pesoFinal,
+                    'repeticoes' => ($repeticoes === '' || $repeticoes === null) ? null : $repeticoes,
+                    'series' => ($series === '' || $series === null) ? null : $series,
                 ]
             );
         }
@@ -448,6 +448,7 @@ class FichaTreinoController extends Controller
             }
             $d->addDay();
         }
+
         return $count;
     }
 

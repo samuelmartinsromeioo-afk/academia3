@@ -2,27 +2,25 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Controllers\Controller;
-use App\Models\Cadastro\Personal;
-use App\Models\Cadastro\Cliente;
-use App\Models\Cadastro\Studio;
-use App\Models\Cadastro\Loja;
-use App\Models\Cadastro\Academia;
 use App\Models\Admin;
 use App\Models\Agenda;
+use App\Models\Cadastro\Academia;
+use App\Models\Cadastro\Cliente;
+use App\Models\Cadastro\Loja;
+use App\Models\Cadastro\Personal;
+use App\Models\Cadastro\Studio;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Crypt;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
-use Carbon\Carbon;
 
 class AdminController extends Controller
 {
     // ✅ DASHBOARD - Visão geral do sistema
     public function dashboard()
     {
-        if (!session('admin_id')) {
+        if (! session('admin_id')) {
             return redirect()->route('login.index');
         }
 
@@ -58,7 +56,7 @@ class AdminController extends Controller
     // ✅ LISTAR TODOS OS PERSONALS COM FILTRO
     public function listarPersonals(Request $request)
     {
-        if (!session('admin_id')) {
+        if (! session('admin_id')) {
             return redirect()->route('login.index');
         }
 
@@ -77,7 +75,7 @@ class AdminController extends Controller
         if ($busca) {
             $query->where(function ($q) use ($busca) {
                 $q->where('nome', 'LIKE', "%$busca%")
-                  ->orWhere('email', 'LIKE', "%$busca%");
+                    ->orWhere('email', 'LIKE', "%$busca%");
             });
         }
 
@@ -123,7 +121,7 @@ class AdminController extends Controller
     // ✅ VER DETALHES DO PERSONAL
     public function verDetalhes($id)
     {
-        if (!session('admin_id')) {
+        if (! session('admin_id')) {
             return redirect()->route('login.index');
         }
 
@@ -161,89 +159,91 @@ class AdminController extends Controller
     }
 
     // ✅ APROVAR PERSONAL
-   public function aprovar(Request $request, $id)
-{
-    Log::info("========== INICIANDO APROVAÇÃO ==========");
-    Log::info("ID: " . $id);
-    Log::info("Admin ID: " . session('admin_id'));
+    public function aprovar(Request $request, $id)
+    {
+        Log::info('========== INICIANDO APROVAÇÃO ==========');
+        Log::info('ID: '.$id);
+        Log::info('Admin ID: '.session('admin_id'));
 
-    if (!session('admin_id')) {
-        Log::error("Sem sessão admin!");
-        return redirect()->route('login.index');
-    }
+        if (! session('admin_id')) {
+            Log::error('Sem sessão admin!');
 
-    /*
-     * A aprovação exige a conferência do CREF no conselho, e a registra.
-     *
-     * Os Termos (cláusula 3.3 geral e cláusula 2 do personal) afirmam que a
-     * aprovação é "conferência cadastral de plausibilidade". Era verdade na
-     * intenção: nada no formulário pedia a conferência do registro
-     * profissional e nada no banco guardava se ela ocorreu — então, depois,
-     * não havia como saber se alguém olhou o CREF ou se o botão foi clicado.
-     * Num litígio sobre profissional sem habilitação é exatamente esse
-     * registro que separa diligência de negligência.
-     *
-     * `accepted` e não `boolean`: o admin tem de afirmar, não apenas enviar o
-     * campo.
-     */
-    $dadosConferencia = $request->validate(
-        [
-            'cref_conferido' => 'accepted',
-            'cref_conferido_resultado' => 'nullable|string|max:120',
-        ],
-        ['cref_conferido.accepted' => 'Confirme que o CREF foi conferido no conselho antes de aprovar.']
-    );
+            return redirect()->route('login.index');
+        }
 
-    try {
-        $personal = Personal::findOrFail($id);
-        Log::info("Personal encontrado: " . $personal->nome);
-        Log::info("Status antes: " . $personal->status);
-
-        $resultado = $personal->update([
-            'status' => 'aprovado',
-            'data_aprovacao' => now(),
-            'motivo_rejeicao' => null,
-            'cref_conferido_em' => now(),
-            'cref_conferido_por' => session('admin_id'),
-            'cref_conferido_resultado' => $dadosConferencia['cref_conferido_resultado'] ?? null,
-        ]);
-
-        Log::info("Update retornou: " . ($resultado ? 'TRUE' : 'FALSE'));
-        
-        $personal->refresh();
-        Log::info("Status depois de refresh: " . $personal->status);
-        Log::info("✅ Atualizado com sucesso!");
-
-        // Notifica o personal da aprovação (e-mail + WhatsApp)
-        $primeiroNome = explode(' ', trim($personal->nome))[0];
-        \App\Services\NotificacaoService::personal(
-            $personal,
-            'Cadastro aprovado — bem-vindo(a) ao SnrFit! 🎉',
-            "🎉 *Parabéns, {$primeiroNome}!*\n\n".
-            "Seu cadastro como personal foi *aprovado* na SnrFit.\n".
-            "Você já pode acessar a plataforma com seu e-mail e senha para gerenciar agenda, alunos, pacotes e muito mais.\n\n".
-            "Bons treinos! 💪",
-            'cadastro_aprovado_personal',
-            [$primeiroNome]
+        /*
+         * A aprovação exige a conferência do CREF no conselho, e a registra.
+         *
+         * Os Termos (cláusula 3.3 geral e cláusula 2 do personal) afirmam que a
+         * aprovação é "conferência cadastral de plausibilidade". Era verdade na
+         * intenção: nada no formulário pedia a conferência do registro
+         * profissional e nada no banco guardava se ela ocorreu — então, depois,
+         * não havia como saber se alguém olhou o CREF ou se o botão foi clicado.
+         * Num litígio sobre profissional sem habilitação é exatamente esse
+         * registro que separa diligência de negligência.
+         *
+         * `accepted` e não `boolean`: o admin tem de afirmar, não apenas enviar o
+         * campo.
+         */
+        $dadosConferencia = $request->validate(
+            [
+                'cref_conferido' => 'accepted',
+                'cref_conferido_resultado' => 'nullable|string|max:120',
+            ],
+            ['cref_conferido.accepted' => 'Confirme que o CREF foi conferido no conselho antes de aprovar.']
         );
 
-        return redirect()->back()->with('success', "Personal '{$personal->nome}' aprovado com sucesso! ✅");
-    } catch (\Exception $e) {
-        Log::error("❌ Erro ao aprovar: " . $e->getMessage());
-        Log::error("Stack: " . $e->getTraceAsString());
-        return redirect()->back()->with('error', "Erro: " . $e->getMessage());
+        try {
+            $personal = Personal::findOrFail($id);
+            Log::info('Personal encontrado: '.$personal->nome);
+            Log::info('Status antes: '.$personal->status);
+
+            $resultado = $personal->update([
+                'status' => 'aprovado',
+                'data_aprovacao' => now(),
+                'motivo_rejeicao' => null,
+                'cref_conferido_em' => now(),
+                'cref_conferido_por' => session('admin_id'),
+                'cref_conferido_resultado' => $dadosConferencia['cref_conferido_resultado'] ?? null,
+            ]);
+
+            Log::info('Update retornou: '.($resultado ? 'TRUE' : 'FALSE'));
+
+            $personal->refresh();
+            Log::info('Status depois de refresh: '.$personal->status);
+            Log::info('✅ Atualizado com sucesso!');
+
+            // Notifica o personal da aprovação (e-mail + WhatsApp)
+            $primeiroNome = explode(' ', trim($personal->nome))[0];
+            \App\Services\NotificacaoService::personal(
+                $personal,
+                'Cadastro aprovado — bem-vindo(a) ao SnrFit! 🎉',
+                "🎉 *Parabéns, {$primeiroNome}!*\n\n".
+                "Seu cadastro como personal foi *aprovado* na SnrFit.\n".
+                "Você já pode acessar a plataforma com seu e-mail e senha para gerenciar agenda, alunos, pacotes e muito mais.\n\n".
+                'Bons treinos! 💪',
+                'cadastro_aprovado_personal',
+                [$primeiroNome]
+            );
+
+            return redirect()->back()->with('success', "Personal '{$personal->nome}' aprovado com sucesso! ✅");
+        } catch (\Exception $e) {
+            Log::error('❌ Erro ao aprovar: '.$e->getMessage());
+            Log::error('Stack: '.$e->getTraceAsString());
+
+            return redirect()->back()->with('error', 'Erro: '.$e->getMessage());
+        }
     }
-}
 
     // ✅ REJEITAR PERSONAL
     public function rejeitar($id, Request $request)
     {
-        if (!session('admin_id')) {
+        if (! session('admin_id')) {
             return redirect()->route('login.index');
         }
 
         $request->validate([
-            'motivo' => 'required|string|min:10|max:500'
+            'motivo' => 'required|string|min:10|max:500',
         ], [
             'motivo.required' => 'Você deve informar o motivo da rejeição',
             'motivo.min' => 'O motivo deve ter pelo menos 10 caracteres',
@@ -252,7 +252,7 @@ class AdminController extends Controller
         $personal = Personal::findOrFail($id);
         $personal->update([
             'status' => 'rejeitado',
-            'motivo_rejeicao' => $request->motivo
+            'motivo_rejeicao' => $request->motivo,
         ]);
 
         // Notifica o personal da rejeição (e-mail + WhatsApp)
@@ -263,7 +263,7 @@ class AdminController extends Controller
             "Olá, {$primeiroNome}.\n\n".
             "Analisamos o seu cadastro como personal e, por ora, ele *não pôde ser aprovado*.\n\n".
             "*Motivo:* {$request->motivo}\n\n".
-            "Você pode ajustar as informações e enviar novamente. Qualquer dúvida, estamos à disposição.",
+            'Você pode ajustar as informações e enviar novamente. Qualquer dúvida, estamos à disposição.',
             'cadastro_rejeitado_personal',
             [$primeiroNome, $request->motivo]
         );
@@ -274,7 +274,7 @@ class AdminController extends Controller
     // ✅ DELETAR PERSONAL
     public function deletar($id)
     {
-        if (!session('admin_id')) {
+        if (! session('admin_id')) {
             return redirect()->route('login.index');
         }
 
@@ -309,7 +309,7 @@ class AdminController extends Controller
     // ✅ RELATÓRIO FINANCEIRO
     public function relatorioFinanceiro(Request $request)
     {
-        if (!session('admin_id')) {
+        if (! session('admin_id')) {
             return redirect()->route('login.index');
         }
 
@@ -324,7 +324,7 @@ class AdminController extends Controller
         foreach ($personalsRaw as $personal) {
             $financeiro = $this->calcularFinanceiroPersonal($personal->id, $mes, $ano);
             $total = $financeiro['pacotes'] + $financeiro['avulsas'];
-            
+
             $dados[] = [
                 'personal' => $personal,
                 'pacotes' => $financeiro['pacotes'],
@@ -354,13 +354,14 @@ class AdminController extends Controller
     public function logout()
     {
         session()->forget(['admin_id', 'admin_nome']);
+
         return redirect()->route('login.index')->with('sucesso', 'Você saiu da conta.');
     }
 
     // ✅ CRIAR SUBCONTA ASAAS PARA PERSONAL EXISTENTE
     public function criarSubcontaAsaas($id)
     {
-        if (!session('admin_id')) {
+        if (! session('admin_id')) {
             return redirect()->route('login.index');
         }
 
@@ -372,35 +373,35 @@ class AdminController extends Controller
 
         try {
             $payload = [
-                'name'          => $personal->nome,
-                'email'         => $personal->email,
-                'cpfCnpj'       => preg_replace('/\D/', '', $personal->cpf),
-                'birthDate'     => $personal->idade,
-                'address'       => $personal->rua,
+                'name' => $personal->nome,
+                'email' => $personal->email,
+                'cpfCnpj' => preg_replace('/\D/', '', $personal->cpf),
+                'birthDate' => $personal->idade,
+                'address' => $personal->rua,
                 'addressNumber' => 'S/N',
-                'province'      => $personal->bairro,
-                'postalCode'    => preg_replace('/\D/', '', $personal->cep),
-                'complement'    => $personal->complemento,
-                'personType'    => 'FISICA',
+                'province' => $personal->bairro,
+                'postalCode' => preg_replace('/\D/', '', $personal->cep),
+                'complement' => $personal->complemento,
+                'personType' => 'FISICA',
             ];
 
             if ($personal->whatsapp) {
                 $payload['mobilePhone'] = preg_replace('/\D/', '', $personal->whatsapp);
             }
 
-            $res  = Http::withHeaders([
+            $res = Http::withHeaders([
                 'access_token' => config('services.asaas.key'),
                 'Content-Type' => 'application/json',
-            ])->post(config('services.asaas.url') . '/accounts', $payload);
+            ])->post(config('services.asaas.url').'/accounts', $payload);
 
             $data = $res->json();
 
-            if ($res->successful() && !empty($data['walletId'])) {
+            if ($res->successful() && ! empty($data['walletId'])) {
                 // A apiKey da subconta só é retornada UMA vez, aqui na criação,
                 // e é irrecuperável depois. Persistimos imediatamente, com a key
                 // criptografada (Crypt::encryptString) — nunca em texto puro.
-                $personal->asaas_account_id = $data['id']       ?? null;
-                $personal->asaas_wallet_id  = $data['walletId'] ?? null;
+                $personal->asaas_account_id = $data['id'] ?? null;
+                $personal->asaas_wallet_id = $data['walletId'] ?? null;
 
                 $semKey = empty($data['apiKey']);
                 if (! $semKey) {
@@ -408,34 +409,36 @@ class AdminController extends Controller
                 } else {
                     // Não expõe o conteúdo; apenas sinaliza que a key precisará
                     // ser gerada manualmente (fluxo de subconta legada).
-                    Log::warning("Admin: subconta criada SEM apiKey no retorno — gerar manualmente depois", [
-                        'personal_id'      => $personal->id,
+                    Log::warning('Admin: subconta criada SEM apiKey no retorno — gerar manualmente depois', [
+                        'personal_id' => $personal->id,
                         'asaas_account_id' => $data['id'] ?? null,
                     ]);
                 }
 
                 $personal->save();
 
-                Log::info("Admin: subconta Asaas criada para personal", [
+                Log::info('Admin: subconta Asaas criada para personal', [
                     'personal_id' => $personal->id,
-                    'wallet_id'   => $data['walletId'],
+                    'wallet_id' => $data['walletId'],
                     'tem_api_key' => ! $semKey,
                 ]);
 
                 $msg = "Conta Asaas criada com sucesso para '{$personal->nome}'! Split de pagamentos ativado.";
                 if ($semKey) {
-                    $msg .= " Atenção: a chave de API não veio no retorno — gere-a pelo fluxo de subconta legada antes de liberar saques.";
+                    $msg .= ' Atenção: a chave de API não veio no retorno — gere-a pelo fluxo de subconta legada antes de liberar saques.';
                 }
 
                 return redirect()->back()->with('success', $msg);
             }
 
             $errMsg = $data['errors'][0]['description'] ?? 'Resposta inesperada da Asaas.';
-            Log::warning("Admin: falha ao criar subconta Asaas", ['personal_id' => $personal->id, 'response' => $data]);
+            Log::warning('Admin: falha ao criar subconta Asaas', ['personal_id' => $personal->id, 'response' => $data]);
+
             return redirect()->back()->with('error', "Falha ao criar conta Asaas: {$errMsg}");
 
         } catch (\Exception $e) {
-            Log::error("Admin: exceção ao criar subconta Asaas", ['personal_id' => $personal->id, 'error' => $e->getMessage()]);
+            Log::error('Admin: exceção ao criar subconta Asaas', ['personal_id' => $personal->id, 'error' => $e->getMessage()]);
+
             return redirect()->back()->with('error', "Erro ao criar conta Asaas: {$e->getMessage()}");
         }
     }
@@ -462,7 +465,7 @@ class AdminController extends Controller
      */
     public function gerarKeySubcontaExistente($personalId)
     {
-        if (!session('admin_id')) {
+        if (! session('admin_id')) {
             return redirect()->route('login.index');
         }
 
@@ -476,13 +479,14 @@ class AdminController extends Controller
             $res = Http::withHeaders([
                 'access_token' => config('services.asaas.key'),
                 'Content-Type' => 'application/json',
-            ])->post(config('services.asaas.url') . "/accounts/{$personal->asaas_account_id}/accessTokens", [
-                'name' => 'SNRFIT saque ' . now()->format('Y-m-d H:i'),
+            ])->post(config('services.asaas.url')."/accounts/{$personal->asaas_account_id}/accessTokens", [
+                'name' => 'SNRFIT saque '.now()->format('Y-m-d H:i'),
             ]);
 
             // 403 = acesso aos endpoints de subconta desabilitado (dura 2h) ou IP fora da whitelist.
             if ($res->status() === 403) {
-                Log::warning("Admin: 403 ao gerar key de subconta", ['personal_id' => $personal->id]);
+                Log::warning('Admin: 403 ao gerar key de subconta', ['personal_id' => $personal->id]);
+
                 return redirect()->back()->with('error', 'Acesso negado (403). Verifique se o "Gerenciamento de Chaves de API de Subcontas" está habilitado no painel Asaas (dura 2h) e se o IP do servidor está na whitelist.');
             }
 
@@ -496,8 +500,8 @@ class AdminController extends Controller
                 $personal->save();
                 unset($novaKey, $data); // descarta a key em texto puro o quanto antes
 
-                Log::info("Admin: nova apiKey de subconta gerada e salva (criptografada)", [
-                    'personal_id'      => $personal->id,
+                Log::info('Admin: nova apiKey de subconta gerada e salva (criptografada)', [
+                    'personal_id' => $personal->id,
                     'asaas_account_id' => $personal->asaas_account_id,
                 ]);
 
@@ -505,11 +509,13 @@ class AdminController extends Controller
             }
 
             $errMsg = $data['errors'][0]['description'] ?? 'Resposta inesperada do Asaas ao gerar a chave (confira o campo da key no retorno).';
-            Log::warning("Admin: falha ao gerar key de subconta", ['personal_id' => $personal->id, 'status' => $res->status(), 'response' => $data]);
+            Log::warning('Admin: falha ao gerar key de subconta', ['personal_id' => $personal->id, 'status' => $res->status(), 'response' => $data]);
+
             return redirect()->back()->with('error', "Falha ao gerar chave de API: {$errMsg}");
 
         } catch (\Exception $e) {
-            Log::error("Admin: exceção ao gerar key de subconta", ['personal_id' => $personal->id, 'error' => $e->getMessage()]);
+            Log::error('Admin: exceção ao gerar key de subconta', ['personal_id' => $personal->id, 'error' => $e->getMessage()]);
+
             return redirect()->back()->with('error', "Erro ao gerar chave de API: {$e->getMessage()}");
         }
     }
@@ -520,7 +526,7 @@ class AdminController extends Controller
 
     public function listarStudios(Request $request)
     {
-        if (!session('admin_id')) {
+        if (! session('admin_id')) {
             return redirect()->route('login.index');
         }
 
@@ -536,8 +542,8 @@ class AdminController extends Controller
         if ($busca) {
             $query->where(function ($q) use ($busca) {
                 $q->where('nome', 'LIKE', "%$busca%")
-                  ->orWhere('email', 'LIKE', "%$busca%")
-                  ->orWhere('cnpj', 'LIKE', "%$busca%");
+                    ->orWhere('email', 'LIKE', "%$busca%")
+                    ->orWhere('cnpj', 'LIKE', "%$busca%");
             });
         }
 
@@ -552,7 +558,7 @@ class AdminController extends Controller
 
     public function verDetalhesStudio($id)
     {
-        if (!session('admin_id')) {
+        if (! session('admin_id')) {
             return redirect()->route('login.index');
         }
 
@@ -576,7 +582,7 @@ class AdminController extends Controller
 
     public function aprovarStudio($id)
     {
-        if (!session('admin_id')) {
+        if (! session('admin_id')) {
             return redirect()->route('login.index');
         }
 
@@ -592,12 +598,12 @@ class AdminController extends Controller
 
     public function rejeitarStudio($id, Request $request)
     {
-        if (!session('admin_id')) {
+        if (! session('admin_id')) {
             return redirect()->route('login.index');
         }
 
         $request->validate([
-            'motivo' => 'required|string|min:10|max:500'
+            'motivo' => 'required|string|min:10|max:500',
         ], [
             'motivo.required' => 'Você deve informar o motivo da rejeição',
             'motivo.min' => 'O motivo deve ter pelo menos 10 caracteres',
@@ -615,12 +621,12 @@ class AdminController extends Controller
     // ===================== ACADEMIAS =====================
     public function listarAcademias(Request $request)
     {
-        if (!session('admin_id')) {
+        if (! session('admin_id')) {
             return redirect()->route('login.index');
         }
 
         $filtro = $request->query('status', 'todos');
-        $busca  = $request->query('busca', '');
+        $busca = $request->query('busca', '');
 
         $query = Academia::query();
         if ($filtro !== 'todos') {
@@ -629,8 +635,8 @@ class AdminController extends Controller
         if ($busca) {
             $query->where(function ($q) use ($busca) {
                 $q->where('nome', 'LIKE', "%$busca%")
-                  ->orWhere('email', 'LIKE', "%$busca%")
-                  ->orWhere('cnpj', 'LIKE', "%$busca%");
+                    ->orWhere('email', 'LIKE', "%$busca%")
+                    ->orWhere('cnpj', 'LIKE', "%$busca%");
             });
         }
 
@@ -638,14 +644,14 @@ class AdminController extends Controller
 
         return view('admin.academias.lista', [
             'academias' => $academias,
-            'filtro'    => $filtro,
-            'busca'     => $busca,
+            'filtro' => $filtro,
+            'busca' => $busca,
         ]);
     }
 
     public function verDetalhesAcademia($id)
     {
-        if (!session('admin_id')) {
+        if (! session('admin_id')) {
             return redirect()->route('login.index');
         }
 
@@ -656,14 +662,14 @@ class AdminController extends Controller
 
     public function aprovarAcademia($id)
     {
-        if (!session('admin_id')) {
+        if (! session('admin_id')) {
             return redirect()->route('login.index');
         }
 
         $academia = Academia::findOrFail($id);
         $academia->update([
-            'status'          => 'aprovado',
-            'data_aprovacao'  => now(),
+            'status' => 'aprovado',
+            'data_aprovacao' => now(),
             'motivo_rejeicao' => null,
         ]);
 
@@ -672,7 +678,7 @@ class AdminController extends Controller
 
     public function rejeitarAcademia($id, Request $request)
     {
-        if (!session('admin_id')) {
+        if (! session('admin_id')) {
             return redirect()->route('login.index');
         }
 
@@ -680,12 +686,12 @@ class AdminController extends Controller
             'motivo' => 'required|string|min:10|max:500',
         ], [
             'motivo.required' => 'Você deve informar o motivo da rejeição',
-            'motivo.min'      => 'O motivo deve ter pelo menos 10 caracteres',
+            'motivo.min' => 'O motivo deve ter pelo menos 10 caracteres',
         ]);
 
         $academia = Academia::findOrFail($id);
         $academia->update([
-            'status'          => 'rejeitado',
+            'status' => 'rejeitado',
             'motivo_rejeicao' => $request->motivo,
         ]);
 
@@ -695,14 +701,14 @@ class AdminController extends Controller
     // ===================== LOJAS: aprovar / rejeitar =====================
     public function aprovarLoja($id)
     {
-        if (!session('admin_id')) {
+        if (! session('admin_id')) {
             return redirect()->route('login.index');
         }
 
         $loja = Loja::findOrFail($id);
         $loja->update([
-            'status'          => 'aprovado',
-            'data_aprovacao'  => now(),
+            'status' => 'aprovado',
+            'data_aprovacao' => now(),
             'motivo_rejeicao' => null,
         ]);
 
@@ -711,7 +717,7 @@ class AdminController extends Controller
 
     public function rejeitarLoja($id, Request $request)
     {
-        if (!session('admin_id')) {
+        if (! session('admin_id')) {
             return redirect()->route('login.index');
         }
 
@@ -719,12 +725,12 @@ class AdminController extends Controller
             'motivo' => 'required|string|min:10|max:500',
         ], [
             'motivo.required' => 'Você deve informar o motivo da rejeição',
-            'motivo.min'      => 'O motivo deve ter pelo menos 10 caracteres',
+            'motivo.min' => 'O motivo deve ter pelo menos 10 caracteres',
         ]);
 
         $loja = Loja::findOrFail($id);
         $loja->update([
-            'status'          => 'rejeitado',
+            'status' => 'rejeitado',
             'motivo_rejeicao' => $request->motivo,
         ]);
 
@@ -733,7 +739,7 @@ class AdminController extends Controller
 
     public function deletarStudio($id)
     {
-        if (!session('admin_id')) {
+        if (! session('admin_id')) {
             return redirect()->route('login.index');
         }
 
@@ -758,7 +764,7 @@ class AdminController extends Controller
     // ✅ CRIAR SUBCONTA ASAAS PARA STUDIO (PESSOA JURÍDICA)
     public function criarSubcontaAsaasStudio($id)
     {
-        if (!session('admin_id')) {
+        if (! session('admin_id')) {
             return redirect()->route('login.index');
         }
 
@@ -771,17 +777,17 @@ class AdminController extends Controller
         try {
             // Subconta PJ: a Asaas exige companyType e incomeValue (e dispensa birthDate)
             $payload = [
-                'name'          => $studio->nome,
-                'email'         => $studio->email,
-                'cpfCnpj'       => preg_replace('/\D/', '', $studio->cnpj),
-                'personType'    => 'JURIDICA',
-                'companyType'   => 'LIMITED',
-                'incomeValue'   => 10000,
-                'address'       => $studio->rua,
+                'name' => $studio->nome,
+                'email' => $studio->email,
+                'cpfCnpj' => preg_replace('/\D/', '', $studio->cnpj),
+                'personType' => 'JURIDICA',
+                'companyType' => 'LIMITED',
+                'incomeValue' => 10000,
+                'address' => $studio->rua,
                 'addressNumber' => 'S/N',
-                'province'      => $studio->bairro,
-                'postalCode'    => preg_replace('/\D/', '', $studio->cep),
-                'complement'    => $studio->complemento,
+                'province' => $studio->bairro,
+                'postalCode' => preg_replace('/\D/', '', $studio->cep),
+                'complement' => $studio->complemento,
             ];
 
             if ($studio->whatsapp) {
@@ -791,18 +797,18 @@ class AdminController extends Controller
             $res = Http::withHeaders([
                 'access_token' => config('services.asaas.key'),
                 'Content-Type' => 'application/json',
-            ])->post(config('services.asaas.url') . '/accounts', $payload);
+            ])->post(config('services.asaas.url').'/accounts', $payload);
 
             $data = $res->json();
 
-            if ($res->successful() && !empty($data['walletId'])) {
+            if ($res->successful() && ! empty($data['walletId'])) {
                 $studio->update([
-                    'asaas_account_id' => $data['id']       ?? null,
-                    'asaas_wallet_id'  => $data['walletId'] ?? null,
-                    'asaas_api_key'    => $data['apiKey']   ?? null,
+                    'asaas_account_id' => $data['id'] ?? null,
+                    'asaas_wallet_id' => $data['walletId'] ?? null,
+                    'asaas_api_key' => $data['apiKey'] ?? null,
                 ]);
 
-                Log::info("Admin: subconta Asaas criada para studio", [
+                Log::info('Admin: subconta Asaas criada para studio', [
                     'studio_id' => $studio->id,
                     'wallet_id' => $data['walletId'],
                 ]);
@@ -811,11 +817,13 @@ class AdminController extends Controller
             }
 
             $errMsg = $data['errors'][0]['description'] ?? 'Resposta inesperada da Asaas.';
-            Log::warning("Admin: falha ao criar subconta Asaas do studio", ['studio_id' => $studio->id, 'response' => $data]);
+            Log::warning('Admin: falha ao criar subconta Asaas do studio', ['studio_id' => $studio->id, 'response' => $data]);
+
             return redirect()->back()->with('error', "Falha ao criar conta Asaas: {$errMsg}");
 
         } catch (\Exception $e) {
-            Log::error("Admin: exceção ao criar subconta Asaas do studio", ['studio_id' => $studio->id, 'error' => $e->getMessage()]);
+            Log::error('Admin: exceção ao criar subconta Asaas do studio', ['studio_id' => $studio->id, 'error' => $e->getMessage()]);
+
             return redirect()->back()->with('error', "Erro ao criar conta Asaas: {$e->getMessage()}");
         }
     }
@@ -826,7 +834,7 @@ class AdminController extends Controller
 
     public function listarLojas(Request $request)
     {
-        if (!session('admin_id')) {
+        if (! session('admin_id')) {
             return redirect()->route('login.index');
         }
 
@@ -842,27 +850,27 @@ class AdminController extends Controller
         if ($busca) {
             $query->where(function ($q) use ($busca) {
                 $q->where('nome', 'LIKE', "%$busca%")
-                  ->orWhere('email', 'LIKE', "%$busca%")
-                  ->orWhere('cnpj', 'LIKE', "%$busca%");
+                    ->orWhere('email', 'LIKE', "%$busca%")
+                    ->orWhere('cnpj', 'LIKE', "%$busca%");
             });
         }
 
         $lojas = $query->orderBy('nome')->get();
 
         return view('admin.lojas.lista', [
-            'lojas'  => $lojas,
+            'lojas' => $lojas,
             'filtro' => $filtro,
-            'busca'  => $busca,
+            'busca' => $busca,
         ]);
     }
 
     public function verDetalhesLoja($id)
     {
-        if (!session('admin_id')) {
+        if (! session('admin_id')) {
             return redirect()->route('login.index');
         }
 
-        $loja = Loja::with(['produtos' => fn($q) => $q->orderBy('nome')])->findOrFail($id);
+        $loja = Loja::with(['produtos' => fn ($q) => $q->orderBy('nome')])->findOrFail($id);
 
         return view('admin.lojas.detalhes', [
             'loja' => $loja,
@@ -871,7 +879,7 @@ class AdminController extends Controller
 
     public function bloquearLoja($id, Request $request)
     {
-        if (!session('admin_id')) {
+        if (! session('admin_id')) {
             return redirect()->route('login.index');
         }
 
@@ -879,12 +887,12 @@ class AdminController extends Controller
             'motivo' => 'required|string|min:10|max:500',
         ], [
             'motivo.required' => 'Você deve informar o motivo do bloqueio.',
-            'motivo.min'      => 'O motivo deve ter pelo menos 10 caracteres.',
+            'motivo.min' => 'O motivo deve ter pelo menos 10 caracteres.',
         ]);
 
         $loja = Loja::findOrFail($id);
         $loja->update([
-            'status'          => 'rejeitado',
+            'status' => 'rejeitado',
             'motivo_rejeicao' => $request->motivo,
         ]);
 
@@ -893,14 +901,14 @@ class AdminController extends Controller
 
     public function reativarLoja($id)
     {
-        if (!session('admin_id')) {
+        if (! session('admin_id')) {
             return redirect()->route('login.index');
         }
 
         $loja = Loja::findOrFail($id);
         $loja->update([
-            'status'          => 'aprovado',
-            'data_aprovacao'  => now(),
+            'status' => 'aprovado',
+            'data_aprovacao' => now(),
             'motivo_rejeicao' => null,
         ]);
 
@@ -909,7 +917,7 @@ class AdminController extends Controller
 
     public function deletarLoja($id)
     {
-        if (!session('admin_id')) {
+        if (! session('admin_id')) {
             return redirect()->route('login.index');
         }
 
@@ -949,6 +957,7 @@ class AdminController extends Controller
         $ano = $ano ?? now()->year;
 
         $financeiro = $this->calcularFinanceiroPersonal($personalId, $mes, $ano);
+
         return $financeiro['pacotes'] + $financeiro['avulsas'];
     }
 
@@ -972,7 +981,7 @@ class AdminController extends Controller
             ->get();
 
         foreach ($aulasPackote as $agenda) {
-            if ($agenda->frequencia_pacote && !isset($pacotesProcessados[$agenda->frequencia_pacote])) {
+            if ($agenda->frequencia_pacote && ! isset($pacotesProcessados[$agenda->frequencia_pacote])) {
                 $pacote = \App\Models\Cadastro\Pacote::where('personal_id', $personalId)
                     ->where('frequencia', $agenda->frequencia_pacote)
                     ->first();
@@ -1025,5 +1034,4 @@ class AdminController extends Controller
 
         return $totalGeral;
     }
-
 }

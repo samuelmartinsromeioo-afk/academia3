@@ -14,7 +14,6 @@ use App\Models\Cadastro\Loja;
 use App\Models\Cadastro\Pacote;
 use App\Models\Cadastro\Personal;
 use App\Models\Cadastro\Studio;
-use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
@@ -29,8 +28,8 @@ use Illuminate\Validation\Rule;
  */
 class ExplorarController extends Controller
 {
-    use ResolvesApiUser;
     use AvaliaServicos;
+    use ResolvesApiUser;
 
     // ===================== LISTAGENS =====================
 
@@ -107,11 +106,11 @@ class ExplorarController extends Controller
         $lng = (float) $lng;
         $table = $query->getModel()->getTable();
 
-        $haversine = "(6371 * acos("
-            . "cos(radians(?)) * cos(radians({$table}.latitude)) * "
-            . "cos(radians({$table}.longitude) - radians(?)) + "
-            . "sin(radians(?)) * sin(radians({$table}.latitude))"
-            . "))";
+        $haversine = '(6371 * acos('
+            ."cos(radians(?)) * cos(radians({$table}.latitude)) * "
+            ."cos(radians({$table}.longitude) - radians(?)) + "
+            ."sin(radians(?)) * sin(radians({$table}.latitude))"
+            .'))';
 
         // Preserva as colunas do próprio modelo no SELECT (as listagens com
         // withAvg/withCount já definem colunas; personais/studios ainda não).
@@ -147,6 +146,7 @@ class ExplorarController extends Controller
             $payload['cidades'] = $this->cidadesDe($modelClass);
             $payload += $extra;
         }
+
         return response()->json($payload);
     }
 
@@ -772,7 +772,7 @@ class ExplorarController extends Controller
         $dias = $request->dias_selecionados;
         if (count($dias) > (int) $request->frequencia_pacote) {
             return response()->json([
-                'error' => 'Você selecionou ' . count($dias) . " dia(s), mas o pacote permite apenas {$request->frequencia_pacote}x na semana.",
+                'error' => 'Você selecionou '.count($dias)." dia(s), mas o pacote permite apenas {$request->frequencia_pacote}x na semana.",
             ], 422);
         }
 
@@ -831,6 +831,7 @@ class ExplorarController extends Controller
         if (str_starts_with($path, 'http')) {
             return $path;
         }
+
         return Storage::disk('public')->url($path);
     }
 }

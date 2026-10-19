@@ -27,10 +27,10 @@ class Media
 
         $cdn = config('media.url');
         if ($cdn) {
-            return rtrim($cdn, '/') . '/' . ltrim($path, '/');
+            return rtrim($cdn, '/').'/'.ltrim($path, '/');
         }
 
         // Fallback (dev): streaming pelo próprio backend, com suporte a Range (206).
-        return url('/api/v1/media/exercicio-video/' . ltrim($path, '/'));
+        return url('/api/v1/media/exercicio-video/'.ltrim($path, '/'));
     }
 }

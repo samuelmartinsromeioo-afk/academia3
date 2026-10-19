@@ -36,11 +36,11 @@ class Payment extends Model
     ];
 
     protected $casts = [
-        'amount_total'   => 'decimal:2',
-        'company_fee'    => 'decimal:2',
+        'amount_total' => 'decimal:2',
+        'company_fee' => 'decimal:2',
         'trainer_amount' => 'decimal:2',
-        'gateway_fee'    => 'decimal:2',
-        'paid_at'        => 'datetime',
+        'gateway_fee' => 'decimal:2',
+        'paid_at' => 'datetime',
         'next_billing_date' => 'date',
     ];
 

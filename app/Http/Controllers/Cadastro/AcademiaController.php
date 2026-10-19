@@ -2,9 +2,8 @@
 
 namespace App\Http\Controllers\Cadastro;
 
-use App\Http\Controllers\Controller;
-use App\Services\MetaConversionsService;
 use App\Http\Controllers\Concerns\EscopoAcademia;
+use App\Http\Controllers\Controller;
 use App\Models\Anamnese;
 use App\Models\Cadastro\Academia;
 use App\Models\Cadastro\AcademiaAula;
@@ -12,9 +11,10 @@ use App\Models\Cadastro\AcademiaProfessor;
 use App\Models\Cadastro\Cliente;
 use App\Models\Cadastro\Filial;
 use App\Models\Cadastro\Personal;
+use App\Models\Cadastro\Plano;
+use App\Services\MetaConversionsService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
-use App\Models\Cadastro\Plano;
 
 class AcademiaController extends Controller
 {
@@ -56,7 +56,7 @@ class AcademiaController extends Controller
         // Fora do create(): `cupom` não é coluna de academias.
         $codigoCupom = \Illuminate\Support\Arr::pull($dados, 'cupom');
 
-        $dados['senha']  = Hash::make($dados['senha']);
+        $dados['senha'] = Hash::make($dados['senha']);
         $dados['status'] = 'pendente'; // precisa de aprovação do administrador
 
         $academia = Academia::create($dados);
@@ -71,6 +71,7 @@ class AcademiaController extends Controller
         $academia->registrarAceiteTermos($request->ip(), (string) $request->userAgent(), \App\Models\TermoAceite::ORIGEM_CADASTRO);
 
         $fb = app(MetaConversionsService::class);
+
         return redirect()->route('cadastro.sucesso')
             ->with('cad_tipo', 'academia')
             ->with('fb_event', $fb->track(
@@ -92,27 +93,28 @@ class AcademiaController extends Controller
         $academia_id = session('academia_id');
 
         // Se não tiver sessão (proteção manual de rota)
-        if (!$academia_id) {
+        if (! $academia_id) {
             return redirect()->route('login.index')->withErrors(['login' => 'Acesso negado. Faça o login.']);
         }
 
         // 2. Busca a academia e lida com erro caso o ID não exista mais no banco
         $academia = Academia::find($academia_id);
 
-        if (!$academia) {
+        if (! $academia) {
             session()->forget(['academia_id', 'filial_id']);
+
             return redirect()->route('login.index')->withErrors(['login' => 'Conta de academia não encontrada.']);
         }
 
         $valorMensalidade = $academia->valor_mensalidade ?? 0;
 
         // 3. Métricas ESCOPADAS: subconta vê só a sua filial; principal vê tudo.
-        $totalAlunos  = $this->clientesVisiveis()->count();
+        $totalAlunos = $this->clientesVisiveis()->count();
         $planosAtivos = $this->clientesVisiveis()->where('plano_ativo', true)->count();
-        $faturamento  = $totalAlunos * $valorMensalidade;
-        $personals    = Personal::where('academia_id', $academia_id)->count();
-        $alunos       = $this->clientesVisiveis()->latest()->take(5)->get();
-        $planos       = Plano::where('academia_id', $academia_id)->orderBy('valor')->get();
+        $faturamento = $totalAlunos * $valorMensalidade;
+        $personals = Personal::where('academia_id', $academia_id)->count();
+        $alunos = $this->clientesVisiveis()->latest()->take(5)->get();
+        $planos = Plano::where('academia_id', $academia_id)->orderBy('valor')->get();
 
         // Contexto da filial logada (para o cabeçalho do painel).
         $filialAtual = $this->ehSubcontaFilial() ? Filial::find($this->filialId()) : null;
@@ -122,11 +124,12 @@ class AcademiaController extends Controller
         if ($this->ehAcademiaPrincipal()) {
             $linha = function ($nome, $query) use ($valorMensalidade) {
                 $alunosCount = (clone $query)->count();
+
                 return [
-                    'nome'         => $nome,
-                    'alunos'       => $alunosCount,
+                    'nome' => $nome,
+                    'alunos' => $alunosCount,
                     'planosAtivos' => (clone $query)->where('plano_ativo', true)->count(),
-                    'faturamento'  => $alunosCount * $valorMensalidade,
+                    'faturamento' => $alunosCount * $valorMensalidade,
                 ];
             };
 
@@ -148,17 +151,19 @@ class AcademiaController extends Controller
             'porFilial',
         ));
     }
-   public function listarAlunos()
+
+    public function listarAlunos()
     {
         $academia_id = session('academia_id');
 
-        if (!$academia_id) {
+        if (! $academia_id) {
             return redirect()->route('login.index');
         }
 
         $academia = Academia::find($academia_id);
-        if (!$academia) {
+        if (! $academia) {
             session()->forget(['academia_id', 'filial_id']);
+
             return redirect()->route('login.index')->withErrors(['login' => 'Conta de academia não encontrada.']);
         }
 
@@ -193,12 +198,12 @@ class AcademiaController extends Controller
     public function anamneseForm($clienteId)
     {
         $academia = $this->academiaLogada();
-        if (!$academia) {
+        if (! $academia) {
             return redirect()->route('login.index');
         }
 
         $cliente = $this->clienteAcessivel($clienteId);
-        if (!$cliente) {
+        if (! $cliente) {
             return redirect()->route('academia.alunos')->with('error', 'Aluno não encontrado.');
         }
         $anamnese = Anamnese::firstOrNew(['cliente_id' => $cliente->id]);
@@ -210,12 +215,12 @@ class AcademiaController extends Controller
     public function salvarAnamnese(Request $request, $clienteId)
     {
         $academia = $this->academiaLogada();
-        if (!$academia) {
+        if (! $academia) {
             return redirect()->route('login.index');
         }
 
         $cliente = $this->clienteAcessivel($clienteId);
-        if (!$cliente) {
+        if (! $cliente) {
             return redirect()->route('academia.alunos')->with('error', 'Aluno não encontrado.');
         }
 
@@ -243,15 +248,15 @@ class AcademiaController extends Controller
                  * preenchido ele mesmo.
                  */
                 'consentimento_titular' => 'accepted',
-                'objetivo_principal'    => 'nullable|string|max:255',
-                'nivel_atividade'       => 'nullable|in:sedentario,leve,moderado,intenso',
-                'historico_lesoes'      => 'nullable|string',
-                'restricoes_medicas'    => 'nullable|string',
+                'objetivo_principal' => 'nullable|string|max:255',
+                'nivel_atividade' => 'nullable|in:sedentario,leve,moderado,intenso',
+                'historico_lesoes' => 'nullable|string',
+                'restricoes_medicas' => 'nullable|string',
                 'doencas_preexistentes' => 'nullable|string',
-                'medicamentos'          => 'nullable|string',
-                'cirurgias'             => 'nullable|string',
-                'parq_observacoes'      => 'nullable|string',
-                'observacoes'           => 'nullable|string',
+                'medicamentos' => 'nullable|string',
+                'cirurgias' => 'nullable|string',
+                'parq_observacoes' => 'nullable|string',
+                'observacoes' => 'nullable|string',
             ],
             ['consentimento_titular.accepted' => 'Confirme que o aluno autorizou o uso dos dados de saúde dele.']
         );
@@ -268,29 +273,29 @@ class AcademiaController extends Controller
         Anamnese::updateOrCreate(
             ['cliente_id' => $cliente->id],
             [
-                'objetivo_principal'    => $request->objetivo_principal,
-                'nivel_atividade'       => $request->nivel_atividade,
-                'historico_lesoes'      => $request->historico_lesoes,
-                'restricoes_medicas'    => $request->restricoes_medicas,
+                'objetivo_principal' => $request->objetivo_principal,
+                'nivel_atividade' => $request->nivel_atividade,
+                'historico_lesoes' => $request->historico_lesoes,
+                'restricoes_medicas' => $request->restricoes_medicas,
                 'doencas_preexistentes' => $request->doencas_preexistentes,
-                'medicamentos'          => $request->medicamentos,
-                'cirurgias'             => $request->cirurgias,
-                'parq_1'                => $request->boolean('parq_1'),
-                'parq_2'                => $request->boolean('parq_2'),
-                'parq_3'                => $request->boolean('parq_3'),
-                'parq_4'                => $request->boolean('parq_4'),
-                'parq_5'                => $request->boolean('parq_5'),
-                'parq_6'                => $request->boolean('parq_6'),
-                'parq_7'                => $request->boolean('parq_7'),
-                'parq_observacoes'      => $request->parq_observacoes,
-                'observacoes'           => $request->observacoes,
-                'preenchida_em'         => now(),
+                'medicamentos' => $request->medicamentos,
+                'cirurgias' => $request->cirurgias,
+                'parq_1' => $request->boolean('parq_1'),
+                'parq_2' => $request->boolean('parq_2'),
+                'parq_3' => $request->boolean('parq_3'),
+                'parq_4' => $request->boolean('parq_4'),
+                'parq_5' => $request->boolean('parq_5'),
+                'parq_6' => $request->boolean('parq_6'),
+                'parq_7' => $request->boolean('parq_7'),
+                'parq_observacoes' => $request->parq_observacoes,
+                'observacoes' => $request->observacoes,
+                'preenchida_em' => now(),
             ]
         );
 
         return redirect()
             ->route('academia.alunos')
-            ->with('success', 'Anamnese de ' . $cliente->nome . ' salva com sucesso! 💪');
+            ->with('success', 'Anamnese de '.$cliente->nome.' salva com sucesso! 💪');
     }
 
     /**
@@ -299,18 +304,18 @@ class AcademiaController extends Controller
     public function update(Request $request, $id)
     {
         $academia_id = session('academia_id');
-        if (!$academia_id || (int) $academia_id !== (int) $id) {
+        if (! $academia_id || (int) $academia_id !== (int) $id) {
             return redirect()->route('login.index')->withErrors(['login' => 'Acesso negado.']);
         }
 
         $academia = Academia::findOrFail($id);
 
         $dados = $request->validate([
-            'nome'              => 'required|string|max:255',
-            'cidade'            => 'required|string|max:200',
+            'nome' => 'required|string|max:255',
+            'cidade' => 'required|string|max:200',
             'valor_mensalidade' => 'nullable|numeric|min:0',
-            'descricao'         => 'nullable|string|max:500',
-            'chave_pix'         => 'nullable|string|max:255',
+            'descricao' => 'nullable|string|max:500',
+            'chave_pix' => 'nullable|string|max:255',
         ]);
 
         $academia->update($dados);
@@ -332,10 +337,10 @@ class AcademiaController extends Controller
     public function storePlano(Request $request)
     {
         $request->validate([
-            'nome'          => 'required|string|max:255',
-            'valor'         => 'required|numeric|min:0',
+            'nome' => 'required|string|max:255',
+            'valor' => 'required|numeric|min:0',
             'duracao_meses' => 'required|integer|min:1',
-            'descricao'     => 'nullable|string|max:500',
+            'descricao' => 'nullable|string|max:500',
         ]);
 
         $count = Plano::where('academia_id', session('academia_id'))->count();
@@ -344,12 +349,12 @@ class AcademiaController extends Controller
         }
 
         Plano::create([
-            'academia_id'   => session('academia_id'),
-            'nome'          => $request->nome,
-            'valor'         => $request->valor,
+            'academia_id' => session('academia_id'),
+            'nome' => $request->nome,
+            'valor' => $request->valor,
             'duracao_meses' => $request->duracao_meses,
-            'descricao'     => $request->descricao,
-            'ativo'         => true,
+            'descricao' => $request->descricao,
+            'ativo' => true,
         ]);
 
         return redirect()->back()->with('success', 'Plano criado com sucesso!');
@@ -362,18 +367,18 @@ class AcademiaController extends Controller
             ->firstOrFail();
 
         $request->validate([
-            'nome'          => 'required|string|max:255',
-            'valor'         => 'required|numeric|min:0',
+            'nome' => 'required|string|max:255',
+            'valor' => 'required|numeric|min:0',
             'duracao_meses' => 'required|integer|min:1',
-            'descricao'     => 'nullable|string|max:500',
+            'descricao' => 'nullable|string|max:500',
         ]);
 
         $plano->update([
-            'nome'          => $request->nome,
-            'valor'         => $request->valor,
+            'nome' => $request->nome,
+            'valor' => $request->valor,
             'duracao_meses' => $request->duracao_meses,
-            'descricao'     => $request->descricao,
-            'ativo'         => $request->has('ativo'),
+            'descricao' => $request->descricao,
+            'ativo' => $request->has('ativo'),
         ]);
 
         return redirect()->back()->with('success', 'Plano atualizado com sucesso!');
@@ -392,13 +397,15 @@ class AcademiaController extends Controller
     public function filiais()
     {
         $academiaId = session('academia_id');
-        if (!$academiaId) return redirect()->route('login.index');
+        if (! $academiaId) {
+            return redirect()->route('login.index');
+        }
         if ($this->ehSubcontaFilial()) {
             return redirect()->route('academia.dashboard')->with('error', 'Apenas a conta principal gerencia as filiais.');
         }
 
         $academia = Academia::findOrFail($academiaId);
-        $filiais  = Filial::where('academia_id', $academiaId)->withCount('clientes')->orderBy('nome')->get();
+        $filiais = Filial::where('academia_id', $academiaId)->withCount('clientes')->orderBy('nome')->get();
 
         return view('academia.filiais', compact('academia', 'filiais'));
     }
@@ -406,26 +413,28 @@ class AcademiaController extends Controller
     public function storeFilial(Request $request)
     {
         $academiaId = session('academia_id');
-        if (!$academiaId) return redirect()->route('login.index');
+        if (! $academiaId) {
+            return redirect()->route('login.index');
+        }
         if ($this->ehSubcontaFilial()) {
             return redirect()->route('academia.dashboard')->with('error', 'Apenas a conta principal pode criar filiais.');
         }
 
         $request->validate([
-            'nome'        => 'required|string|max:255',
-            'senha'       => 'required|string|min:8|max:255',
-            'cep'         => 'required|string|max:9',
-            'rua'         => 'required|string|max:300',
-            'bairro'      => 'required|string|max:200',
-            'cidade'      => 'required|string|max:200',
-            'estado'      => 'required|string|max:100',
+            'nome' => 'required|string|max:255',
+            'senha' => 'required|string|min:8|max:255',
+            'cep' => 'required|string|max:9',
+            'rua' => 'required|string|max:300',
+            'bairro' => 'required|string|max:200',
+            'cidade' => 'required|string|max:200',
+            'estado' => 'required|string|max:100',
             'complemento' => 'nullable|string|max:255',
-            'telefone'    => 'nullable|string|max:20',
-            'latitude'    => 'nullable|numeric',
-            'longitude'   => 'nullable|numeric',
+            'telefone' => 'nullable|string|max:20',
+            'latitude' => 'nullable|numeric',
+            'longitude' => 'nullable|numeric',
         ], [
             'senha.required' => 'Defina uma senha para a subconta desta filial.',
-            'senha.min'      => 'A senha da subconta deve ter ao menos 6 caracteres.',
+            'senha.min' => 'A senha da subconta deve ter ao menos 6 caracteres.',
         ]);
 
         Filial::create(array_merge(
@@ -447,17 +456,17 @@ class AcademiaController extends Controller
             ->firstOrFail();
 
         $request->validate([
-            'nome'        => 'required|string|max:255',
-            'senha'       => 'nullable|string|min:8|max:255',
-            'cep'         => 'required|string|max:9',
-            'rua'         => 'required|string|max:300',
-            'bairro'      => 'required|string|max:200',
-            'cidade'      => 'required|string|max:200',
-            'estado'      => 'required|string|max:100',
+            'nome' => 'required|string|max:255',
+            'senha' => 'nullable|string|min:8|max:255',
+            'cep' => 'required|string|max:9',
+            'rua' => 'required|string|max:300',
+            'bairro' => 'required|string|max:200',
+            'cidade' => 'required|string|max:200',
+            'estado' => 'required|string|max:100',
             'complemento' => 'nullable|string|max:255',
-            'telefone'    => 'nullable|string|max:20',
-            'latitude'    => 'nullable|numeric',
-            'longitude'   => 'nullable|numeric',
+            'telefone' => 'nullable|string|max:20',
+            'latitude' => 'nullable|numeric',
+            'longitude' => 'nullable|numeric',
         ], [
             'senha.min' => 'A senha da subconta deve ter ao menos 6 caracteres.',
         ]);
@@ -493,7 +502,7 @@ class AcademiaController extends Controller
     private function academiaLogada(): ?Academia
     {
         $academiaId = session('academia_id');
-        if (!$academiaId) {
+        if (! $academiaId) {
             return null;
         }
 
@@ -503,7 +512,7 @@ class AcademiaController extends Controller
     public function gestao()
     {
         $academia = $this->academiaLogada();
-        if (!$academia) {
+        if (! $academia) {
             return redirect()->route('login.index');
         }
 
@@ -519,7 +528,7 @@ class AcademiaController extends Controller
     public function atualizarInfraestrutura(Request $request)
     {
         $academia = $this->academiaLogada();
-        if (!$academia) {
+        if (! $academia) {
             return redirect()->route('login.index');
         }
 
@@ -535,20 +544,20 @@ class AcademiaController extends Controller
     public function storeProfessor(Request $request)
     {
         $academia = $this->academiaLogada();
-        if (!$academia) {
+        if (! $academia) {
             return redirect()->route('login.index');
         }
 
         $request->validate([
-            'nome'   => 'required|string|max:120',
+            'nome' => 'required|string|max:120',
             'resumo' => 'nullable|string|max:2000',
         ]);
 
         AcademiaProfessor::create([
             'academia_id' => $academia->id,
-            'nome'        => $request->nome,
-            'resumo'      => $request->resumo,
-            'ativo'       => true,
+            'nome' => $request->nome,
+            'resumo' => $request->resumo,
+            'ativo' => true,
         ]);
 
         return redirect()->back()->with('success', 'Profissional cadastrado!');
@@ -557,18 +566,18 @@ class AcademiaController extends Controller
     public function updateProfessor(Request $request, $id)
     {
         $academia = $this->academiaLogada();
-        if (!$academia) {
+        if (! $academia) {
             return redirect()->route('login.index');
         }
 
         $request->validate([
-            'nome'   => 'required|string|max:120',
+            'nome' => 'required|string|max:120',
             'resumo' => 'nullable|string|max:2000',
         ]);
 
         $professor = AcademiaProfessor::where('academia_id', $academia->id)->findOrFail($id);
         $professor->update([
-            'nome'   => $request->nome,
+            'nome' => $request->nome,
             'resumo' => $request->resumo,
         ]);
 
@@ -578,7 +587,7 @@ class AcademiaController extends Controller
     public function destroyProfessor($id)
     {
         $academia = $this->academiaLogada();
-        if (!$academia) {
+        if (! $academia) {
             return redirect()->route('login.index');
         }
 
@@ -590,17 +599,17 @@ class AcademiaController extends Controller
     public function storeAula(Request $request)
     {
         $academia = $this->academiaLogada();
-        if (!$academia) {
+        if (! $academia) {
             return redirect()->route('login.index');
         }
 
         $request->validate([
-            'nome'         => 'required|string|max:120',
-            'resumo'       => 'nullable|string|max:2000',
+            'nome' => 'required|string|max:120',
+            'resumo' => 'nullable|string|max:2000',
             'professor_id' => 'nullable|integer',
-            'dia_semana'   => 'nullable|integer|min:0|max:6',
-            'hora_inicio'  => 'nullable|date_format:H:i',
-            'duracao_min'  => 'nullable|integer|min:5|max:600',
+            'dia_semana' => 'nullable|integer|min:0|max:6',
+            'hora_inicio' => 'nullable|date_format:H:i',
+            'duracao_min' => 'nullable|integer|min:5|max:600',
         ]);
 
         $professorId = null;
@@ -610,14 +619,14 @@ class AcademiaController extends Controller
         }
 
         AcademiaAula::create([
-            'academia_id'  => $academia->id,
-            'nome'         => $request->nome,
-            'resumo'       => $request->resumo,
+            'academia_id' => $academia->id,
+            'nome' => $request->nome,
+            'resumo' => $request->resumo,
             'professor_id' => $professorId,
-            'dia_semana'   => $request->dia_semana,
-            'hora_inicio'  => $request->hora_inicio,
-            'duracao_min'  => $request->duracao_min,
-            'ativo'        => true,
+            'dia_semana' => $request->dia_semana,
+            'hora_inicio' => $request->hora_inicio,
+            'duracao_min' => $request->duracao_min,
+            'ativo' => true,
         ]);
 
         return redirect()->back()->with('success', 'Aula adicionada!');
@@ -626,17 +635,17 @@ class AcademiaController extends Controller
     public function updateAula(Request $request, $id)
     {
         $academia = $this->academiaLogada();
-        if (!$academia) {
+        if (! $academia) {
             return redirect()->route('login.index');
         }
 
         $request->validate([
-            'nome'         => 'required|string|max:120',
-            'resumo'       => 'nullable|string|max:2000',
+            'nome' => 'required|string|max:120',
+            'resumo' => 'nullable|string|max:2000',
             'professor_id' => 'nullable|integer',
-            'dia_semana'   => 'nullable|integer|min:0|max:6',
-            'hora_inicio'  => 'nullable|date_format:H:i',
-            'duracao_min'  => 'nullable|integer|min:5|max:600',
+            'dia_semana' => 'nullable|integer|min:0|max:6',
+            'hora_inicio' => 'nullable|date_format:H:i',
+            'duracao_min' => 'nullable|integer|min:5|max:600',
         ]);
 
         $aula = AcademiaAula::where('academia_id', $academia->id)->findOrFail($id);
@@ -648,12 +657,12 @@ class AcademiaController extends Controller
         }
 
         $aula->update([
-            'nome'         => $request->nome,
-            'resumo'       => $request->resumo,
+            'nome' => $request->nome,
+            'resumo' => $request->resumo,
             'professor_id' => $professorId,
-            'dia_semana'   => $request->dia_semana,
-            'hora_inicio'  => $request->hora_inicio,
-            'duracao_min'  => $request->duracao_min,
+            'dia_semana' => $request->dia_semana,
+            'hora_inicio' => $request->hora_inicio,
+            'duracao_min' => $request->duracao_min,
         ]);
 
         return redirect()->back()->with('success', 'Aula atualizada!');
@@ -662,7 +671,7 @@ class AcademiaController extends Controller
     public function destroyAula($id)
     {
         $academia = $this->academiaLogada();
-        if (!$academia) {
+        if (! $academia) {
             return redirect()->route('login.index');
         }
 

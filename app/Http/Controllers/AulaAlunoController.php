@@ -100,7 +100,7 @@ class AulaAlunoController extends Controller
             $aula->update([
                 'cancelado' => true,
                 'cancelado_em' => now(),
-                'justificativa_cancelamento' => trim('Cancelada pelo aluno. ' . ($motivo ?? '')),
+                'justificativa_cancelamento' => trim('Cancelada pelo aluno. '.($motivo ?? '')),
             ]);
 
             $payment = $aula->payment_id ? Payment::find($aula->payment_id) : null;
@@ -124,9 +124,9 @@ class AulaAlunoController extends Controller
         $this->avisarPersonal(
             $aula,
             'Aula cancelada pelo aluno',
-            'O aluno cancelou a aula de ' . $inicio->format('d/m/Y \à\s H:i') . ' dentro do prazo de '
-                . AgendaService::HORAS_ANTECEDENCIA_CANCELAMENTO . 'h.'
-                . ($motivo ? ' Motivo: ' . $motivo : '')
+            'O aluno cancelou a aula de '.$inicio->format('d/m/Y \à\s H:i').' dentro do prazo de '
+                .AgendaService::HORAS_ANTECEDENCIA_CANCELAMENTO.'h.'
+                .($motivo ? ' Motivo: '.$motivo : '')
         );
 
         return [
@@ -197,7 +197,7 @@ class AulaAlunoController extends Controller
             $aula->update([
                 'cancelado' => true,
                 'cancelado_em' => now(),
-                'justificativa_cancelamento' => trim('Falta avisada pelo aluno. ' . ($dados['motivo'] ?? '')),
+                'justificativa_cancelamento' => trim('Falta avisada pelo aluno. '.($dados['motivo'] ?? '')),
             ]);
 
             AulaReposicao::updateOrCreate(
@@ -217,9 +217,9 @@ class AulaAlunoController extends Controller
         $this->avisarPersonal(
             $aula,
             'Aluno pediu reposição de aula',
-            'O aluno avisou que não vai à aula de ' . $inicio->format('d/m/Y \à\s H:i')
-                . '. Defina o dia e a hora da reposição no seu painel.'
-                . ($dados['motivo'] ?? null ? ' Motivo: ' . $dados['motivo'] : '')
+            'O aluno avisou que não vai à aula de '.$inicio->format('d/m/Y \à\s H:i')
+                .'. Defina o dia e a hora da reposição no seu painel.'
+                .($dados['motivo'] ?? null ? ' Motivo: '.$dados['motivo'] : '')
         );
 
         return [

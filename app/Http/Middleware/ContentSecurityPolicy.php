@@ -52,7 +52,7 @@ class ContentSecurityPolicy
             $fontes = array_values(array_unique(array_filter((array) $fontes)));
 
             if ($fontes !== []) {
-                $partes[] = $diretiva . ' ' . implode(' ', $fontes);
+                $partes[] = $diretiva.' '.implode(' ', $fontes);
             }
         }
 
@@ -68,7 +68,7 @@ class ContentSecurityPolicy
             // report-uri é obsoleto porém é o que tem suporte amplo hoje; o
             // report-to depende de header Reporting-Endpoints e de configuração
             // extra, sem ganho aqui.
-            $partes[] = 'report-uri ' . $uri;
+            $partes[] = 'report-uri '.$uri;
         }
 
         return implode('; ', $partes);

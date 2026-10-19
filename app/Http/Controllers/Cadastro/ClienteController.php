@@ -3,21 +3,19 @@
 namespace App\Http\Controllers\Cadastro;
 
 use App\Http\Controllers\Controller;
+use App\Models\Agenda;
+use App\Models\Cadastro\Academia as Academia;
+use App\Models\Cadastro\Cliente;
+use App\Models\Cadastro\Loja;
+use App\Models\Cadastro\Personal;
+use App\Models\Cadastro\Studio;
 use App\Services\MetaConversionsService;
 use App\Support\CadastroHelper;
-use App\Models\Cadastro\Cliente;
-use App\Models\Cadastro\Personal;
-use App\Models\Cadastro\Academia as Academia;
-use App\Models\Cadastro\Studio;
-use App\Models\Cadastro\Loja;
-use App\Models\Agenda;
-use Illuminate\Support\Facades\DB;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Mail;
-use Carbon\Carbon;
-use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Validation\Rule;
 
 class ClienteController extends Controller
@@ -25,19 +23,21 @@ class ClienteController extends Controller
     public function index()
     {
         $id = session('cliente_id');
-        if (!$id) return redirect()->route('login.index');
+        if (! $id) {
+            return redirect()->route('login.index');
+        }
 
         $cliente = Cliente::find($id);
         // Só personal trainers no painel (nutricionistas têm fluxo próprio).
         $personals = Personal::where('status', 'aprovado')
             ->personalTrainers()
-            ->with(['fotos', 'avaliacoes', 'pacotesAvaliacao' => fn($q) => $q->where('ativo', true)->orderBy('nome')])
+            ->with(['fotos', 'avaliacoes', 'pacotesAvaliacao' => fn ($q) => $q->where('ativo', true)->orderBy('nome')])
             // Pioneiros (100 primeiros do estado) aparecem em destaque, no topo.
             ->orderByRaw('pioneiro_posicao IS NULL')
             ->orderBy('pioneiro_posicao')
             ->orderBy('id')
             ->get();
-        $academias = Academia::with(['fotos', 'planos' => fn($q) => $q->where('ativo', true)->orderBy('valor')])->where('status', 'aprovado')->get();
+        $academias = Academia::with(['fotos', 'planos' => fn ($q) => $q->where('ativo', true)->orderBy('valor')])->where('status', 'aprovado')->get();
 
         // Próximas aulas do aluno, já com o estado da janela de 24h resolvido:
         // a tela é montada em JS e não tem como calcular fuso/prazo sozinha.
@@ -79,7 +79,7 @@ class ClienteController extends Controller
                 ->where('cancelado', false)
                 ->get()
                 ->map(function ($ag) {
-                    return $ag->data . ' ' . date('H:i', strtotime($ag->hora_inicio));
+                    return $ag->data.' '.date('H:i', strtotime($ag->hora_inicio));
                 })->toArray();
 
             for ($i = 0; $i < $diasParaFrente; $i++) {
@@ -89,14 +89,14 @@ class ClienteController extends Controller
 
                 while ($horaAtual < $horaLimite) {
                     $formatada = date('H:i', $horaAtual);
-                    $chave = $dataLoop . ' ' . $formatada;
+                    $chave = $dataLoop.' '.$formatada;
 
-                    if (!in_array($chave, $ocupados)) {
-                        $horariosDisponiveis->push((object)[
+                    if (! in_array($chave, $ocupados)) {
+                        $horariosDisponiveis->push((object) [
                             'personal_id' => $personal->id,
                             'data' => $dataLoop,
                             'horario_inicio' => $formatada,
-                            'horario_fim' => date('H:i', strtotime('+1 hour', $horaAtual))
+                            'horario_fim' => date('H:i', strtotime('+1 hour', $horaAtual)),
                         ]);
                     }
                     $horaAtual = strtotime('+1 hour', $horaAtual);
@@ -111,26 +111,26 @@ class ClienteController extends Controller
             ->get()
             ->map(function ($s) {
                 if ($s->tipo === 'pacote') {
-                    $p     = \App\Models\Cadastro\Personal::find($s->trainer_id);
-                    $label = 'Pacote com ' . ($p->nome ?? 'Personal');
+                    $p = \App\Models\Cadastro\Personal::find($s->trainer_id);
+                    $label = 'Pacote com '.($p->nome ?? 'Personal');
                 } elseif ($s->tipo === 'academia') {
-                    $a     = \App\Models\Cadastro\Academia::find($s->academia_id);
-                    $pl    = \App\Models\Cadastro\Plano::find($s->plano_id);
-                    $label = 'Academia ' . ($a->nome ?? '') . ($pl ? ' — ' . $pl->nome : '');
+                    $a = \App\Models\Cadastro\Academia::find($s->academia_id);
+                    $pl = \App\Models\Cadastro\Plano::find($s->plano_id);
+                    $label = 'Academia '.($a->nome ?? '').($pl ? ' — '.$pl->nome : '');
                 } elseif ($s->tipo === 'studio_plano') {
-                    $st    = \App\Models\Cadastro\Studio::find($s->studio_id);
-                    $pl    = \App\Models\Cadastro\StudioPlano::find($s->studio_plano_id);
-                    $label = 'Studio ' . ($st->nome ?? '') . ($pl ? ' — ' . $pl->nome : '');
+                    $st = \App\Models\Cadastro\Studio::find($s->studio_id);
+                    $pl = \App\Models\Cadastro\StudioPlano::find($s->studio_plano_id);
+                    $label = 'Studio '.($st->nome ?? '').($pl ? ' — '.$pl->nome : '');
                 } else {
                     $label = 'Assinatura';
                 }
 
                 return (object) [
-                    'id'         => $s->id,
-                    'label'      => $label,
-                    'valor'      => $s->amount_total,
-                    'metodo'     => $s->payment_method,
-                    'status'     => $s->status,
+                    'id' => $s->id,
+                    'label' => $label,
+                    'valor' => $s->amount_total,
+                    'metodo' => $s->payment_method,
+                    'status' => $s->status,
                     'acesso_ate' => $s->acesso_ate ? \Carbon\Carbon::parse($s->acesso_ate)->format('d/m/Y') : null,
                 ];
             });
@@ -227,7 +227,7 @@ class ClienteController extends Controller
 
             $detalheDias[$d] = [
                 'dia' => $d,
-                'rotulo' => $nomesDow[$dow] . ', ' . $dataDia->format('d/m'),
+                'rotulo' => $nomesDow[$dow].', '.$dataDia->format('d/m'),
                 'eh_hoje' => $dataDia->format('Y-m-d') === $hoje->format('Y-m-d'),
                 'passou' => $dataDia->format('Y-m-d') < $hoje->format('Y-m-d'),
                 'ficha' => $ficha ? [
@@ -289,20 +289,24 @@ class ClienteController extends Controller
 
     public function update(Request $request, $id)
     {
-        if ((int)$id !== (int)session('cliente_id')) abort(403);
+        if ((int) $id !== (int) session('cliente_id')) {
+            abort(403);
+        }
 
         $cliente = Cliente::find($id);
-        if (!$cliente) return redirect()->back()->with('error', 'Cliente não encontrado.');
+        if (! $cliente) {
+            return redirect()->back()->with('error', 'Cliente não encontrado.');
+        }
 
         $validated = $request->validate([
-            'nome'        => 'required|string|max:255',
-            'email'       => 'required|email|max:255|unique:clientes,email,' . $id,
+            'nome' => 'required|string|max:255',
+            'email' => 'required|email|max:255|unique:clientes,email,'.$id,
             // Lista única em config('textos.profissional.sexos') — a cópia que
             // vivia aqui é a mesma que divergiu no cadastro.
-            'sexo'        => 'required|' . \App\Support\CadastroHelper::regraSexo(),
-            'cep'         => 'nullable|string|max:9',
-            'altura'      => 'nullable|numeric',
-            'peso'        => 'nullable|numeric',
+            'sexo' => 'required|'.\App\Support\CadastroHelper::regraSexo(),
+            'cep' => 'nullable|string|max:9',
+            'altura' => 'nullable|numeric',
+            'peso' => 'nullable|numeric',
             /*
              * Campos que o APP já editava e o site não: a mesma conta tinha um
              * conjunto editável diferente dependendo de por onde o aluno
@@ -310,24 +314,24 @@ class ClienteController extends Controller
              * no cadastro e não eram editáveis em nenhum dos dois — uma lesão
              * nova ou uma mudança de rotina não tinha por onde entrar.
              */
-            'whatsapp'    => 'nullable|string|max:20',
+            'whatsapp' => 'nullable|string|max:20',
             'resumo_objetivo' => 'nullable|string|max:500',
             'condicao_clinica' => 'nullable|string',
             'frequencia_semanal' => 'nullable|integer|min:1',
-            'rua'         => 'nullable|string|max:255',
-            'bairro'      => 'nullable|string|max:255',
-            'cidade'      => 'nullable|string|max:255',
-            'estado'      => 'nullable|string|max:255',
+            'rua' => 'nullable|string|max:255',
+            'bairro' => 'nullable|string|max:255',
+            'cidade' => 'nullable|string|max:255',
+            'estado' => 'nullable|string|max:255',
             'complemento' => 'nullable|string|max:255',
             // Editável depois do cadastro: a preferência muda (mudou de cidade,
             // começou a viajar), e campo que só se escolhe uma vez na vida vira
             // dado errado com o tempo.
             'modalidade_preferida' => ['nullable', Rule::in(config('textos.profissional.modalidades_aluno'))],
-            'foto'        => 'nullable|file|mimes:jpeg,jpg,png,gif,webp,heic,heif|max:10240',
+            'foto' => 'nullable|file|mimes:jpeg,jpg,png,gif,webp,heic,heif|max:10240',
             // A07 — a senha era gravada direto de $request->senha, sem passar por
             // regra nenhuma: dava para trocar por uma senha de 1 caractere aqui,
             // contornando o mínimo exigido no cadastro.
-            'senha'       => 'nullable|string|min:8|max:255',
+            'senha' => 'nullable|string|min:8|max:255',
         ]);
 
         $data = $validated;
@@ -348,6 +352,7 @@ class ClienteController extends Controller
         }
 
         $cliente->update($data);
+
         return redirect()->route('cliente.index')->with('success', 'Perfil atualizado com sucesso!');
     }
 
@@ -359,37 +364,37 @@ class ClienteController extends Controller
     public function store(Request $request, \App\Services\CupomService $cupons)
     {
         $validated = $request->validate([
-            'nome'               => 'required|string|max:255',
-            'email'              => 'required|email|max:255|unique:clientes,email',
-            'senha'              => 'required|string|min:8|max:255',
-            'whatsapp'           => 'nullable|string|max:20',
+            'nome' => 'required|string|max:255',
+            'email' => 'required|email|max:255|unique:clientes,email',
+            'senha' => 'required|string|min:8|max:255',
+            'whatsapp' => 'nullable|string|max:20',
             // Data de nascimento (a coluna chama `idade` por histórico). O corte
             // de 18 anos sai de CadastroHelper, igual ao app — ver lá o porquê.
-            'idade'              => array_merge(['required'], CadastroHelper::regraNascimento(CadastroHelper::IDADE_MINIMA_ALUNO)),
+            'idade' => array_merge(['required'], CadastroHelper::regraNascimento(CadastroHelper::IDADE_MINIMA_ALUNO)),
             // Lista única em config('textos.profissional.sexos'): a cópia que
             // vivia aqui divergiu do <select> do formulário e a terceira opção
             // ("Outro") era recusada na validação.
-            'sexo'               => 'required|' . \App\Support\CadastroHelper::regraSexo(),
-            'cep'                => 'required|string|max:9',
-            'rua'                => 'nullable|string|max:255',
-            'bairro'             => 'nullable|string|max:255',
-            'cidade'             => 'nullable|string|max:255',
-            'estado'             => 'nullable|string|max:255',
-            'complemento'        => 'nullable|string|max:255',
-            'altura'             => 'nullable|numeric',
-            'peso'               => 'nullable|numeric',
-            'resumo_objetivo'    => 'nullable|string',
+            'sexo' => 'required|'.\App\Support\CadastroHelper::regraSexo(),
+            'cep' => 'required|string|max:9',
+            'rua' => 'nullable|string|max:255',
+            'bairro' => 'nullable|string|max:255',
+            'cidade' => 'nullable|string|max:255',
+            'estado' => 'nullable|string|max:255',
+            'complemento' => 'nullable|string|max:255',
+            'altura' => 'nullable|numeric',
+            'peso' => 'nullable|numeric',
+            'resumo_objetivo' => 'nullable|string',
             'frequencia_semanal' => 'nullable|integer|min:1',
             // Preferência de atendimento. Vazio = sem preferência (ver
             // Cliente::modalidadesCompativeis), e "Híbrido" NÃO é opção do aluno:
             // é oferta do profissional, não desejo de quem procura.
             'modalidade_preferida' => ['nullable', Rule::in(config('textos.profissional.modalidades_aluno'))],
-            'condicao_clinica'   => 'nullable|string',
+            'condicao_clinica' => 'nullable|string',
             // latitude/longitude saíram: `clientes` não tem essas colunas, o
             // formulário nunca as enviou e o mass-assignment as descartava —
             // regra sobre campo inexistente só engana quem lê depois.
-            'aceita_termos'      => 'required|accepted',
-            'cupom'              => $cupons->regraValidacao(),
+            'aceita_termos' => 'required|accepted',
+            'cupom' => $cupons->regraValidacao(),
         ], array_merge([
             'aceita_termos.required' => 'Você deve concordar com os Termos de Uso',
             'aceita_termos.accepted' => 'Você deve concordar com os Termos de Uso',
@@ -411,6 +416,7 @@ class ClienteController extends Controller
         // sem isto a conta nova cairia na tela de reaceite no primeiro acesso.
         $cliente->registrarAceiteTermos($request->ip(), (string) $request->userAgent(), \App\Models\TermoAceite::ORIGEM_CADASTRO);
         $fb = app(MetaConversionsService::class);
+
         // A tela de login lê `sucesso`, não `success` — com a chave errada o
         // aluno voltava ao login sem nenhuma confirmação na tela.
         return redirect()->route('login.index')
@@ -428,16 +434,18 @@ class ClienteController extends Controller
     public function reservarHorario(Request $request)
     {
         $clienteId = session('cliente_id');
-        if (!$clienteId) return redirect()->route('login.index')->with('erro', 'Sessão expirada.');
+        if (! $clienteId) {
+            return redirect()->route('login.index')->with('erro', 'Sessão expirada.');
+        }
 
         $request->validate([
-            'personal_id'    => 'required|exists:personals,id',
-            'academia_id'    => 'nullable|exists:academias,id',
-            'academia_nome'  => 'nullable|string|max:255',
-            'data'           => 'required|date',
+            'personal_id' => 'required|exists:personals,id',
+            'academia_id' => 'nullable|exists:academias,id',
+            'academia_nome' => 'nullable|string|max:255',
+            'data' => 'required|date',
             'horario_inicio' => 'required',
-            'horario_fim'    => 'required',
-            'modalidade'     => ['nullable', Rule::in(Agenda::MODALIDADES)],
+            'horario_fim' => 'required',
+            'modalidade' => ['nullable', Rule::in(Agenda::MODALIDADES)],
         ]);
 
         // Não basta estar na lista: tem de ser algo que ESTE profissional atende.
@@ -454,7 +462,7 @@ class ClienteController extends Controller
             ->where('cancelado', false)
             ->where(function ($q) use ($request) {
                 $q->where('hora_inicio', '<', $request->horario_fim)
-                  ->where('hora_fim', '>', $request->horario_inicio);
+                    ->where('hora_fim', '>', $request->horario_inicio);
             })
             ->exists();
 
@@ -463,22 +471,22 @@ class ClienteController extends Controller
         }
 
         $agenda = Agenda::create([
-            'cliente_id'    => $clienteId,
-            'personal_id'   => $request->personal_id,
-            'academia_id'   => $request->academia_id ?? null,
+            'cliente_id' => $clienteId,
+            'personal_id' => $request->personal_id,
+            'academia_id' => $request->academia_id ?? null,
             'academia_nome' => $request->academia_nome ?? null,
-            'data'          => $request->data,
-            'hora_inicio'   => $request->horario_inicio,
-            'hora_fim'      => $request->horario_fim,
-            'cancelado'     => false,
-            'tipo_aula'     => 'avulsa',
+            'data' => $request->data,
+            'hora_inicio' => $request->horario_inicio,
+            'hora_fim' => $request->horario_fim,
+            'cancelado' => false,
+            'tipo_aula' => 'avulsa',
             // Quem atende de um jeito só não precisa escolher: o valor é dedutível.
-            'modalidade'    => Agenda::modalidadeResolvida($request->modalidade, $personalDaAula?->modalidade),
+            'modalidade' => Agenda::modalidadeResolvida($request->modalidade, $personalDaAula?->modalidade),
         ]);
 
         $this->notificarPersonalWhatsApp($clienteId, $request->personal_id, 'avulsa', $agenda);
 
-        $cliente  = Cliente::find($clienteId);
+        $cliente = Cliente::find($clienteId);
         $personal = Personal::find($request->personal_id);
         $academia = $request->academia_id ? Academia::find($request->academia_id) : null;
 
@@ -486,19 +494,21 @@ class ClienteController extends Controller
             try {
                 Mail::send('emails.aula-agendada', [
                     'personal_nome' => $personal->nome,
-                    'cliente_nome'  => $cliente->nome,
+                    'cliente_nome' => $cliente->nome,
                     'cliente_email' => $cliente->email,
-                    'data'          => $request->data,
-                    'hora_inicio'   => $request->horario_inicio,
-                    'hora_fim'      => $request->horario_fim,
+                    'data' => $request->data,
+                    'hora_inicio' => $request->horario_inicio,
+                    'hora_fim' => $request->horario_fim,
                     'academia_nome' => $academia ? $academia->nome : null,
                 ], function ($message) use ($personal) {
                     $message->to($personal->email)->subject('📅 Nova aula agendada - SnrFit');
                 });
-            } catch (\Exception $e) {}
+            } catch (\Exception $e) {
+            }
         }
 
         $fb = app(MetaConversionsService::class);
+
         return redirect()->back()
             ->with('sucesso', 'Horário agendado com sucesso!')
             ->with('fb_event', $fb->track(
@@ -514,29 +524,33 @@ class ClienteController extends Controller
     public function contratarAcademia(Request $request)
     {
         $clienteId = session('cliente_id');
-        if (!$clienteId) return redirect()->route('login.index')->with('erro', 'Você precisa estar logado.');
+        if (! $clienteId) {
+            return redirect()->route('login.index')->with('erro', 'Você precisa estar logado.');
+        }
 
         $request->validate(['academia_id' => 'required|exists:academias,id']);
 
-        $cliente  = Cliente::find($clienteId);
+        $cliente = Cliente::find($clienteId);
         $academia = Academia::find($request->academia_id);
         $cliente->update(['academia_id' => $request->academia_id]);
 
         if ($academia && $academia->email) {
             try {
                 Mail::send('emails.academia-contratada', [
-                    'academia_nome'  => $academia->nome,
-                    'cliente_nome'   => $cliente->nome,
-                    'cliente_email'  => $cliente->email,
+                    'academia_nome' => $academia->nome,
+                    'cliente_nome' => $cliente->nome,
+                    'cliente_email' => $cliente->email,
                     'cliente_cidade' => $cliente->cidade ?? null,
-                    'cliente_idade'  => $cliente->idade ?? null,
+                    'cliente_idade' => $cliente->idade ?? null,
                 ], function ($message) use ($academia) {
                     $message->to($academia->email)->subject('🎉 Novo aluno contratou sua academia - SnrFit');
                 });
-            } catch (\Exception $e) {}
+            } catch (\Exception $e) {
+            }
         }
 
         $fb = app(MetaConversionsService::class);
+
         return redirect()->back()
             ->with('sucesso', 'Academia contratada com sucesso!')
             ->with('fb_event', $fb->track(
@@ -557,23 +571,27 @@ class ClienteController extends Controller
     public function contratarPacote(Request $request)
     {
         $clienteId = session('cliente_id');
-        if (!$clienteId) return redirect()->route('login.index')->with('erro', 'Sessão expirada.');
+        if (! $clienteId) {
+            return redirect()->route('login.index')->with('erro', 'Sessão expirada.');
+        }
 
         $request->validate([
-            'personal_id'       => 'required|exists:personals,id',
+            'personal_id' => 'required|exists:personals,id',
             'frequencia_pacote' => 'required|integer|min:1|max:7',
-            'valor_pacote'      => 'required|numeric|min:0',
+            'valor_pacote' => 'required|numeric|min:0',
             'dias_selecionados' => 'required|json',
-            'hora_inicio'       => 'required|date_format:H:i',
-            'hora_fim'          => 'required|date_format:H:i',
-            'academia_nome'     => 'nullable|string|max:255',
-            'modalidade'        => ['nullable', Rule::in(Agenda::MODALIDADES)],
+            'hora_inicio' => 'required|date_format:H:i',
+            'hora_fim' => 'required|date_format:H:i',
+            'academia_nome' => 'nullable|string|max:255',
+            'modalidade' => ['nullable', Rule::in(Agenda::MODALIDADES)],
         ]);
 
-        $cliente  = Cliente::find($clienteId);
+        $cliente = Cliente::find($clienteId);
         $personal = Personal::find($request->personal_id);
 
-        if (!$cliente || !$personal) return redirect()->back()->with('error', 'Dados inválidos.');
+        if (! $cliente || ! $personal) {
+            return redirect()->back()->with('error', 'Dados inválidos.');
+        }
 
         if (! Agenda::modalidadeValida($request->modalidade, $personal->modalidade)) {
             return redirect()->back()->with('error', 'Este profissional não atende nessa modalidade.');
@@ -584,25 +602,29 @@ class ClienteController extends Controller
         $modalidadeDoPacote = Agenda::modalidadeResolvida($request->modalidade, $personal->modalidade);
 
         $diasSelecionados = json_decode($request->dias_selecionados, true);
-        if (empty($diasSelecionados)) return redirect()->back()->with('error', 'Selecione pelo menos um dia.');
+        if (empty($diasSelecionados)) {
+            return redirect()->back()->with('error', 'Selecione pelo menos um dia.');
+        }
 
         $frequencia = $request->frequencia_pacote;
         if (count($diasSelecionados) > $frequencia) {
-            return redirect()->back()->with('error', "Você selecionou " . count($diasSelecionados) . " dia(s), mas o pacote permite apenas {$frequencia}x na semana.");
+            return redirect()->back()->with('error', 'Você selecionou '.count($diasSelecionados)." dia(s), mas o pacote permite apenas {$frequencia}x na semana.");
         }
 
-        $horaInicio          = $request->hora_inicio;
-        $horaFim             = $request->hora_fim;
+        $horaInicio = $request->hora_inicio;
+        $horaFim = $request->hora_fim;
         $agendamentosCriados = 0;
 
         foreach ($diasSelecionados as $dia) {
-            $dataPrimeira = Carbon::create(now()->year, now()->month, (int)$dia);
-            if ($dataPrimeira < now()->startOfDay()) $dataPrimeira = $dataPrimeira->addMonth();
+            $dataPrimeira = Carbon::create(now()->year, now()->month, (int) $dia);
+            if ($dataPrimeira < now()->startOfDay()) {
+                $dataPrimeira = $dataPrimeira->addMonth();
+            }
 
-            $diaDaSemana      = $dataPrimeira->dayOfWeek;
+            $diaDaSemana = $dataPrimeira->dayOfWeek;
             $datasComMesmoDia = [];
 
-            $dataAtual       = Carbon::create(now()->year, now()->month, 1);
+            $dataAtual = Carbon::create(now()->year, now()->month, 1);
             $dataFimMesAtual = now()->endOfMonth();
             while ($dataAtual <= $dataFimMesAtual) {
                 if ($dataAtual->dayOfWeek === $diaDaSemana && $dataAtual >= now()->startOfDay()) {
@@ -611,11 +633,13 @@ class ClienteController extends Controller
                 $dataAtual->addDay();
             }
 
-            $proxMes        = now()->addMonth();
-            $dataAtual      = Carbon::create($proxMes->year, $proxMes->month, 1);
+            $proxMes = now()->addMonth();
+            $dataAtual = Carbon::create($proxMes->year, $proxMes->month, 1);
             $dataFimProxMes = $proxMes->endOfMonth();
             while ($dataAtual <= $dataFimProxMes) {
-                if ($dataAtual->dayOfWeek === $diaDaSemana) $datasComMesmoDia[] = $dataAtual->copy();
+                if ($dataAtual->dayOfWeek === $diaDaSemana) {
+                    $datasComMesmoDia[] = $dataAtual->copy();
+                }
                 $dataAtual->addDay();
             }
 
@@ -624,25 +648,25 @@ class ClienteController extends Controller
                     ->where('data', $data->format('Y-m-d'))
                     ->where('cancelado', false)
                     ->where(function ($q) use ($horaInicio, $horaFim) {
-                        $q->whereRaw("hora_inicio < ? AND hora_fim > ?", [$horaFim, $horaInicio]);
+                        $q->whereRaw('hora_inicio < ? AND hora_fim > ?', [$horaFim, $horaInicio]);
                     })->exists();
 
-                if (!$temConflito) {
+                if (! $temConflito) {
                     Agenda::create([
-                        'cliente_id'         => $clienteId,
-                        'personal_id'        => $request->personal_id,
-                        'academia_id'        => $cliente->academia_id ?? null,
-                        'academia_nome'      => $request->academia_nome ?? null,
-                        'data'               => $data->format('Y-m-d'),
-                        'hora_inicio'        => $horaInicio,
-                        'hora_fim'           => $horaFim,
-                        'cancelado'          => false,
-                        'descricao'          => "Aula agendada - {$cliente->nome}",
-                        'frequencia_pacote'  => $frequencia,
+                        'cliente_id' => $clienteId,
+                        'personal_id' => $request->personal_id,
+                        'academia_id' => $cliente->academia_id ?? null,
+                        'academia_nome' => $request->academia_nome ?? null,
+                        'data' => $data->format('Y-m-d'),
+                        'hora_inicio' => $horaInicio,
+                        'hora_fim' => $horaFim,
+                        'cancelado' => false,
+                        'descricao' => "Aula agendada - {$cliente->nome}",
+                        'frequencia_pacote' => $frequencia,
                         'data_inicio_pacote' => now()->startOfMonth(),
-                        'data_fim_pacote'    => now()->endOfMonth(),
-                        'tipo_aula'          => 'pacote',
-                        'modalidade'         => $modalidadeDoPacote,
+                        'data_fim_pacote' => now()->endOfMonth(),
+                        'tipo_aula' => 'pacote',
+                        'modalidade' => $modalidadeDoPacote,
                     ]);
                     $agendamentosCriados++;
                 }
@@ -659,29 +683,31 @@ class ClienteController extends Controller
             try {
                 Mail::send('emails.pacote-contratado', [
                     'personal_nome' => $personal->nome,
-                    'cliente_nome'  => $cliente->nome,
+                    'cliente_nome' => $cliente->nome,
                     'cliente_email' => $cliente->email,
-                    'frequencia'    => $frequencia,
-                    'valor_mensal'  => $request->valor_pacote,
-                    'dias_total'    => $agendamentosCriados,
-                    'hora_inicio'   => $horaInicio,
-                    'hora_fim'      => $horaFim,
-                    'data_inicio'   => now()->startOfMonth()->format('d/m/Y'),
-                    'data_fim'      => now()->endOfMonth()->format('d/m/Y'),
+                    'frequencia' => $frequencia,
+                    'valor_mensal' => $request->valor_pacote,
+                    'dias_total' => $agendamentosCriados,
+                    'hora_inicio' => $horaInicio,
+                    'hora_fim' => $horaFim,
+                    'data_inicio' => now()->startOfMonth()->format('d/m/Y'),
+                    'data_fim' => now()->endOfMonth()->format('d/m/Y'),
                 ], function ($message) use ($personal) {
                     $message->to($personal->email)->subject('🎉 Novo pacote contratado - SnrFit');
                 });
-            } catch (\Exception $e) {}
+            } catch (\Exception $e) {
+            }
         }
 
         $fb = app(MetaConversionsService::class);
+
         return redirect()->back()
             ->with('success', "Pacote contratado com sucesso! {$agendamentosCriados} treino(s) agendado(s).")
             ->with('fb_event', $fb->track(
                 'Purchase',
                 [
-                    'value'        => (float) ($request->valor_pacote ?? 0),
-                    'currency'     => 'BRL',
+                    'value' => (float) ($request->valor_pacote ?? 0),
+                    'currency' => 'BRL',
                     'content_name' => 'Pacote de treinos',
                     'content_type' => 'pacote',
                 ],
@@ -694,17 +720,17 @@ class ClienteController extends Controller
 
     public function agendarAulasInterno(array $booking): void
     {
-        $clienteId        = $booking['cliente_id'];
-        $personalId       = $booking['personal_id'];
-        $frequencia       = $booking['frequencia_pacote'];
-        $horaInicio       = $booking['hora_inicio'] ?? null;
-        $horaFim          = $booking['hora_fim'] ?? null;
+        $clienteId = $booking['cliente_id'];
+        $personalId = $booking['personal_id'];
+        $frequencia = $booking['frequencia_pacote'];
+        $horaInicio = $booking['hora_inicio'] ?? null;
+        $horaFim = $booking['hora_fim'] ?? null;
         $diasSelecionados = json_decode($booking['dias_selecionados'] ?? '[]', true) ?: [];
-        $diasHorarios     = !empty($booking['dias_horarios']) ? json_decode($booking['dias_horarios'], true) : null;
-        $academiaNome     = $booking['academia_nome'] ?? null;
-        $valorPacote      = $booking['valor_pacote'] ?? 0;
+        $diasHorarios = ! empty($booking['dias_horarios']) ? json_decode($booking['dias_horarios'], true) : null;
+        $academiaNome = $booking['academia_nome'] ?? null;
+        $valorPacote = $booking['valor_pacote'] ?? 0;
 
-        $cliente  = Cliente::find($clienteId);
+        $cliente = Cliente::find($clienteId);
         $personal = Personal::find($personalId);
 
         /*
@@ -731,11 +757,13 @@ class ClienteController extends Controller
         if (is_array($diasHorarios) && count($diasHorarios) > 0) {
             foreach ($diasHorarios as $dh) {
                 $dia = (int) ($dh['dia'] ?? 0);
-                if ($dia < 1 || $dia > 31) continue;
+                if ($dia < 1 || $dia > 31) {
+                    continue;
+                }
                 $itens[] = [
-                    'dia'         => $dia,
+                    'dia' => $dia,
                     'hora_inicio' => $dh['hora_inicio'] ?? $horaInicio,
-                    'hora_fim'    => $dh['hora_fim'] ?? $horaFim,
+                    'hora_fim' => $dh['hora_fim'] ?? $horaFim,
                 ];
             }
         } else {
@@ -744,30 +772,35 @@ class ClienteController extends Controller
             }
         }
 
-        if (!$cliente || !$personal || empty($itens)) {
+        if (! $cliente || ! $personal || empty($itens)) {
             Log::error('agendarAulasInterno: dados inválidos', $booking);
+
             return;
         }
 
         // Horário de referência p/ o e-mail (um só): o do primeiro dia.
         $horaInicio = $horaInicio ?? $itens[0]['hora_inicio'];
-        $horaFim    = $horaFim ?? $itens[0]['hora_fim'];
+        $horaFim = $horaFim ?? $itens[0]['hora_fim'];
 
         $agendamentosCriados = 0;
 
         foreach ($itens as $item) {
-            $dia     = $item['dia'];
+            $dia = $item['dia'];
             $hInicio = $item['hora_inicio'];
-            $hFim    = $item['hora_fim'];
-            if (!$hInicio || !$hFim) continue;
+            $hFim = $item['hora_fim'];
+            if (! $hInicio || ! $hFim) {
+                continue;
+            }
 
             $dataPrimeira = Carbon::create(now()->year, now()->month, $dia);
-            if ($dataPrimeira < now()->startOfDay()) $dataPrimeira = $dataPrimeira->addMonth();
+            if ($dataPrimeira < now()->startOfDay()) {
+                $dataPrimeira = $dataPrimeira->addMonth();
+            }
 
-            $diaDaSemana      = $dataPrimeira->dayOfWeek;
+            $diaDaSemana = $dataPrimeira->dayOfWeek;
             $datasComMesmoDia = [];
 
-            $dataAtual       = Carbon::create(now()->year, now()->month, 1);
+            $dataAtual = Carbon::create(now()->year, now()->month, 1);
             $dataFimMesAtual = now()->endOfMonth();
             while ($dataAtual <= $dataFimMesAtual) {
                 if ($dataAtual->dayOfWeek === $diaDaSemana && $dataAtual >= now()->startOfDay()) {
@@ -776,11 +809,13 @@ class ClienteController extends Controller
                 $dataAtual->addDay();
             }
 
-            $proxMes        = now()->addMonth();
-            $dataAtual      = Carbon::create($proxMes->year, $proxMes->month, 1);
+            $proxMes = now()->addMonth();
+            $dataAtual = Carbon::create($proxMes->year, $proxMes->month, 1);
             $dataFimProxMes = $proxMes->endOfMonth();
             while ($dataAtual <= $dataFimProxMes) {
-                if ($dataAtual->dayOfWeek === $diaDaSemana) $datasComMesmoDia[] = $dataAtual->copy();
+                if ($dataAtual->dayOfWeek === $diaDaSemana) {
+                    $datasComMesmoDia[] = $dataAtual->copy();
+                }
                 $dataAtual->addDay();
             }
 
@@ -789,25 +824,25 @@ class ClienteController extends Controller
                     ->where('data', $data->format('Y-m-d'))
                     ->where('cancelado', false)
                     ->where(function ($q) use ($hInicio, $hFim) {
-                        $q->whereRaw("hora_inicio < ? AND hora_fim > ?", [$hFim, $hInicio]);
+                        $q->whereRaw('hora_inicio < ? AND hora_fim > ?', [$hFim, $hInicio]);
                     })->exists();
 
-                if (!$temConflito) {
+                if (! $temConflito) {
                     Agenda::create([
-                        'cliente_id'         => $clienteId,
-                        'personal_id'        => $personalId,
-                        'academia_id'        => $cliente->academia_id ?? null,
-                        'academia_nome'      => $academiaNome,
-                        'data'               => $data->format('Y-m-d'),
-                        'hora_inicio'        => $hInicio,
-                        'hora_fim'           => $hFim,
-                        'cancelado'          => false,
-                        'descricao'          => "Aula agendada - {$cliente->nome}",
-                        'frequencia_pacote'  => $frequencia,
+                        'cliente_id' => $clienteId,
+                        'personal_id' => $personalId,
+                        'academia_id' => $cliente->academia_id ?? null,
+                        'academia_nome' => $academiaNome,
+                        'data' => $data->format('Y-m-d'),
+                        'hora_inicio' => $hInicio,
+                        'hora_fim' => $hFim,
+                        'cancelado' => false,
+                        'descricao' => "Aula agendada - {$cliente->nome}",
+                        'frequencia_pacote' => $frequencia,
                         'data_inicio_pacote' => now()->startOfMonth(),
-                        'data_fim_pacote'    => now()->endOfMonth(),
-                        'tipo_aula'          => 'pacote',
-                        'modalidade'         => $modalidadeDoPacote,
+                        'data_fim_pacote' => now()->endOfMonth(),
+                        'tipo_aula' => 'pacote',
+                        'modalidade' => $modalidadeDoPacote,
                     ]);
                     $agendamentosCriados++;
                 }
@@ -818,15 +853,15 @@ class ClienteController extends Controller
             try {
                 Mail::send('emails.pacote-contratado', [
                     'personal_nome' => $personal->nome,
-                    'cliente_nome'  => $cliente->nome,
+                    'cliente_nome' => $cliente->nome,
                     'cliente_email' => $cliente->email,
-                    'frequencia'    => $frequencia,
-                    'valor_mensal'  => $valorPacote,
-                    'dias_total'    => $agendamentosCriados,
-                    'hora_inicio'   => $horaInicio,
-                    'hora_fim'      => $horaFim,
-                    'data_inicio'   => now()->startOfMonth()->format('d/m/Y'),
-                    'data_fim'      => now()->endOfMonth()->format('d/m/Y'),
+                    'frequencia' => $frequencia,
+                    'valor_mensal' => $valorPacote,
+                    'dias_total' => $agendamentosCriados,
+                    'hora_inicio' => $horaInicio,
+                    'hora_fim' => $horaFim,
+                    'data_inicio' => now()->startOfMonth()->format('d/m/Y'),
+                    'data_fim' => now()->endOfMonth()->format('d/m/Y'),
                 ], function ($message) use ($personal) {
                     $message->to($personal->email)->subject('🎉 Novo pacote contratado - SnrFit');
                 });
@@ -839,26 +874,27 @@ class ClienteController extends Controller
         $this->notificarPersonalWhatsApp($clienteId, $personalId, 'pacote', null, $frequencia, $agendamentosCriados);
 
         Log::info('agendarAulasInterno: aulas criadas', [
-            'cliente_id'  => $clienteId,
+            'cliente_id' => $clienteId,
             'personal_id' => $personalId,
-            'total'       => $agendamentosCriados,
+            'total' => $agendamentosCriados,
         ]);
     }
 
     public function agendarAulaAvulsaInterno(array $booking): void
     {
-        $clienteId    = $booking['cliente_id'];
-        $personalId   = $booking['personal_id'];
-        $data         = $booking['data'];
-        $horaInicio   = $booking['hora_inicio'];
-        $horaFim      = $booking['hora_fim'];
+        $clienteId = $booking['cliente_id'];
+        $personalId = $booking['personal_id'];
+        $data = $booking['data'];
+        $horaInicio = $booking['hora_inicio'];
+        $horaFim = $booking['hora_fim'];
         $academiaNome = $booking['academia_nome'] ?? null;
 
-        $cliente  = Cliente::find($clienteId);
+        $cliente = Cliente::find($clienteId);
         $personal = Personal::find($personalId);
 
-        if (!$cliente || !$personal || !$data) {
+        if (! $cliente || ! $personal || ! $data) {
             Log::error('agendarAulaAvulsaInterno: dados inválidos', $booking);
+
             return;
         }
 
@@ -878,8 +914,8 @@ class ClienteController extends Controller
         if (! Agenda::modalidadeValida($modalidadePedida, $personal->modalidade)) {
             Log::warning('agendarAulaAvulsaInterno: modalidade incompatível, gravando sem ela', [
                 'personal_id' => $personalId,
-                'pedida'      => $modalidadePedida,
-                'oferta'      => $personal->modalidade,
+                'pedida' => $modalidadePedida,
+                'oferta' => $personal->modalidade,
             ]);
             $modalidadePedida = null;
         }
@@ -890,45 +926,50 @@ class ClienteController extends Controller
             ->where('data', $data)
             ->where('cancelado', false)
             ->where(function ($q) use ($horaInicio, $horaFim) {
-                $q->whereRaw("hora_inicio < ? AND hora_fim > ?", [$horaFim, $horaInicio]);
+                $q->whereRaw('hora_inicio < ? AND hora_fim > ?', [$horaFim, $horaInicio]);
             })->exists();
 
         if ($temConflito) {
             Log::warning('agendarAulaAvulsaInterno: conflito de horário', $booking);
+
             return;
         }
 
         $agenda = Agenda::create([
-            'cliente_id'    => $clienteId,
+            'cliente_id' => $clienteId,
             // Guarda de qual pagamento essa aula veio: é por aqui que o
             // cancelamento acha o valor a devolver, sem garimpar booking_data.
-            'payment_id'    => $booking['payment_id'] ?? null,
-            'personal_id'   => $personalId,
-            'academia_id'   => $cliente->academia_id ?? null,
+            'payment_id' => $booking['payment_id'] ?? null,
+            'personal_id' => $personalId,
+            'academia_id' => $cliente->academia_id ?? null,
             'academia_nome' => $academiaNome,
-            'data'          => $data,
-            'hora_inicio'   => $horaInicio,
-            'hora_fim'      => $horaFim,
-            'cancelado'     => false,
-            'descricao'     => "Aula avulsa - {$cliente->nome}",
-            'tipo_aula'     => 'avulsa',
-            'modalidade'    => $modalidade,
+            'data' => $data,
+            'hora_inicio' => $horaInicio,
+            'hora_fim' => $horaFim,
+            'cancelado' => false,
+            'descricao' => "Aula avulsa - {$cliente->nome}",
+            'tipo_aula' => 'avulsa',
+            'modalidade' => $modalidade,
         ]);
 
         $this->notificarPersonalWhatsApp($clienteId, $personalId, 'avulsa', $agenda);
 
         Log::info('agendarAulaAvulsaInterno: aula criada', [
-            'cliente_id'  => $clienteId,
+            'cliente_id' => $clienteId,
             'personal_id' => $personalId,
-            'data'        => $data,
+            'data' => $data,
         ]);
     }
 
     public function buscarHorariosDisponiveis($personalId, $dia, \App\Services\AgendaService $agendas)
     {
         $personal = Personal::find($personalId);
-        if (!$personal) return response()->json(['erro' => 'Personal não encontrado'], 404);
-        if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $dia)) return response()->json(['erro' => 'Formato de data inválido'], 400);
+        if (! $personal) {
+            return response()->json(['erro' => 'Personal não encontrado'], 404);
+        }
+        if (! preg_match('/^\d{4}-\d{2}-\d{2}$/', $dia)) {
+            return response()->json(['erro' => 'Formato de data inválido'], 400);
+        }
 
         // A conta mora em AgendaService::horariosLivres(). Estava copiada aqui e
         // no Api\ExplorarController, com uma query por slot e ofertando horário
@@ -939,19 +980,24 @@ class ClienteController extends Controller
     public function buscarHorariosStudio($studioId, $dia)
     {
         $studio = Studio::where('id', $studioId)->where('status', 'aprovado')->first();
-        if (!$studio) return response()->json(['erro' => 'Studio não encontrado'], 404);
-        if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $dia)) return response()->json(['erro' => 'Formato de data inválido'], 400);
+        if (! $studio) {
+            return response()->json(['erro' => 'Studio não encontrado'], 404);
+        }
+        if (! preg_match('/^\d{4}-\d{2}-\d{2}$/', $dia)) {
+            return response()->json(['erro' => 'Formato de data inválido'], 400);
+        }
 
         return response()->json($studio->slotsDisponiveis($dia));
     }
 
     public function listarAcademias()
     {
-        $cliente   = Cliente::find(session('cliente_id'));
-        $academias = Academia::with(['fotos', 'planos' => fn($q) => $q->orderBy('valor')])
+        $cliente = Cliente::find(session('cliente_id'));
+        $academias = Academia::with(['fotos', 'planos' => fn ($q) => $q->orderBy('valor')])
             ->where('status', 'aprovado')
             ->orderBy('nome')
             ->get();
+
         return view('cliente.academias', compact('academias', 'cliente'));
     }
 
@@ -989,9 +1035,9 @@ class ClienteController extends Controller
         [$especialidadesDisponiveis, $especialidadeFiltro] = $this->filtroEspecialidades($personais);
 
         return view('cliente.personais', compact('personais', 'cliente') + [
-            'modalidadeFiltro'          => $modalidadeFiltro,
+            'modalidadeFiltro' => $modalidadeFiltro,
             'especialidadesDisponiveis' => $especialidadesDisponiveis,
-            'especialidadeFiltro'       => $especialidadeFiltro,
+            'especialidadeFiltro' => $especialidadeFiltro,
         ]);
     }
 
@@ -1013,7 +1059,7 @@ class ClienteController extends Controller
      * isso faria a pílula mentir.
      *
      * @param  \Illuminate\Support\Collection<int,\App\Models\Cadastro\Personal>  $personais
-     * @return array{0: array<string,int>, 1: string}  [especialidade => quantos], filtro vigente
+     * @return array{0: array<string,int>, 1: string} [especialidade => quantos], filtro vigente
      */
     private function filtroEspecialidades($personais): array
     {
@@ -1062,21 +1108,21 @@ class ClienteController extends Controller
 
     public function detalheAcademia($id)
     {
-        $cliente  = Cliente::find(session('cliente_id'));
+        $cliente = Cliente::find(session('cliente_id'));
         $academia = Academia::with([
             'fotos',
-            'planos'      => fn ($q) => $q->orderBy('valor'),
+            'planos' => fn ($q) => $q->orderBy('valor'),
             'professores' => fn ($q) => $q->where('ativo', true)->orderBy('nome'),
-            'aulas'       => fn ($q) => $q->where('ativo', true)->with('professor')->orderBy('nome'),
+            'aulas' => fn ($q) => $q->where('ativo', true)->with('professor')->orderBy('nome'),
             // Personais com vínculo aprovado — exibidos em "Personais Relacionados"
             'personaisAprovados' => fn ($q) => $q->where('personals.status', 'aprovado')->with('fotos')->orderBy('nome'),
         ])->findOrFail($id);
 
         $fb = app(MetaConversionsService::class);
         $fbEvent = $fb->track('ViewContent', [
-            'content_type'     => 'academia',
-            'content_ids'      => [(string) $academia->id],
-            'content_name'     => $academia->nome,
+            'content_type' => 'academia',
+            'content_ids' => [(string) $academia->id],
+            'content_name' => $academia->nome,
             'content_category' => 'Academia',
         ], $fb->userDataFromModel($cliente));
 
@@ -1087,7 +1133,7 @@ class ClienteController extends Controller
     {
         $cliente = Cliente::find(session('cliente_id'));
         $studios = Studio::where('status', 'aprovado')
-            ->with(['fotos', 'planos' => fn($q) => $q->where('ativo', true)->orderBy('valor'), 'avaliacoes'])
+            ->with(['fotos', 'planos' => fn ($q) => $q->where('ativo', true)->orderBy('valor'), 'avaliacoes'])
             ->get();
 
         return view('cliente.studios', compact('studios', 'cliente'));
@@ -1099,17 +1145,17 @@ class ClienteController extends Controller
         $studio = Studio::where('status', 'aprovado')
             ->with([
                 'fotos',
-                'planos'    => fn($q) => $q->where('ativo', true)->orderBy('valor'),
-                'horarios'  => fn($q) => $q->where('ativo', true)->orderBy('dia_semana'),
-                'avaliacoes' => fn($q) => $q->with('cliente:id,nome')->latest()->limit(20),
+                'planos' => fn ($q) => $q->where('ativo', true)->orderBy('valor'),
+                'horarios' => fn ($q) => $q->where('ativo', true)->orderBy('dia_semana'),
+                'avaliacoes' => fn ($q) => $q->with('cliente:id,nome')->latest()->limit(20),
             ])
             ->findOrFail($id);
 
         $fb = app(MetaConversionsService::class);
         $fbEvent = $fb->track('ViewContent', [
-            'content_type'     => 'studio',
-            'content_ids'      => [(string) $studio->id],
-            'content_name'     => $studio->nome,
+            'content_type' => 'studio',
+            'content_ids' => [(string) $studio->id],
+            'content_name' => $studio->nome,
             'content_category' => 'Studio',
         ], $fb->userDataFromModel($cliente));
 
@@ -1120,7 +1166,7 @@ class ClienteController extends Controller
     {
         $cliente = Cliente::find(session('cliente_id'));
         $lojas = Loja::where('status', 'aprovado')
-            ->withCount(['produtos' => fn($q) => $q->where('ativo', true)])
+            ->withCount(['produtos' => fn ($q) => $q->where('ativo', true)])
             ->orderBy('nome')
             ->get();
 
@@ -1131,14 +1177,14 @@ class ClienteController extends Controller
     {
         $cliente = Cliente::find(session('cliente_id'));
         $loja = Loja::where('status', 'aprovado')
-            ->with(['produtos' => fn($q) => $q->where('ativo', true)->orderBy('nome')])
+            ->with(['produtos' => fn ($q) => $q->where('ativo', true)->orderBy('nome')])
             ->findOrFail($id);
 
         $fb = app(MetaConversionsService::class);
         $fbEvent = $fb->track('ViewContent', [
-            'content_type'     => 'loja',
-            'content_ids'      => [(string) $loja->id],
-            'content_name'     => $loja->nome,
+            'content_type' => 'loja',
+            'content_ids' => [(string) $loja->id],
+            'content_name' => $loja->nome,
             'content_category' => 'Loja',
         ], $fb->userDataFromModel($cliente));
 
@@ -1148,11 +1194,12 @@ class ClienteController extends Controller
     private function notificarPersonalWhatsApp($clienteId, $personalId, $tipo, $agenda = null, $frequencia = null, $diasTotal = null)
     {
         try {
-            $cliente  = Cliente::find($clienteId);
+            $cliente = Cliente::find($clienteId);
             $personal = Personal::find($personalId);
 
-            if (!$cliente || !$personal) {
+            if (! $cliente || ! $personal) {
                 Log::warning("Não foi possível notificar. Cliente: {$clienteId}, Personal: {$personalId}");
+
                 return;
             }
 
@@ -1161,38 +1208,40 @@ class ClienteController extends Controller
                     $agenda->data->format('d/m/Y') :
                     Carbon::parse($agenda->data)->format('d/m/Y');
 
-                $mensagem  = "📅 *Nova Aula Avulsa Agendada*\n\n";
+                $mensagem = "📅 *Nova Aula Avulsa Agendada*\n\n";
                 $mensagem .= "👤 *Cliente:* {$cliente->nome}\n";
                 $mensagem .= "📅 *Data:* {$data}\n";
                 $mensagem .= "⏰ *Horário:* {$agenda->hora_inicio} - {$agenda->hora_fim}\n\n";
-                $mensagem .= "Acesse seu painel para confirmar se o cliente compareceu.";
+                $mensagem .= 'Acesse seu painel para confirmar se o cliente compareceu.';
 
-                $assunto  = 'Nova aula avulsa agendada — SnrFit';
+                $assunto = 'Nova aula avulsa agendada — SnrFit';
                 $template = 'aula_avulsa_agendada';
-                $params   = [$cliente->nome, $data, "{$agenda->hora_inicio} - {$agenda->hora_fim}"];
+                $params = [$cliente->nome, $data, "{$agenda->hora_inicio} - {$agenda->hora_fim}"];
             } else {
-                $mensagem  = "🎉 *Novo Pacote Contratado*\n\n";
+                $mensagem = "🎉 *Novo Pacote Contratado*\n\n";
                 $mensagem .= "👤 *Cliente:* {$cliente->nome}\n";
                 $mensagem .= "📦 *Frequência:* {$frequencia}x por semana\n";
                 $mensagem .= "🗓️ *Aulas Agendadas:* {$diasTotal} treino(s)\n\n";
-                $mensagem .= "Acesse seu painel para confirmar presença do cliente.";
+                $mensagem .= 'Acesse seu painel para confirmar presença do cliente.';
 
-                $assunto  = 'Novo pacote contratado — SnrFit';
+                $assunto = 'Novo pacote contratado — SnrFit';
                 $template = 'pacote_contratado_personal';
-                $params   = [$cliente->nome, (string) $frequencia, (string) $diasTotal];
+                $params = [$cliente->nome, (string) $frequencia, (string) $diasTotal];
             }
 
             \App\Services\NotificacaoService::personal($personal, $assunto, $mensagem, $template, $params);
 
         } catch (\Exception $e) {
-            Log::error("❌ Erro ao notificar personal: " . $e->getMessage());
+            Log::error('❌ Erro ao notificar personal: '.$e->getMessage());
         }
     }
 
     public function minhasSolicitacoesFicha()
     {
         $clienteId = session('cliente_id');
-        if (!$clienteId) return redirect()->route('login.index');
+        if (! $clienteId) {
+            return redirect()->route('login.index');
+        }
 
         $solicitacoes = \App\Models\SolicitacaoFicha::where('cliente_id', $clienteId)
             ->with('personal')

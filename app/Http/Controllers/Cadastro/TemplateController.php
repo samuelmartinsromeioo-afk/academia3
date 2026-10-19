@@ -266,6 +266,7 @@ class TemplateController extends Controller
     private function meuTemplate($id): ?FichaTemplate
     {
         $t = FichaTemplate::find($id);
+
         return ($t && $t->personal_id == session('personal_id')) ? $t : null;
     }
 
@@ -283,5 +284,4 @@ class TemplateController extends Controller
 
         return Cliente::whereIn('id', $ids)->orderBy('nome')->get();
     }
-
 }

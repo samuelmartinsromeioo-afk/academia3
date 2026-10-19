@@ -8,7 +8,8 @@ use Illuminate\Console\Command;
 
 class ExpirarAssinaturas extends Command
 {
-    protected $signature   = 'assinaturas:expirar';
+    protected $signature = 'assinaturas:expirar';
+
     protected $description = 'Suspende o acesso de assinaturas canceladas/em atraso cujo período pago (30 dias) já terminou';
 
     public function handle(): int
@@ -21,6 +22,7 @@ class ExpirarAssinaturas extends Command
 
         if ($clienteIds->isEmpty()) {
             $this->info('Nenhuma assinatura para reavaliar.');
+
             return self::SUCCESS;
         }
 
@@ -33,6 +35,7 @@ class ExpirarAssinaturas extends Command
         }
 
         $this->info("Acesso reavaliado para {$processados} aluno(s).");
+
         return self::SUCCESS;
     }
 }

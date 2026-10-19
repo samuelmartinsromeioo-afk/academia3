@@ -2,9 +2,9 @@
 
 namespace App\Mail;
 
-use App\Models\Payment;
 use App\Models\Cadastro\Cliente;
 use App\Models\Cadastro\Personal;
+use App\Models\Payment;
 use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Content;
@@ -16,8 +16,8 @@ class PaymentSuccessfulMail extends Mailable
     use Queueable, SerializesModels;
 
     public function __construct(
-        public Payment   $payment,
-        public cliente   $cliente,
+        public Payment $payment,
+        public cliente $cliente,
         public ?Personal $personal = null
     ) {}
 

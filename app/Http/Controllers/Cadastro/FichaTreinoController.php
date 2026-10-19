@@ -641,9 +641,9 @@ class FichaTreinoController extends Controller
             $dados = $registros[$exercicio->id] ?? [];
 
             // Sem informe do aluno → assume a prescrição da ficha.
-            $peso       = array_key_exists('peso', $dados) ? $dados['peso'] : $exercicio->peso;
+            $peso = array_key_exists('peso', $dados) ? $dados['peso'] : $exercicio->peso;
             $repeticoes = array_key_exists('repeticoes', $dados) ? $dados['repeticoes'] : $exercicio->repeticoes;
-            $series     = array_key_exists('series', $dados) ? $dados['series'] : $exercicio->series;
+            $series = array_key_exists('series', $dados) ? $dados['series'] : $exercicio->series;
 
             $pesoFinal = ($peso === '' || $peso === null) ? null : (float) $peso;
 
@@ -655,8 +655,8 @@ class FichaTreinoController extends Controller
                     ->max('peso');
 
                 if ($maxAnterior !== null && $pesoFinal > (float) $maxAnterior) {
-                    $recordes[] = $exercicio->nome_exercicio . ' — '
-                        . rtrim(rtrim(number_format($pesoFinal, 2, ',', '.'), '0'), ',') . ' kg';
+                    $recordes[] = $exercicio->nome_exercicio.' — '
+                        .rtrim(rtrim(number_format($pesoFinal, 2, ',', '.'), '0'), ',').' kg';
 
                     $aumento = round($pesoFinal - (float) $maxAnterior, 1);
                     if ($aumento > 0 && ($topCarga === null || $aumento > $topCarga['aumento'])) {
@@ -668,15 +668,15 @@ class FichaTreinoController extends Controller
             RegistroExercicio::updateOrCreate(
                 [
                     'treino_concluido_id' => $treino->id,
-                    'nome_exercicio'      => $exercicio->nome_exercicio,
+                    'nome_exercicio' => $exercicio->nome_exercicio,
                 ],
                 [
-                    'cliente_id'         => $clienteId,
+                    'cliente_id' => $clienteId,
                     'exercicio_ficha_id' => $exercicio->id,
-                    'data_treino'        => $data,
-                    'peso'               => $pesoFinal,
-                    'repeticoes'         => ($repeticoes === '' || $repeticoes === null) ? null : $repeticoes,
-                    'series'             => ($series === '' || $series === null) ? null : $series,
+                    'data_treino' => $data,
+                    'peso' => $pesoFinal,
+                    'repeticoes' => ($repeticoes === '' || $repeticoes === null) ? null : $repeticoes,
+                    'series' => ($series === '' || $series === null) ? null : $series,
                 ]
             );
         }
@@ -763,11 +763,11 @@ class FichaTreinoController extends Controller
         $cliente = Cliente::findOrFail($clienteId);
 
         return view('cliente.EvolucaoCarga', [
-            'cliente'    => $cliente,
+            'cliente' => $cliente,
             'exercicios' => $this->exerciciosComRegistro($clienteId),
-            'modo'       => 'cliente',
-            'dadosUrl'   => route('evolucao-carga.dados', ['cliente_id' => $clienteId]),
-            'voltarUrl'  => route('fichas-treino.minhas'),
+            'modo' => 'cliente',
+            'dadosUrl' => route('evolucao-carga.dados', ['cliente_id' => $clienteId]),
+            'voltarUrl' => route('fichas-treino.minhas'),
         ]);
     }
 
@@ -786,11 +786,11 @@ class FichaTreinoController extends Controller
         $cliente = Cliente::findOrFail($clienteId);
 
         return view('cliente.EvolucaoCarga', [
-            'cliente'    => $cliente,
+            'cliente' => $cliente,
             'exercicios' => $this->exerciciosComRegistro($clienteId),
-            'modo'       => 'personal',
-            'dadosUrl'   => route('evolucao-carga.dados', ['cliente_id' => $clienteId]),
-            'voltarUrl'  => route('fichas-treino.aluno', $clienteId),
+            'modo' => 'personal',
+            'dadosUrl' => route('evolucao-carga.dados', ['cliente_id' => $clienteId]),
+            'voltarUrl' => route('fichas-treino.aluno', $clienteId),
         ]);
     }
 
@@ -800,7 +800,7 @@ class FichaTreinoController extends Controller
         $clienteId = (int) $request->query('cliente_id');
 
         // Autorização: aluno só vê os próprios dados; personal só de seus alunos.
-        $sessCliente  = session('cliente_id');
+        $sessCliente = session('cliente_id');
         $sessPersonal = session('personal_id');
 
         if ($sessCliente) {
@@ -839,8 +839,8 @@ class FichaTreinoController extends Controller
             $d = $r->data_treino->format('Y-m-d');
             if (! isset($porData[$d]) || (float) $r->peso > $porData[$d]['peso']) {
                 $porData[$d] = [
-                    'peso'   => (float) $r->peso,
-                    'reps'   => $r->repeticoes,
+                    'peso' => (float) $r->peso,
+                    'reps' => $r->repeticoes,
                     'series' => $r->series,
                 ];
             }
@@ -849,8 +849,8 @@ class FichaTreinoController extends Controller
 
         return response()->json([
             'labels' => array_map(fn ($d) => \Carbon\Carbon::parse($d)->format('d/m/Y'), array_keys($porData)),
-            'pesos'  => array_values(array_map(fn ($v) => $v['peso'], $porData)),
-            'reps'   => array_values(array_map(fn ($v) => $v['reps'], $porData)),
+            'pesos' => array_values(array_map(fn ($v) => $v['peso'], $porData)),
+            'reps' => array_values(array_map(fn ($v) => $v['reps'], $porData)),
             'series' => array_values(array_map(fn ($v) => $v['series'], $porData)),
         ]);
     }
@@ -919,13 +919,14 @@ class FichaTreinoController extends Controller
             if ($a['sumido'] !== $b['sumido']) {
                 return $b['sumido'] <=> $a['sumido'];
             }
+
             return ($a['aderencia'] ?? 101) <=> ($b['aderencia'] ?? 101);
         });
 
         $resumoGeral = [
-            'totalAlunos'    => count($alunos),
+            'totalAlunos' => count($alunos),
             'mediaAderencia' => $comPlano > 0 ? (int) round($somaAderencia / $comPlano) : null,
-            'sumidos'        => $sumidos,
+            'sumidos' => $sumidos,
         ];
 
         return view('personal.Aderencia', compact('personal', 'alunos', 'resumoGeral'));
@@ -950,8 +951,8 @@ class FichaTreinoController extends Controller
             \App\Services\NotificacaoService::cliente(
                 $cliente,
                 'Senti sua falta nos treinos! 💪',
-                "Olá, {$nome}! 👋\n\n" .
-                "Notei que você está um tempinho sem treinar. Bora retomar o ritmo? Cada treino conta — e seu shape agradece! 🔥\n\n" .
+                "Olá, {$nome}! 👋\n\n".
+                "Notei que você está um tempinho sem treinar. Bora retomar o ritmo? Cada treino conta — e seu shape agradece! 🔥\n\n".
                 "Conte comigo. — {$nomePersonal}",
                 'incentivo_aluno',
                 [$nome]
@@ -959,7 +960,7 @@ class FichaTreinoController extends Controller
         }
 
         return redirect()->route('aderencia.dashboard')
-            ->with('success', 'Incentivo enviado para ' . ($cliente->nome ?? 'o aluno') . '! 💪');
+            ->with('success', 'Incentivo enviado para '.($cliente->nome ?? 'o aluno').'! 💪');
     }
 
     // ✅ ALUNO: meu desempenho do mês + sequência (streak)
@@ -996,8 +997,8 @@ class FichaTreinoController extends Controller
                 $ds = $cursor->toDateString();
                 $semana[] = [
                     'treinou' => isset($treinados[$ds]),
-                    'futuro'  => $cursor->gt($hojeDia),
-                    'rotulo'  => $cursor->format('d/m/Y'),
+                    'futuro' => $cursor->gt($hojeDia),
+                    'rotulo' => $cursor->format('d/m/Y'),
                 ];
                 $cursor->addDay();
             }
@@ -1027,7 +1028,7 @@ class FichaTreinoController extends Controller
     private function aderenciaResumo($clienteId, $fichas): array
     {
         $inicio = now()->startOfMonth();
-        $hoje   = now();
+        $hoje = now();
 
         $planejados = 0;
         foreach ($fichas as $f) {
@@ -1060,15 +1061,15 @@ class FichaTreinoController extends Controller
         $sumido = $diasSemTreino === null || $diasSemTreino >= self::DIAS_SUMIDO;
 
         return [
-            'planejados'      => $planejados,
-            'realizados'      => $realizados,
-            'aderencia'       => $aderencia,
-            'ultimo'          => $ultimo ? \Carbon\Carbon::parse($ultimo) : null,
-            'diasSemTreino'   => $diasSemTreino,
-            'sumido'          => $sumido,
-            'fichasAtivas'    => $fichas->count(),
-            'ultimoRpe'       => $ultimoTreino?->rpe,
-            'ultimaSensacao'  => $ultimoTreino?->sensacao,
+            'planejados' => $planejados,
+            'realizados' => $realizados,
+            'aderencia' => $aderencia,
+            'ultimo' => $ultimo ? \Carbon\Carbon::parse($ultimo) : null,
+            'diasSemTreino' => $diasSemTreino,
+            'sumido' => $sumido,
+            'fichasAtivas' => $fichas->count(),
+            'ultimoRpe' => $ultimoTreino?->rpe,
+            'ultimaSensacao' => $ultimoTreino?->sensacao,
         ];
     }
 
@@ -1084,6 +1085,7 @@ class FichaTreinoController extends Controller
             }
             $d->addDay();
         }
+
         return $count;
     }
 

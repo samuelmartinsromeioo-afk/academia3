@@ -42,9 +42,10 @@ class User extends Authenticatable
         'email_verified_at' => 'datetime',
         'password' => 'hashed',
     ];
+
     public function fotos()
-{
-    // Exemplo de relacionamento se você tiver uma tabela de fotos
-    return $this->hasMany(Foto::class, 'personal_id');
-}
+    {
+        // Exemplo de relacionamento se você tiver uma tabela de fotos
+        return $this->hasMany(Foto::class, 'personal_id');
+    }
 }

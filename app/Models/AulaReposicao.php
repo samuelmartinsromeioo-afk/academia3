@@ -14,8 +14,11 @@ class AulaReposicao extends Model
     protected $table = 'aula_reposicoes';
 
     public const STATUS_PENDENTE = 'pendente';
+
     public const STATUS_ACEITA = 'aceita';
+
     public const STATUS_RECUSADA = 'recusada';
+
     public const STATUS_CANCELADA = 'cancelada';
 
     protected $fillable = [

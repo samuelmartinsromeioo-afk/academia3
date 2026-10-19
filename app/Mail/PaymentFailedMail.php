@@ -2,8 +2,8 @@
 
 namespace App\Mail;
 
-use App\Models\Payment;
 use App\Models\Cadastro\Cliente;
+use App\Models\Payment;
 use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Content;
@@ -17,7 +17,7 @@ class PaymentFailedMail extends Mailable
     public function __construct(
         public Payment $payment,
         public cliente $cliente,
-        public string  $errorMessage = 'Falha no pagamento.'
+        public string $errorMessage = 'Falha no pagamento.'
     ) {}
 
     public function envelope(): Envelope

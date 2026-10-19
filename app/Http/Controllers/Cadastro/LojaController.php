@@ -3,14 +3,14 @@
 namespace App\Http\Controllers\Cadastro;
 
 use App\Http\Controllers\Controller;
-use App\Services\MetaConversionsService;
 use App\Models\Cadastro\Academia;
 use App\Models\Cadastro\Cliente;
 use App\Models\Cadastro\Loja;
+use App\Models\Cadastro\Pedido;
 use App\Models\Cadastro\Personal;
 use App\Models\Cadastro\Produto;
-use App\Models\Cadastro\Pedido;
 use App\Models\Cadastro\Studio;
+use App\Services\MetaConversionsService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
@@ -29,27 +29,27 @@ class LojaController extends Controller
     public function store(Request $request, \App\Services\CupomService $cupons)
     {
         $dados = $request->validate([
-            'nome'        => 'required|string|max:255',
-            'cnpj'        => 'required|string|max:18|unique:lojas,cnpj',
-            'email'       => 'required|email|max:255|unique:lojas,email',
-            'senha'       => 'required|string|min:8|confirmed',
-            'whatsapp'    => 'nullable|string|max:20',
-            'cep'         => 'required|string|max:9',
-            'rua'         => 'required|string|max:300',
-            'bairro'      => 'required|string|max:200',
-            'cidade'      => 'required|string|max:200',
-            'estado'      => 'required|string|max:2',
+            'nome' => 'required|string|max:255',
+            'cnpj' => 'required|string|max:18|unique:lojas,cnpj',
+            'email' => 'required|email|max:255|unique:lojas,email',
+            'senha' => 'required|string|min:8|confirmed',
+            'whatsapp' => 'nullable|string|max:20',
+            'cep' => 'required|string|max:9',
+            'rua' => 'required|string|max:300',
+            'bairro' => 'required|string|max:200',
+            'cidade' => 'required|string|max:200',
+            'estado' => 'required|string|max:2',
             'complemento' => 'nullable|string|max:255',
-            'endereco'    => 'required|string|max:255',
-            'descricao'   => 'nullable|string|max:500',
-            'latitude'    => 'nullable|numeric',
-            'longitude'   => 'nullable|numeric',
-            'cupom'       => $cupons->regraValidacao(),
+            'endereco' => 'required|string|max:255',
+            'descricao' => 'nullable|string|max:500',
+            'latitude' => 'nullable|numeric',
+            'longitude' => 'nullable|numeric',
+            'cupom' => $cupons->regraValidacao(),
         ], [
-            'cnpj.unique'     => 'Este CNPJ já está cadastrado.',
-            'email.unique'    => 'Este e-mail já está cadastrado.',
+            'cnpj.unique' => 'Este CNPJ já está cadastrado.',
+            'email.unique' => 'Este e-mail já está cadastrado.',
             'senha.confirmed' => 'A confirmação de senha não confere.',
-            'senha.min'       => 'A senha deve ter no mínimo 8 caracteres.',
+            'senha.min' => 'A senha deve ter no mínimo 8 caracteres.',
         ]);
 
         // E-mail/CNPJ não podem colidir com outros papéis (o login tenta na ordem
@@ -73,7 +73,7 @@ class LojaController extends Controller
         // Fora do create(): `cupom` não é coluna de lojas.
         $codigoCupom = \Illuminate\Support\Arr::pull($dados, 'cupom');
 
-        $dados['senha']  = Hash::make($dados['senha']);
+        $dados['senha'] = Hash::make($dados['senha']);
         $dados['status'] = 'pendente'; // precisa de aprovação do administrador
 
         $loja = Loja::create($dados);
@@ -88,6 +88,7 @@ class LojaController extends Controller
         $loja->registrarAceiteTermos($request->ip(), (string) $request->userAgent(), \App\Models\TermoAceite::ORIGEM_CADASTRO);
 
         $fb = app(MetaConversionsService::class);
+
         return redirect()->route('cadastro.sucesso')
             ->with('cad_tipo', 'loja')
             ->with('fb_event', $fb->track(
@@ -107,33 +108,35 @@ class LojaController extends Controller
     private function lojaLogada(): ?Loja
     {
         $lojaId = session('loja_id');
-        if (!$lojaId) {
+        if (! $lojaId) {
             return null;
         }
+
         return Loja::find($lojaId);
     }
 
     public function dashboard()
     {
         $loja = $this->lojaLogada();
-        if (!$loja) {
+        if (! $loja) {
             session()->forget('loja_id');
+
             return redirect()->route('login.index')->withErrors(['login' => 'Acesso negado. Faça o login.']);
         }
 
         $produtos = Produto::where('loja_id', $loja->id)->orderBy('nome')->get();
 
-        $totalProdutos    = $produtos->count();
-        $produtosAtivos   = $produtos->where('ativo', true)->count();
-        $semEstoque       = $produtos->where('estoque', '<=', 0)->count();
-        $valorEstoque     = $produtos->sum(fn ($p) => $p->preco * $p->estoque);
+        $totalProdutos = $produtos->count();
+        $produtosAtivos = $produtos->where('ativo', true)->count();
+        $semEstoque = $produtos->where('estoque', '<=', 0)->count();
+        $valorEstoque = $produtos->sum(fn ($p) => $p->preco * $p->estoque);
 
         $pedidos = Pedido::where('loja_id', $loja->id)
             ->with('itens')
             ->orderByDesc('created_at')
             ->get();
 
-        $totalPedidos   = $pedidos->count();
+        $totalPedidos = $pedidos->count();
         $faturamentoMes = $pedidos
             ->where('created_at', '>=', now()->startOfMonth())
             ->sum('valor_total');
@@ -154,18 +157,18 @@ class LojaController extends Controller
     public function update(Request $request, $id)
     {
         $loja = $this->lojaLogada();
-        if (!$loja || (int) $id !== $loja->id) {
+        if (! $loja || (int) $id !== $loja->id) {
             return redirect()->route('login.index');
         }
 
         $dados = $request->validate([
-            'nome'      => 'required|string|max:255',
-            'whatsapp'  => 'nullable|string|max:20',
+            'nome' => 'required|string|max:255',
+            'whatsapp' => 'nullable|string|max:20',
             'descricao' => 'nullable|string|max:500',
-            'cidade'    => 'nullable|string|max:200',
-            'estado'    => 'nullable|string|max:2',
+            'cidade' => 'nullable|string|max:200',
+            'estado' => 'nullable|string|max:2',
             'chave_pix' => 'nullable|string|max:255',
-            'logo'      => 'nullable|file|mimes:jpeg,jpg,png,gif,webp|max:5120',
+            'logo' => 'nullable|file|mimes:jpeg,jpg,png,gif,webp|max:5120',
         ]);
 
         if ($request->hasFile('logo')) {
@@ -187,17 +190,17 @@ class LojaController extends Controller
     public function storeProduto(Request $request)
     {
         $loja = $this->lojaLogada();
-        if (!$loja) {
+        if (! $loja) {
             return redirect()->route('login.index');
         }
 
         $dados = $request->validate([
-            'nome'      => 'required|string|max:255',
+            'nome' => 'required|string|max:255',
             'descricao' => 'nullable|string|max:1000',
             'categoria' => 'nullable|string|max:120',
-            'preco'     => 'required|numeric|min:0',
-            'estoque'   => 'required|integer|min:0',
-            'imagem'    => 'nullable|file|mimes:jpeg,jpg,png,gif,webp|max:5120',
+            'preco' => 'required|numeric|min:0',
+            'estoque' => 'required|integer|min:0',
+            'imagem' => 'nullable|file|mimes:jpeg,jpg,png,gif,webp|max:5120',
         ]);
 
         if ($request->hasFile('imagem')) {
@@ -205,7 +208,7 @@ class LojaController extends Controller
         }
 
         $dados['loja_id'] = $loja->id;
-        $dados['ativo']   = true;
+        $dados['ativo'] = true;
 
         Produto::create($dados);
 
@@ -215,19 +218,19 @@ class LojaController extends Controller
     public function updateProduto(Request $request, $id)
     {
         $loja = $this->lojaLogada();
-        if (!$loja) {
+        if (! $loja) {
             return redirect()->route('login.index');
         }
 
         $produto = Produto::where('id', $id)->where('loja_id', $loja->id)->firstOrFail();
 
         $dados = $request->validate([
-            'nome'      => 'required|string|max:255',
+            'nome' => 'required|string|max:255',
             'descricao' => 'nullable|string|max:1000',
             'categoria' => 'nullable|string|max:120',
-            'preco'     => 'required|numeric|min:0',
-            'estoque'   => 'required|integer|min:0',
-            'imagem'    => 'nullable|file|mimes:jpeg,jpg,png,gif,webp|max:5120',
+            'preco' => 'required|numeric|min:0',
+            'estoque' => 'required|integer|min:0',
+            'imagem' => 'nullable|file|mimes:jpeg,jpg,png,gif,webp|max:5120',
         ]);
 
         if ($request->hasFile('imagem')) {
@@ -248,7 +251,7 @@ class LojaController extends Controller
     public function ajustarEstoque(Request $request, $id)
     {
         $loja = $this->lojaLogada();
-        if (!$loja) {
+        if (! $loja) {
             return redirect()->route('login.index');
         }
 
@@ -277,6 +280,7 @@ class LojaController extends Controller
 
         if ($pedido->status === 'pago') {
             $pedido->update(['status' => 'concluido']);
+
             return redirect()->back()->with('success', "Pedido #{$pedido->id} marcado como concluído.");
         }
 
@@ -286,7 +290,7 @@ class LojaController extends Controller
     public function destroyProduto($id)
     {
         $loja = $this->lojaLogada();
-        if (!$loja) {
+        if (! $loja) {
             return redirect()->route('login.index');
         }
 

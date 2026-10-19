@@ -22,8 +22,8 @@ class PedidoItem extends Model
     ];
 
     protected $casts = [
-        'preco'      => 'decimal:2',
-        'subtotal'   => 'decimal:2',
+        'preco' => 'decimal:2',
+        'subtotal' => 'decimal:2',
         'quantidade' => 'integer',
     ];
 

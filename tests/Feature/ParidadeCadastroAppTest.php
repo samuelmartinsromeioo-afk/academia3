@@ -76,7 +76,7 @@ class ParidadeCadastroAppTest extends TestCase
             collect($doSite->getAttributes())->except($ignorar)->sortKeys()->all(),
             collect($doApp->getAttributes())->except($ignorar)->sortKeys()->all(),
             'O cadastro pelo app gravou dados diferentes do cadastro pelo site. '
-            . 'Se você acrescentou um campo em um dos dois, acrescente no outro.'
+            .'Se você acrescentou um campo em um dos dois, acrescente no outro.'
         );
     }
 

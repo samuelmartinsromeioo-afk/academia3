@@ -63,7 +63,7 @@ class ExclusaoContaEncerraCobrancaTest extends TestCase
     private function assinatura(array $extra = []): Subscription
     {
         return Subscription::create(array_merge([
-            'asaas_subscription_id' => 'sub_' . uniqid(),
+            'asaas_subscription_id' => 'sub_'.uniqid(),
             'tipo' => 'pacote',
             'amount_total' => 110.00,
             'company_fee' => 10.00,
@@ -97,7 +97,7 @@ class ExclusaoContaEncerraCobrancaTest extends TestCase
         app(ExclusaoDeConta::class)->executar($cliente);
 
         Http::assertSent(fn ($req) => $req->method() === 'DELETE'
-            && str_contains($req->url(), 'subscriptions/' . $sub->asaas_subscription_id));
+            && str_contains($req->url(), 'subscriptions/'.$sub->asaas_subscription_id));
     }
 
     /**
@@ -213,7 +213,7 @@ class ExclusaoContaEncerraCobrancaTest extends TestCase
 
         $uso = CupomUso::create([
             'cupom_id' => \App\Models\Cupom::create([
-                'codigo' => 'TESTE' . uniqid(),
+                'codigo' => 'TESTE'.uniqid(),
                 'tipo' => 'indicacao',
                 'ativo' => true,
             ])->id,
@@ -251,7 +251,7 @@ class ExclusaoContaEncerraCobrancaTest extends TestCase
 
         $uso = CupomUso::create([
             'cupom_id' => \App\Models\Cupom::create([
-                'codigo' => 'TESTE' . uniqid(),
+                'codigo' => 'TESTE'.uniqid(),
                 'tipo' => 'indicacao',
                 'ativo' => true,
             ])->id,

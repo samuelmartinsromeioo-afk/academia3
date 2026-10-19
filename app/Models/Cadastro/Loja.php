@@ -10,12 +10,12 @@ use Laravel\Sanctum\HasApiTokens;
 // Extende Authenticatable + HasApiTokens para permitir login via API (Sanctum).
 class Loja extends Authenticatable
 {
-    use HasFactory;
-    use HasApiTokens;
-    use \App\Models\Concerns\TemCupomIndicacao;
     use \App\Models\Concerns\AceitaTermos;
-    use \App\Models\Concerns\TemSubcontaAsaas;
+    use \App\Models\Concerns\TemCupomIndicacao;
     use \App\Models\Concerns\TemSeloPioneiro;
+    use \App\Models\Concerns\TemSubcontaAsaas;
+    use HasApiTokens;
+    use HasFactory;
 
     protected $table = 'lojas';
 
@@ -47,8 +47,8 @@ class Loja extends Authenticatable
 
     protected $casts = [
         'data_aprovacao' => 'datetime',
-        'latitude'       => 'decimal:7',
-        'longitude'      => 'decimal:7',
+        'latitude' => 'decimal:7',
+        'longitude' => 'decimal:7',
         // Fora do $fillable de propósito: quem grava é definirPosicaoPioneiro().
         'pioneiro_posicao' => 'integer',
     ];
@@ -75,6 +75,7 @@ class Loja extends Authenticatable
     public function getMediaAvaliacaoAttribute()
     {
         $media = $this->avaliacoes()->avg('nota');
+
         return $media ? number_format($media, 1, '.', '') : '0.0';
     }
 }

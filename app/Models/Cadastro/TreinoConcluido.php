@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 class TreinoConcluido extends Model
 {
     protected $table = 'treinos_concluidos';
-    
+
     protected $fillable = [
         'ficha_id',
         'cliente_id',
@@ -26,11 +26,11 @@ class TreinoConcluido extends Model
 
     /** Sensações possíveis no feedback pós-treino: chave => [emoji, rótulo]. */
     public const SENSACOES = [
-        'otimo'   => ['😀', 'Ótimo'],
-        'bem'     => ['🙂', 'Bem'],
+        'otimo' => ['😀', 'Ótimo'],
+        'bem' => ['🙂', 'Bem'],
         'cansado' => ['😓', 'Cansado'],
         'exausto' => ['🥵', 'Exausto'],
-        'dor'     => ['🤕', 'Com dor'],
+        'dor' => ['🤕', 'Com dor'],
     ];
 
     public function sensacaoEmoji(): ?string

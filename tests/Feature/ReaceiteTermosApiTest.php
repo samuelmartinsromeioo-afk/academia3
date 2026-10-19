@@ -25,6 +25,7 @@ class ReaceiteTermosApiTest extends TestCase
     use DatabaseTransactions;
 
     private Cliente $cliente;
+
     private string $token;
 
     protected function setUp(): void
@@ -39,7 +40,7 @@ class ReaceiteTermosApiTest extends TestCase
 
     private function comToken(): array
     {
-        return ['Authorization' => 'Bearer ' . $this->token, 'Accept' => 'application/json'];
+        return ['Authorization' => 'Bearer '.$this->token, 'Accept' => 'application/json'];
     }
 
     /** Conta sem nenhum aceite precisa aceitar. */

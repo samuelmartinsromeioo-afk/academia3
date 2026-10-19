@@ -29,9 +29,12 @@ class CupomUso extends Model
 {
     protected $table = 'cupom_usos';
 
-    public const STATUS_PENDENTE  = 'pendente';
-    public const STATUS_LIBERADO  = 'liberado';
+    public const STATUS_PENDENTE = 'pendente';
+
+    public const STATUS_LIBERADO = 'liberado';
+
     public const STATUS_SEM_BONUS = 'sem_bonus';
+
     public const STATUS_CANCELADO = 'cancelado';
 
     protected $fillable = [
@@ -49,11 +52,11 @@ class CupomUso extends Model
     ];
 
     protected $casts = [
-        'bonus_valor'   => 'decimal:2',
+        'bonus_valor' => 'decimal:2',
         'janela_inicio' => 'datetime',
-        'janela_fim'    => 'datetime',
-        'apurado_em'    => 'datetime',
-        'liberado_em'   => 'datetime',
+        'janela_fim' => 'datetime',
+        'apurado_em' => 'datetime',
+        'liberado_em' => 'datetime',
     ];
 
     public function cupom()
@@ -165,11 +168,11 @@ class CupomUso extends Model
         return match (true) {
             $this->status === self::STATUS_SEM_BONUS => 'Sem bônus',
             $this->status === self::STATUS_CANCELADO => 'Cancelado',
-            $this->status === self::STATUS_LIBERADO  => $this->saque_id ? 'Em saque' : 'Liberado p/ saque',
-            ! $this->janelaIniciada()               => 'Aguardando aprovação',
-            $this->janelaAberta()                   => 'Acumulando (' . $this->diasRestantes() . 'd)',
-            (float) $this->bonus_valor <= 0         => 'Janela encerrada sem faturamento',
-            default                                 => 'Aguardando meta',
+            $this->status === self::STATUS_LIBERADO => $this->saque_id ? 'Em saque' : 'Liberado p/ saque',
+            ! $this->janelaIniciada() => 'Aguardando aprovação',
+            $this->janelaAberta() => 'Acumulando ('.$this->diasRestantes().'d)',
+            (float) $this->bonus_valor <= 0 => 'Janela encerrada sem faturamento',
+            default => 'Aguardando meta',
         };
     }
 
@@ -178,11 +181,11 @@ class CupomUso extends Model
     {
         return match (class_basename($this->usuario_type)) {
             'Personal' => 'Profissional',
-            'Cliente'  => 'Aluno',
+            'Cliente' => 'Aluno',
             'Academia' => 'Academia',
-            'Studio'   => 'Studio',
-            'Loja'     => 'Loja',
-            default    => 'Conta',
+            'Studio' => 'Studio',
+            'Loja' => 'Loja',
+            default => 'Conta',
         };
     }
 }

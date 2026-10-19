@@ -35,11 +35,11 @@ class IndicacaoCredito extends Model
     ];
 
     protected $casts = [
-        'base_valor'  => 'decimal:2',
+        'base_valor' => 'decimal:2',
         'bruto_valor' => 'decimal:2',
-        'percentual'  => 'decimal:4',
-        'valor'       => 'decimal:2',
-        'ocorreu_em'  => 'datetime',
+        'percentual' => 'decimal:4',
+        'valor' => 'decimal:2',
+        'ocorreu_em' => 'datetime',
     ];
 
     public function uso()
@@ -51,9 +51,9 @@ class IndicacaoCredito extends Model
     public function origemLabel(): string
     {
         return match (true) {
-            str_starts_with($this->origem, 'payment:')        => 'Pagamento na plataforma',
+            str_starts_with($this->origem, 'payment:') => 'Pagamento na plataforma',
             str_starts_with($this->origem, 'nutri_cobranca:') => 'Consulta nutricional',
-            default                                           => 'Receita do indicado',
+            default => 'Receita do indicado',
         };
     }
 }

@@ -26,9 +26,13 @@ class IndicacaoRevenueShareTest extends TestCase
     use DatabaseTransactions;
 
     private CupomService $cupons;
+
     private IndicacaoSaqueService $saques;
+
     private Personal $indicador;
+
     private Personal $indicado;
+
     private int $pacoteId;
 
     protected function setUp(): void
@@ -39,7 +43,7 @@ class IndicacaoRevenueShareTest extends TestCase
         $this->saques = app(IndicacaoSaqueService::class);
 
         $this->indicador = $this->novoPersonal('Indicador', 'indicador@ind.teste', '111', 'aprovado', now()->subYear());
-        $this->indicado  = $this->novoPersonal('Indicado', 'indicado@ind.teste', '222', 'pendente', null);
+        $this->indicado = $this->novoPersonal('Indicado', 'indicado@ind.teste', '222', 'pendente', null);
 
         $this->pacoteId = DB::table('pacotes')->insertGetId([
             'personal_id' => $this->indicado->id, 'frequencia' => 3,
@@ -73,7 +77,7 @@ class IndicacaoRevenueShareTest extends TestCase
     private function faturar(float $valor, $quando, ?int $clienteId = null): Payment
     {
         return Payment::create([
-            'user_id' => $clienteId ?? $this->novoCliente(uniqid('c') . '@t.teste'),
+            'user_id' => $clienteId ?? $this->novoCliente(uniqid('c').'@t.teste'),
             'trainer_id' => $this->indicado->id, 'membership_id' => $this->pacoteId,
             'amount_total' => $valor, 'company_fee' => $valor * 0.1,
             'trainer_amount' => $valor * 0.9,
@@ -376,8 +380,8 @@ class IndicacaoRevenueShareTest extends TestCase
         $this->withSession(['personal_id' => $this->indicador->id])
             ->post(route('indicacoes.saque'), [
                 'pix_chave' => 'x@pix.teste',
-                'valor'     => 999999.00,
-                'status'    => IndicacaoSaque::STATUS_PAGO,
+                'valor' => 999999.00,
+                'status' => IndicacaoSaque::STATUS_PAGO,
             ])
             ->assertSessionHasNoErrors();
 
@@ -407,8 +411,8 @@ class IndicacaoRevenueShareTest extends TestCase
         $this->indicado->update(['data_aprovacao' => now()->subDays(40)]);
         CupomUso::whereKey($uso->id)->update([
             'janela_inicio' => now()->subDays(40),
-            'janela_fim'    => now()->subDays(5),
-            'apurado_em'    => null,
+            'janela_fim' => now()->subDays(5),
+            'apurado_em' => null,
         ]);
         $this->seisAlunosPagantes(now()->subDays(30));
 

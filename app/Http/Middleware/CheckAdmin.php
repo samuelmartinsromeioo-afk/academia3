@@ -18,7 +18,7 @@ class CheckAdmin
         // Verificar se está autenticado como admin.
         // O admin autentica pela tela de login unificada (login.index); não há
         // rota 'admin.login' — apontar para ela lançava RouteNotFoundException (500).
-        if (!session()->has('admin_id')) {
+        if (! session()->has('admin_id')) {
             return redirect()->route('login.index')
                 ->with('erro', 'Você precisa estar logado como administrador para acessar o painel.');
         }

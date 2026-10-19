@@ -343,7 +343,7 @@ class StudioController extends Controller
 
         if ($inicio->lt($abertura) || $fim->gt($fechamento)) {
             return response()->json([
-                'error' => 'A aula deve estar dentro do funcionamento do dia (' . substr($func->hora_abertura, 0, 5) . ' às ' . substr($func->hora_fechamento, 0, 5) . ').',
+                'error' => 'A aula deve estar dentro do funcionamento do dia ('.substr($func->hora_abertura, 0, 5).' às '.substr($func->hora_fechamento, 0, 5).').',
             ], 422);
         }
 

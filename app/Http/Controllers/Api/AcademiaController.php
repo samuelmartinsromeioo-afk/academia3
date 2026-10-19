@@ -41,6 +41,7 @@ class AcademiaController extends Controller
         if ($filialId === null) {
             $linha = function ($nome, $query) use ($valorMensalidade) {
                 $alunosCount = (clone $query)->count();
+
                 return [
                     'nome' => $nome,
                     'alunos' => $alunosCount,
@@ -548,6 +549,7 @@ class AcademiaController extends Controller
         if ($filialId !== null) {
             $query->where('filial_id', $filialId);
         }
+
         return $query;
     }
 

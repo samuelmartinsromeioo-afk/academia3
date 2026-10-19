@@ -22,6 +22,7 @@ class ModalidadePersonalTest extends TestCase
     use DatabaseTransactions;
 
     private Personal $personal;
+
     private Cliente $cliente;
 
     protected function setUp(): void
@@ -108,8 +109,8 @@ class ModalidadePersonalTest extends TestCase
     {
         return [
             'presencial' => ['Presencial'],
-            'online'     => ['Online'],
-            'hibrido'    => ['Híbrido'],
+            'online' => ['Online'],
+            'hibrido' => ['Híbrido'],
         ];
     }
 
@@ -301,5 +302,4 @@ class ModalidadePersonalTest extends TestCase
         // E o clique continua escrevendo o filtro na URL, para o link ser copiável.
         $this->assertStringContainsString('history.replaceState', $html);
     }
-
 }

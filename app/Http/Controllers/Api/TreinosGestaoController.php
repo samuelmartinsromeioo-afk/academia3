@@ -407,7 +407,7 @@ class TreinosGestaoController extends Controller
             MesocicloTreino::create([
                 'mesociclo_id' => $meso->id,
                 'letra' => self::LETRAS[$i],
-                'nome_treino' => 'Treino ' . self::LETRAS[$i],
+                'nome_treino' => 'Treino '.self::LETRAS[$i],
                 'ordem' => $i,
             ]);
         }
@@ -617,6 +617,7 @@ class TreinosGestaoController extends Controller
             if ($filialId !== null) {
                 $query->where('filial_id', $filialId);
             }
+
             return $query->first();
         }
 
@@ -639,6 +640,7 @@ class TreinosGestaoController extends Controller
         if (! $meso) {
             return false;
         }
+
         return ($dono instanceof Personal && $meso->personal_id == $dono->id)
             || ($dono instanceof Academia && $meso->academia_id == $dono->id);
     }

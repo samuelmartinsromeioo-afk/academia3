@@ -2,18 +2,18 @@
 
 namespace App\Console\Commands;
 
+use App\Models\Agenda;
+use App\Models\Cadastro\Cliente;
+use App\Models\Cadastro\Personal;
+use Carbon\Carbon;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
-use App\Models\Cadastro\Personal;
-use App\Models\Cadastro\Cliente;
-use App\Models\Agenda;
-use Carbon\Carbon;
 
 class LembreteDiarioPersonal extends Command
 {
-    protected $signature   = 'personal:lembrete-diario';
+    protected $signature = 'personal:lembrete-diario';
+
     protected $description = 'Envia WhatsApp para cada personal com seus compromissos do dia';
 
     public function handle(\App\Services\AgendaService $agendaService): int
@@ -44,6 +44,7 @@ class LembreteDiarioPersonal extends Command
 
         if ($personais->isEmpty()) {
             $this->info('Nenhum personal aprovado.');
+
             return self::SUCCESS;
         }
 
@@ -97,12 +98,13 @@ class LembreteDiarioPersonal extends Command
             $cacheKey = "lembrete_enviado_{$personal->id}_{$agora->format('Y-m-d')}";
             if (! Cache::add($cacheKey, true, $agora->copy()->endOfDay())) {
                 $this->line("↷ {$personal->nome} (já enviado hoje)");
+
                 continue;
             }
 
             $mensagem = $this->montarMensagem($personal, $agendas, $hoje);
 
-            $primeiroNome    = explode(' ', trim($personal->nome))[0];
+            $primeiroNome = explode(' ', trim($personal->nome))[0];
             $primeiroHorario = substr($agendas->first()->hora_inicio, 0, 5);
 
             $enviado = \App\Services\NotificacaoService::personal(
@@ -120,28 +122,29 @@ class LembreteDiarioPersonal extends Command
             Log::info("Lembrete enviado ao personal {$personal->id} ({$personal->nome})", [
                 'whatsapp_ou_email' => $enviado,
             ]);
-            $this->line(($enviado ? '✓' : '◐') . " {$personal->nome}");
+            $this->line(($enviado ? '✓' : '◐')." {$personal->nome}");
 
             usleep(500000);
         }
 
         $this->info('Lembretes diários concluídos.');
+
         return self::SUCCESS;
     }
 
     private function montarMensagem(Personal $personal, $agendas, Carbon $hoje): string
     {
-        $primeiroNome  = explode(' ', $personal->nome)[0];
+        $primeiroNome = explode(' ', $personal->nome)[0];
         $dataFormatada = $hoje->translatedFormat('l, d \d\e F');
-        $blocoAgendas  = $this->montarBlocoAgendas($agendas);
+        $blocoAgendas = $this->montarBlocoAgendas($agendas);
 
-        $texto  = "Bom dia, {$primeiroNome}! 🏋️‍♂️\n\n";
+        $texto = "Bom dia, {$primeiroNome}! 🏋️‍♂️\n\n";
         $texto .= "Seus compromissos de hoje ({$dataFormatada}):\n\n";
         $texto .= $blocoAgendas;
 
         $blocoAniversariantes = $this->montarBlocoAniversariantes($personal->id, $hoje);
         if ($blocoAniversariantes) {
-            $texto .= "\n" . $blocoAniversariantes;
+            $texto .= "\n".$blocoAniversariantes;
         }
 
         $texto .= "\nBom trabalho hoje! 💪";
@@ -164,12 +167,12 @@ class LembreteDiarioPersonal extends Command
             ->whereNotNull('idade')
             ->get();
 
-        $aniversariantesHoje  = [];
+        $aniversariantesHoje = [];
         $aniversariantesProx7 = [];
 
         foreach ($clientes as $cliente) {
             try {
-                $nascimento  = Carbon::parse($cliente->idade);
+                $nascimento = Carbon::parse($cliente->idade);
                 $aniversario = Carbon::create($hoje->year, $nascimento->month, $nascimento->day)->startOfDay();
 
                 if ($aniversario->lt($hoje)) {
@@ -215,9 +218,9 @@ class LembreteDiarioPersonal extends Command
     {
         $linhas = [];
         foreach ($agendas as $agenda) {
-            $inicio   = substr($agenda->hora_inicio, 0, 5);
-            $fim      = substr($agenda->hora_fim, 0, 5);
-            $aluno    = $agenda->cliente->nome ?? 'Aluno não informado';
+            $inicio = substr($agenda->hora_inicio, 0, 5);
+            $fim = substr($agenda->hora_fim, 0, 5);
+            $aluno = $agenda->cliente->nome ?? 'Aluno não informado';
             $academia = $agenda->academia->nome ?? null;
 
             $linhas[] = "⏰ {$inicio} – {$fim}";
@@ -227,6 +230,7 @@ class LembreteDiarioPersonal extends Command
             }
             $linhas[] = '';
         }
+
         return implode("\n", $linhas);
     }
 }

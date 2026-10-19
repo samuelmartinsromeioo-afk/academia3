@@ -46,9 +46,9 @@ class LgpdController extends Controller
         $voltar = match ($ctx['tipo']) {
             'personal' => route('personal.dashboard'),
             'academia' => route('academia.dashboard'),
-            'studio'   => route('studio.dashboard'),
-            'loja'     => route('loja.dashboard'),
-            default    => route('cliente.index'),
+            'studio' => route('studio.dashboard'),
+            'loja' => route('loja.dashboard'),
+            default => route('cliente.index'),
         };
 
         $conta = $this->conta($ctx);
@@ -160,8 +160,8 @@ class LgpdController extends Controller
         AvisoService::consentimentoSaudeRevogado($cliente);
 
         return back()->with('sucesso', 'Consentimento revogado e anamnese apagada. '
-            . 'Sua conta continua ativa, e enviamos a confirmação para o seu e-mail. '
-            . 'Você pode preencher a anamnese de novo quando quiser.');
+            .'Sua conta continua ativa, e enviamos a confirmação para o seu e-mail. '
+            .'Você pode preencher a anamnese de novo quando quiser.');
     }
 
     /** A conta logada, qualquer que seja o papel — ou null. */
@@ -174,9 +174,9 @@ class LgpdController extends Controller
         return match ($ctx['tipo']) {
             'personal' => Personal::find($ctx['id']),
             'academia' => Academia::find($ctx['id']),
-            'studio'   => Studio::find($ctx['id']),
-            'loja'     => Loja::find($ctx['id']),
-            default    => Cliente::find($ctx['id']),
+            'studio' => Studio::find($ctx['id']),
+            'loja' => Loja::find($ctx['id']),
+            default => Cliente::find($ctx['id']),
         };
     }
 
@@ -201,7 +201,7 @@ class LgpdController extends Controller
 
         return response($exportacao->json($titular))
             ->header('Content-Type', 'application/json; charset=utf-8')
-            ->header('Content-Disposition', 'attachment; filename="' . $exportacao->nomeArquivo() . '"');
+            ->header('Content-Disposition', 'attachment; filename="'.$exportacao->nomeArquivo().'"');
     }
 
     // Exclui a conta: confirma senha, anonimiza o perfil e apaga dados pessoais.
@@ -217,9 +217,9 @@ class LgpdController extends Controller
         $u = match ($ctx['tipo']) {
             'personal' => Personal::find($ctx['id']),
             'academia' => Academia::find($ctx['id']),
-            'studio'   => Studio::find($ctx['id']),
-            'loja'     => Loja::find($ctx['id']),
-            default    => Cliente::find($ctx['id']),
+            'studio' => Studio::find($ctx['id']),
+            'loja' => Loja::find($ctx['id']),
+            default => Cliente::find($ctx['id']),
         };
 
         if (! $u || ! Hash::check($request->senha, $u->senha)) {
@@ -234,8 +234,8 @@ class LgpdController extends Controller
 
         return redirect()->route('login.index')
             ->with('sucesso', 'Sua conta foi encerrada, as assinaturas mensais foram canceladas e '
-                . 'seus dados pessoais foram removidos. Enviamos a confirmação para o seu e-mail. '
-                . 'Obrigado por usar o SnrFit.');
+                .'seus dados pessoais foram removidos. Enviamos a confirmação para o seu e-mail. '
+                .'Obrigado por usar o SnrFit.');
     }
 
     private function ctx(): ?array
@@ -245,6 +245,7 @@ class LgpdController extends Controller
                 return ['tipo' => $tipo, 'id' => session($chave)];
             }
         }
+
         return null;
     }
 }

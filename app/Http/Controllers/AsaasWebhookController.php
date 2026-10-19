@@ -292,8 +292,8 @@ class AsaasWebhookController extends Controller
         $papeis = [
             'personal' => \App\Models\Cadastro\Personal::class,
             'academia' => \App\Models\Cadastro\Academia::class,
-            'studio'   => \App\Models\Cadastro\Studio::class,
-            'loja'     => \App\Models\Cadastro\Loja::class,
+            'studio' => \App\Models\Cadastro\Studio::class,
+            'loja' => \App\Models\Cadastro\Loja::class,
         ];
 
         foreach ($papeis as $papel => $classe) {

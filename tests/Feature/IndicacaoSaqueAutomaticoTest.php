@@ -3,7 +3,6 @@
 namespace Tests\Feature;
 
 use App\Models\Cadastro\Personal;
-use App\Models\CupomUso;
 use App\Models\IndicacaoSaque;
 use App\Models\Payment;
 use App\Services\AsaasService;
@@ -29,9 +28,13 @@ class IndicacaoSaqueAutomaticoTest extends TestCase
     use DatabaseTransactions;
 
     private CupomService $cupons;
+
     private IndicacaoSaqueService $saques;
+
     private Personal $indicador;
+
     private Personal $indicado;
+
     private int $pacoteId;
 
     protected function setUp(): void
@@ -39,11 +42,11 @@ class IndicacaoSaqueAutomaticoTest extends TestCase
         parent::setUp();
 
         config([
-            'services.asaas.url'           => 'https://sandbox.asaas.com/api/v3',
-            'services.asaas.key'           => 'fake-root-key',
+            'services.asaas.url' => 'https://sandbox.asaas.com/api/v3',
+            'services.asaas.key' => 'fake-root-key',
             'services.asaas.webhook_token' => 'token-secreto',
-            'indicacao.saque_automatico'   => true,
-            'indicacao.saque_auto_teto'    => 300.00,
+            'indicacao.saque_automatico' => true,
+            'indicacao.saque_auto_teto' => 300.00,
             'indicacao.saque_auto_teto_diario' => 2000.00,
         ]);
 
@@ -51,7 +54,7 @@ class IndicacaoSaqueAutomaticoTest extends TestCase
         $this->saques = app(IndicacaoSaqueService::class);
 
         $this->indicador = $this->novoPersonal('Indicador', 'ia@s.teste', '811', 'aprovado', now()->subYear());
-        $this->indicado  = $this->novoPersonal('Indicado', 'ib@s.teste', '822', 'aprovado', now()->subDays(40));
+        $this->indicado = $this->novoPersonal('Indicado', 'ib@s.teste', '822', 'aprovado', now()->subDays(40));
 
         $this->pacoteId = DB::table('pacotes')->insertGetId([
             'personal_id' => $this->indicado->id, 'frequencia' => 3,
@@ -105,7 +108,7 @@ class IndicacaoSaqueAutomaticoTest extends TestCase
 
         for ($i = 0; $i < 6; $i++) {
             Payment::create([
-                'user_id' => $this->novoCliente("sq{$i}." . uniqid() . '@t.teste'),
+                'user_id' => $this->novoCliente("sq{$i}.".uniqid().'@t.teste'),
                 'trainer_id' => $this->indicado->id, 'membership_id' => $this->pacoteId,
                 'amount_total' => $valores['amount_total'],
                 'company_fee' => $valores['company_fee'],

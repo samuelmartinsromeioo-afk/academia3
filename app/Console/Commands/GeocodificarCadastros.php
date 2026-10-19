@@ -56,6 +56,7 @@ class GeocodificarCadastros extends Command
 
                 if (! $coord) {
                     $this->warn("[{$rotulo} #{$r->id}] não localizado: {$endereco}");
+
                     continue;
                 }
 

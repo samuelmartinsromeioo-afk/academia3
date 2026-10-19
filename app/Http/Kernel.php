@@ -66,19 +66,19 @@ class Kernel extends HttpKernel
      *
      * @var array<string, class-string|string>
      */
-        protected $middlewareAliases = [
-        'auth'             => \App\Http\Middleware\Authenticate::class,
-        'auth.basic'       => \Illuminate\Auth\Middleware\AuthenticateWithBasicAuth::class,
-        'auth.session'     => \Illuminate\Session\Middleware\AuthenticateSession::class,
-        'cache.headers'    => \Illuminate\Http\Middleware\SetCacheHeaders::class,
-        'can'              => \Illuminate\Auth\Middleware\Authorize::class,
-        'guest'            => \App\Http\Middleware\RedirectIfAuthenticated::class,
+    protected $middlewareAliases = [
+        'auth' => \App\Http\Middleware\Authenticate::class,
+        'auth.basic' => \Illuminate\Auth\Middleware\AuthenticateWithBasicAuth::class,
+        'auth.session' => \Illuminate\Session\Middleware\AuthenticateSession::class,
+        'cache.headers' => \Illuminate\Http\Middleware\SetCacheHeaders::class,
+        'can' => \Illuminate\Auth\Middleware\Authorize::class,
+        'guest' => \App\Http\Middleware\RedirectIfAuthenticated::class,
         'password.confirm' => \Illuminate\Auth\Middleware\RequirePassword::class,
-        'signed'           => \Illuminate\Routing\Middleware\ValidateSignature::class,
-        'throttle'         => \Illuminate\Routing\Middleware\ThrottleRequests::class,
-        'verified'         => \Illuminate\Auth\Middleware\EnsureEmailIsVerified::class,
+        'signed' => \Illuminate\Routing\Middleware\ValidateSignature::class,
+        'throttle' => \Illuminate\Routing\Middleware\ThrottleRequests::class,
+        'verified' => \Illuminate\Auth\Middleware\EnsureEmailIsVerified::class,
 
         'check.login' => \App\Http\Middleware\CheckLogin::class, // <-- adiciona essa linha
-        'check.admin'  => \App\Http\Middleware\CheckAdmin::class,
+        'check.admin' => \App\Http\Middleware\CheckAdmin::class,
     ];
 }

@@ -143,7 +143,7 @@ class ConsentimentoDadosTest extends TestCase
 
     // ── Revogação: apaga o dado, mantém a conta ──────────────────────────
 
-    public function test_revogar_apaga_a_anamnese_e_NAO_encerra_a_conta(): void
+    public function test_revogar_apaga_a_anamnese_e_na_o_encerra_a_conta(): void
     {
         Anamnese::create(['cliente_id' => $this->cliente->id, 'objetivo_principal' => 'Hipertrofia']);
         Consentimento::registrar($this->cliente, Consentimento::TIPO_SAUDE, true);
@@ -216,7 +216,7 @@ class ConsentimentoDadosTest extends TestCase
 
     // ── Meta: nada sai sem consentimento, nem server-to-server ───────────
 
-    public function test_trackServer_nao_envia_nada_sem_consentimento_de_marketing(): void
+    public function test_track_server_nao_envia_nada_sem_consentimento_de_marketing(): void
     {
         Http::fake(['*' => Http::response(['events_received' => 1], 200)]);
 
@@ -231,7 +231,7 @@ class ConsentimentoDadosTest extends TestCase
         Http::assertNothingSent();
     }
 
-    public function test_trackServer_envia_quando_o_titular_consentiu(): void
+    public function test_track_server_envia_quando_o_titular_consentiu(): void
     {
         Http::fake(['*' => Http::response(['events_received' => 1], 200)]);
 
@@ -271,7 +271,7 @@ class ConsentimentoDadosTest extends TestCase
      * Era o buraco que a assinatura renovada explorava sem querer: o chamador
      * passava um array de `user_data` já montado e não havia a quem perguntar.
      */
-    public function test_trackServer_sem_titular_nao_envia(): void
+    public function test_track_server_sem_titular_nao_envia(): void
     {
         Http::fake(['*' => Http::response([], 200)]);
 

@@ -28,10 +28,10 @@ class VerificaAceiteTermos
     /** Sessão => model, na mesma ordem usada no resto do app. */
     private const PERFIS = [
         'personal_id' => \App\Models\Cadastro\Personal::class,
-        'cliente_id'  => \App\Models\Cadastro\Cliente::class,
+        'cliente_id' => \App\Models\Cadastro\Cliente::class,
         'academia_id' => \App\Models\Cadastro\Academia::class,
-        'studio_id'   => \App\Models\Cadastro\Studio::class,
-        'loja_id'     => \App\Models\Cadastro\Loja::class,
+        'studio_id' => \App\Models\Cadastro\Studio::class,
+        'loja_id' => \App\Models\Cadastro\Loja::class,
     ];
 
     public function handle(Request $request, Closure $next): Response

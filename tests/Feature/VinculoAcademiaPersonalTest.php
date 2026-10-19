@@ -16,8 +16,11 @@ class VinculoAcademiaPersonalTest extends TestCase
     use DatabaseTransactions;
 
     private int $personalId;
+
     private int $academia1;
+
     private int $academia2;
+
     private int $clienteId;
 
     protected function setUp(): void
@@ -76,12 +79,12 @@ class VinculoAcademiaPersonalTest extends TestCase
     {
         DB::table('termo_aceites')->insertOrIgnore([
             'usuario_type' => $tipo,
-            'usuario_id'   => $id,
-            'versao'       => (string) config('termos.versao'),
-            'aceito_em'    => now(),
-            'origem'       => 'cadastro',
-            'created_at'   => now(),
-            'updated_at'   => now(),
+            'usuario_id' => $id,
+            'versao' => (string) config('termos.versao'),
+            'aceito_em' => now(),
+            'origem' => 'cadastro',
+            'created_at' => now(),
+            'updated_at' => now(),
         ]);
     }
 
@@ -99,7 +102,7 @@ class VinculoAcademiaPersonalTest extends TestCase
         $this->assertDatabaseHas('academia_personal', [
             'academia_id' => $this->academia1,
             'personal_id' => $this->personalId,
-            'status'      => 'pendente',
+            'status' => 'pendente',
         ]);
 
         // 3. Duplicidade é bloqueada (já existe pendente).
@@ -110,7 +113,7 @@ class VinculoAcademiaPersonalTest extends TestCase
         $minhas = $this->comoPersonal()->getJson('/personal/academias/minhas-solicitacoes');
         $minhas->assertOk()->assertJsonFragment([
             'academia_id' => $this->academia1,
-            'status'      => 'pendente',
+            'status' => 'pendente',
         ]);
 
         // 5. Academia vê a solicitação pendente na sua tela.
@@ -135,7 +138,7 @@ class VinculoAcademiaPersonalTest extends TestCase
             ->assertSee('Personais Relacionados')
             ->assertSee('Carlos Personal')
             ->assertSee('Fechar pacote')
-            ->assertSee('personal=' . $this->personalId, false);
+            ->assertSee('personal='.$this->personalId, false);
     }
 
     public function test_personal_pendente_nao_aparece_na_pagina_publica(): void
@@ -173,7 +176,7 @@ class VinculoAcademiaPersonalTest extends TestCase
         $this->assertDatabaseHas('academia_personal', [
             'academia_id' => $this->academia2,
             'personal_id' => $this->personalId,
-            'status'      => 'rejeitado',
+            'status' => 'rejeitado',
         ]);
 
         // Após rejeitado, o personal pode solicitar de novo (reabre como pendente).
@@ -183,7 +186,7 @@ class VinculoAcademiaPersonalTest extends TestCase
         $this->assertDatabaseHas('academia_personal', [
             'academia_id' => $this->academia2,
             'personal_id' => $this->personalId,
-            'status'      => 'pendente',
+            'status' => 'pendente',
         ]);
     }
 

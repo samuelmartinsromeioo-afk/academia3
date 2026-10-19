@@ -30,7 +30,9 @@ class ReposicaoApiTest extends TestCase
     use DatabaseTransactions;
 
     private Personal $personal;
+
     private Cliente $aluno;
+
     private string $token;
 
     protected function setUp(): void
@@ -52,7 +54,7 @@ class ReposicaoApiTest extends TestCase
             'nome' => 'PT Rep', 'email' => $email, 'cpf' => $cpf,
             'senha' => bcrypt('x'), 'cep' => '30130-000', 'rua' => 'R', 'bairro' => 'B',
             'cidade' => 'BH', 'estado' => 'MG', 'complemento' => '-', 'foto' => '',
-            'idade' => '1990-01-01', 'valor_secao' => 80.00, 'cref' => $cpf . '-G/MG',
+            'idade' => '1990-01-01', 'valor_secao' => 80.00, 'cref' => $cpf.'-G/MG',
             'status' => 'aprovado', 'data_aprovacao' => now()->subYear(),
         ]);
         $p->registrarAceiteTermos();
@@ -62,7 +64,7 @@ class ReposicaoApiTest extends TestCase
 
     private function comToken(?string $token = null): array
     {
-        return ['Authorization' => 'Bearer ' . ($token ?: $this->token), 'Accept' => 'application/json'];
+        return ['Authorization' => 'Bearer '.($token ?: $this->token), 'Accept' => 'application/json'];
     }
 
     /** Aula já cancelada pelo aluno (é o que vira "falta"). */

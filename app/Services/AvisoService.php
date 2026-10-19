@@ -57,7 +57,7 @@ class AvisoService
             $texto = (string) $data;
         }
 
-        return $horaInicio ? $texto . ' às ' . substr($horaInicio, 0, 5) : $texto;
+        return $horaInicio ? $texto.' às '.substr($horaInicio, 0, 5) : $texto;
     }
 
     // ───────────────────── PRIVACIDADE (LGPD) ─────────────────────
@@ -87,14 +87,14 @@ class AvisoService
             NotificacaoService::cliente(
                 $cliente,
                 'Consentimento de dados de saúde revogado — SNR FIT',
-                "Você revogou o consentimento de uso dos seus dados de saúde, e a sua "
-                . "*anamnese foi apagada*.\n\n"
-                . "*A sua conta continua ativa.* Você segue treinando, contratando e usando o "
-                . "app e o site normalmente — só não temos mais dado de saúde seu guardado.\n\n"
-                . "Pode preencher a anamnese de novo quando quiser. Lembre que, sem ela, o "
-                . "profissional monta o seu treino sem conhecer lesões, restrições ou "
-                . "medicamentos: informe isso diretamente a ele.\n\n"
-                . 'Guarde esta mensagem: ela é o seu comprovante da revogação.'
+                'Você revogou o consentimento de uso dos seus dados de saúde, e a sua '
+                ."*anamnese foi apagada*.\n\n"
+                .'*A sua conta continua ativa.* Você segue treinando, contratando e usando o '
+                ."app e o site normalmente — só não temos mais dado de saúde seu guardado.\n\n"
+                .'Pode preencher a anamnese de novo quando quiser. Lembre que, sem ela, o '
+                .'profissional monta o seu treino sem conhecer lesões, restrições ou '
+                ."medicamentos: informe isso diretamente a ele.\n\n"
+                .'Guarde esta mensagem: ela é o seu comprovante da revogação.'
             );
         });
     }
@@ -132,9 +132,9 @@ class AvisoService
                 $cliente,
                 'Sua aula foi cancelada — SnrFit',
                 "❌ *Aula cancelada*\n\n"
-                . "{$nome} cancelou a sua aula de *{$quando}*.\n"
-                . ($justificativa ? "Motivo: {$justificativa}\n" : '')
-                . "\nO horário foi liberado na agenda. Fale com o seu personal para remarcar."
+                ."{$nome} cancelou a sua aula de *{$quando}*.\n"
+                .($justificativa ? "Motivo: {$justificativa}\n" : '')
+                ."\nO horário foi liberado na agenda. Fale com o seu personal para remarcar."
             );
         });
     }
@@ -146,7 +146,7 @@ class AvisoService
      * dele, e um texto com a lista do dia inteiro vazaria os horários (e a
      * existência) dos outros alunos.
      *
-     * @param iterable<Agenda> $agendas aulas canceladas (ainda com cliente_id)
+     * @param  iterable<Agenda>  $agendas  aulas canceladas (ainda com cliente_id)
      */
     public static function diaCanceladoPeloPersonal(iterable $agendas, ?Personal $personal, ?string $justificativa = null): void
     {
@@ -197,7 +197,7 @@ class AvisoService
 
             $local = match (true) {
                 $online => "A aula é *online*. Deixe o aparelho pronto e combine o link com {$nome}.",
-                $agenda->modalidade === 'Presencial' => "A aula é *presencial*" . ($agenda->academia?->nome ? " na *{$agenda->academia->nome}*" : '') . '. Dá tempo de se arrumar e sair.',
+                $agenda->modalidade === 'Presencial' => 'A aula é *presencial*'.($agenda->academia?->nome ? " na *{$agenda->academia->nome}*" : '').'. Dá tempo de se arrumar e sair.',
                 // Sem modalidade registrada: não inventa. Aulas antigas e
                 // profissionais híbridos sem escolha do aluno caem aqui.
                 default => "Confirme com {$nome} se é presencial ou online.",
@@ -207,9 +207,9 @@ class AvisoService
                 $cliente,
                 'Sua aula é daqui a pouco — SnrFit',
                 "⏰ *Aula às {$hora}*\n\n"
-                . "Você tem aula com {$nome} hoje às *{$hora}*.\n\n"
-                . $local
-                . "\n\nNão vai conseguir? Avise agora para liberar o horário."
+                ."Você tem aula com {$nome} hoje às *{$hora}*.\n\n"
+                .$local
+                ."\n\nNão vai conseguir? Avise agora para liberar o horário."
             );
         });
     }
@@ -243,10 +243,10 @@ class AvisoService
                 $cliente,
                 'Pacote confirmado — SnrFit',
                 "✅ *Pacote confirmado!*\n\n"
-                . 'Seu pagamento foi confirmado'
-                . ($personal ? " e *{$personal->nome}* já foi avisado" : '') . ".\n"
-                . "Frequência: {$freqTxt}\n"
-                . "\nSuas aulas já estão na sua agenda, em \"Minhas aulas\". 🏋️"
+                .'Seu pagamento foi confirmado'
+                .($personal ? " e *{$personal->nome}* já foi avisado" : '').".\n"
+                ."Frequência: {$freqTxt}\n"
+                ."\nSuas aulas já estão na sua agenda, em \"Minhas aulas\". 🏋️"
             );
         });
     }
@@ -260,9 +260,9 @@ class AvisoService
                     $academia,
                     'Novo aluno na sua academia — SnrFit',
                     "🎉 *Novo aluno!*\n\n"
-                    . "*{$cliente->nome}* contratou um plano da sua academia pela plataforma.\n"
-                    . ($valor ? 'Valor: R$ ' . number_format((float) $valor, 2, ',', '.') . "\n" : '')
-                    . "\nEle já aparece na sua lista de alunos."
+                    ."*{$cliente->nome}* contratou um plano da sua academia pela plataforma.\n"
+                    .($valor ? 'Valor: R$ '.number_format((float) $valor, 2, ',', '.')."\n" : '')
+                    ."\nEle já aparece na sua lista de alunos."
                 );
             }
 
@@ -271,9 +271,9 @@ class AvisoService
                     $cliente,
                     'Plano da academia confirmado — SnrFit',
                     "✅ *Plano confirmado!*\n\n"
-                    . 'Seu pagamento foi confirmado'
-                    . ($academia ? " e a *{$academia->nome}* já foi avisada" : '') . ".\n"
-                    . "\nBons treinos! 🏋️"
+                    .'Seu pagamento foi confirmado'
+                    .($academia ? " e a *{$academia->nome}* já foi avisada" : '').".\n"
+                    ."\nBons treinos! 🏋️"
                 );
             }
         });
@@ -288,9 +288,9 @@ class AvisoService
                     $studio,
                     'Novo aluno no seu studio — SnrFit',
                     "🎉 *Novo aluno!*\n\n"
-                    . "*{$cliente->nome}* assinou um plano do seu studio pela plataforma.\n"
-                    . ($valor ? 'Valor: R$ ' . number_format((float) $valor, 2, ',', '.') . "\n" : '')
-                    . "\nEle já pode reservar lugar nas suas turmas."
+                    ."*{$cliente->nome}* assinou um plano do seu studio pela plataforma.\n"
+                    .($valor ? 'Valor: R$ '.number_format((float) $valor, 2, ',', '.')."\n" : '')
+                    ."\nEle já pode reservar lugar nas suas turmas."
                 );
             }
 
@@ -299,9 +299,9 @@ class AvisoService
                     $cliente,
                     'Plano do studio confirmado — SnrFit',
                     "✅ *Plano confirmado!*\n\n"
-                    . 'Seu pagamento foi confirmado'
-                    . ($studio ? " e o *{$studio->nome}* já foi avisado" : '') . ".\n"
-                    . "\nJá pode reservar sua vaga nas aulas. 🧘"
+                    .'Seu pagamento foi confirmado'
+                    .($studio ? " e o *{$studio->nome}* já foi avisado" : '').".\n"
+                    ."\nJá pode reservar sua vaga nas aulas. 🧘"
                 );
             }
         });
@@ -319,9 +319,9 @@ class AvisoService
                 $studio,
                 'Nova aula reservada — SnrFit',
                 "📅 *Nova reserva!*\n\n"
-                . "Aluno: *{$cliente->nome}*\n"
-                . 'Quando: ' . self::quando($data, $horaInicio) . "\n"
-                . "\nA vaga já foi reservada na sua grade."
+                ."Aluno: *{$cliente->nome}*\n"
+                .'Quando: '.self::quando($data, $horaInicio)."\n"
+                ."\nA vaga já foi reservada na sua grade."
             );
         });
     }

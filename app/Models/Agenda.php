@@ -2,10 +2,9 @@
 
 namespace App\Models;
 
+use App\Models\Cadastro\Personal;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use App\Models\Cadastro\Personal; 
-use App\Models\Cadastro\Cliente; 
 
 class Agenda extends Model
 {
@@ -123,7 +122,6 @@ class Agenda extends Model
         return $this->belongsTo(\App\Models\Cadastro\Cliente::class, 'cliente_id');
     }
 
-    
     public function calcularValorAula()
     {
         if ($this->tipo_aula === 'pacote' && $this->frequencia_pacote) {
@@ -132,12 +130,12 @@ class Agenda extends Model
             $pacote = \App\Models\Cadastro\Pacote::where('personal_id', $this->personal_id)
                 ->where('frequencia', $this->frequencia_pacote)
                 ->first();
-            
+
             if ($pacote) {
                 // Calcula número de aulas no mês (frequencia × semanas do mês)
                 $semanasDoMes = ceil($this->data->daysInMonth / 7);
                 $totalAulasNoMes = $this->frequencia_pacote * $semanasDoMes;
-                
+
                 return $pacote->valor_mensal / $totalAulasNoMes;
             }
         }
@@ -151,6 +149,6 @@ class Agenda extends Model
      */
     public function getValorFormatadoAttribute()
     {
-        return 'R$ ' . number_format($this->calcularValorAula(), 2, ',', '.');
+        return 'R$ '.number_format($this->calcularValorAula(), 2, ',', '.');
     }
 }

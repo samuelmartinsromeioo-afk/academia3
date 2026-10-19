@@ -33,6 +33,7 @@ class IndicacaoApiTest extends TestCase
     use DatabaseTransactions;
 
     private Personal $indicador;
+
     private string $token;
 
     protected function setUp(): void
@@ -55,7 +56,7 @@ class IndicacaoApiTest extends TestCase
 
     private function comToken(): array
     {
-        return ['Authorization' => 'Bearer ' . $this->token, 'Accept' => 'application/json'];
+        return ['Authorization' => 'Bearer '.$this->token, 'Accept' => 'application/json'];
     }
 
     private function codigoDoIndicador(): string
@@ -67,7 +68,7 @@ class IndicacaoApiTest extends TestCase
 
     public function test_valida_codigo_existente_e_diz_quem_indicou(): void
     {
-        $this->getJson('/api/v1/cupom/validar?codigo=' . $this->codigoDoIndicador())
+        $this->getJson('/api/v1/cupom/validar?codigo='.$this->codigoDoIndicador())
             ->assertOk()
             ->assertJsonPath('valido', true)
             // Só o primeiro nome: é dado de outra conta, exposto a quem ainda
@@ -87,7 +88,7 @@ class IndicacaoApiTest extends TestCase
     {
         $codigo = $this->codigoDoIndicador();
 
-        $this->getJson('/api/v1/cupom/validar?codigo=' . urlencode('  ' . strtolower($codigo) . ' '))
+        $this->getJson('/api/v1/cupom/validar?codigo='.urlencode('  '.strtolower($codigo).' '))
             ->assertOk()
             ->assertJsonPath('valido', true);
     }

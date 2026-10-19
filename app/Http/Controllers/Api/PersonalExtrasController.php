@@ -353,18 +353,18 @@ class PersonalExtrasController extends Controller
         $nome = explode(' ', trim($cliente->nome))[0];
 
         $linhasRec = collect($d['recordes'])->take(5)
-            ->map(fn ($r) => '• ' . $r['exercicio'] . ': ' . $this->kg($r['peso']))->implode("\n");
+            ->map(fn ($r) => '• '.$r['exercicio'].': '.$this->kg($r['peso']))->implode("\n");
 
         $texto = "📊 *Seu resumo do mês, {$nome}!*\n\n"
-            . "✅ Treinos: *{$d['realizados']}* de {$d['planejados']} planejados ({$d['aderencia']}%)\n"
-            . "🔥 Sequência atual: *{$d['streak']['atual']}* dias (recorde {$d['streak']['recorde']})\n"
-            . ($d['rpeMedio'] ? "💪 Esforço médio: {$d['rpeMedio']}/10\n" : '')
-            . ($linhasRec ? "\n🏆 *Recordes do mês:*\n{$linhasRec}\n" : '')
-            . "\nBora manter o ritmo! 🚀";
+            ."✅ Treinos: *{$d['realizados']}* de {$d['planejados']} planejados ({$d['aderencia']}%)\n"
+            ."🔥 Sequência atual: *{$d['streak']['atual']}* dias (recorde {$d['streak']['recorde']})\n"
+            .($d['rpeMedio'] ? "💪 Esforço médio: {$d['rpeMedio']}/10\n" : '')
+            .($linhasRec ? "\n🏆 *Recordes do mês:*\n{$linhasRec}\n" : '')
+            ."\nBora manter o ritmo! 🚀";
 
         NotificacaoService::cliente($cliente, 'Seu resumo do mês — SnrFit 📊', $texto, 'relatorio_mensal', [$nome]);
 
-        return response()->json(['success' => true, 'message' => 'Relatório enviado para ' . ($cliente->nome ?? 'o aluno') . '! 📨']);
+        return response()->json(['success' => true, 'message' => 'Relatório enviado para '.($cliente->nome ?? 'o aluno').'! 📨']);
     }
 
     // ===================== VÍNCULO COM ACADEMIAS =====================
@@ -381,7 +381,7 @@ class PersonalExtrasController extends Controller
 
         return response()->json([
             'academias' => Academia::where('status', 'aprovado')
-                ->where('nome', 'like', '%' . $termo . '%')
+                ->where('nome', 'like', '%'.$termo.'%')
                 ->orderBy('nome')
                 ->limit(10)
                 ->get(['id', 'nome', 'cidade']),
@@ -466,10 +466,10 @@ class PersonalExtrasController extends Controller
 
         $cliente = $solicitacao->cliente;
         if ($cliente) {
-            $mensagem = "🏋️ *Sua Ficha Está Pronta!*\n\n" .
-                "Olá, *{$cliente->nome}*!\n" .
-                "Seu personal *{$personal->nome}* acabou de montar sua ficha de treino personalizada.\n" .
-                "Acesse o aplicativo para visualizá-la. 💪";
+            $mensagem = "🏋️ *Sua Ficha Está Pronta!*\n\n".
+                "Olá, *{$cliente->nome}*!\n".
+                "Seu personal *{$personal->nome}* acabou de montar sua ficha de treino personalizada.\n".
+                'Acesse o aplicativo para visualizá-la. 💪';
 
             NotificacaoService::cliente($cliente, 'Sua ficha de treino está pronta — SnrFit', $mensagem, 'ficha_pronta', [$cliente->nome, $personal->nome]);
         }
@@ -493,6 +493,7 @@ class PersonalExtrasController extends Controller
     private function meuTemplate(int $personalId, $id): ?FichaTemplate
     {
         $t = FichaTemplate::find($id);
+
         return ($t && $t->personal_id == $personalId) ? $t : null;
     }
 
@@ -508,7 +509,6 @@ class PersonalExtrasController extends Controller
             ->merge(Agenda::where('personal_id', $personalId)->where('cancelado', false)->whereNotNull('cliente_id')->pluck('cliente_id'))
             ->unique()->values();
     }
-
 
     private function dadosRelatorio($personalId, $clienteId): array
     {
@@ -571,7 +571,7 @@ class PersonalExtrasController extends Controller
         $maxAtual = [];
         $recordes = [];
         foreach ($regs as $r) {
-            $key = $r->cliente_id . '|' . $r->nome_exercicio;
+            $key = $r->cliente_id.'|'.$r->nome_exercicio;
             $prev = $maxAtual[$key] ?? null;
             $peso = (float) $r->peso;
             if ($prev !== null && $peso > $prev && $r->data_treino->toDateString() >= $desde) {
@@ -593,6 +593,6 @@ class PersonalExtrasController extends Controller
 
     private function kg($v): string
     {
-        return rtrim(rtrim(number_format((float) $v, 2, ',', '.'), '0'), ',') . ' kg';
+        return rtrim(rtrim(number_format((float) $v, 2, ',', '.'), '0'), ',').' kg';
     }
 }

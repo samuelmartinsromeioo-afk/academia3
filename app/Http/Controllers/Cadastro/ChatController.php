@@ -30,6 +30,7 @@ class ChatController extends Controller
             $contatos = Cliente::whereIn('id', $ids)->orderBy('nome')->get()->map(function ($c) use ($personalId) {
                 $c->ultima = Mensagem::where('personal_id', $personalId)->where('cliente_id', $c->id)->latest()->first();
                 $c->nao_lidas = Mensagem::where('personal_id', $personalId)->where('cliente_id', $c->id)->where('remetente', 'cliente')->where('lida', false)->count();
+
                 return $c;
             })->sortByDesc(fn ($c) => optional($c->ultima)->created_at)->values();
 
@@ -46,6 +47,7 @@ class ChatController extends Controller
             $contatos = Personal::whereIn('id', $ids)->orderBy('nome')->get()->map(function ($p) use ($clienteId) {
                 $p->ultima = Mensagem::where('cliente_id', $clienteId)->where('personal_id', $p->id)->latest()->first();
                 $p->nao_lidas = Mensagem::where('cliente_id', $clienteId)->where('personal_id', $p->id)->where('remetente', 'personal')->where('lida', false)->count();
+
                 return $p;
             })->sortByDesc(fn ($p) => optional($p->ultima)->created_at)->values();
 
@@ -134,6 +136,7 @@ class ChatController extends Controller
         if (session('cliente_id')) {
             return ['personal_id' => (int) $outroId, 'cliente_id' => (int) session('cliente_id'), 'eu' => 'cliente'];
         }
+
         return null;
     }
 

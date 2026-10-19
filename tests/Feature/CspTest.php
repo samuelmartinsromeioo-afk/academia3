@@ -32,7 +32,7 @@ class CspTest extends TestCase
         foreach (explode(';', $politica) as $parte) {
             $parte = trim($parte);
 
-            if (str_starts_with($parte, $diretiva . ' ')) {
+            if (str_starts_with($parte, $diretiva.' ')) {
                 return array_values(array_filter(explode(' ', substr($parte, strlen($diretiva) + 1))));
             }
         }
@@ -105,19 +105,19 @@ class CspTest extends TestCase
     {
         return [
             'Chart.js e phosphor (jsdelivr)' => ['script-src', 'https://cdn.jsdelivr.net'],
-            'libs em cdnjs'                  => ['script-src', 'https://cdnjs.cloudflare.com'],
-            'leaflet em unpkg'               => ['script-src', 'https://unpkg.com'],
-            'Meta Pixel'                     => ['script-src', 'https://connect.facebook.net'],
-            'Google Fonts (css)'             => ['style-src', 'https://fonts.googleapis.com'],
-            'Google Fonts (arquivos)'        => ['font-src', 'https://fonts.gstatic.com'],
-            'avatar por iniciais'            => ['img-src', 'https://ui-avatars.com'],
-            'tiles do mapa'                  => ['img-src', 'https://server.arcgisonline.com'],
-            'preview de upload (blob)'       => ['img-src', 'blob:'],
-            'QR code base64 (data)'          => ['img-src', 'data:'],
-            'geocodificacao de endereco'     => ['connect-src', 'https://nominatim.openstreetmap.org'],
-            'busca de CEP'                   => ['connect-src', 'https://viacep.com.br'],
-            'busca de CEP (fallback)'        => ['connect-src', 'https://brasilapi.com.br'],
-            'video do proprio dominio'       => ['media-src', "'self'"],
+            'libs em cdnjs' => ['script-src', 'https://cdnjs.cloudflare.com'],
+            'leaflet em unpkg' => ['script-src', 'https://unpkg.com'],
+            'Meta Pixel' => ['script-src', 'https://connect.facebook.net'],
+            'Google Fonts (css)' => ['style-src', 'https://fonts.googleapis.com'],
+            'Google Fonts (arquivos)' => ['font-src', 'https://fonts.gstatic.com'],
+            'avatar por iniciais' => ['img-src', 'https://ui-avatars.com'],
+            'tiles do mapa' => ['img-src', 'https://server.arcgisonline.com'],
+            'preview de upload (blob)' => ['img-src', 'blob:'],
+            'QR code base64 (data)' => ['img-src', 'data:'],
+            'geocodificacao de endereco' => ['connect-src', 'https://nominatim.openstreetmap.org'],
+            'busca de CEP' => ['connect-src', 'https://viacep.com.br'],
+            'busca de CEP (fallback)' => ['connect-src', 'https://brasilapi.com.br'],
+            'video do proprio dominio' => ['media-src', "'self'"],
         ];
     }
 
@@ -164,11 +164,11 @@ class CspTest extends TestCase
     {
         $this->call('POST', '/csp-report', [], [], [], ['CONTENT_TYPE' => 'application/csp-report'], json_encode([
             'csp-report' => [
-                'document-uri'        => 'https://snrfit.com.br/termos',
+                'document-uri' => 'https://snrfit.com.br/termos',
                 'effective-directive' => 'script-src',
-                'blocked-uri'         => 'https://evil.example.com/x.js',
-                'line-number'         => 10,
-                'script-sample'       => 'alert(1)',
+                'blocked-uri' => 'https://evil.example.com/x.js',
+                'line-number' => 10,
+                'script-sample' => 'alert(1)',
             ],
         ]))->assertNoContent();
     }

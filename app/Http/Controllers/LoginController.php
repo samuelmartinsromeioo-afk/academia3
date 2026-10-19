@@ -2,12 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Admin;
 use App\Models\Cadastro\Academia as ModelsAcademia;
 use App\Models\Cadastro\Cliente as ModelsCliente;
+use App\Models\Cadastro\Loja as ModelsLoja;
 use App\Models\Cadastro\Personal as ModelsPersonal;
 use App\Models\Cadastro\Studio as ModelsStudio;
-use App\Models\Cadastro\Loja as ModelsLoja;
-use App\Models\Admin;
 use App\Services\Celebracoes;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -46,7 +46,7 @@ class loginController extends Controller
             'senha' => 'required|string|max:255',
         ], [
             'login.required' => 'O campo e-mail ou CNPJ é obrigatório.',
-            'senha.required' => 'O campo senha é obrigatório.'
+            'senha.required' => 'O campo senha é obrigatório.',
         ]);
 
         $loginInput = $validated['login'];
@@ -57,6 +57,7 @@ class loginController extends Controller
         if ($admin) {
             if (Hash::check($senha, $admin->senha)) {
                 $this->abrirSessao(['admin_id' => $admin->id, 'admin_nome' => $admin->nome]);
+
                 return redirect()->route('admin.dashboard');
             }
         }
@@ -68,7 +69,7 @@ class loginController extends Controller
             if ($personal->status !== 'aprovado') {
                 return back()->withErrors(['login' => '⏳ Seu cadastro ainda não foi aprovado pelo administrador. Aguarde a análise.'])->withInput();
             }
-            
+
             $this->abrirSessao(['personal_id' => $personal->id]);
             $this->marcarPrimeiroLogin($personal, 'personal');
 
@@ -80,6 +81,7 @@ class loginController extends Controller
         if ($cliente && Hash::check($senha, $cliente->senha)) {
             $this->abrirSessao(['cliente_id' => $cliente->id]);
             $this->marcarPrimeiroLogin($cliente, 'cliente');
+
             return redirect()->route('cliente.index');
         }
 
@@ -87,7 +89,7 @@ class loginController extends Controller
         // Principal e filiais compartilham o mesmo e-mail/CNPJ; o que diferencia é a senha.
         $academia = ModelsAcademia::where(function ($query) use ($loginInput) {
             $query->where('email', $loginInput)
-                  ->orWhere('cnpj', $loginInput);
+                ->orWhere('cnpj', $loginInput);
         })->first();
 
         if ($academia) {
@@ -106,6 +108,7 @@ class loginController extends Controller
                     $msg = ($academia->status === 'rejeitado')
                         ? '🚫 Seu cadastro foi recusado pelo administrador.'
                         : '⏳ Seu cadastro está em análise. Você poderá acessar após a aprovação do administrador.';
+
                     return back()->withErrors(['login' => $msg])->withInput();
                 }
 
@@ -116,6 +119,7 @@ class loginController extends Controller
                 }
                 $this->abrirSessao($dadosSessao);
                 $this->marcarPrimeiroLogin($academia, 'academia');
+
                 return redirect()->route('academia.dashboard');
             }
         }
@@ -123,7 +127,7 @@ class loginController extends Controller
         // 4. Tentar STUDIO (busca por email OU cnpj, com verificação de aprovação)
         $studio = ModelsStudio::where(function ($query) use ($loginInput) {
             $query->where('email', $loginInput)
-                  ->orWhere('cnpj', $loginInput);
+                ->orWhere('cnpj', $loginInput);
         })->first();
 
         if ($studio && Hash::check($senha, $studio->senha)) {
@@ -133,13 +137,14 @@ class loginController extends Controller
 
             $this->abrirSessao(['studio_id' => $studio->id]);
             $this->marcarPrimeiroLogin($studio, 'studio');
+
             return redirect()->route('studio.dashboard');
         }
 
         // 5. Tentar LOJA (busca por email OU cnpj)
         $loja = ModelsLoja::where(function ($query) use ($loginInput) {
             $query->where('email', $loginInput)
-                  ->orWhere('cnpj', $loginInput);
+                ->orWhere('cnpj', $loginInput);
         })->first();
 
         if ($loja && Hash::check($senha, $loja->senha)) {
@@ -147,13 +152,15 @@ class loginController extends Controller
                 $msg = match ($loja->status) {
                     'rejeitado' => '🚫 Seu cadastro foi recusado pelo administrador.',
                     'bloqueado' => '🚫 O acesso desta loja foi bloqueado pelo administrador.',
-                    default     => '⏳ Seu cadastro está em análise. Você poderá acessar após a aprovação do administrador.',
+                    default => '⏳ Seu cadastro está em análise. Você poderá acessar após a aprovação do administrador.',
                 };
+
                 return back()->withErrors(['login' => $msg])->withInput();
             }
 
             $this->abrirSessao(['loja_id' => $loja->id]);
             $this->marcarPrimeiroLogin($loja, 'loja');
+
             return redirect()->route('loja.dashboard');
         }
 
@@ -162,7 +169,7 @@ class loginController extends Controller
         // stuffing. Nunca logamos a senha, só o identificador tentado.
         Log::channel('security')->warning('login_falhou', [
             'login' => $loginInput,
-            'ip'    => $request->ip(),
+            'ip' => $request->ip(),
             'agent' => substr((string) $request->userAgent(), 0, 180),
         ]);
 
@@ -182,7 +189,6 @@ class loginController extends Controller
         session($dados);
         session()->save();
     }
-
 
     /** Enfileira a celebração de boas-vindas no primeiro login e baixa a flag. */
     private function marcarPrimeiroLogin($usuario, string $papel): void

@@ -28,7 +28,9 @@ class AgendaService
      * repetidos em cada lugar que monta lista de horário.
      */
     public const TURNO_INICIO = '06:00';
+
     public const TURNO_FIM = '22:00';
+
     public const PASSO_MINUTOS = 60;
 
     /**
@@ -95,7 +97,7 @@ class AgendaService
      * Existe para o personal não precisar abrir a agenda e caçar dia por dia na
      * hora de marcar uma reposição. Uma query só para toda a janela.
      *
-     * @return array<string, array{rotulo: string, horarios: array}>  Indexado por Y-m-d.
+     * @return array<string, array{rotulo: string, horarios: array}> Indexado por Y-m-d.
      */
     public function diasComHorarioLivre(int $personalId, int $diasAFrente = 21, int $duracaoMin = 60): array
     {
@@ -143,7 +145,7 @@ class AgendaService
      * Não exige alinhamento com a grade de 60min: aula legítima fora da grade
      * (07:30, por exemplo) continua válida — o que importa é não colidir.
      *
-     * @return string|null  Motivo da recusa, ou null quando está livre.
+     * @return string|null Motivo da recusa, ou null quando está livre.
      */
     public function motivoParaNaoMarcar(int $personalId, string $dia, string $inicio, string $fim): ?string
     {
@@ -228,7 +230,7 @@ class AgendaService
         $dia = $aula->data instanceof Carbon ? $aula->data->format('Y-m-d') : (string) $aula->data;
 
         return $aula->hora_inicio
-            ? Carbon::parse($dia . ' ' . $aula->hora_inicio, $tz)
+            ? Carbon::parse($dia.' '.$aula->hora_inicio, $tz)
             : Carbon::parse($dia, $tz)->startOfDay();
     }
 
@@ -259,13 +261,13 @@ class AgendaService
         $inicio = $this->inicioDaAula($aula);
 
         if ($inicio->lte($this->agora())) {
-            return 'Essa aula já começou em ' . $inicio->format('d/m/Y \à\s H:i') . ' — não dá mais para cancelar.';
+            return 'Essa aula já começou em '.$inicio->format('d/m/Y \à\s H:i').' — não dá mais para cancelar.';
         }
 
         $faltam = $this->horasAteAula($aula);
 
-        return 'O cancelamento só é permitido com ' . self::HORAS_ANTECEDENCIA_CANCELAMENTO
-            . 'h de antecedência. Faltam ' . $faltam . 'h para essa aula.';
+        return 'O cancelamento só é permitido com '.self::HORAS_ANTECEDENCIA_CANCELAMENTO
+            .'h de antecedência. Faltam '.$faltam.'h para essa aula.';
     }
 
     // ─────────────────────────────────────────────────────────────
@@ -307,14 +309,14 @@ class AgendaService
 
         if ($this->ehPacote($aula)) {
             return $passou
-                ? 'Essa aula já começou em ' . $inicio->format('d/m/Y \à\s H:i') . ' — não dá mais para pedir reposição.'
-                : 'A reposição precisa ser pedida com ' . $horas . 'h de antecedência. Faltam apenas '
-                    . $this->horasAteAula($aula) . 'h para essa aula.';
+                ? 'Essa aula já começou em '.$inicio->format('d/m/Y \à\s H:i').' — não dá mais para pedir reposição.'
+                : 'A reposição precisa ser pedida com '.$horas.'h de antecedência. Faltam apenas '
+                    .$this->horasAteAula($aula).'h para essa aula.';
         }
 
         return $passou
-            ? 'Essa aula já começou em ' . $inicio->format('d/m/Y \à\s H:i') . ' — não é mais possível cancelar nem pedir devolução.'
-            : 'O cancelamento com devolução só vale até ' . $horas . 'h antes da aula. Faltam apenas '
-                . $this->horasAteAula($aula) . 'h, então essa aula não pode mais ser cancelada.';
+            ? 'Essa aula já começou em '.$inicio->format('d/m/Y \à\s H:i').' — não é mais possível cancelar nem pedir devolução.'
+            : 'O cancelamento com devolução só vale até '.$horas.'h antes da aula. Faltam apenas '
+                .$this->horasAteAula($aula).'h, então essa aula não pode mais ser cancelada.';
     }
 }

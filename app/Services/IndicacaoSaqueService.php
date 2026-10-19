@@ -49,12 +49,11 @@ use Illuminate\Support\Facades\Log;
 class IndicacaoSaqueService
 {
     /** Erro de regra de negócio (saldo, pedido duplicado), para virar mensagem na tela. */
-    public const ERRO_SALDO     = 'saldo';
+    public const ERRO_SALDO = 'saldo';
+
     public const ERRO_DUPLICADO = 'duplicado';
 
-    public function __construct(private AsaasService $asaas)
-    {
-    }
+    public function __construct(private AsaasService $asaas) {}
 
     /**
      * Cria o pedido de saque de TODO o saldo disponível do usuário e, quando as
@@ -97,15 +96,15 @@ class IndicacaoSaqueService
                 // movê-los), por isso são estampados aqui com forceFill: este
                 // serviço é o único lugar que cria pedido. Explícito também porque
                 // create() não traz o default do banco para o model em memória.
-                $saque = (new IndicacaoSaque())->forceFill([
+                $saque = (new IndicacaoSaque)->forceFill([
                     'usuario_type' => $usuario->getMorphClass(),
-                    'usuario_id'   => $usuario->getKey(),
-                    'valor'        => $valor,
-                    'status'       => IndicacaoSaque::STATUS_SOLICITADO,
-                    'metodo'       => IndicacaoSaque::METODO_MANUAL,
-                    'pix_chave'    => $pixChave,
-                    'pix_tipo'     => AsaasService::tipoChavePix($pixChave),
-                    'ip'           => $ip,
+                    'usuario_id' => $usuario->getKey(),
+                    'valor' => $valor,
+                    'status' => IndicacaoSaque::STATUS_SOLICITADO,
+                    'metodo' => IndicacaoSaque::METODO_MANUAL,
+                    'pix_chave' => $pixChave,
+                    'pix_tipo' => AsaasService::tipoChavePix($pixChave),
+                    'ip' => $ip,
                 ]);
                 $saque->save();
 
@@ -124,18 +123,18 @@ class IndicacaoSaqueService
 
                 Log::channel('security')->info('indicacao_saque_solicitado', [
                     'saque_id' => $saque->id,
-                    'usuario'  => $usuario->getMorphClass() . '#' . $usuario->getKey(),
-                    'valor'    => $valor,
-                    'ip'       => $ip,
+                    'usuario' => $usuario->getMorphClass().'#'.$usuario->getKey(),
+                    'valor' => $valor,
+                    'ip' => $ip,
                 ]);
 
                 return $saque;
             });
         } catch (\Throwable $e) {
             Log::channel('security')->warning('indicacao_saque_falhou', [
-                'usuario' => $usuario->getMorphClass() . '#' . $usuario->getKey(),
-                'erro'    => $e->getMessage(),
-                'ip'      => $ip,
+                'usuario' => $usuario->getMorphClass().'#'.$usuario->getKey(),
+                'erro' => $e->getMessage(),
+                'ip' => $ip,
             ]);
 
             return ['ok' => false, 'erro' => self::ERRO_SALDO, 'minimo' => $minimo, 'saldo' => 0.0];
@@ -147,10 +146,10 @@ class IndicacaoSaqueService
 
         if ($saque === self::ERRO_SALDO) {
             return [
-                'ok'     => false,
-                'erro'   => self::ERRO_SALDO,
+                'ok' => false,
+                'erro' => self::ERRO_SALDO,
                 'minimo' => $minimo,
-                'saldo'  => $usuario->saldoDisponivel(),
+                'saldo' => $usuario->saldoDisponivel(),
             ];
         }
 
@@ -180,7 +179,7 @@ class IndicacaoSaqueService
         }
 
         $valor = (float) $saque->valor;
-        $teto  = (float) config('indicacao.saque_auto_teto', 300.00);
+        $teto = (float) config('indicacao.saque_auto_teto', 300.00);
 
         if ($valor > $teto) {
             return 'acima_do_teto';
@@ -219,8 +218,8 @@ class IndicacaoSaqueService
         if ($motivo !== null) {
             Log::info('indicacao_saque_sem_automacao', [
                 'saque_id' => $saque->id,
-                'motivo'   => $motivo,
-                'valor'    => (float) $saque->valor,
+                'motivo' => $motivo,
+                'valor' => (float) $saque->valor,
             ]);
 
             return false;
@@ -235,8 +234,8 @@ class IndicacaoSaqueService
         if ($saldo === null || $saldo < $valor) {
             Log::channel('security')->warning('indicacao_saque_automatico_abortado_por_saldo', [
                 'saque_id' => $saque->id,
-                'valor'    => $valor,
-                'saldo'    => $saldo,
+                'valor' => $valor,
+                'saldo' => $saldo,
             ]);
 
             return false;
@@ -279,15 +278,15 @@ class IndicacaoSaqueService
 
             // Falha conhecida: volta para a fila do admin pagar à mão.
             $saque->forceFill([
-                'status'       => IndicacaoSaque::STATUS_SOLICITADO,
-                'metodo'       => IndicacaoSaque::METODO_MANUAL,
+                'status' => IndicacaoSaque::STATUS_SOLICITADO,
+                'metodo' => IndicacaoSaque::METODO_MANUAL,
                 'falha_motivo' => mb_substr((string) $res['erro'], 0, 255),
             ])->save();
 
             Log::channel('security')->warning('indicacao_saque_automatico_falhou', [
                 'saque_id' => $saque->id,
-                'valor'    => $valor,
-                'erro'     => $res['erro'] ?? null,
+                'valor' => $valor,
+                'erro' => $res['erro'] ?? null,
             ]);
 
             return false;
@@ -295,18 +294,18 @@ class IndicacaoSaqueService
 
         $saque->forceFill([
             'asaas_transfer_id' => $res['id'],
-            'asaas_status'      => $res['status'],
-            'transferencia_em'  => now(),
-            'receipt_url'       => $res['receipt'],
-            'falha_motivo'      => $res['authorized'] ? null : 'Aguardando token SMS no painel do Asaas.',
+            'asaas_status' => $res['status'],
+            'transferencia_em' => now(),
+            'receipt_url' => $res['receipt'],
+            'falha_motivo' => $res['authorized'] ? null : 'Aguardando token SMS no painel do Asaas.',
         ])->save();
 
         Log::channel('security')->info('indicacao_saque_automatico_enviado', [
-            'saque_id'    => $saque->id,
+            'saque_id' => $saque->id,
             'transfer_id' => $res['id'],
-            'valor'       => $valor,
+            'valor' => $valor,
             'asaas_status' => $res['status'],
-            'authorized'  => $res['authorized'],
+            'authorized' => $res['authorized'],
         ]);
 
         // DONE já na criação (raro, mas possível): fecha de imediato.
@@ -334,8 +333,8 @@ class IndicacaoSaqueService
      */
     public function autorizarTransferencia(array $transfer): array
     {
-        $ref   = $transfer['externalReference'] ?? null;
-        $id    = IndicacaoSaque::idDaReferencia($ref);
+        $ref = $transfer['externalReference'] ?? null;
+        $id = IndicacaoSaque::idDaReferencia($ref);
         $valor = isset($transfer['value']) ? round((float) $transfer['value'], 2) : null;
 
         if ($id === null) {
@@ -392,15 +391,15 @@ class IndicacaoSaqueService
 
         if (in_array($asaasStatus, IndicacaoSaque::ASAAS_CONCLUIDO, true)) {
             $saque->forceFill([
-                'status'        => IndicacaoSaque::STATUS_PAGO,
-                'asaas_status'  => $asaasStatus,
+                'status' => IndicacaoSaque::STATUS_PAGO,
+                'asaas_status' => $asaasStatus,
                 'processado_em' => now(),
             ])->save();
 
             Log::channel('security')->info('indicacao_saque_pago_automatico', [
-                'saque_id'    => $saque->id,
+                'saque_id' => $saque->id,
                 'transfer_id' => $saque->asaas_transfer_id,
-                'valor'       => (float) $saque->valor,
+                'valor' => (float) $saque->valor,
             ]);
 
             return true;
@@ -413,18 +412,18 @@ class IndicacaoSaqueService
                 CupomUso::where('saque_id', $saque->id)->update(['saque_id' => null]);
 
                 $saque->forceFill([
-                    'status'        => IndicacaoSaque::STATUS_FALHOU,
-                    'asaas_status'  => $asaasStatus,
+                    'status' => IndicacaoSaque::STATUS_FALHOU,
+                    'asaas_status' => $asaasStatus,
                     'processado_em' => now(),
-                    'falha_motivo'  => mb_substr($motivo ?: 'Transferência não concluída pelo Asaas.', 0, 255),
+                    'falha_motivo' => mb_substr($motivo ?: 'Transferência não concluída pelo Asaas.', 0, 255),
                 ])->save();
             });
 
             Log::channel('security')->warning('indicacao_saque_transferencia_fracassou', [
-                'saque_id'     => $saque->id,
-                'transfer_id'  => $saque->asaas_transfer_id,
+                'saque_id' => $saque->id,
+                'transfer_id' => $saque->asaas_transfer_id,
                 'asaas_status' => $asaasStatus,
-                'valor'        => (float) $saque->valor,
+                'valor' => (float) $saque->valor,
             ]);
 
             return true;
@@ -446,7 +445,7 @@ class IndicacaoSaqueService
     public function conciliarPendentes(int $limite = 50): array
     {
         $conciliados = 0;
-        $pendentes   = 0;
+        $pendentes = 0;
 
         $saques = IndicacaoSaque::processando()->orderBy('id')->limit($limite)->get();
 
@@ -455,6 +454,7 @@ class IndicacaoSaqueService
                 // Timeout na criação: não sabemos o id. Deixa para inspeção
                 // humana em vez de arriscar um segundo pagamento.
                 $pendentes++;
+
                 continue;
             }
 
@@ -462,6 +462,7 @@ class IndicacaoSaqueService
 
             if (! $dados || empty($dados['status'])) {
                 $pendentes++;
+
                 continue;
             }
 
@@ -492,17 +493,17 @@ class IndicacaoSaqueService
         }
 
         $saque->forceFill([
-            'status'        => IndicacaoSaque::STATUS_PAGO,
-            'metodo'        => IndicacaoSaque::METODO_MANUAL,
-            'admin_id'      => $adminId,
+            'status' => IndicacaoSaque::STATUS_PAGO,
+            'metodo' => IndicacaoSaque::METODO_MANUAL,
+            'admin_id' => $adminId,
             'processado_em' => now(),
-            'observacao'    => $observacao,
+            'observacao' => $observacao,
         ])->save();
 
         Log::channel('security')->info('indicacao_saque_pago', [
             'saque_id' => $saque->id,
             'admin_id' => $adminId,
-            'valor'    => (float) $saque->valor,
+            'valor' => (float) $saque->valor,
         ]);
 
         return true;
@@ -522,17 +523,17 @@ class IndicacaoSaqueService
             CupomUso::where('saque_id', $saque->id)->update(['saque_id' => null]);
 
             $saque->forceFill([
-                'status'        => IndicacaoSaque::STATUS_RECUSADO,
-                'admin_id'      => $adminId,
+                'status' => IndicacaoSaque::STATUS_RECUSADO,
+                'admin_id' => $adminId,
                 'processado_em' => now(),
-                'observacao'    => $observacao,
+                'observacao' => $observacao,
             ])->save();
         });
 
         Log::channel('security')->info('indicacao_saque_recusado', [
             'saque_id' => $saque->id,
             'admin_id' => $adminId,
-            'valor'    => (float) $saque->valor,
+            'valor' => (float) $saque->valor,
         ]);
 
         return true;
@@ -561,15 +562,15 @@ class IndicacaoSaqueService
         }
 
         if ($saldo < $valor) {
-            return ['ok' => false, 'erro' => 'Saldo insuficiente na conta Asaas (R$ ' . number_format($saldo, 2, ',', '.') . ').'];
+            return ['ok' => false, 'erro' => 'Saldo insuficiente na conta Asaas (R$ '.number_format($saldo, 2, ',', '.').').'];
         }
 
         $tomou = IndicacaoSaque::whereKey($saque->id)
             ->where('status', IndicacaoSaque::STATUS_SOLICITADO)
             ->whereNull('asaas_transfer_id')
             ->update([
-                'status'   => IndicacaoSaque::STATUS_PROCESSANDO,
-                'metodo'   => IndicacaoSaque::METODO_AUTOMATICO,
+                'status' => IndicacaoSaque::STATUS_PROCESSANDO,
+                'metodo' => IndicacaoSaque::METODO_AUTOMATICO,
                 'admin_id' => $adminId,
             ]);
 
@@ -590,8 +591,8 @@ class IndicacaoSaqueService
         if (! $res['ok']) {
             if (empty($res['indeterminado'])) {
                 $saque->forceFill([
-                    'status'       => IndicacaoSaque::STATUS_SOLICITADO,
-                    'metodo'       => IndicacaoSaque::METODO_MANUAL,
+                    'status' => IndicacaoSaque::STATUS_SOLICITADO,
+                    'metodo' => IndicacaoSaque::METODO_MANUAL,
                     'falha_motivo' => mb_substr((string) $res['erro'], 0, 255),
                 ])->save();
             }
@@ -599,7 +600,7 @@ class IndicacaoSaqueService
             Log::channel('security')->warning('indicacao_saque_asaas_admin_falhou', [
                 'saque_id' => $saque->id,
                 'admin_id' => $adminId,
-                'erro'     => $res['erro'] ?? null,
+                'erro' => $res['erro'] ?? null,
             ]);
 
             return ['ok' => false, 'erro' => $res['erro'] ?? 'Falha ao transferir.'];
@@ -607,17 +608,17 @@ class IndicacaoSaqueService
 
         $saque->forceFill([
             'asaas_transfer_id' => $res['id'],
-            'asaas_status'      => $res['status'],
-            'transferencia_em'  => now(),
-            'receipt_url'       => $res['receipt'],
-            'falha_motivo'      => $res['authorized'] ? null : 'Aguardando token SMS no painel do Asaas.',
+            'asaas_status' => $res['status'],
+            'transferencia_em' => now(),
+            'receipt_url' => $res['receipt'],
+            'falha_motivo' => $res['authorized'] ? null : 'Aguardando token SMS no painel do Asaas.',
         ])->save();
 
         Log::channel('security')->info('indicacao_saque_asaas_admin_enviado', [
-            'saque_id'    => $saque->id,
-            'admin_id'    => $adminId,
+            'saque_id' => $saque->id,
+            'admin_id' => $adminId,
             'transfer_id' => $res['id'],
-            'valor'       => $valor,
+            'valor' => $valor,
         ]);
 
         if (in_array($res['status'], IndicacaoSaque::ASAAS_CONCLUIDO, true)) {

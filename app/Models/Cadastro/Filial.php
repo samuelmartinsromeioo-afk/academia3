@@ -30,6 +30,6 @@ class Filial extends Model
     /** Esta filial já tem uma subconta (login próprio) configurada? */
     public function temSubconta(): bool
     {
-        return !empty($this->senha);
+        return ! empty($this->senha);
     }
 }

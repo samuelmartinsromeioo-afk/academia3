@@ -46,9 +46,9 @@ class EstatisticasTreino
         }
 
         return [
-            'nivel'    => self::nivel($recorde),
+            'nivel' => self::nivel($recorde),
             'medalhas' => $medalhas,
-            'proxima'  => $proxima,
+            'proxima' => $proxima,
         ];
     }
 
@@ -57,22 +57,22 @@ class EstatisticasTreino
     {
         return match (true) {
             $recorde >= 100 => ['nome' => 'Lendário',   'icon' => 'fa-crown'],
-            $recorde >= 60  => ['nome' => 'Imparável',  'icon' => 'fa-trophy'],
-            $recorde >= 30  => ['nome' => 'Dedicado',   'icon' => 'fa-medal'],
-            $recorde >= 14  => ['nome' => 'Consistente','icon' => 'fa-dumbbell'],
-            $recorde >= 7   => ['nome' => 'Engajado',   'icon' => 'fa-bolt'],
-            $recorde >= 3   => ['nome' => 'Aquecendo',  'icon' => 'fa-fire'],
-            default         => ['nome' => 'Iniciante',  'icon' => 'fa-seedling'],
+            $recorde >= 60 => ['nome' => 'Imparável',  'icon' => 'fa-trophy'],
+            $recorde >= 30 => ['nome' => 'Dedicado',   'icon' => 'fa-medal'],
+            $recorde >= 14 => ['nome' => 'Consistente', 'icon' => 'fa-dumbbell'],
+            $recorde >= 7 => ['nome' => 'Engajado',   'icon' => 'fa-bolt'],
+            $recorde >= 3 => ['nome' => 'Aquecendo',  'icon' => 'fa-fire'],
+            default => ['nome' => 'Iniciante',  'icon' => 'fa-seedling'],
         };
     }
 
     /**
      * Calcula a sequência (streak) de dias com treino concluído.
      *
-     * @param  array<int,string> $datas  Datas (Y-m-d) de treinos concluídos.
+     * @param  array<int,string>  $datas  Datas (Y-m-d) de treinos concluídos.
      * @return array{atual:int,recorde:int}
-     *   - atual: dias consecutivos terminando hoje ou ontem (0 se quebrou).
-     *   - recorde: maior sequência já alcançada.
+     *                                      - atual: dias consecutivos terminando hoje ou ontem (0 se quebrou).
+     *                                      - recorde: maior sequência já alcançada.
      */
     public static function streak(array $datas): array
     {
@@ -92,7 +92,7 @@ class EstatisticasTreino
         $corrida = 1;
         for ($i = 1; $i < count($dias); $i++) {
             $anterior = Carbon::parse($dias[$i - 1]);
-            $atual    = Carbon::parse($dias[$i]);
+            $atual = Carbon::parse($dias[$i]);
 
             if ($anterior->copy()->addDay()->isSameDay($atual)) {
                 $corrida++;
@@ -103,14 +103,14 @@ class EstatisticasTreino
         }
 
         // Atual: só conta se o último treino foi hoje ou ontem.
-        $hoje   = Carbon::today();
+        $hoje = Carbon::today();
         $ultimo = Carbon::parse(end($dias));
-        $atual  = 0;
+        $atual = 0;
 
         if ($ultimo->isSameDay($hoje) || $ultimo->isSameDay($hoje->copy()->subDay())) {
             $atual = 1;
             for ($i = count($dias) - 1; $i > 0; $i--) {
-                $cur  = Carbon::parse($dias[$i]);
+                $cur = Carbon::parse($dias[$i]);
                 $prev = Carbon::parse($dias[$i - 1]);
                 if ($prev->copy()->addDay()->isSameDay($cur)) {
                     $atual++;

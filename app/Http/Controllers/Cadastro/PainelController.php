@@ -14,7 +14,6 @@ use App\Models\MedidaCorporal;
 use App\Services\EstatisticasTreino;
 use App\Services\NotificacaoService;
 use Carbon\Carbon;
-use Illuminate\Http\Request;
 
 /**
  * Painéis analíticos do personal: feed de atividade dos alunos e relatório
@@ -101,18 +100,18 @@ class PainelController extends Controller
         $nome = explode(' ', trim($cliente->nome))[0];
 
         $linhasRec = collect($d['recordes'])->take(5)
-            ->map(fn ($r) => '• ' . $r['exercicio'] . ': ' . $this->kg($r['peso']))->implode("\n");
+            ->map(fn ($r) => '• '.$r['exercicio'].': '.$this->kg($r['peso']))->implode("\n");
 
         $texto = "📊 *Seu resumo do mês, {$nome}!*\n\n"
-            . "✅ Treinos: *{$d['realizados']}* de {$d['planejados']} planejados ({$d['aderencia']}%)\n"
-            . "🔥 Sequência atual: *{$d['streak']['atual']}* dias (recorde {$d['streak']['recorde']})\n"
-            . ($d['rpeMedio'] ? "💪 Esforço médio: {$d['rpeMedio']}/10\n" : '')
-            . ($linhasRec ? "\n🏆 *Recordes do mês:*\n{$linhasRec}\n" : '')
-            . "\nBora manter o ritmo! 🚀";
+            ."✅ Treinos: *{$d['realizados']}* de {$d['planejados']} planejados ({$d['aderencia']}%)\n"
+            ."🔥 Sequência atual: *{$d['streak']['atual']}* dias (recorde {$d['streak']['recorde']})\n"
+            .($d['rpeMedio'] ? "💪 Esforço médio: {$d['rpeMedio']}/10\n" : '')
+            .($linhasRec ? "\n🏆 *Recordes do mês:*\n{$linhasRec}\n" : '')
+            ."\nBora manter o ritmo! 🚀";
 
         NotificacaoService::cliente($cliente, 'Seu resumo do mês — SnrFit 📊', $texto, 'relatorio_mensal', [$nome]);
 
-        return back()->with('success', 'Relatório enviado para ' . ($cliente->nome ?? 'o aluno') . '! 📨');
+        return back()->with('success', 'Relatório enviado para '.($cliente->nome ?? 'o aluno').'! 📨');
     }
 
     // ===================== CÁLCULOS =====================
@@ -173,7 +172,7 @@ class PainelController extends Controller
         $maxAtual = [];
         $recordes = [];
         foreach ($regs as $r) {
-            $key = $r->cliente_id . '|' . $r->nome_exercicio;
+            $key = $r->cliente_id.'|'.$r->nome_exercicio;
             $prev = $maxAtual[$key] ?? null;
             $peso = (float) $r->peso;
             if ($prev !== null && $peso > $prev && $r->data_treino->toDateString() >= $desde) {
@@ -204,12 +203,13 @@ class PainelController extends Controller
             }
             $d->addDay();
         }
+
         return $count;
     }
 
     private function kg($v): string
     {
-        return rtrim(rtrim(number_format((float) $v, 2, ',', '.'), '0'), ',') . ' kg';
+        return rtrim(rtrim(number_format((float) $v, 2, ',', '.'), '0'), ',').' kg';
     }
 
     private function alunoIds($personalId)
@@ -218,5 +218,4 @@ class PainelController extends Controller
             ->merge(Agenda::where('personal_id', $personalId)->where('cancelado', false)->whereNotNull('cliente_id')->pluck('cliente_id'))
             ->unique()->values();
     }
-
 }

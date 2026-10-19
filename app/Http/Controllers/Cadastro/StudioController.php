@@ -3,17 +3,17 @@
 namespace App\Http\Controllers\Cadastro;
 
 use App\Http\Controllers\Controller;
-use App\Services\MetaConversionsService;
 use App\Models\Agenda;
 use App\Models\Cadastro\Academia;
 use App\Models\Cadastro\Cliente;
 use App\Models\Cadastro\Personal;
 use App\Models\Cadastro\Studio;
-use App\Models\Cadastro\StudioHorario;
 use App\Models\Cadastro\StudioAula;
-use App\Models\Cadastro\StudioProfessor;
+use App\Models\Cadastro\StudioHorario;
 use App\Models\Cadastro\StudioPlano;
+use App\Models\Cadastro\StudioProfessor;
 use App\Models\Payment;
+use App\Services\MetaConversionsService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 
@@ -85,6 +85,7 @@ class StudioController extends Controller
         $studio->registrarAceiteTermos($request->ip(), (string) $request->userAgent(), \App\Models\TermoAceite::ORIGEM_CADASTRO);
 
         $fb = app(MetaConversionsService::class);
+
         return redirect()->route('cadastro.sucesso')
             ->with('cad_tipo', 'studio')
             ->with('fb_event', $fb->track(
@@ -104,17 +105,19 @@ class StudioController extends Controller
     private function studioLogado()
     {
         $studioId = session('studio_id');
-        if (!$studioId) {
+        if (! $studioId) {
             return null;
         }
+
         return Studio::find($studioId);
     }
 
     public function dashboard()
     {
         $studio = $this->studioLogado();
-        if (!$studio) {
+        if (! $studio) {
             session()->forget('studio_id');
+
             return redirect()->route('login.index')->withErrors(['login' => 'Acesso negado. Faça o login.']);
         }
 
@@ -128,7 +131,7 @@ class StudioController extends Controller
             ->sum('trainer_amount');
 
         $alunos = Cliente::where('studio_id', $studio->id)->orderBy('nome')->get()->map(function ($aluno) use ($studio) {
-            $aluno->frequencia_mes   = Agenda::where('studio_id', $studio->id)
+            $aluno->frequencia_mes = Agenda::where('studio_id', $studio->id)
                 ->where('cliente_id', $aluno->id)
                 ->where('cancelado', false)
                 ->where('tipo_aula', '!=', 'bloqueio')
@@ -140,6 +143,7 @@ class StudioController extends Controller
                 ->where('cancelado', false)
                 ->where('tipo_aula', '!=', 'bloqueio')
                 ->count();
+
             return $aluno;
         });
 
@@ -169,7 +173,7 @@ class StudioController extends Controller
     public function update(Request $request, $id)
     {
         $studio = $this->studioLogado();
-        if (!$studio || (int) $id !== $studio->id) {
+        if (! $studio || (int) $id !== $studio->id) {
             return redirect()->route('login.index');
         }
 
@@ -197,7 +201,7 @@ class StudioController extends Controller
     public function desvincularAluno($id)
     {
         $studio = $this->studioLogado();
-        if (!$studio) {
+        if (! $studio) {
             return redirect()->route('login.index');
         }
 
@@ -223,15 +227,15 @@ class StudioController extends Controller
     public function storePlano(Request $request)
     {
         $studio = $this->studioLogado();
-        if (!$studio) {
+        if (! $studio) {
             return redirect()->route('login.index');
         }
 
         $request->validate([
-            'nome'          => 'required|string|max:255',
-            'valor'         => 'required|numeric|min:0',
+            'nome' => 'required|string|max:255',
+            'valor' => 'required|numeric|min:0',
             'duracao_meses' => 'required|integer|min:1',
-            'descricao'     => 'nullable|string|max:500',
+            'descricao' => 'nullable|string|max:500',
         ]);
 
         if (StudioPlano::where('studio_id', $studio->id)->count() >= 5) {
@@ -239,12 +243,12 @@ class StudioController extends Controller
         }
 
         StudioPlano::create([
-            'studio_id'     => $studio->id,
-            'nome'          => $request->nome,
-            'valor'         => $request->valor,
+            'studio_id' => $studio->id,
+            'nome' => $request->nome,
+            'valor' => $request->valor,
             'duracao_meses' => $request->duracao_meses,
-            'descricao'     => $request->descricao,
-            'ativo'         => true,
+            'descricao' => $request->descricao,
+            'ativo' => true,
         ]);
 
         return redirect()->back()->with('success', 'Plano criado com sucesso!');
@@ -253,25 +257,25 @@ class StudioController extends Controller
     public function updatePlano(Request $request, $id)
     {
         $studio = $this->studioLogado();
-        if (!$studio) {
+        if (! $studio) {
             return redirect()->route('login.index');
         }
 
         $plano = StudioPlano::where('id', $id)->where('studio_id', $studio->id)->firstOrFail();
 
         $request->validate([
-            'nome'          => 'required|string|max:255',
-            'valor'         => 'required|numeric|min:0',
+            'nome' => 'required|string|max:255',
+            'valor' => 'required|numeric|min:0',
             'duracao_meses' => 'required|integer|min:1',
-            'descricao'     => 'nullable|string|max:500',
+            'descricao' => 'nullable|string|max:500',
         ]);
 
         $plano->update([
-            'nome'          => $request->nome,
-            'valor'         => $request->valor,
+            'nome' => $request->nome,
+            'valor' => $request->valor,
             'duracao_meses' => $request->duracao_meses,
-            'descricao'     => $request->descricao,
-            'ativo'         => $request->has('ativo'),
+            'descricao' => $request->descricao,
+            'ativo' => $request->has('ativo'),
         ]);
 
         return redirect()->back()->with('success', 'Plano atualizado com sucesso!');
@@ -280,7 +284,7 @@ class StudioController extends Controller
     public function destroyPlano($id)
     {
         $studio = $this->studioLogado();
-        if (!$studio) {
+        if (! $studio) {
             return redirect()->route('login.index');
         }
 
@@ -296,7 +300,7 @@ class StudioController extends Controller
     public function horarios(Request $request)
     {
         $studio = $this->studioLogado();
-        if (!$studio) {
+        if (! $studio) {
             return redirect()->route('login.index');
         }
 
@@ -309,7 +313,7 @@ class StudioController extends Controller
         $professores = StudioProfessor::where('studio_id', $studio->id)->orderBy('nome')->get();
 
         $dataSelecionada = $request->query('data', today()->format('Y-m-d'));
-        if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $dataSelecionada)) {
+        if (! preg_match('/^\d{4}-\d{2}-\d{2}$/', $dataSelecionada)) {
             $dataSelecionada = today()->format('Y-m-d');
         }
 
@@ -332,20 +336,20 @@ class StudioController extends Controller
     public function storeProfessor(Request $request)
     {
         $studio = $this->studioLogado();
-        if (!$studio) {
+        if (! $studio) {
             return redirect()->route('login.index');
         }
 
         $request->validate([
-            'nome'   => 'required|string|max:120',
+            'nome' => 'required|string|max:120',
             'resumo' => 'nullable|string|max:2000',
         ]);
 
         StudioProfessor::create([
             'studio_id' => $studio->id,
-            'nome'      => $request->nome,
-            'resumo'    => $request->resumo,
-            'ativo'     => true,
+            'nome' => $request->nome,
+            'resumo' => $request->resumo,
+            'ativo' => true,
         ]);
 
         return redirect()->back()->with('success', 'Profissional cadastrado!');
@@ -354,18 +358,18 @@ class StudioController extends Controller
     public function updateProfessor(Request $request, $id)
     {
         $studio = $this->studioLogado();
-        if (!$studio) {
+        if (! $studio) {
             return redirect()->route('login.index');
         }
 
         $request->validate([
-            'nome'   => 'required|string|max:120',
+            'nome' => 'required|string|max:120',
             'resumo' => 'nullable|string|max:2000',
         ]);
 
         $professor = StudioProfessor::where('studio_id', $studio->id)->findOrFail($id);
         $professor->update([
-            'nome'   => $request->nome,
+            'nome' => $request->nome,
             'resumo' => $request->resumo,
         ]);
 
@@ -380,7 +384,7 @@ class StudioController extends Controller
     public function destroyProfessor($id)
     {
         $studio = $this->studioLogado();
-        if (!$studio) {
+        if (! $studio) {
             return redirect()->route('login.index');
         }
 
@@ -392,26 +396,26 @@ class StudioController extends Controller
     public function storeAula(Request $request)
     {
         $studio = $this->studioLogado();
-        if (!$studio) {
+        if (! $studio) {
             return redirect()->route('login.index');
         }
 
         $request->validate([
-            'dia_semana'   => 'required|integer|min:0|max:6',
-            'hora_inicio'  => 'required|date_format:H:i',
-            'duracao_min'  => 'required|integer|min:5|max:600',
+            'dia_semana' => 'required|integer|min:0|max:6',
+            'hora_inicio' => 'required|date_format:H:i',
+            'duracao_min' => 'required|integer|min:5|max:600',
             'professor_id' => 'nullable|integer',
-            'capacidade'   => 'nullable|integer|min:1|max:500',
+            'capacidade' => 'nullable|integer|min:1|max:500',
         ]);
 
         // Resolve o profissional escolhido (cadastro reutilizável).
         $professorId = null;
-        $profNome    = null;
+        $profNome = null;
         if ($request->filled('professor_id')) {
             $professor = StudioProfessor::where('studio_id', $studio->id)->find($request->professor_id);
             if ($professor) {
                 $professorId = $professor->id;
-                $profNome    = $professor->nome;
+                $profNome = $professor->nome;
             }
         }
 
@@ -421,28 +425,28 @@ class StudioController extends Controller
             ->where('ativo', true)
             ->first();
 
-        if (!$func) {
+        if (! $func) {
             return redirect()->back()->with('error', 'Defina primeiro o horário de funcionamento desse dia antes de cadastrar aulas.');
         }
 
         $inicio = \Carbon\Carbon::parse($request->hora_inicio);
-        $fim    = $inicio->copy()->addMinutes((int) $request->duracao_min);
-        $abertura   = \Carbon\Carbon::parse(substr($func->hora_abertura, 0, 5));
+        $fim = $inicio->copy()->addMinutes((int) $request->duracao_min);
+        $abertura = \Carbon\Carbon::parse(substr($func->hora_abertura, 0, 5));
         $fechamento = \Carbon\Carbon::parse(substr($func->hora_fechamento, 0, 5));
 
         if ($inicio->lt($abertura) || $fim->gt($fechamento)) {
-            return redirect()->back()->with('error', 'A aula deve estar dentro do funcionamento do dia (' . substr($func->hora_abertura, 0, 5) . ' às ' . substr($func->hora_fechamento, 0, 5) . ').');
+            return redirect()->back()->with('error', 'A aula deve estar dentro do funcionamento do dia ('.substr($func->hora_abertura, 0, 5).' às '.substr($func->hora_fechamento, 0, 5).').');
         }
 
         StudioAula::create([
-            'studio_id'    => $studio->id,
-            'dia_semana'   => $request->dia_semana,
-            'hora_inicio'  => $request->hora_inicio,
-            'duracao_min'  => $request->duracao_min,
+            'studio_id' => $studio->id,
+            'dia_semana' => $request->dia_semana,
+            'hora_inicio' => $request->hora_inicio,
+            'duracao_min' => $request->duracao_min,
             'profissional' => $profNome,
             'professor_id' => $professorId,
-            'capacidade'   => $request->capacidade,
-            'ativo'        => true,
+            'capacidade' => $request->capacidade,
+            'ativo' => true,
         ]);
 
         return redirect()->back()->with('success', 'Horário de aula adicionado!');
@@ -451,7 +455,7 @@ class StudioController extends Controller
     public function destroyAula($id)
     {
         $studio = $this->studioLogado();
-        if (!$studio) {
+        if (! $studio) {
             return redirect()->route('login.index');
         }
 
@@ -463,24 +467,24 @@ class StudioController extends Controller
     public function storeHorario(Request $request)
     {
         $studio = $this->studioLogado();
-        if (!$studio) {
+        if (! $studio) {
             return redirect()->route('login.index');
         }
 
         $request->validate([
-            'dia_semana'      => 'required|integer|min:0|max:6',
-            'hora_abertura'   => 'required|date_format:H:i',
+            'dia_semana' => 'required|integer|min:0|max:6',
+            'hora_abertura' => 'required|date_format:H:i',
             'hora_fechamento' => 'required|date_format:H:i|after:hora_abertura',
-            'capacidade'      => 'nullable|integer|min:1|max:500',
+            'capacidade' => 'nullable|integer|min:1|max:500',
         ]);
 
         StudioHorario::updateOrCreate(
             ['studio_id' => $studio->id, 'dia_semana' => $request->dia_semana],
             [
-                'hora_abertura'   => $request->hora_abertura,
+                'hora_abertura' => $request->hora_abertura,
                 'hora_fechamento' => $request->hora_fechamento,
-                'capacidade'      => $request->capacidade,
-                'ativo'           => true,
+                'capacidade' => $request->capacidade,
+                'ativo' => true,
             ]
         );
 
@@ -490,7 +494,7 @@ class StudioController extends Controller
     public function destroyHorario($id)
     {
         $studio = $this->studioLogado();
-        if (!$studio) {
+        if (! $studio) {
             return redirect()->route('login.index');
         }
 
@@ -502,26 +506,26 @@ class StudioController extends Controller
     public function bloquearSlot(Request $request)
     {
         $studio = $this->studioLogado();
-        if (!$studio) {
+        if (! $studio) {
             return redirect()->route('login.index');
         }
 
         $request->validate([
-            'data'        => 'required|date_format:Y-m-d',
+            'data' => 'required|date_format:Y-m-d',
             'hora_inicio' => 'required|date_format:H:i',
-            'hora_fim'    => 'required|date_format:H:i|after:hora_inicio',
+            'hora_fim' => 'required|date_format:H:i|after:hora_inicio',
         ]);
 
         Agenda::create([
-            'studio_id'   => $studio->id,
-            'cliente_id'  => null,
-            'data'        => $request->data,
+            'studio_id' => $studio->id,
+            'cliente_id' => null,
+            'data' => $request->data,
             'hora_inicio' => $request->hora_inicio,
-            'hora_fim'    => $request->hora_fim,
-            'tipo_aula'   => 'bloqueio',
-            'descricao'   => 'Horário bloqueado pelo studio',
-            'cancelado'   => false,
-            'status'      => 0,
+            'hora_fim' => $request->hora_fim,
+            'tipo_aula' => 'bloqueio',
+            'descricao' => 'Horário bloqueado pelo studio',
+            'cancelado' => false,
+            'status' => 0,
         ]);
 
         return redirect()->back()->with('success', 'Horário bloqueado com sucesso!');
@@ -530,7 +534,7 @@ class StudioController extends Controller
     public function desbloquearSlot($id)
     {
         $studio = $this->studioLogado();
-        if (!$studio) {
+        if (! $studio) {
             return redirect()->route('login.index');
         }
 
@@ -546,11 +550,11 @@ class StudioController extends Controller
     public function getAgendaDia($data)
     {
         $studio = $this->studioLogado();
-        if (!$studio) {
+        if (! $studio) {
             return response()->json(['error' => 'Não autenticado'], 401);
         }
 
-        if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $data)) {
+        if (! preg_match('/^\d{4}-\d{2}-\d{2}$/', $data)) {
             return response()->json(['error' => 'Data inválida'], 422);
         }
 
@@ -562,11 +566,11 @@ class StudioController extends Controller
             ->get()
             ->map(function ($a) {
                 return [
-                    'id'          => $a->id,
+                    'id' => $a->id,
                     'hora_inicio' => substr($a->hora_inicio, 0, 5),
-                    'hora_fim'    => substr($a->hora_fim, 0, 5),
-                    'tipo_aula'   => $a->tipo_aula,
-                    'cliente'     => $a->cliente->nome ?? null,
+                    'hora_fim' => substr($a->hora_fim, 0, 5),
+                    'tipo_aula' => $a->tipo_aula,
+                    'cliente' => $a->cliente->nome ?? null,
                 ];
             });
 

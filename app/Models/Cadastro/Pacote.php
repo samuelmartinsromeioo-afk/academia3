@@ -8,6 +8,6 @@ use Illuminate\Database\Eloquent\Model;
 class Pacote extends Model
 {
     protected $fillable = ['personal_id', 'frequencia', 'valor_mensal'];
+
     use HasFactory;
-    
 }

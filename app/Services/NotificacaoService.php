@@ -83,12 +83,12 @@ class NotificacaoService
     /**
      * Notifica um Personal por WhatsApp e e-mail.
      *
-     * @param Personal $personal  Destinatário (usa whatsapp e email do cadastro).
-     * @param string   $assunto   Assunto do e-mail / título exibido.
-     * @param string   $texto     Mensagem legível (mesma do WhatsApp).
-     * @param string   $template  Nome do template aprovado na Meta (opcional).
-     * @param array    $params    Parâmetros do template.
-     * @return bool  true se ao menos um canal foi enviado com sucesso.
+     * @param  Personal  $personal  Destinatário (usa whatsapp e email do cadastro).
+     * @param  string  $assunto  Assunto do e-mail / título exibido.
+     * @param  string  $texto  Mensagem legível (mesma do WhatsApp).
+     * @param  string  $template  Nome do template aprovado na Meta (opcional).
+     * @param  array  $params  Parâmetros do template.
+     * @return bool true se ao menos um canal foi enviado com sucesso.
      */
     public static function personal(Personal $personal, string $assunto, string $texto, string $template = '', array $params = []): bool
     {
@@ -98,12 +98,12 @@ class NotificacaoService
     /**
      * Notifica um Cliente por WhatsApp e e-mail.
      *
-     * @param Cliente $cliente  Destinatário (usa whatsapp e email do cadastro).
-     * @param string  $assunto  Assunto do e-mail / título exibido.
-     * @param string  $texto    Mensagem legível (mesma do WhatsApp).
-     * @param string  $template Nome do template aprovado na Meta (opcional).
-     * @param array   $params   Parâmetros do template.
-     * @return bool  true se ao menos um canal foi enviado com sucesso.
+     * @param  Cliente  $cliente  Destinatário (usa whatsapp e email do cadastro).
+     * @param  string  $assunto  Assunto do e-mail / título exibido.
+     * @param  string  $texto  Mensagem legível (mesma do WhatsApp).
+     * @param  string  $template  Nome do template aprovado na Meta (opcional).
+     * @param  array  $params  Parâmetros do template.
+     * @return bool true se ao menos um canal foi enviado com sucesso.
      */
     public static function cliente(Cliente $cliente, string $assunto, string $texto, string $template = '', array $params = []): bool
     {
@@ -113,18 +113,18 @@ class NotificacaoService
     /**
      * Envia uma notificação pelos canais disponíveis (WhatsApp e/ou e-mail).
      *
-     * @return bool  true se ao menos um canal foi entregue com sucesso.
+     * @return bool true se ao menos um canal foi entregue com sucesso.
      */
     public static function enviar(?string $whatsapp, ?string $email, string $nome, string $assunto, string $texto, string $template = '', array $params = []): bool
     {
         $whatsappOk = false;
-        $emailOk    = false;
+        $emailOk = false;
 
-        if (!empty($whatsapp)) {
+        if (! empty($whatsapp)) {
             $whatsappOk = WhatsAppService::notificar($whatsapp, $texto, $template, $params);
         }
 
-        if (!empty($email) && filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        if (! empty($email) && filter_var($email, FILTER_VALIDATE_EMAIL)) {
             try {
                 Mail::to($email)->send(new NotificacaoMail($assunto, $nome, $texto));
                 $emailOk = true;
