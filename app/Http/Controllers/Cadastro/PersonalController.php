@@ -787,7 +787,7 @@ class PersonalController extends Controller
 
             $aula->update(['concluida' => true]);
 
-            $this->notificarClienteWhatsApp(
+            $this->notificarCliente(
                 $cliente,
                 $aula->tipo_aula ?? 'aula',
                 $aula,
@@ -812,7 +812,7 @@ class PersonalController extends Controller
         \App\Support\CadastroHelper::criarSubcontaAsaasPersonal($personal);
     }
 
-    private function notificarClienteWhatsApp($cliente, $tipoAula, $aula, $nomePersonal)
+    private function notificarCliente($cliente, $tipoAula, $aula, $nomePersonal)
     {
         try {
             if (! $cliente) {
@@ -841,8 +841,6 @@ class PersonalController extends Controller
                 $cliente,
                 'Aula concluída — SnrFit',
                 $mensagem,
-                'aula_finalizada_aluno',
-                [$cliente->nome, $nomePersonal, $data, "{$aula->hora_inicio} - {$aula->hora_fim}"]
             );
         } catch (\Exception $e) {
             Log::error('Erro ao notificar cliente: '.$e->getMessage());
@@ -957,8 +955,6 @@ class PersonalController extends Controller
                 $cliente,
                 'Sua ficha de treino está pronta — SnrFit',
                 $mensagem,
-                'ficha_pronta',
-                [$cliente->nome, $personal->nome]
             );
         }
 

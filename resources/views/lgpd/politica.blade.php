@@ -84,6 +84,9 @@
         <ul>
             <li><strong>Controlador:</strong> {{ $emp('razao_social') }}</li>
             <li><strong>CNPJ:</strong> {{ $emp('cnpj') }}</li>
+            @if($endereco = \App\Support\Empresa::enderecoCompleto())
+                <li><strong>Endereço:</strong> {{ $endereco }}</li>
+            @endif
             <li><strong>Encarregado pelo Tratamento de Dados Pessoais (DPO):</strong>
                 {{ $emp('dpo_nome') }} —
                 <a href="mailto:{{ $emp('dpo_email') }}">{{ $emp('dpo_email') }}</a></li>
@@ -360,12 +363,25 @@
                 consentimento — anamnese; no caso da loja, apenas dados de entrega e faturamento).</li>
             <li><strong>{{ $emp('processador_pagamentos') }}:</strong> processamento de pagamentos,
                 liquidação, antifraude e repasse.</li>
-            <li><strong>Provedores de infraestrutura, hospedagem, e-mail e WhatsApp</strong>, na
+            <li><strong>Provedores de infraestrutura, hospedagem e e-mail</strong>, na
                 condição de operadores, apenas para entregar o serviço.</li>
             <li><strong>Serviços de notificação push:</strong> Expo e as plataformas Apple (APNs) e
                 Google (FCM), exclusivamente para entregar o aviso ao seu aparelho.</li>
+            {{--
+                Esta frase só pode continuar escrita enquanto NÃO houver nenhum
+                outro envio nosso para a Meta.
+
+                Ela já foi falsa: até 2026-10-19 os avisos transacionais saíam
+                pela WhatsApp Cloud API (`graph.facebook.com`), ou seja a Meta
+                recebia o TELEFONE e o CONTEÚDO de cada aviso, por execução de
+                contrato e sem passar por consentimento nenhum. O canal foi
+                removido (ver a seção "WhatsApp" no CLAUDE.md) e a frase voltou
+                a ser verdadeira. Religar qualquer envio à Meta exige reescrever
+                este item ANTES, com a base legal correta.
+            --}}
             <li><strong>Meta (Facebook/Instagram):</strong> apenas <strong>com o seu
-                    consentimento</strong>, para medição de anúncios (seção 9).</li>
+                    consentimento</strong>, para medição de anúncios (seção 9). Não enviamos
+                os seus dados à Meta para nenhuma outra finalidade.</li>
             <li><strong>Autoridades públicas e Judiciário:</strong> quando houver requisição legal ou
                 ordem judicial, nos limites do pedido.</li>
             <li><strong>Em reorganização societária</strong> (fusão, aquisição, cisão): o adquirente,

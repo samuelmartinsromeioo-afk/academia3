@@ -359,7 +359,6 @@ class AsaasService
 
             if ($admin = config('services.admin.email')) {
                 \App\Services\NotificacaoService::enviar(
-                    null,
                     $admin,
                     'Admin',
                     'Venda bloqueada: subconta Asaas recusou o split',

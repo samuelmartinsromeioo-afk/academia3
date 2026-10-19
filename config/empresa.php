@@ -33,20 +33,24 @@
 |  use para barrar o deploy em produção se quiser.
 | ────────────────────────────────────────────────────────────────────────────
 |
-|  ENDEREÇO FÍSICO E TELEFONE: removidos por decisão do titular (2026-10-13).
+|  ENDEREÇO FÍSICO: informado pelo titular em 2026-10-19.
 |
-|  Não existe chave para eles aqui e nenhum documento legal os exibe. A decisão
-|  é consciente e tem um custo conhecido: o art. 2º, I e II, do Decreto nº
-|  7.962/2013 exige que o fornecedor exiba endereço FÍSICO em local de destaque,
-|  e o art. 41 da LGPD pede um canal de contato do Encarregado — aqui suprido
-|  apenas pelo e-mail. Enquanto não houver endereço divulgado, a Plataforma está
-|  em desconformidade formal com o Decreto, o que é infração ao CDC por si e
-|  enfraquece as cláusulas de limitação de responsabilidade do contrato.
+|  Esteve removido entre 13/10 e 19/10, e o custo dessa ausência está
+|  registrado aqui porque ele era real: o art. 2º, I e II, do Decreto nº
+|  7.962/2013 exige que o fornecedor exiba endereço FÍSICO em local de
+|  destaque, a falta é infração ao CDC por si e enfraquece as cláusulas de
+|  limitação de responsabilidade do próprio contrato. Com o endereço publicado,
+|  a cláusula 21 também passou a poder NOMEAR a comarca do foro, em vez de
+|  deixá-la "determinável pelo registro no CNPJ".
 |
-|  Se um dia o endereço for fornecido, o caminho é reintroduzir as chaves aqui
-|  (`endereco`, `cidade`, `uf`, `cep`), voltar a listá-las em
-|  `Empresa::OBRIGATORIOS` e exibi-las na seção 0 dos Termos e na seção 1 da
-|  Política — NUNCA escrevendo o dado dentro de uma view.
+|  TELEFONE: continua não divulgado, por decisão do titular. Não há chave para
+|  ele e nenhum documento o exibe. O art. 2º, II, do Decreto pede as "demais
+|  informações necessárias para localização e contato", hoje supridas apenas
+|  pelo e-mail — que é um canal real e atendido, mas é só um.
+|
+|  O endereço do documento legal tem de ser o do REGISTRO NO CNPJ, não o de
+|  correspondência: é por ele que o consumidor localiza a empresa no cadastro
+|  e no Judiciário, e é ele que define a comarca da sede.
 | ────────────────────────────────────────────────────────────────────────────
 |
 | Depois de editar: `php artisan config:clear`.
@@ -70,6 +74,32 @@ return [
 
     // Apenas dígitos ou formatado — como vai aparecer no documento.
     'cnpj' => env('EMPRESA_CNPJ', '66.915.488/0001-95'),
+
+    // ── Endereço da sede, como consta do registro no CNPJ ───────────────────
+    //
+    // Separado em partes, e não numa string só, porque `uf` e `cidade` são
+    // lidas isoladamente: a cidade nomeia a comarca do foro na cláusula 21 dos
+    // Termos. Uma string única obrigaria a view a fatiar texto para descobrir
+    // a comarca, que é exatamente o tipo de lógica que não pode morar lá.
+    'endereco' => env('EMPRESA_ENDERECO', 'Rua Dom Marcos Teixeira'),
+    'numero' => env('EMPRESA_NUMERO', '19'),
+    'bairro' => env('EMPRESA_BAIRRO', 'Campo Alegre'),
+    'cidade' => env('EMPRESA_CIDADE', 'Belo Horizonte'),
+    'uf' => env('EMPRESA_UF', 'MG'),
+
+    // PENDENTE: o CEP ainda não foi informado. Placeholder visível em vez de
+    // adivinhado — a mesma rua pode ter CEPs diferentes por faixa de
+    // numeração, e CEP errado em documento legal é declaração falsa.
+    //
+    // `Empresa::enderecoCompleto()` OMITE a parte pendente em vez de imprimir
+    // o colchete: o documento público mostra o endereço sem CEP, que é menos
+    // completo mas verdadeiro.
+    //
+    // NÃO está em `Empresa::OBRIGATORIOS` de propósito — o Decreto exige
+    // "endereço físico", e rua + número + bairro + cidade + UF já é um. Ver a
+    // justificativa completa no docblock de `OBRIGATORIOS`. Preencher aqui
+    // basta; nada mais precisa mudar.
+    'cep' => env('EMPRESA_CEP', '[CEP]'),
 
     // Canal de atendimento. Único canal divulgado: não há telefone/WhatsApp
     // publicado (ver o bloco sobre endereço e telefone acima).

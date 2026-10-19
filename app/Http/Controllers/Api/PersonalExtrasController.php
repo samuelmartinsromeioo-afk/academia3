@@ -362,7 +362,7 @@ class PersonalExtrasController extends Controller
             .($linhasRec ? "\n🏆 *Recordes do mês:*\n{$linhasRec}\n" : '')
             ."\nBora manter o ritmo! 🚀";
 
-        NotificacaoService::cliente($cliente, 'Seu resumo do mês — SnrFit 📊', $texto, 'relatorio_mensal', [$nome]);
+        NotificacaoService::cliente($cliente, 'Seu resumo do mês — SnrFit 📊', $texto);
 
         return response()->json(['success' => true, 'message' => 'Relatório enviado para '.($cliente->nome ?? 'o aluno').'! 📨']);
     }
@@ -471,7 +471,7 @@ class PersonalExtrasController extends Controller
                 "Seu personal *{$personal->nome}* acabou de montar sua ficha de treino personalizada.\n".
                 'Acesse o aplicativo para visualizá-la. 💪';
 
-            NotificacaoService::cliente($cliente, 'Sua ficha de treino está pronta — SnrFit', $mensagem, 'ficha_pronta', [$cliente->nome, $personal->nome]);
+            NotificacaoService::cliente($cliente, 'Sua ficha de treino está pronta — SnrFit', $mensagem);
         }
 
         return response()->json(['success' => true, 'message' => 'Ficha marcada como concluída! O aluno foi notificado.']);

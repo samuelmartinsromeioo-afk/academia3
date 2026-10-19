@@ -278,8 +278,6 @@ class PersonalGestaoController extends Controller
                 $cliente,
                 'Aula concluída! 💪',
                 "✅ *Aula concluída*\n\nSua aula de {$dataStr} ({$aula->hora_inicio} - {$aula->hora_fim}) com *{$personal->nome}* foi finalizada.\n\nBom treino e até a próxima! 💪",
-                'aula_concluida_cliente',
-                [$dataStr, "{$aula->hora_inicio} - {$aula->hora_fim}", $personal->nome]
             );
         } catch (\Exception $e) {
             // notificação é melhor esforço
@@ -633,8 +631,6 @@ class PersonalGestaoController extends Controller
                 "Olá, {$nome}! 👋\n\n".
                 "Notei que você está um tempinho sem treinar. Bora retomar o ritmo? Cada treino conta — e seu shape agradece! 🔥\n\n".
                 "Conte comigo. — {$personal->nome}",
-                'incentivo_aluno',
-                [$nome]
             );
         }
 

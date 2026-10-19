@@ -11,7 +11,7 @@ namespace App\Support;
  * exatamente esse o valor que estava errado em produção: o site respondia 404
  * com stack trace completo (`exception`, `file`, `line`, `trace`), expondo o
  * caminho absoluto do servidor. Num 500, a mesma tela mostra as variáveis de
- * ambiente — `DB_PASSWORD`, `ASAAS_*`, `TWILIO_AUTH_TOKEN`, `APP_KEY`.
+ * ambiente — `DB_PASSWORD`, `ASAAS_*`, `MAIL_PASSWORD`, `APP_KEY`.
  *
  * O nome do host é o sinal que ninguém esquece de configurar: ele vem da
  * requisição, não do `.env`.

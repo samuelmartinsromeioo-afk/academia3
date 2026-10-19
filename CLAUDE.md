@@ -126,7 +126,7 @@ Three consequences that must move together, and all of them already do:
 
 **What the client sees is always the final price** (vitrines, detail pages, app lists), with the composition spelled out at checkout. The store cart is the one exception and for an arithmetic reason: the fee is a *line* there, not baked into each product, because `sum(round(p·1.1))` ≠ `round(sum(p)·1.1)` and the lines would disagree with the total.
 
-**Watch out for `amount_total` read as "what the professional earned".** It stopped meaning that. The inversion needed fixes in five places that had conflated them, and the loja one was caught by a test: `pedidos.valor_total` (the order the store reads and gets on WhatsApp, which must match `pedido_itens.subtotal`), `SolicitacaoFicha.valor`, `SolicitacaoAvaliacao.valor`, the value in `AvisoService::academiaContratada`/`studioPlanoContratado`, and the admin's "faturamento do studio". All now read `trainer_amount`. `amount_total` is correct for: refunds, Meta `Purchase`, the client's own statements and the payment e-mails.
+**Watch out for `amount_total` read as "what the professional earned".** It stopped meaning that. The inversion needed fixes in five places that had conflated them, and the loja one was caught by a test: `pedidos.valor_total` (the order the store reads, which must match `pedido_itens.subtotal`), `SolicitacaoFicha.valor`, `SolicitacaoAvaliacao.valor`, the value in `AvisoService::academiaContratada`/`studioPlanoContratado`, and the admin's "faturamento do studio". All now read `trainer_amount`. `amount_total` is correct for: refunds, Meta `Purchase`, the client's own statements and the payment e-mails.
 
 The history worth keeping: the rate once existed in **nine** copies of `0.10` across both PaymentControllers and `AsaasService` — the worst being `calculateSplit(float $amountTotal, float $feeRate = 0.10)`, a wrapper that always forwarded an explicit value, so the `$feeRate ??= feeRate()` inside the service never ran for any web flow. They were reduced to `?float … = null`, and the inversion removed the parameters entirely: **a per-charge fee parameter is itself a second copy of the rule.** `ComissaoSplitTest::test_nenhum_metodo_de_cobranca_aceita_taxa_por_parametro` now asserts by reflection that no cobrança method accepts one at all.
 
@@ -162,9 +162,19 @@ Os textos são **dois públicos diferentes** e não se podem fundir: `motivoNaoR
 
 `Personal::calcularFinanceiroMes()` computes monthly revenue by splitting package sessions (valor_mensal / frequencia) from individual sessions (valor_secao). This logic lives on the model, not in the controller.
 
-### WhatsApp Integration (Twilio)
+### WhatsApp — REMOVIDO, e não volte a ligar
 
-When a session ends (`POST /personal/aulas/{id}/finalizar`), the app sends a WhatsApp message to the client via Twilio. Credentials are in `.env` as `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_WHATSAPP_FROM`.
+**Não existe envio de WhatsApp nesta plataforma.** Removido em 2026-10-19 por decisão do titular: `App\Services\WhatsAppService` foi apagado, o bloco `whatsapp` saiu de `config/services.php`, as chaves `WHATSAPP_*` saíram do `.env.example` e os parâmetros `$template`/`$params` — que existiam só para nomear o template aprovado na Meta — saíram das assinaturas de `NotificacaoService` em vez de ficarem ignorados. Parâmetro morto numa assinatura pública é convite para religar o canal sem perceber o que isso reintroduz.
+
+**O que religar reintroduziria, e é o motivo real:** o envio ia para `graph.facebook.com` (WhatsApp Cloud API), ou seja **a Meta recebia o telefone e o conteúdo de cada aviso transacional**, por execução de contrato e sem passar por consentimento nenhum. A Política de Privacidade afirma, na seção 5, que a Meta só recebe dado *"apenas com o seu consentimento, para medição de anúncios"* — frase que era **falsa** enquanto o canal existia. Hoje é verdadeira, e é por isso que a remoção fechou um achado de auditoria em vez de criar um.
+
+**Twilio nunca foi o canal e há muito não era nada.** A documentação dizia "WhatsApp via Twilio" com credenciais `TWILIO_*`; na prática sobrava um docblock mentindo em `AulaController` — o envio já passava pelo canal unificado. O SDK estava em `vendor/twilio` (2.670 arquivos **versionados**, porque `vendor/` é commitado neste repo) sem constar do `composer.json` nem do `composer.lock`. Tudo apagado.
+
+**Os métodos renomeados** porque o nome passou a mentir: `notificarPersonalWhatsApp` → `notificarPersonal` (`AulaController` e `Cadastro\ClienteController`), `notificarClienteWhatsApp` → `notificarCliente` (`Cadastro\PersonalController`).
+
+**A coluna `whatsapp` dos cinco cadastros FICA**, e isso não é inconsistência: é dado de **contato**, para o profissional ligar ou escrever na mão, e continua coletada, editável e exibida (faz parte da paridade site↔app). O que saiu foi a plataforma escrever por conta própria. Os links `wa.me` de clique manual (contato da loja, compartilhar código de indicação) também ficam — ali a ação é do usuário, nada sai daqui.
+
+**Efeito colateral conhecido:** os textos dos avisos usam markdown de WhatsApp (`*negrito*`), que o e-mail e o aviso in-app renderizam como asterisco literal. Isso **já acontecia** nesses dois canais; o WhatsApp era só o único onde ficava bonito. Fica como pendência cosmética — se for resolver, resolva em **um** lugar (na renderização), não editando os ~30 textos.
 
 ### Meta Pixel & Conversions API (CAPI)
 
@@ -247,7 +257,7 @@ O app valida antes de enviar (`erroNascimento()` em `utils/br.js`, que espelha a
 
 ### Trava de `APP_DEBUG` — duas camadas, e `APP_ENV` é a que importa
 
-`AppServiceProvider::boot()` desliga `app.debug` e as runnable solutions do Ignition à força quando `environment('production')`, além de `URL::forceScheme('https')`. **Essa trava existia e não protegeu nada**, porque o `.env` do servidor estava com `APP_ENV` diferente de `production`: um 404 em snrfit.com.br devolvia `exception`/`file`/`line`/`trace` com o caminho absoluto do servidor — e num 500 a mesma tela mostra `DB_PASSWORD`, `ASAAS_*`, `TWILIO_AUTH_TOKEN` e `APP_KEY`.
+`AppServiceProvider::boot()` desliga `app.debug` e as runnable solutions do Ignition à força quando `environment('production')`, além de `URL::forceScheme('https')`. **Essa trava existia e não protegeu nada**, porque o `.env` do servidor estava com `APP_ENV` diferente de `production`: um 404 em snrfit.com.br devolvia `exception`/`file`/`line`/`trace` com o caminho absoluto do servidor — e num 500 a mesma tela mostra `DB_PASSWORD`, `ASAAS_*`, `MAIL_PASSWORD` e `APP_KEY`.
 
 A lição é que `APP_ENV` é o interruptor de quase todo o endurecimento (debug, HTTPS nos links, Ignition, e por tabela cookie Secure e CORS). Conferir só `APP_DEBUG` não basta.
 
@@ -269,13 +279,13 @@ Os testes `LojaCheckoutTest > checkout cartao confirma...` e `AcademiaPagamentoT
 
 ### Avisos de eventos — `AvisoService` é o texto, `NotificacaoService` é o canal
 
-`NotificacaoService` é o **canal**: uma chamada entrega em quatro lugares — aviso in-app (`notificacoes`), push no aparelho (via `Notificacao::para` → `ExpoPushService`), WhatsApp e e-mail. `NotificacaoService::conta($model, ...)` serve **os cinco papéis** (detecta pelo model via `tipoDe()`); `personal()` e `cliente()` são só atalhos que delegam para ela.
+`NotificacaoService` é o **canal**: uma chamada entrega em três lugares — aviso in-app (`notificacoes`), push no aparelho (via `Notificacao::para` → `ExpoPushService`) e e-mail. Eram quatro: o WhatsApp saiu em 2026-10-19 (ver a seção própria). `NotificacaoService::conta($model, ...)` serve **os cinco papéis** (detecta pelo model via `tipoDe()`); `personal()` e `cliente()` são só atalhos que delegam para ela.
 
 `AvisoService` é **o que se diz em cada evento**, um método por evento. A separação é prática: quase todo evento é disparado de *dois* lugares (controller do site + controller da API), e quando o texto mora no controller as duas cópias divergem ou só uma existe. Foi o caso do cancelamento de aula — `Cadastro\PersonalController@cancelarAula` e `Api\PersonalGestaoController@cancelarAula` são cópias quase idênticas, as duas mandavam e-mail e **nenhuma** avisava o aluno dentro do app.
 
 Três regras ao acrescentar um evento: **(1) nada ali pode lançar** (aviso é efeito colateral de um fluxo já concluído — por isso tudo passa por `seguro()`, que só loga); **(2) avise os dois lados** (quem vendeu e quem comprou — metade do aviso é o que gera ticket de suporte); **(3) o texto diz o que fazer, não só o que houve** (o push aparece justamente quando o usuário não está no app).
 
-**Antes de criar um evento novo, procure quem já avisa.** O pacote já notificava o personal de dentro de `agendarAulasInterno` (`notificarPersonalWhatsApp`, que carrega o template aprovado na Meta), e a primeira versão de `pacoteConfirmadoParaAluno` avisava os dois — gerando **dois** avisos ao personal. Quem pegou foi o teste de integração afirmando a **contagem** (esperava 1, achou 2). Mesma razão pela qual o pedido pago da loja **não** tem método aqui: `PaymentController::notificarPedidoLoja` já montava um texto melhor (itens, entrega, contato) a partir do `Pedido`; o que faltava era o canal, e lá agora ele passa por `NotificacaoService::conta()`.
+**Antes de criar um evento novo, procure quem já avisa.** O pacote já notificava o personal de dentro de `agendarAulasInterno` (`notificarPersonal`, que carrega o template aprovado na Meta), e a primeira versão de `pacoteConfirmadoParaAluno` avisava os dois — gerando **dois** avisos ao personal. Quem pegou foi o teste de integração afirmando a **contagem** (esperava 1, achou 2). Mesma razão pela qual o pedido pago da loja **não** tem método aqui: `PaymentController::notificarPedidoLoja` já montava um texto melhor (itens, entrega, contato) a partir do `Pedido`; o que faltava era o canal, e lá agora ele passa por `NotificacaoService::conta()`.
 
 **A caixa de avisos existe para os cinco papéis.** `dest()` (no web `Cadastro\NotificacaoController` e no `Api\ChatController`) conhecia só personal e cliente, e devolvia null para academia/studio/loja — lista sempre vazia. Era furo de duas pontas, porque os outros canais já funcionavam para eles: `push_tokens` registra o aparelho pelo papel do token (`AuthController::userType`) e `ExpoPushService::paraDestinatario` é genérico. A loja recebia o push do pedido no celular e, ao abrir "Avisos" no app, não achava nada. Leitura e escrita saem da mesma `NotificacaoService::tipoDe()`, de propósito.
 
@@ -312,8 +322,8 @@ Quase todo aviso do projeto é **reativo**: dispara de um controller, porque alg
 Três armadilhas que o comando do personal tinha, e que o novo evita (`app/Console/Commands/LembreteAulaAluno.php`):
 
 1. **A conta de horário tem de passar por `AgendaService::agora()`/`inicioDaAula()`.** `agendas.hora_inicio` é hora de parede do Brasil, `app.timezone` é UTC. O comando antigo usava `Carbon::now()`/`Carbon::today()` e montava o início da aula com `Carbon::parse()` sem fuso — medido minuto a minuto, **o lembrete de uma aula das 07:00 disparava entre 02:20 e 02:40 da manhã**. `Carbon::today()` em UTC também erra a *data* da agenda entre 21:00 e meia-noite no Brasil. `AgendaService` já tinha os helpers certos; este comando nunca recebeu a correção.
-2. **Push não pode depender do WhatsApp.** A consulta filtrava `whereNotNull('whatsapp')` e havia um `return self::FAILURE` quando `WHATSAPP_TOKEN`/`WHATSAPP_PHONE_NUMBER_ID` faltavam — chaves que **não estavam no `.env.example`**. Ou seja: a única notificação proativa da plataforma ficava desligada por uma credencial que ninguém sabia que precisava configurar, e personal sem número não recebia nem push. A falta agora só desliga o canal WhatsApp.
-3. **A reserva do envio vem ANTES do envio, e é atômica (`Cache::add`).** O agendador roda a cada 5 min dentro de uma janela de 20, então quatro rodadas tocam a mesma aula. O código antigo gravava a chave *depois*, e só se `$enviado` fosse true — mas `$enviado` reflete apenas WhatsApp/e-mail, não o push: um personal sem WhatsApp cujo e-mail falhasse recebia **quatro pushes** do mesmo lembrete. Reserve por aula (o aluno pode ter duas no dia), não por pessoa.
+2. **Nenhum canal pode derrubar o comando.** A consulta filtrava `whereNotNull('whatsapp')` e havia um `return self::FAILURE` quando `WHATSAPP_TOKEN`/`WHATSAPP_PHONE_NUMBER_ID` faltavam — chaves que **não estavam no `.env.example`**. Ou seja: a única notificação proativa da plataforma ficava desligada por uma credencial que ninguém sabia que precisava configurar, e personal sem número não recebia nem push. O canal WhatsApp já não existe, mas a regra fica: a falta de credencial de UM canal desliga aquele canal, nunca o comando.
+3. **A reserva do envio vem ANTES do envio, e é atômica (`Cache::add`).** O agendador roda a cada 5 min dentro de uma janela de 20, então quatro rodadas tocam a mesma aula. O código antigo gravava a chave *depois*, e só se `$enviado` fosse true — mas `$enviado` reflete apenas o e-mail, não o push: um personal cujo e-mail falhasse recebia **quatro pushes** do mesmo lembrete. Reserve por aula (o aluno pode ter duas no dia), não por pessoa.
 
 `tests/Feature/LembreteAulaTest.php` fixa a **hora** do disparo, não só o conteúdo — congela o relógio em UTC e define a aula em hora de parede, que é exatamente a combinação onde o erro aparecia.
 
@@ -554,9 +564,6 @@ Key `.env` variables (see `.env.example`):
 
 ```
 DB_DATABASE=academia          # MySQL database name
-TWILIO_ACCOUNT_SID=...
-TWILIO_AUTH_TOKEN=...
-TWILIO_WHATSAPP_FROM=...      # e.g. whatsapp:+14155238886
 ADMIN_EMAIL=...               # Seeded admin account
 ADMIN_PASSWORD=...
 MAIL_MAILER=smtp              # Email via GoDaddy SMTP

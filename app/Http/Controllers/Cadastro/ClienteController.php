@@ -484,7 +484,7 @@ class ClienteController extends Controller
             'modalidade' => Agenda::modalidadeResolvida($request->modalidade, $personalDaAula?->modalidade),
         ]);
 
-        $this->notificarPersonalWhatsApp($clienteId, $request->personal_id, 'avulsa', $agenda);
+        $this->notificarPersonal($clienteId, $request->personal_id, 'avulsa', $agenda);
 
         $cliente = Cliente::find($clienteId);
         $personal = Personal::find($request->personal_id);
@@ -677,7 +677,7 @@ class ClienteController extends Controller
             return redirect()->back()->with('warning', 'Nenhum horário pôde ser agendado. Verifique conflitos de horários.');
         }
 
-        $this->notificarPersonalWhatsApp($clienteId, $request->personal_id, 'pacote', null, $frequencia, $agendamentosCriados);
+        $this->notificarPersonal($clienteId, $request->personal_id, 'pacote', null, $frequencia, $agendamentosCriados);
 
         if ($personal && $personal->email) {
             try {
@@ -871,7 +871,7 @@ class ClienteController extends Controller
         }
 
         // Notifica o personal por WhatsApp (mesmo canal usado na aula avulsa).
-        $this->notificarPersonalWhatsApp($clienteId, $personalId, 'pacote', null, $frequencia, $agendamentosCriados);
+        $this->notificarPersonal($clienteId, $personalId, 'pacote', null, $frequencia, $agendamentosCriados);
 
         Log::info('agendarAulasInterno: aulas criadas', [
             'cliente_id' => $clienteId,
@@ -952,7 +952,7 @@ class ClienteController extends Controller
             'modalidade' => $modalidade,
         ]);
 
-        $this->notificarPersonalWhatsApp($clienteId, $personalId, 'avulsa', $agenda);
+        $this->notificarPersonal($clienteId, $personalId, 'avulsa', $agenda);
 
         Log::info('agendarAulaAvulsaInterno: aula criada', [
             'cliente_id' => $clienteId,
@@ -1191,7 +1191,7 @@ class ClienteController extends Controller
         return view('cliente.loja-detalhes', compact('loja', 'cliente', 'fbEvent'));
     }
 
-    private function notificarPersonalWhatsApp($clienteId, $personalId, $tipo, $agenda = null, $frequencia = null, $diasTotal = null)
+    private function notificarPersonal($clienteId, $personalId, $tipo, $agenda = null, $frequencia = null, $diasTotal = null)
     {
         try {
             $cliente = Cliente::find($clienteId);
@@ -1215,8 +1215,6 @@ class ClienteController extends Controller
                 $mensagem .= 'Acesse seu painel para confirmar se o cliente compareceu.';
 
                 $assunto = 'Nova aula avulsa agendada — SnrFit';
-                $template = 'aula_avulsa_agendada';
-                $params = [$cliente->nome, $data, "{$agenda->hora_inicio} - {$agenda->hora_fim}"];
             } else {
                 $mensagem = "🎉 *Novo Pacote Contratado*\n\n";
                 $mensagem .= "👤 *Cliente:* {$cliente->nome}\n";
@@ -1225,11 +1223,9 @@ class ClienteController extends Controller
                 $mensagem .= 'Acesse seu painel para confirmar presença do cliente.';
 
                 $assunto = 'Novo pacote contratado — SnrFit';
-                $template = 'pacote_contratado_personal';
-                $params = [$cliente->nome, (string) $frequencia, (string) $diasTotal];
             }
 
-            \App\Services\NotificacaoService::personal($personal, $assunto, $mensagem, $template, $params);
+            \App\Services\NotificacaoService::personal($personal, $assunto, $mensagem);
 
         } catch (\Exception $e) {
             Log::error('❌ Erro ao notificar personal: '.$e->getMessage());

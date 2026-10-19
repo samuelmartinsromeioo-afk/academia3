@@ -30,18 +30,21 @@ return [
         'secret' => env('AWS_SECRET_ACCESS_KEY'),
         'region' => env('AWS_DEFAULT_REGION', 'us-east-1'),
     ],
-    
-    'whatsapp' => [
-        'token'           => env('WHATSAPP_TOKEN'),
-        'phone_number_id' => env('WHATSAPP_PHONE_NUMBER_ID'),
-        // Ligue (=true) depois de criar/aprovar os templates na Meta. Enquanto
-        // false, as notificações proativas saem como texto livre (janela 24h).
-        'use_templates'   => env('WHATSAPP_USE_TEMPLATES', false),
-    ],
+
+    /*
+     * NÃO reintroduza um bloco `whatsapp` aqui.
+     *
+     * O canal WhatsApp foi removido em 2026-10-19 (ver o cabeçalho de
+     * `NotificacaoService`). Ele enviava por `graph.facebook.com`, o que fazia
+     * a Meta receber o TELEFONE e o CONTEÚDO de cada aviso transacional — e a
+     * Política de Privacidade afirma que a Meta só recebe dado com
+     * consentimento, para medição de anúncios. Religar o canal volta a tornar
+     * essa frase falsa, e ela é oponível a quem a escreveu.
+     */
 
     'stripe' => [
-        'key'            => env('STRIPE_PUBLIC_KEY'),
-        'secret'         => env('STRIPE_SECRET_KEY'),
+        'key' => env('STRIPE_PUBLIC_KEY'),
+        'secret' => env('STRIPE_SECRET_KEY'),
         'webhook_secret' => env('STRIPE_WEBHOOK_SECRET'),
     ],
 
@@ -50,22 +53,22 @@ return [
     ],
 
     'asaas' => [
-        'key'            => env('ASAAS_API_KEY'),
-        'url'            => env('ASAAS_URL', 'https://sandbox.asaas.com/api/v3'),
-        'webhook_token'  => env('ASAAS_WEBHOOK_TOKEN'),
+        'key' => env('ASAAS_API_KEY'),
+        'url' => env('ASAAS_URL', 'https://sandbox.asaas.com/api/v3'),
+        'webhook_token' => env('ASAAS_WEBHOOK_TOKEN'),
     ],
 
     // Meta (Facebook) Pixel + API de Conversões (server-side).
     'meta' => [
-        'pixel_id'        => env('META_PIXEL_ID', '28125781433700453'),
-        'capi_token'      => env('META_CAPI_TOKEN'),
-        'api_version'     => env('META_API_VERSION', 'v21.0'),
+        'pixel_id' => env('META_PIXEL_ID', '28125781433700453'),
+        'capi_token' => env('META_CAPI_TOKEN'),
+        'api_version' => env('META_API_VERSION', 'v21.0'),
         // Preencha com o código do "Testar eventos" para depurar; deixe vazio em produção.
         'test_event_code' => env('META_CAPI_TEST_CODE'),
         // Consentimento de cookies (LGPD): quando true, Pixel e CAPI só disparam
         // após o visitante aceitar no banner. Cookie usado para registrar o aceite.
         'require_consent' => env('META_REQUIRE_CONSENT', true),
-        'consent_cookie'  => 'snrfit_consent',
+        'consent_cookie' => 'snrfit_consent',
     ],
 
 ];

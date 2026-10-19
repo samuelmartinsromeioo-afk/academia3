@@ -24,7 +24,7 @@ use Illuminate\Support\Facades\Cache;
  *    `agendas.hora_inicio` é hora de parede do Brasil e `app.timezone` é UTC;
  *    comparar com `Carbon::now()` direto desloca a janela em 3h — o comando do
  *    personal fazia isso e por isso disparava na madrugada.
- * 2. **Push não depende de WhatsApp.** Nada aqui aborta por falta de credencial
+ * 2. **Nenhum canal derruba o comando.** Nada aqui aborta por falta de credencial
  *    da Meta nem filtra quem não tem número: `NotificacaoService` manda pelos
  *    canais que existirem para aquela conta.
  * 3. **A reserva do envio é por AULA e vem antes do envio** (`Cache::add`
@@ -37,7 +37,7 @@ class LembreteAulaAluno extends Command
 {
     protected $signature = 'aluno:lembrete-aula';
 
-    protected $description = 'Avisa o aluno (push/WhatsApp/e-mail) da aula que começa em ~1h30';
+    protected $description = 'Avisa o aluno (in-app/push/e-mail) da aula que começa em ~1h30';
 
     /**
      * Janela de antecedência, em minutos.

@@ -14,7 +14,7 @@ class LembreteDiarioPersonal extends Command
 {
     protected $signature = 'personal:lembrete-diario';
 
-    protected $description = 'Envia WhatsApp para cada personal com seus compromissos do dia';
+    protected $description = 'Avisa cada personal (in-app/push/e-mail) dos seus compromissos do dia';
 
     public function handle(\App\Services\AgendaService $agendaService): int
     {
@@ -33,12 +33,12 @@ class LembreteDiarioPersonal extends Command
         $hoje = $agora->copy()->startOfDay();
 
         /*
-         * Sem o filtro de WhatsApp.
+         * Sem filtro por canal de contato.
          *
          * A consulta exigia `whatsapp` preenchido, então personal sem número
          * não recebia nem o PUSH — que não precisa de número nenhum. O canal
          * (`NotificacaoService`) já entrega pelo que existir em cada conta:
-         * in-app e push sempre, WhatsApp e e-mail quando houver.
+         * in-app e push sempre, e-mail quando houver.
          */
         $personais = Personal::where('status', 'aprovado')->get();
 
@@ -49,18 +49,17 @@ class LembreteDiarioPersonal extends Command
         }
 
         /*
-         * A falta de credencial da Meta NÃO aborta mais o comando.
+         * NÃO volte a pôr uma checagem de credencial de envio aqui.
          *
-         * Antes havia um `return self::FAILURE` aqui, antes de qualquer envio —
-         * e `WHATSAPP_TOKEN`/`WHATSAPP_PHONE_NUMBER_ID` não estavam nem no
-         * `.env.example`. Ou seja: a única notificação proativa da plataforma
-         * ficava desligada por uma credencial que ninguém sabia que precisava
-         * existir, mesmo o push não dependendo dela. Agora só avisamos no log.
+         * Existiu um `return self::FAILURE` neste ponto, antes de qualquer
+         * envio, exigindo `WHATSAPP_TOKEN`/`WHATSAPP_PHONE_NUMBER_ID` — chaves
+         * que não estavam nem no `.env.example`. Ou seja: a única notificação
+         * proativa da plataforma ficava desligada por uma credencial que
+         * ninguém sabia que precisava existir, mesmo o push não dependendo
+         * dela. Com o canal WhatsApp removido (2026-10-19) a checagem saiu
+         * junto, mas a lição fica: a falta de credencial de UM canal nunca
+         * pode abortar o comando inteiro, só desligar aquele canal.
          */
-        if (! config('services.whatsapp.token') || ! config('services.whatsapp.phone_number_id')) {
-            $this->warn('Meta WhatsApp não configurado (WHATSAPP_TOKEN / WHATSAPP_PHONE_NUMBER_ID): seguindo só com push, in-app e e-mail.');
-        }
-
         foreach ($personais as $personal) {
             $agendas = Agenda::with(['cliente', 'academia'])
                 ->where('personal_id', $personal->id)
@@ -88,8 +87,8 @@ class LembreteDiarioPersonal extends Command
              * Reserva ANTES de enviar, e atômica.
              *
              * Era `Cache::has` + `Cache::put` só quando `$enviado` fosse true —
-             * e `$enviado` reflete apenas WhatsApp/e-mail, não o push. Um
-             * personal sem WhatsApp cujo e-mail falhasse recebia push a cada
+             * e `$enviado` reflete apenas o e-mail, não o push. Um
+             * personal cujo e-mail falhasse recebia push a cada
              * rodada de 5 min durante os 20 min da janela: quatro pushes do
              * mesmo lembrete. `Cache::add` grava só se a chave não existir e
              * devolve false caso contrário, então a reserva é a própria
@@ -102,25 +101,18 @@ class LembreteDiarioPersonal extends Command
                 continue;
             }
 
-            $mensagem = $this->montarMensagem($personal, $agendas, $hoje);
-
-            $primeiroNome = explode(' ', trim($personal->nome))[0];
-            $primeiroHorario = substr($agendas->first()->hora_inicio, 0, 5);
-
             $enviado = \App\Services\NotificacaoService::personal(
                 $personal,
                 'Seus treinos de hoje — SnrFit',
-                $mensagem,
-                'lembrete_diario',
-                [$primeiroNome, $agendas->count(), $primeiroHorario]
+                $this->montarMensagem($personal, $agendas, $hoje)
             );
 
-            // A reserva já foi feita acima. `$enviado` diz apenas se WhatsApp ou
-            // e-mail saíram: o aviso in-app e o push vão de qualquer forma
+            // A reserva já foi feita acima. `$enviado` diz apenas se o E-MAIL
+            // saiu: o aviso in-app e o push vão de qualquer forma
             // (NotificacaoService::conta → Notificacao::para), então "falso"
             // aqui não é lembrete perdido e não deve liberar um reenvio.
             Log::info("Lembrete enviado ao personal {$personal->id} ({$personal->nome})", [
-                'whatsapp_ou_email' => $enviado,
+                'email' => $enviado,
             ]);
             $this->line(($enviado ? '✓' : '◐')." {$personal->nome}");
 

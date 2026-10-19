@@ -96,6 +96,16 @@
     <ul>
         <li><strong>Razão social:</strong> {{ $emp('razao_social') }}</li>
         <li><strong>CNPJ:</strong> {{ $emp('cnpj') }}</li>
+        {{--
+            Endereço físico em local de destaque é exigência do art. 2º, I e
+            II, do Decreto nº 7.962/2013 — e a sua ausência é infração ao CDC
+            por si, além de enfraquecer as cláusulas 14 e 15 deste contrato.
+            Sai de `Empresa::enderecoCompleto()`, que omite parte pendente em
+            vez de imprimir placeholder.
+        --}}
+        @if($endereco = \App\Support\Empresa::enderecoCompleto())
+            <li><strong>Endereço:</strong> {{ $endereco }}</li>
+        @endif
         <li><strong>Atendimento (SAC):</strong> <a href="mailto:{{ $emp('email_suporte') }}">{{ $emp('email_suporte') }}</a></li>
         <li><strong>Encarregado pelo Tratamento de Dados Pessoais (LGPD, art. 41):</strong>
             {{ $emp('dpo_nome') }} — <a href="mailto:{{ $emp('dpo_email') }}">{{ $emp('dpo_email') }}</a></li>
@@ -950,7 +960,7 @@
                     <td>O <strong>sistema</strong>, na hora. <strong>Imediata</strong>, sem carência
                         e <strong>sem possibilidade de desfazer</strong> — não há período de
                         reativação.</td>
-                    <td><strong>Confirmação por e-mail</strong> (e WhatsApp, se houver número), enviada
+                    <td><strong>Confirmação por e-mail</strong>, enviada
                         antes da eliminação, porque depois dela o seu contato não existe mais na
                         nossa base. <strong>As suas assinaturas mensais são canceladas no mesmo
                             ato</strong> e a confirmação diz quantas foram — é o seu comprovante de
@@ -1387,8 +1397,8 @@
         <li><strong>Cessão.</strong> Você não pode ceder sua posição contratual sem nossa anuência. A
             Plataforma pode ceder este contrato em caso de reorganização societária, fusão, aquisição
             ou transferência de operação, com comunicação aos usuários.</li>
-        <li><strong>Comunicações.</strong> Serão feitas pelo e-mail cadastrado, por aviso no produto,
-            por notificação no aparelho ou por WhatsApp, presumindo-se recebidas quando enviadas ao
+        <li><strong>Comunicações.</strong> Serão feitas pelo e-mail cadastrado, por aviso no produto
+            ou por notificação no aparelho, presumindo-se recebidas quando enviadas ao
             contato informado por você, que deve mantê-lo atualizado.
             <strong>Todas são operacionais</strong> — mensagem no chat, pagamento confirmado, aula
             marcada ou cancelada, ficha pronta, pedido na loja, lembrete da próxima aula, confirmação
@@ -1418,15 +1428,25 @@
             <strong>seu domicílio</strong> (art. 101, I, do Código de Defesa do Consumidor), não sendo
             oponível a ele qualquer eleição de foro diversa.</li>
         {{--
-            A comarca não é nomeada porque o endereço do titular não é divulgado
-            (ver o bloco sobre endereço e telefone em `config/empresa.php`). Fica
-            determinável pelo registro no CNPJ, que é público — um foro eleito que
-            o aderente não consegue identificar não é eleição válida, e um
-            placeholder `[COMARCA]` num contrato em vigor é pior ainda.
+            A comarca passou a ser NOMEADA em 2026-10-19, quando o endereço da
+            sede foi divulgado. Sai de `Empresa::comarca()`, que a DERIVA de
+            `cidade`/`uf` — nunca de um campo próprio, que poderia discordar da
+            sede e tornar a eleição inválida.
+
+            Sem cidade conhecida, volta ao texto "comarca da sede, conforme o
+            registro no CNPJ": determinável e válido. Um placeholder
+            `[COMARCA]` num contrato em vigor seria pior que os dois.
         --}}
-        <li><strong>Relações não consumeristas</strong> (Profissionais e estabelecimentos no exercício
-            da sua atividade econômica): fica eleito o foro da <strong>comarca da sede da SNR FIT</strong>,
-            conforme consta do seu registro no CNPJ, com renúncia a qualquer outro.</li>
+        @if($comarca = \App\Support\Empresa::comarca())
+            <li><strong>Relações não consumeristas</strong> (Profissionais e estabelecimentos no exercício
+                da sua atividade econômica): fica eleito o foro da
+                <strong>comarca de {{ $comarca }}</strong>, sede da SNR FIT, com renúncia a
+                qualquer outro.</li>
+        @else
+            <li><strong>Relações não consumeristas</strong> (Profissionais e estabelecimentos no exercício
+                da sua atividade econômica): fica eleito o foro da <strong>comarca da sede da SNR FIT</strong>,
+                conforme consta do seu registro no CNPJ, com renúncia a qualquer outro.</li>
+        @endif
         <li><strong>Solução amigável:</strong> incentivamos o contato prévio pelo nosso atendimento e,
             para consumidores, o uso da plataforma pública
             <a href="https://www.consumidor.gov.br" target="_blank" rel="noopener">consumidor.gov.br</a>,

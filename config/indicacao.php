@@ -71,15 +71,15 @@ return [
      * somando tudo no dia. Pedido acima do teto não é recusado — vira análise do
      * admin. Ver IndicacaoSaqueService::decidirPagamento().
      */
-    'saque_automatico'        => (bool) env('INDICACAO_SAQUE_AUTO', false),
-    'saque_auto_teto'         => (float) env('INDICACAO_SAQUE_AUTO_TETO', 300.00),
-    'saque_auto_teto_diario'  => (float) env('INDICACAO_SAQUE_AUTO_TETO_DIARIO', 2000.00),
+    'saque_automatico' => (bool) env('INDICACAO_SAQUE_AUTO', false),
+    'saque_auto_teto' => (float) env('INDICACAO_SAQUE_AUTO_TETO', 300.00),
+    'saque_auto_teto_diario' => (float) env('INDICACAO_SAQUE_AUTO_TETO_DIARIO', 2000.00),
 
     // Texto mostrado ao lado do campo de cupom nos formulários de cadastro.
-    'label'     => 'Cupom de indicação (opcional)',
-    'ajuda'     => 'Recebeu o código de alguém? Informe aqui — quem indicou você ganha um bônus.',
-    'invalido'  => 'Cupom inválido ou expirado. Confira o código ou deixe o campo em branco.',
-    'proprio'   => 'Você não pode usar o seu próprio cupom de indicação.',
+    'label' => 'Cupom de indicação (opcional)',
+    'ajuda' => 'Recebeu o código de alguém? Informe aqui — quem indicou você ganha um bônus.',
+    'invalido' => 'Cupom inválido ou expirado. Confira o código ou deixe o campo em branco.',
+    'proprio' => 'Você não pode usar o seu próprio cupom de indicação.',
 
     // Valor usado no exemplo numérico do painel. O bônus do exemplo é calculado
     // na view a partir de `percentual`, para o exemplo nunca mentir se o
@@ -89,19 +89,19 @@ return [
     // Copy do painel "Minhas indicações". :pct, :dias, :meta, :taxa, :base,
     // :comissao e :bonus são substituídos.
     'painel' => [
-        'titulo'  => 'Indique e ganhe',
+        'titulo' => 'Indique e ganhe',
         'chamada' => 'Compartilhe seu código. Você recebe :pct da comissão que a SnrFit ganhar com cada profissional, academia, studio ou loja que entrar pelo seu código, nos primeiros :dias dias.',
 
         // Explica SOBRE O QUE incidem os 10% — é a dúvida que mais aparece.
         // O percentual é da comissão da plataforma, não do valor cheio.
-        'base_titulo'   => 'Sobre qual valor incidem os :pct',
-        'base'          => 'Os :pct incidem sobre a COMISSÃO DA SNRFIT, não sobre o valor que o indicado vende. O profissional recebe o preço que cadastrou, integral; a comissão de :taxa é somada ao preço e paga pelo aluno — e é dessa comissão que sai o seu bônus. Nada do que você recebe sai do bolso de quem você indicou.',
-        'base_exemplo'  => 'Um profissional que entrou pelo seu código vende :base na janela de :dias dias. A comissão da SnrFit nisso é :comissao, e o seu bônus é :bonus.',
-        'base_rodape'   => 'Mais abaixo, o extrato de cada indicação abre receita por receita: quanto o indicado vendeu, quanto foi de comissão e quanto virou seu.',
-        'regra'   => 'O bônus acumula durante os :dias dias seguintes à aprovação do indicado e fica disponível para saque quando a janela fecha — e desde que o indicado tenha :meta alunos com pagamento confirmado. Uma vez liberado, não volta atrás.',
-        'aluno'   => 'Indicação de aluno entra no seu histórico, mas não gera bônus — o prêmio é por trazer profissionais e negócios.',
-        'saque'   => 'O saque cai na chave Pix que você informar. Nada é liberado antes de a janela do indicado fechar.',
-        'saque_auto'   => 'Pedidos de até :teto são enviados automaticamente por Pix em poucos minutos. Acima disso, a equipe confere antes de pagar.',
+        'base_titulo' => 'Sobre qual valor incidem os :pct',
+        'base' => 'Os :pct incidem sobre a COMISSÃO DA SNRFIT, não sobre o valor que o indicado vende. O profissional recebe o preço que cadastrou, integral; a comissão de :taxa é somada ao preço e paga pelo aluno — e é dessa comissão que sai o seu bônus. Nada do que você recebe sai do bolso de quem você indicou.',
+        'base_exemplo' => 'Um profissional que entrou pelo seu código vende :base na janela de :dias dias. A comissão da SnrFit nisso é :comissao, e o seu bônus é :bonus.',
+        'base_rodape' => 'Mais abaixo, o extrato de cada indicação abre receita por receita: quanto o indicado vendeu, quanto foi de comissão e quanto virou seu.',
+        'regra' => 'O bônus acumula durante os :dias dias seguintes à aprovação do indicado e fica disponível para saque quando a janela fecha — e desde que o indicado tenha :meta alunos com pagamento confirmado. Uma vez liberado, não volta atrás.',
+        'aluno' => 'Indicação de aluno entra no seu histórico, mas não gera bônus — o prêmio é por trazer profissionais e negócios.',
+        'saque' => 'O saque cai na chave Pix que você informar. Nada é liberado antes de a janela do indicado fechar.',
+        'saque_auto' => 'Pedidos de até :teto são enviados automaticamente por Pix em poucos minutos. Acima disso, a equipe confere antes de pagar.',
         'saque_manual' => 'O pagamento é feito pela equipe em até 5 dias úteis.',
     ],
 ];
