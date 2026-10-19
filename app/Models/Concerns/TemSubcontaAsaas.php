@@ -44,6 +44,20 @@ trait TemSubcontaAsaas
             return true;
         }
 
+        /*
+         * Wallet bloqueada pelo Asaas vem ANTES do status cadastral, porque é
+         * o único impedimento que o status não consegue representar: o
+         * personal #7 respondia APPROVED nos quatro campos de
+         * `/myAccount/status` e mesmo assim tinha o split recusado.
+         *
+         * Enquanto a trava vale, a cobrança nem sai — ela falharia no Asaas de
+         * qualquer jeito, e falhar aqui ao menos permite dizer ao aluno o que
+         * houve em vez de despejar o texto cru do gateway na tela dele.
+         */
+        if ($this->splitBloqueadoPeloAsaas()) {
+            return false;
+        }
+
         if ($this->asaas_account_status === null) {
             return true; // nunca sincronizado — ver o item 3 acima
         }
@@ -75,6 +89,49 @@ trait TemSubcontaAsaas
         return $this->asaas_account_status === AsaasService::STATUS_CHAVE_INVALIDA;
     }
 
+    /**
+     * O Asaas recusou o split desta wallet há pouco tempo.
+     *
+     * "Há pouco tempo" é a parte importante. O Asaas não avisa quando
+     * desbloqueia uma wallet, e `/myAccount/status` responde APPROVED antes e
+     * depois — não há de onde saber que acabou. Então a trava expira sozinha e
+     * a próxima cobrança testa: se foi liberada, o profissional volta a vender
+     * sem ninguém fazer nada; se não, o carimbo se renova e a trava continua.
+     *
+     * Um booleano aqui prenderia o profissional para sempre num bloqueio que
+     * já tinha acabado, esperando por um aviso que nunca chega.
+     */
+    public function splitBloqueadoPeloAsaas(): bool
+    {
+        if (empty($this->asaas_split_bloqueado_em)) {
+            return false;
+        }
+
+        return \Carbon\Carbon::parse($this->asaas_split_bloqueado_em)
+            ->addHours(AsaasService::HORAS_RETENTAR_SPLIT)
+            ->isFuture();
+    }
+
+    /**
+     * Registra que o Asaas recusou o split desta wallet.
+     *
+     * NÃO toca em `asaas_account_status`, e essa é a correção central: escrever
+     * 'BLOCKED' ali colocava este método em guerra com
+     * `asaas:sincronizar-subcontas`, que lê `/myAccount/status` e grava
+     * APPROVED duas vezes ao dia. O estado oscilava em círculo e, no meio do
+     * ciclo, o aluno lia que o profissional estava "finalizando o cadastro" —
+     * com o cadastro dele aprovado nos quatro campos.
+     */
+    public function registrarBloqueioDeSplit(?string $motivo = null): void
+    {
+        $this->forceFill([
+            'asaas_split_bloqueado_em' => now(),
+            // Texto do Asaas, truncado. Fica só para o painel do admin e para
+            // o chamado de suporte — nunca é mostrado a quem está comprando.
+            'asaas_split_bloqueio_motivo' => $motivo ? mb_substr($motivo, 0, 500) : null,
+        ])->save();
+    }
+
     /** A subconta existe E foi confirmada como aprovada. */
     public function subcontaAprovada(): bool
     {
@@ -94,6 +151,19 @@ trait TemSubcontaAsaas
     {
         if ($this->podeReceberPagamento()) {
             return null;
+        }
+
+        /*
+         * Wallet bloqueada tem texto PRÓPRIO porque o genérico seria falso.
+         * Dizer "ainda está finalizando o cadastro" de alguém com cadastro
+         * aprovado nos quatro campos não é só impreciso: manda o profissional
+         * procurar documentação que já passou, e o aluno culpar quem não tem
+         * culpa. O bloqueio é decisão do banco, não pendência de ninguém.
+         */
+        if ($this->splitBloqueadoPeloAsaas()) {
+            return 'A conta de recebimentos deste profissional está temporariamente '
+                .'bloqueada pelo banco, e por isso ele não consegue receber agora. '
+                .'Não é nada com o seu pagamento — tente mais tarde ou escolha outro profissional.';
         }
 
         return 'Este profissional ainda está finalizando o cadastro de recebimentos '
@@ -192,10 +262,22 @@ trait TemSubcontaAsaas
      */
     public function scopePodeReceber($query)
     {
-        return $query->where(function ($q) {
-            $q->whereNull('asaas_wallet_id')
-                ->orWhereNull('asaas_account_status')
-                ->orWhere('asaas_account_status', AsaasService::STATUS_APROVADA);
-        });
+        $limite = now()->subHours(AsaasService::HORAS_RETENTAR_SPLIT);
+
+        return $query
+            ->where(function ($q) {
+                $q->whereNull('asaas_wallet_id')
+                    ->orWhereNull('asaas_account_status')
+                    ->orWhere('asaas_account_status', AsaasService::STATUS_APROVADA)
+                    ->orWhere('asaas_account_status', AsaasService::STATUS_CHAVE_INVALIDA);
+            })
+            // Espelha `splitBloqueadoPeloAsaas()`: quem apanhou do Asaas há
+            // menos de HORAS_RETENTAR_SPLIT sai da vitrine. Sem esta metade o
+            // profissional apareceria na lista e tomaria erro no checkout, que
+            // é exatamente o defeito que a trava veio corrigir.
+            ->where(function ($q) use ($limite) {
+                $q->whereNull('asaas_split_bloqueado_em')
+                    ->orWhere('asaas_split_bloqueado_em', '<=', $limite);
+            });
     }
 }

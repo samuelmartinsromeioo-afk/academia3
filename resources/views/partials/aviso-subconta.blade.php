@@ -19,11 +19,58 @@
     // Chave inválida é um problema DIFERENTE de conta não aprovada, e os dois
     // precisam de textos diferentes — ver o bloco de chave mais abaixo.
     $chaveQuebrada = $temTrait && $avisoSub->chaveSubcontaInvalida();
+    $splitBloqueado = $temTrait && $avisoSub->splitBloqueadoPeloAsaas();
     $mostrarAviso = $temTrait && ! $avisoSub->podeReceberPagamento();
     $detalheSub = ($mostrarAviso || $chaveQuebrada) ? $avisoSub->detalheSubconta() : null;
 @endphp
 
-@if($chaveQuebrada)
+@if($splitBloqueado)
+    {{--
+        Wallet bloqueada pelo Asaas.
+
+        Vem ANTES do aviso de cadastro pendente porque os dois textos se
+        excluem, e este caso é justamente aquele em que o outro MENTIRIA: o
+        cadastro está aprovado nos quatro campos. Mandar esta pessoa "enviar
+        documentos" a faria perder o dia mexendo no que já passou, enquanto o
+        problema real — uma decisão do banco — continua parado.
+
+        Por isso o texto diz explicitamente o que NÃO é, e aponta o único
+        lugar onde se resolve.
+    --}}
+    <div style="background:rgba(255,82,82,0.10); border:1px solid rgba(255,82,82,0.45);
+                border-radius:14px; padding:18px 20px; margin-bottom:24px;">
+        <div style="display:flex; align-items:center; gap:10px; margin-bottom:10px;">
+            <i class="ph ph-lock-key" style="color:#ff8a8a; font-size:1.2rem;"></i>
+            <strong style="color:#ff8a8a; font-size:0.95rem;">
+                Sua conta de recebimentos foi bloqueada pelo banco
+            </strong>
+        </div>
+
+        <p style="font-size:0.88rem; line-height:1.6; color:#cfcfcf; margin-bottom:12px;">
+            O Asaas, que processa os pagamentos da plataforma, bloqueou a sua conta de
+            recebimentos. Enquanto isso durar, <strong>os alunos não conseguem contratar
+            você</strong>.
+        </p>
+
+        <p style="font-size:0.86rem; line-height:1.6; color:#cfcfcf; margin-bottom:12px;">
+            <strong>Não é documentação faltando.</strong> O seu cadastro está aprovado aqui
+            e no Asaas — não adianta reenviar documentos. O bloqueio é uma decisão de
+            segurança do banco e <strong>só o suporte do Asaas pode levantar</strong>.
+        </p>
+
+        <p style="font-size:0.84rem; color:var(--text-muted); margin:0 0 12px;">
+            Entre em contato com o suporte do Asaas pelo app ou pelo painel deles e peça o
+            motivo do bloqueio da sua conta. Assim que liberarem, as vendas voltam
+            sozinhas — você não precisa avisar a gente.
+        </p>
+
+        <p style="font-size:0.84rem; color:var(--text-muted); margin:0;">
+            Se precisar de ajuda para abrir o chamado, fale com
+            <a href="mailto:{{ \App\Support\Empresa::get('email_suporte') }}"
+               style="color:var(--primary);">{{ \App\Support\Empresa::get('email_suporte') }}</a>.
+        </p>
+    </div>
+@elseif($chaveQuebrada)
     {{--
         Credencial da subconta inválida.
 
