@@ -950,7 +950,7 @@
                     <td>O <strong>sistema</strong>, na hora. <strong>Imediata</strong>, sem carência
                         e <strong>sem possibilidade de desfazer</strong> — não há período de
                         reativação.</td>
-                    <td><strong>Confirmação por e-mail</strong> (e WhatsApp, se houver número), enviada
+                    <td><strong>Confirmação por e-mail</strong>, enviada
                         antes da eliminação, porque depois dela o seu contato não existe mais na
                         nossa base. <strong>As suas assinaturas mensais são canceladas no mesmo
                             ato</strong> e a confirmação diz quantas foram — é o seu comprovante de
@@ -1387,8 +1387,8 @@
         <li><strong>Cessão.</strong> Você não pode ceder sua posição contratual sem nossa anuência. A
             Plataforma pode ceder este contrato em caso de reorganização societária, fusão, aquisição
             ou transferência de operação, com comunicação aos usuários.</li>
-        <li><strong>Comunicações.</strong> Serão feitas pelo e-mail cadastrado, por aviso no produto,
-            por notificação no aparelho ou por WhatsApp, presumindo-se recebidas quando enviadas ao
+        <li><strong>Comunicações.</strong> Serão feitas pelo e-mail cadastrado, por aviso no produto
+            ou por notificação no aparelho, presumindo-se recebidas quando enviadas ao
             contato informado por você, que deve mantê-lo atualizado.
             <strong>Todas são operacionais</strong> — mensagem no chat, pagamento confirmado, aula
             marcada ou cancelada, ficha pronta, pedido na loja, lembrete da próxima aula, confirmação

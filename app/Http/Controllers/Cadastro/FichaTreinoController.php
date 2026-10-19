@@ -954,8 +954,6 @@ class FichaTreinoController extends Controller
                 "Olá, {$nome}! 👋\n\n".
                 "Notei que você está um tempinho sem treinar. Bora retomar o ritmo? Cada treino conta — e seu shape agradece! 🔥\n\n".
                 "Conte comigo. — {$nomePersonal}",
-                'incentivo_aluno',
-                [$nome]
             );
         }
 

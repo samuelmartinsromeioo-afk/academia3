@@ -523,7 +523,7 @@ class PaymentController extends Controller
 
                     /*
                      * Confirmação para o ALUNO. O personal já é avisado dentro
-                     * de `agendarAulasInterno` (notificarPersonalWhatsApp), que
+                     * de `agendarAulasInterno` (notificarPersonal), que
                      * carrega o template aprovado na Meta — avisar os dois aqui
                      * duplicaria o aviso do personal.
                      */
@@ -604,8 +604,6 @@ class PaymentController extends Controller
                             "✅ *Solicitação de Ficha Confirmada!*\n\n".
                             "Seu pagamento foi confirmado e a solicitação foi enviada para *{$personal->nome}*.\n".
                             'Assim que a ficha estiver pronta, você será avisado por aqui. 🏋️',
-                            'ficha_confirmada_aluno',
-                            [$personal->nome]
                         );
                     }
                 } catch (\Exception $e) {
@@ -641,8 +639,6 @@ class PaymentController extends Controller
                             "Aluno: *{$cliente->nome}*\n".
                             ($solicitacao->observacoes ? "Observações: {$solicitacao->observacoes}\n" : '').
                             "\nO aluno já aparece na sua área de Avaliação Física. 💪",
-                            'avaliacao_contratada_personal',
-                            [$cliente->nome]
                         );
                     }
 
@@ -653,8 +649,6 @@ class PaymentController extends Controller
                             "✅ *Avaliação Física Confirmada!*\n\n".
                             "Seu pagamento foi confirmado e *{$personal->nome}* já foi avisado.\n".
                             'Combine com o personal a data da sua avaliação. 🏋️',
-                            'avaliacao_confirmada_aluno',
-                            [$personal->nome]
                         );
                     }
                 } catch (\Exception $e) {
@@ -1077,11 +1071,6 @@ class PaymentController extends Controller
             'trainer_id' => $payment->trainer_id,
             'amount' => $payment->amount_total,
         ]);
-    }
-
-    private function notificarWhatsApp(string $telefone, string $mensagem, string $template = '', array $params = []): void
-    {
-        \App\Services\WhatsAppService::notificar($telefone, $mensagem, $template, $params);
     }
 
     /**

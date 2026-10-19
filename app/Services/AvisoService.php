@@ -12,7 +12,7 @@ use Illuminate\Support\Facades\Log;
 /**
  * Avisos dos eventos de negócio — um método por evento, o texto num lugar só.
  *
- * `NotificacaoService` é o CANAL (in-app + push + WhatsApp + e-mail). Aqui fica
+ * `NotificacaoService` é o CANAL (in-app + push + e-mail). Aqui fica
  * O QUE se diz em cada evento. A separação existe por um motivo concreto: quase
  * todo evento é disparado de DOIS lugares (o controller do site e o da API), e
  * quando o texto vive no controller as duas cópias divergem ou — pior — só uma
@@ -220,7 +220,7 @@ class AvisoService
      * Aluno fechou um pacote → confirma PARA O ALUNO.
      *
      * Só o aluno, de propósito. O personal já é avisado por
-     * `Cadastro\ClienteController::notificarPersonalWhatsApp($..., 'pacote', ...)`,
+     * `Cadastro\ClienteController::notificarPersonal($..., 'pacote', ...)`,
      * que é chamado de dentro de `agendarAulasInterno` — o mesmo método que cria
      * as aulas — e que carrega o template aprovado na Meta
      * (`pacote_contratado_personal`). Avisar o personal daqui também geraria
@@ -332,8 +332,8 @@ class AvisoService
      * `PaymentController::notificarPedidoLoja` já montava um texto melhor do
      * que daria para montar aqui — lista de itens, forma de entrega, contato do
      * cliente — a partir do `Pedido` carregado. O que faltava não era o texto,
-     * era o canal: ele ia só por WhatsApp. Lá agora ele passa por
-     * `NotificacaoService::conta()`, que cobre in-app, push, WhatsApp e e-mail.
+     * era o canal: ele ia só por WhatsApp, que não existe mais. Lá agora passa por
+     * `NotificacaoService::conta()`, que cobre in-app, push e e-mail.
      *
      * Duplicar o texto aqui criaria duas versões do mesmo aviso, que é
      * exatamente o problema que este arquivo existe para resolver.

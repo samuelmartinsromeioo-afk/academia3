@@ -39,7 +39,7 @@ use Illuminate\Support\Str;
 class ExclusaoDeConta
 {
     /**
-     * Confirma a exclusão ao titular, por e-mail e WhatsApp.
+     * Confirma a exclusão ao titular, por e-mail.
      *
      * Chamado de dentro de `executar()`, entre o cancelamento das cobranças e a
      * anonimização — a única janela em que existem ao mesmo tempo o contato do
@@ -95,7 +95,6 @@ class ExclusaoDeConta
 
         try {
             NotificacaoService::enviar(
-                $titular->whatsapp ?? null,
                 $titular->email ?? null,
                 $titular->nome ?? 'Titular',
                 'Conta encerrada — SNR FIT',

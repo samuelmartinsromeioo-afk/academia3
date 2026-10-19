@@ -32,7 +32,7 @@ class AulaController extends Controller
             $aula->update(['concluida' => true]);
 
             // ✅ Notificar o personal (WhatsApp + e-mail)
-            $this->notificarPersonalWhatsApp(
+            $this->notificarPersonal(
                 $cliente->nome,
                 $aula->tipo_aula ?? 'aula',
                 $personal,
@@ -62,14 +62,18 @@ class AulaController extends Controller
     }
 
     /**
-     * Notificar personal via WhatsApp usando Twilio
+     * Avisa o personal de que a aula foi concluída.
+     *
+     * Entrega por aviso in-app, push e e-mail (`NotificacaoService`). Já se
+     * chamou `notificarPersonalWhatsApp` e o docblock dizia "via Twilio" —
+     * nenhuma das duas coisas era verdade desde que o envio passou pelo canal
+     * unificado, e o WhatsApp saiu de vez em 2026-10-19.
      *
      * @param  string  $nomeCliente
      * @param  string  $tipoAula  (pacote, avulsa, bloqueio)
-     * @param  string  $whatsappPersonal  (número do personal)
      * @param  Agenda  $aula
      */
-    private function notificarPersonalWhatsApp($nomeCliente, $tipoAula, $personal, $aula)
+    private function notificarPersonal($nomeCliente, $tipoAula, $personal, $aula)
     {
         if (! $personal) {
             Log::warning("Personal não encontrado para notificar - ID: {$aula->personal_id}");
@@ -77,18 +81,10 @@ class AulaController extends Controller
             return;
         }
 
-        $mensagem = $this->formatarMensagem($nomeCliente, $tipoAula, $aula);
-
-        $data = $aula->data instanceof \Carbon\Carbon
-            ? $aula->data->format('d/m/Y')
-            : \Carbon\Carbon::parse($aula->data)->format('d/m/Y');
-
         \App\Services\NotificacaoService::personal(
             $personal,
             'Aula concluída — SnrFit',
-            $mensagem,
-            'aula_concluida_personal',
-            [$nomeCliente, $data, "{$aula->hora_inicio} - {$aula->hora_fim}"]
+            $this->formatarMensagem($nomeCliente, $tipoAula, $aula)
         );
     }
 

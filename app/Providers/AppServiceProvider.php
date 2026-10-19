@@ -50,7 +50,7 @@ class AppServiceProvider extends ServiceProvider
      * esse valor que estava errado no servidor. Resultado: snrfit.com.br
      * respondia 404 com `exception`/`file`/`line`/`trace`, entregando o caminho
      * absoluto do servidor; num 500 a mesma tela mostra `DB_PASSWORD`,
-     * `ASAAS_*`, `TWILIO_AUTH_TOKEN` e `APP_KEY`.
+     * `ASAAS_*`, `MAIL_PASSWORD` e `APP_KEY`.
      *
      * O host vem da requisição, então não existe o que esquecer de configurar.
      * IP de rede privada segue valendo como desenvolvimento — é assim que o

@@ -117,9 +117,9 @@ return [
         ], $cdnMidia, $extra('CSP_EXTRA_CONNECT')),
 
         // O app não usa iframe nenhum (verificado): nada a liberar.
-        'frame-src'   => ["'none'"],
-        'object-src'  => ["'none'"],
-        'base-uri'    => ["'self'"],
+        'frame-src' => ["'none'"],
+        'object-src' => ["'none'"],
+        'base-uri' => ["'self'"],
         'form-action' => ["'self'"],
 
         // Anti-clickjacking (par moderno do X-Frame-Options, que o
@@ -127,7 +127,7 @@ return [
         'frame-ancestors' => ["'self'"],
 
         // Service worker / manifest do PWA saem do próprio domínio.
-        'worker-src'   => ["'self'", 'blob:'],
+        'worker-src' => ["'self'", 'blob:'],
         'manifest-src' => ["'self'"],
     ],
 

@@ -460,8 +460,6 @@ class MesocicloController extends Controller
                         "⏰ *Mesociclo vencido*\n\n".
                         "O mesociclo *{$m->nome}* do aluno *".($m->cliente->nome ?? 'aluno')."* chegou ao fim.\n".
                         'Acesse o painel de Periodização para montar o próximo ciclo. 💪',
-                        'mesociclo_vencido_personal',
-                        [$m->nome, $m->cliente->nome ?? 'aluno']
                     );
                 }
             } catch (\Throwable $e) {

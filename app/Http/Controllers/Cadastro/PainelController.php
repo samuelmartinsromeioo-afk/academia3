@@ -109,7 +109,7 @@ class PainelController extends Controller
             .($linhasRec ? "\n🏆 *Recordes do mês:*\n{$linhasRec}\n" : '')
             ."\nBora manter o ritmo! 🚀";
 
-        NotificacaoService::cliente($cliente, 'Seu resumo do mês — SnrFit 📊', $texto, 'relatorio_mensal', [$nome]);
+        NotificacaoService::cliente($cliente, 'Seu resumo do mês — SnrFit 📊', $texto);
 
         return back()->with('success', 'Relatório enviado para '.($cliente->nome ?? 'o aluno').'! 📨');
     }

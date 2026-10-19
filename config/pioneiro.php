@@ -17,18 +17,18 @@ return [
 
     // Paleta do selo e da coroa — "verde chumbo" (metálico escuro).
     'cor' => [
-        'base'  => '#2f6b4a', // preenchimento do selo e da coroa
+        'base' => '#2f6b4a', // preenchimento do selo e da coroa
         'clara' => '#4a9c6d', // borda/realce, para não sumir no fundo escuro
         'check' => '#ffffff', // o "V" dentro do selo
     ],
 
     // Rótulo por tipo de cadastro, usado no tooltip do selo.
     'rotulos' => [
-        'personal'      => 'personais',
+        'personal' => 'personais',
         'nutricionista' => 'nutricionistas',
-        'academia'      => 'academias',
-        'studio'        => 'studios',
-        'loja'          => 'lojas',
+        'academia' => 'academias',
+        'studio' => 'studios',
+        'loja' => 'lojas',
     ],
 
 ];
