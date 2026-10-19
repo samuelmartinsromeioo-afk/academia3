@@ -62,7 +62,7 @@ class VideosExercicios
         // 3) por prefixo (evita ruído exigindo ao menos 4 caracteres)
         if (mb_strlen($n) >= 4) {
             foreach ($norm as $chave => $path) {
-                if (str_starts_with($chave, $n . ' ')) {
+                if (str_starts_with($chave, $n.' ')) {
                     return $path;
                 }
             }
@@ -114,12 +114,12 @@ class VideosExercicios
     {
         $s = mb_strtolower(trim($s));
         $s = strtr($s, [
-            'á'=>'a','à'=>'a','â'=>'a','ã'=>'a','ä'=>'a',
-            'é'=>'e','è'=>'e','ê'=>'e','ë'=>'e',
-            'í'=>'i','ì'=>'i','î'=>'i','ï'=>'i',
-            'ó'=>'o','ò'=>'o','ô'=>'o','õ'=>'o','ö'=>'o',
-            'ú'=>'u','ù'=>'u','û'=>'u','ü'=>'u',
-            'ç'=>'c','ñ'=>'n',
+            'á' => 'a', 'à' => 'a', 'â' => 'a', 'ã' => 'a', 'ä' => 'a',
+            'é' => 'e', 'è' => 'e', 'ê' => 'e', 'ë' => 'e',
+            'í' => 'i', 'ì' => 'i', 'î' => 'i', 'ï' => 'i',
+            'ó' => 'o', 'ò' => 'o', 'ô' => 'o', 'õ' => 'o', 'ö' => 'o',
+            'ú' => 'u', 'ù' => 'u', 'û' => 'u', 'ü' => 'u',
+            'ç' => 'c', 'ñ' => 'n',
         ]);
 
         return preg_replace('/\s+/', ' ', $s);

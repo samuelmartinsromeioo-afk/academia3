@@ -51,12 +51,12 @@ class DocumentosLegaisTest extends TestCase
     /** Formata como as views formatam, para a comparação ser do mesmo texto. */
     private function reais(float $v): string
     {
-        return 'R$ ' . number_format($v, 2, ',', '.');
+        return 'R$ '.number_format($v, 2, ',', '.');
     }
 
     private function pct(float $f): string
     {
-        return rtrim(rtrim(number_format($f * 100, 2, ',', '.'), '0'), ',') . '%';
+        return rtrim(rtrim(number_format($f * 100, 2, ',', '.'), '0'), ',').'%';
     }
 
     // ── As páginas existem e abrem sem autenticação ──────────────────────
@@ -127,7 +127,7 @@ class DocumentosLegaisTest extends TestCase
                     $n,
                     $permitidas,
                     "A rota [{$rota}] cita \"{$n} anos\" como idade, mas o cadastro aplica "
-                        . implode(' e ', $permitidas) . '. Documento e código têm de dizer o mesmo.'
+                        .implode(' e ', $permitidas).'. Documento e código têm de dizer o mesmo.'
                 );
             }
         }
@@ -191,8 +191,8 @@ class DocumentosLegaisTest extends TestCase
         $html = $this->html('termos');
 
         $this->assertStringContainsString($this->pct((float) config('indicacao.percentual')), $html);
-        $this->assertStringContainsString((string) config('indicacao.janela_dias') . ' dias', $html);
-        $this->assertStringContainsString((string) config('indicacao.meta_alunos') . ' alunos', $html);
+        $this->assertStringContainsString((string) config('indicacao.janela_dias').' dias', $html);
+        $this->assertStringContainsString((string) config('indicacao.meta_alunos').' alunos', $html);
         $this->assertStringContainsString($this->reais((float) config('indicacao.saque_minimo')), $html);
     }
 
@@ -324,7 +324,7 @@ class DocumentosLegaisTest extends TestCase
                     $frase,
                     $html,
                     "A rota [{$rota}] ainda descreve o modelo antigo (\"{$frase}\"), em que a comissão "
-                        . 'era descontada do profissional. Hoje ela é acrescida ao preço e cobrada do aluno.'
+                        .'era descontada do profissional. Hoje ela é acrescida ao preço e cobrada do aluno.'
                 );
             }
         }
@@ -339,7 +339,7 @@ class DocumentosLegaisTest extends TestCase
             $this->assertStringContainsString(route('termos'), $html);
             $this->assertStringContainsString(route('lgpd.politica'), $html);
             $this->assertStringContainsString(
-                route('termos') . '#s9',
+                route('termos').'#s9',
                 $html,
                 "A rota [{$rota}] tem de apontar para a cláusula 9 (Programa de indicação) dos Termos gerais."
             );

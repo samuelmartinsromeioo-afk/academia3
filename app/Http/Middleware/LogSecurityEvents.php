@@ -27,13 +27,13 @@ class LogSecurityEvents
             $user = $request->user();
 
             Log::channel('security')->warning('acesso_negado_ou_erro', [
-                'status'    => $status,
-                'method'    => $request->method(),
-                'path'      => $request->path(),
-                'ip'        => $request->ip(),
+                'status' => $status,
+                'method' => $request->method(),
+                'path' => $request->path(),
+                'ip' => $request->ip(),
                 'user_type' => $user ? class_basename($user) : 'guest',
-                'user_id'   => $user->id ?? null,
-                'agent'     => substr((string) $request->userAgent(), 0, 180),
+                'user_id' => $user->id ?? null,
+                'agent' => substr((string) $request->userAgent(), 0, 180),
             ]);
         }
 

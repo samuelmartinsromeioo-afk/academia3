@@ -25,6 +25,7 @@ class SegurancaOwaspTest extends TestCase
     use DatabaseTransactions;
 
     private Cliente $cliente;
+
     private Personal $personal;
 
     protected function setUp(): void
@@ -116,8 +117,8 @@ class SegurancaOwaspTest extends TestCase
     {
         $foto = Foto::create([
             'fotavel_type' => $this->personal->getMorphClass(),
-            'fotavel_id'   => $this->personal->id,
-            'path'         => 'galeria/personals/minha.jpg',
+            'fotavel_id' => $this->personal->id,
+            'path' => 'galeria/personals/minha.jpg',
         ]);
 
         $this->withSession(['personal_id' => $this->personal->id])
@@ -141,8 +142,8 @@ class SegurancaOwaspTest extends TestCase
 
         $foto = Foto::create([
             'fotavel_type' => $this->personal->getMorphClass(),
-            'fotavel_id'   => $this->personal->id,
-            'path'         => 'galeria/personals/alheia.jpg',
+            'fotavel_id' => $this->personal->id,
+            'path' => 'galeria/personals/alheia.jpg',
         ]);
 
         $this->withSession(['personal_id' => $outro->id])
@@ -156,8 +157,8 @@ class SegurancaOwaspTest extends TestCase
     {
         $foto = Foto::create([
             'fotavel_type' => $this->personal->getMorphClass(),
-            'fotavel_id'   => $this->personal->id,
-            'path'         => 'galeria/personals/x.jpg',
+            'fotavel_id' => $this->personal->id,
+            'path' => 'galeria/personals/x.jpg',
         ]);
 
         // A rota tem `check.login`, que redireciona para o login (302) antes de
@@ -224,7 +225,7 @@ class SegurancaOwaspTest extends TestCase
             'exercicios/x.php',
             'fichas/videos/../../.env',
         ] as $tentativa) {
-            $this->get('/api/v1/media/exercicio-video/' . $tentativa)
+            $this->get('/api/v1/media/exercicio-video/'.$tentativa)
                 ->assertNotFound();
         }
     }
@@ -245,7 +246,7 @@ class SegurancaOwaspTest extends TestCase
 
     public function test_portal_com_token_invalido_da_404(): void
     {
-        $this->get('/p/' . str_repeat('a', 48))->assertNotFound();
+        $this->get('/p/'.str_repeat('a', 48))->assertNotFound();
         $this->get('/p/qualquer-coisa')->assertNotFound();
     }
 }

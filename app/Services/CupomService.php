@@ -94,12 +94,12 @@ class CupomService
                 $ehAluno = class_basename($usuario) === 'Cliente';
 
                 $uso = CupomUso::create([
-                    'cupom_id'     => $cupom->id,
+                    'cupom_id' => $cupom->id,
                     'usuario_type' => $usuario->getMorphClass(),
-                    'usuario_id'   => $usuario->getKey(),
-                    'bonus_valor'  => 0,
-                    'status'       => $ehAluno ? CupomUso::STATUS_SEM_BONUS : CupomUso::STATUS_PENDENTE,
-                    'ip'           => $ip,
+                    'usuario_id' => $usuario->getKey(),
+                    'bonus_valor' => 0,
+                    'status' => $ehAluno ? CupomUso::STATUS_SEM_BONUS : CupomUso::STATUS_PENDENTE,
+                    'ip' => $ip,
                 ]);
 
                 $cupom->increment('usos');
@@ -110,9 +110,9 @@ class CupomService
             // Unique violation = conta já indicada; qualquer outra falha não
             // pode impedir o cadastro de concluir.
             Log::warning('Falha ao registrar indicação', [
-                'cupom'   => $cupom->codigo,
-                'usuario' => $usuario->getMorphClass() . '#' . $usuario->getKey(),
-                'erro'    => $e->getMessage(),
+                'cupom' => $cupom->codigo,
+                'usuario' => $usuario->getMorphClass().'#'.$usuario->getKey(),
+                'erro' => $e->getMessage(),
             ]);
 
             return null;
@@ -155,7 +155,7 @@ class CupomService
 
         $uso->update([
             'janela_inicio' => $aprovacao,
-            'janela_fim'    => $fim,
+            'janela_fim' => $fim,
         ]);
 
         return true;
@@ -231,11 +231,11 @@ class CupomService
                         'cupom_uso_id' => $uso->id,
                         // base_valor = comissão da plataforma (o que rende o bônus);
                         // bruto_valor = o que o indicado faturou, só para o extrato.
-                        'base_valor'   => $receita['base'],
-                        'bruto_valor'  => $receita['bruto'],
-                        'percentual'   => $percentual,
-                        'valor'        => $valor,
-                        'ocorreu_em'   => $receita['em'],
+                        'base_valor' => $receita['base'],
+                        'bruto_valor' => $receita['bruto'],
+                        'percentual' => $percentual,
+                        'valor' => $valor,
+                        'ocorreu_em' => $receita['em'],
                     ]
                 );
             }
@@ -244,14 +244,14 @@ class CupomService
 
             $uso->update([
                 'bonus_valor' => $acumulado,
-                'apurado_em'  => now(),
+                'apurado_em' => now(),
             ]);
 
             return $acumulado;
         } catch (\Throwable $e) {
             Log::warning('Indicação: falha ao apurar', [
                 'cupom_uso_id' => $uso->id,
-                'erro'         => $e->getMessage(),
+                'erro' => $e->getMessage(),
             ]);
 
             return (float) $uso->bonus_valor;
@@ -276,9 +276,9 @@ class CupomService
         $coluna = match (class_basename($indicado)) {
             'Personal' => 'trainer_id',
             'Academia' => 'academia_id',
-            'Studio'   => 'studio_id',
-            'Loja'     => 'loja_id',
-            default    => null,
+            'Studio' => 'studio_id',
+            'Loja' => 'loja_id',
+            default => null,
         };
 
         if ($coluna === null) {
@@ -286,7 +286,7 @@ class CupomService
         }
 
         $inicio = $uso->janela_inicio;
-        $fim    = $uso->janela_fim;
+        $fim = $uso->janela_fim;
 
         $receitas = [];
 
@@ -302,10 +302,10 @@ class CupomService
             $bruto = (float) $pagamento->amount_total;
 
             $receitas[] = [
-                'origem' => 'payment:' . $pagamento->id,
-                'base'   => $this->comissao($bruto, $pagamento->company_fee),
-                'bruto'  => $bruto,
-                'em'     => $pagamento->paid_at ?? $pagamento->created_at,
+                'origem' => 'payment:'.$pagamento->id,
+                'base' => $this->comissao($bruto, $pagamento->company_fee),
+                'bruto' => $bruto,
+                'em' => $pagamento->paid_at ?? $pagamento->created_at,
             ];
         }
 
@@ -386,7 +386,7 @@ class CupomService
             // vier depois com a janela já fechada, o valor segue sendo 0 mesmo).
             if ((float) $uso->bonus_valor > 0 && $uso->podeLiberar()) {
                 $uso->update([
-                    'status'      => CupomUso::STATUS_LIBERADO,
+                    'status' => CupomUso::STATUS_LIBERADO,
                     'liberado_em' => now(),
                 ]);
                 $liberados++;
@@ -417,14 +417,14 @@ class CupomService
 
         try {
             return Cupom::create([
-                'codigo'      => Cupom::gerarCodigoUnico($dono->nome ?? null),
-                'tipo'        => Cupom::TIPO_INDICACAO,
-                'dono_type'   => $dono->getMorphClass(),
-                'dono_id'     => $dono->getKey(),
-                'descricao'   => 'Indicação de ' . ($dono->nome ?? 'usuário'),
+                'codigo' => Cupom::gerarCodigoUnico($dono->nome ?? null),
+                'tipo' => Cupom::TIPO_INDICACAO,
+                'dono_type' => $dono->getMorphClass(),
+                'dono_id' => $dono->getKey(),
+                'descricao' => 'Indicação de '.($dono->nome ?? 'usuário'),
                 // Cupom de indicação não tem valor fixo: o bônus é percentual.
                 'bonus_valor' => Cupom::BONUS_INDICACAO_FIXO,
-                'ativo'       => true,
+                'ativo' => true,
             ]);
         } catch (QueryException $e) {
             // Corrida entre duas requisições do mesmo usuário: relê o vencedor.

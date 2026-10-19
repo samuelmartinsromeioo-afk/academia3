@@ -6,7 +6,6 @@ use App\Http\Controllers\Concerns\VinculoComAluno;
 use App\Http\Controllers\Controller;
 use App\Models\Cadastro\Cliente;
 use App\Models\Cadastro\RegistroExercicio;
-use App\Models\Cadastro\TreinoConcluido;
 use App\Models\Meta;
 use Illuminate\Http\Request;
 
@@ -121,8 +120,8 @@ class MetaController extends Controller
             ->get()
             ->map(function (Meta $meta) {
                 $meta->progresso = $meta->calcularProgresso();
+
                 return $meta;
             });
     }
-
 }

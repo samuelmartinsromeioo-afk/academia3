@@ -28,6 +28,7 @@ class ParidadePerfilAlunoTest extends TestCase
     use DatabaseTransactions;
 
     private Cliente $cliente;
+
     private string $token;
 
     protected function setUp(): void
@@ -46,7 +47,7 @@ class ParidadePerfilAlunoTest extends TestCase
 
     private function headers(): array
     {
-        return ['Authorization' => 'Bearer ' . $this->token, 'Accept' => 'application/json'];
+        return ['Authorization' => 'Bearer '.$this->token, 'Accept' => 'application/json'];
     }
 
     /** O que o aluno manda do app muda de verdade o perfil dele. */

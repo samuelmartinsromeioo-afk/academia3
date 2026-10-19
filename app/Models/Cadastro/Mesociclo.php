@@ -28,11 +28,11 @@ class Mesociclo extends Model
     ];
 
     protected $casts = [
-        'data_inicio'      => 'date',
-        'data_fim'         => 'date',
+        'data_inicio' => 'date',
+        'data_fim' => 'date',
         'ultima_conclusao' => 'date',
-        'ativo'            => 'boolean',
-        'avisado_em'       => 'datetime',
+        'ativo' => 'boolean',
+        'avisado_em' => 'datetime',
     ];
 
     public function personal()
@@ -64,6 +64,7 @@ class Mesociclo extends Model
         if ($this->duracao_semanas && $this->data_inicio) {
             return $this->data_inicio->copy()->addWeeks($this->duracao_semanas);
         }
+
         return null;
     }
 
@@ -71,6 +72,7 @@ class Mesociclo extends Model
     public function estaVencido(): bool
     {
         $fim = $this->dataFim();
+
         return $this->ativo && $fim !== null && Carbon::today()->gt($fim);
     }
 
@@ -78,6 +80,7 @@ class Mesociclo extends Model
     public function diasRestantes(): ?int
     {
         $fim = $this->dataFim();
+
         return $fim === null ? null : (int) Carbon::today()->diffInDays($fim, false);
     }
 
@@ -88,6 +91,7 @@ class Mesociclo extends Model
         if ($treinos->isEmpty()) {
             return null;
         }
+
         return $treinos[$this->posicao_atual % $treinos->count()];
     }
 
@@ -98,6 +102,7 @@ class Mesociclo extends Model
         if ($treinos->isEmpty()) {
             return null;
         }
+
         return $treinos[($this->posicao_atual + 1) % $treinos->count()];
     }
 

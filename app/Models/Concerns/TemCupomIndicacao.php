@@ -119,9 +119,9 @@ trait TemCupomIndicacao
         $coluna = match (class_basename($this)) {
             'Personal' => 'trainer_id',
             'Academia' => 'academia_id',
-            'Studio'   => 'studio_id',
-            'Loja'     => 'loja_id',
-            default    => null,
+            'Studio' => 'studio_id',
+            'Loja' => 'loja_id',
+            default => null,
         };
 
         if ($coluna === null) {

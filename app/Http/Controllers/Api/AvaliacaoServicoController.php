@@ -14,8 +14,8 @@ use Illuminate\Http\Request;
  */
 class AvaliacaoServicoController extends Controller
 {
-    use ResolvesApiUser;
     use AvaliaServicos;
+    use ResolvesApiUser;
 
     // POST /api/v1/avaliar  { tipo, id, nota, comentario? }
     public function store(Request $request)
@@ -23,9 +23,9 @@ class AvaliacaoServicoController extends Controller
         $cliente = $this->clienteAutenticado($request);
 
         $dados = $request->validate([
-            'tipo'       => 'required|in:personal,academia,studio,loja',
-            'id'         => 'required|integer',
-            'nota'       => 'required|integer|min:1|max:5',
+            'tipo' => 'required|in:personal,academia,studio,loja',
+            'id' => 'required|integer',
+            'nota' => 'required|integer|min:1|max:5',
             'comentario' => 'nullable|string|max:500',
         ]);
 

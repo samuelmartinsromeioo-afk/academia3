@@ -72,7 +72,7 @@ class LembreteAulaTest extends TestCase
     {
         $tz = config('app.timezone_negocio');
         // "Agora" no fuso do negócio, a partir do qual a aula é daqui a X min.
-        $inicioAula = Carbon::parse('2026-10-14 ' . $horaParede, $tz);
+        $inicioAula = Carbon::parse('2026-10-14 '.$horaParede, $tz);
         Carbon::setTestNow($inicioAula->copy()->subMinutes($minutosAntes)->utc());
 
         $aluno = $this->aluno();

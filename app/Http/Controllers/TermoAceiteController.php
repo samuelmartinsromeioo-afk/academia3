@@ -20,10 +20,10 @@ class TermoAceiteController extends Controller
     /** Sessão => model, igual ao resto do app. */
     private const PERFIS = [
         'personal_id' => \App\Models\Cadastro\Personal::class,
-        'cliente_id'  => \App\Models\Cadastro\Cliente::class,
+        'cliente_id' => \App\Models\Cadastro\Cliente::class,
         'academia_id' => \App\Models\Cadastro\Academia::class,
-        'studio_id'   => \App\Models\Cadastro\Studio::class,
-        'loja_id'     => \App\Models\Cadastro\Loja::class,
+        'studio_id' => \App\Models\Cadastro\Studio::class,
+        'loja_id' => \App\Models\Cadastro\Loja::class,
     ];
 
     public function mostrar(Request $request)
@@ -40,13 +40,13 @@ class TermoAceiteController extends Controller
         }
 
         return view('legal.aceite', [
-            'usuario'      => $usuario,
-            'versao'       => (string) config('termos.versao'),
+            'usuario' => $usuario,
+            'versao' => (string) config('termos.versao'),
             'versaoAnterior' => $usuario->versaoTermosAceita(),
-            'resumo'       => (array) config('termos.resumo', []),
-            'linkTermos'   => route('termos'),
-            'linkPerfil'   => $this->termosDoPerfil($usuario),
-            'perfilLabel'  => $this->perfilLabel($usuario),
+            'resumo' => (array) config('termos.resumo', []),
+            'linkTermos' => route('termos'),
+            'linkPerfil' => $this->termosDoPerfil($usuario),
+            'perfilLabel' => $this->perfilLabel($usuario),
         ]);
     }
 
@@ -79,9 +79,9 @@ class TermoAceiteController extends Controller
 
         // A09 — o aceite é um ato jurídico; fica na trilha de auditoria.
         Log::channel('security')->info('termos_aceitos', [
-            'usuario' => $usuario->getMorphClass() . '#' . $usuario->getKey(),
-            'versao'  => (string) config('termos.versao'),
-            'ip'      => $request->ip(),
+            'usuario' => $usuario->getMorphClass().'#'.$usuario->getKey(),
+            'versao' => (string) config('termos.versao'),
+            'ip' => $request->ip(),
         ]);
 
         return redirect()->to($this->destino($request, $usuario))
@@ -113,7 +113,7 @@ class TermoAceiteController extends Controller
     {
         $destino = $request->session()->pull('termos_destino');
 
-        if ($destino && str_starts_with($destino, $request->getSchemeAndHttpHost() . '/')) {
+        if ($destino && str_starts_with($destino, $request->getSchemeAndHttpHost().'/')) {
             return $destino;
         }
 
@@ -124,11 +124,11 @@ class TermoAceiteController extends Controller
     {
         return match (class_basename($usuario)) {
             'Personal' => route('personal.dashboard'),
-            'Cliente'  => route('cliente.index'),
+            'Cliente' => route('cliente.index'),
             'Academia' => route('academia.dashboard'),
-            'Studio'   => route('studio.dashboard'),
-            'Loja'     => route('loja.dashboard'),
-            default    => route('login.index'),
+            'Studio' => route('studio.dashboard'),
+            'Loja' => route('loja.dashboard'),
+            default => route('login.index'),
         };
     }
 
@@ -137,11 +137,11 @@ class TermoAceiteController extends Controller
     {
         return match (class_basename($usuario)) {
             'Personal' => route('termos.personal'),
-            'Cliente'  => route('termos.aluno'),
+            'Cliente' => route('termos.aluno'),
             'Academia' => route('termos.academia'),
-            'Studio'   => route('termos.studio'),
-            'Loja'     => route('termos.loja'),
-            default    => null,
+            'Studio' => route('termos.studio'),
+            'Loja' => route('termos.loja'),
+            default => null,
         };
     }
 
@@ -149,11 +149,11 @@ class TermoAceiteController extends Controller
     {
         return match (class_basename($usuario)) {
             'Personal' => 'Personal Trainer',
-            'Cliente'  => 'Aluno',
+            'Cliente' => 'Aluno',
             'Academia' => 'Academia',
-            'Studio'   => 'Studio',
-            'Loja'     => 'Loja',
-            default    => 'Conta',
+            'Studio' => 'Studio',
+            'Loja' => 'Loja',
+            default => 'Conta',
         };
     }
 }

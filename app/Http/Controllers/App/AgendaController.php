@@ -2,10 +2,9 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
-use App\Models\Cadastro\Personal;
 use App\Models\Agenda;
-use Carbon\Carbon;
+use App\Models\Cadastro\Personal;
+use Illuminate\Http\Request;
 
 class AgendaController extends Controller
 {
@@ -48,15 +47,16 @@ class AgendaController extends Controller
         // SALVAMENTO DIFERENCIADO
         Agenda::create([
             'personal_id' => auth()->user()->personal->id,
-            'cliente_id'  => $clienteId, // Se for bloqueio do personal, grava NULL
-            'data'        => $request->data,
+            'cliente_id' => $clienteId, // Se for bloqueio do personal, grava NULL
+            'data' => $request->data,
             'hora_inicio' => $request->hora_inicio,
-            'hora_fim'    => $request->hora_fim,
-            'descricao'   => $request->descricao, // Onde fica "Almoço", "Médico", etc.
+            'hora_fim' => $request->hora_fim,
+            'descricao' => $request->descricao, // Onde fica "Almoço", "Médico", etc.
         ]);
 
         return redirect()->back()->with('success', 'Gravado com sucesso!');
     }
+
     public function getAgendaDia($data)
     {
         $agendas = Agenda::with(['cliente'])

@@ -95,7 +95,7 @@ class EstornoController extends Controller
                     $estorno->cliente,
                     $novoStatus === Estorno::STATUS_DEVOLVIDO ? 'Devolução concluída' : 'Sobre sua devolução',
                     $novoStatus === Estorno::STATUS_DEVOLVIDO
-                        ? 'O valor de R$ ' . number_format((float) $estorno->valor, 2, ',', '.') . ' da aula cancelada foi devolvido.'
+                        ? 'O valor de R$ '.number_format((float) $estorno->valor, 2, ',', '.').' da aula cancelada foi devolvido.'
                         : ($dados['observacao_admin'] ?? 'Seu pedido de devolução foi analisado.')
                 );
             }

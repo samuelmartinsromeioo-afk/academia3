@@ -2,16 +2,14 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
 use App\Models\Agenda;
 use App\Models\Cadastro\Cliente;
 use App\Models\Cadastro\Personal;
-use Illuminate\Support\Facades\Http;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 
 class AulaController extends Controller
 {
-  
     public function concluirAula(Request $request, $id)
     {
         try {
@@ -23,10 +21,10 @@ class AulaController extends Controller
             $personal = Personal::find($aula->personal_id);
             $cliente = Cliente::find($aula->cliente_id);
 
-            if (!$personal || !$cliente) {
+            if (! $personal || ! $cliente) {
                 return response()->json([
                     'sucesso' => false,
-                    'erro' => 'Personal ou cliente não encontrado'
+                    'erro' => 'Personal ou cliente não encontrado',
                 ], 404);
             }
 
@@ -44,37 +42,38 @@ class AulaController extends Controller
             return response()->json([
                 'sucesso' => true,
                 'mensagem' => 'Aula concluída e personal notificado!',
-                'aula_id' => $aula->id
+                'aula_id' => $aula->id,
             ], 200);
 
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
             return response()->json([
                 'sucesso' => false,
-                'erro' => 'Aula não encontrada'
+                'erro' => 'Aula não encontrada',
             ], 404);
 
         } catch (\Exception $e) {
-            Log::error('Erro ao concluir aula: ' . $e->getMessage());
-            
+            Log::error('Erro ao concluir aula: '.$e->getMessage());
+
             return response()->json([
                 'sucesso' => false,
-                'erro' => $e->getMessage()
+                'erro' => $e->getMessage(),
             ], 500);
         }
     }
 
     /**
      * Notificar personal via WhatsApp usando Twilio
-     * 
-     * @param string $nomeCliente
-     * @param string $tipoAula (pacote, avulsa, bloqueio)
-     * @param string $whatsappPersonal (número do personal)
-     * @param Agenda $aula
+     *
+     * @param  string  $nomeCliente
+     * @param  string  $tipoAula  (pacote, avulsa, bloqueio)
+     * @param  string  $whatsappPersonal  (número do personal)
+     * @param  Agenda  $aula
      */
     private function notificarPersonalWhatsApp($nomeCliente, $tipoAula, $personal, $aula)
     {
-        if (!$personal) {
+        if (! $personal) {
             Log::warning("Personal não encontrado para notificar - ID: {$aula->personal_id}");
+
             return;
         }
 
@@ -98,8 +97,8 @@ class AulaController extends Controller
      */
     private function formatarMensagem($nomeCliente, $tipoAula, $aula)
     {
-        $data = $aula->data instanceof \Carbon\Carbon ? 
-            $aula->data->format('d/m/Y') : 
+        $data = $aula->data instanceof \Carbon\Carbon ?
+            $aula->data->format('d/m/Y') :
             \Carbon\Carbon::parse($aula->data)->format('d/m/Y');
 
         $mensagemBase = "✅ Aula Concluída!\n\n";

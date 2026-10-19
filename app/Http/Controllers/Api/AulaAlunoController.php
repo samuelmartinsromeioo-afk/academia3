@@ -2,8 +2,8 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\Http\Controllers\AulaAlunoController as WebAulaAlunoController;
 use App\Http\Controllers\Api\Concerns\ResolvesApiUser;
+use App\Http\Controllers\AulaAlunoController as WebAulaAlunoController;
 use App\Http\Controllers\Controller;
 use App\Models\Agenda;
 use App\Models\AulaReposicao;
@@ -27,9 +27,7 @@ class AulaAlunoController extends Controller
 {
     use ResolvesApiUser;
 
-    public function __construct(private AgendaService $agendas)
-    {
-    }
+    public function __construct(private AgendaService $agendas) {}
 
     /** O controller web, resolvido como em ExplorarController (`app(...)`). */
     private function web(): WebAulaAlunoController

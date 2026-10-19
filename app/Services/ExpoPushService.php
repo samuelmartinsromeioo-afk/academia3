@@ -26,7 +26,7 @@ class ExpoPushService
      * Envia um push para TODOS os aparelhos de um destinatário (par tipo/id,
      * o mesmo usado em `notificacoes`).
      *
-     * @param array $data Dados extras entregues ao app (ex.: ['tela' => 'Notificacoes']).
+     * @param  array  $data  Dados extras entregues ao app (ex.: ['tela' => 'Notificacoes']).
      */
     public static function paraDestinatario(string $tipo, int $id, string $titulo, string $corpo, array $data = []): void
     {

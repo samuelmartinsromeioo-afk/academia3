@@ -24,7 +24,9 @@ class HorariosLivresTest extends TestCase
     use DatabaseTransactions;
 
     private Personal $personal;
+
     private Cliente $cliente;
+
     private AgendaService $agendas;
 
     protected function setUp(): void

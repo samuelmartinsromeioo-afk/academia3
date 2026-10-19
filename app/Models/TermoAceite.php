@@ -16,6 +16,7 @@ class TermoAceite extends Model
     protected $table = 'termo_aceites';
 
     public const ORIGEM_CADASTRO = 'cadastro';
+
     public const ORIGEM_REACEITE = 'reaceite';
 
     protected $fillable = [

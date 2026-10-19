@@ -83,7 +83,7 @@ class AuthController extends Controller
 
                 // Subconta de filial: token com ability extra "filial:{id}",
                 // usada pelos endpoints da academia para restringir o escopo.
-                $abilities = $filial ? ['academia', 'filial:' . $filial->id] : ['academia'];
+                $abilities = $filial ? ['academia', 'filial:'.$filial->id] : ['academia'];
                 $extra = $filial ? ['filial' => ['id' => $filial->id, 'nome' => $filial->nome]] : [];
 
                 return $this->tokenResponse($academia, 'academia', $device, 200, $abilities, $extra);
@@ -121,7 +121,7 @@ class AuthController extends Controller
         // genérica (não revela se o e-mail/CNPJ existe).
         \Illuminate\Support\Facades\Log::channel('security')->warning('login_falhou', [
             'login' => substr($loginInput, 0, 120),
-            'ip'    => $request->ip(),
+            'ip' => $request->ip(),
             'agent' => substr((string) $request->userAgent(), 0, 180),
         ]);
 

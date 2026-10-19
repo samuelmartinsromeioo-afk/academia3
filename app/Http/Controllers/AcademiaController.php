@@ -25,22 +25,22 @@ class AcademiaController extends Controller
     public function store(Request $request)
     {
         $dados = $request->validate([
-            'nome'              => 'required|string|max:255',
-            'cep'               => 'required|string|max:9',
-            'rua'               => 'required|string|max:300',
-            'bairro'            => 'required|string|max:200',
-            'cidade'            => 'required|string|max:200',
-            'estado'            => 'required|string|max:200',
-            'complemento'       => 'nullable|string',
-            'endereco'          => 'required|string|max:255',
+            'nome' => 'required|string|max:255',
+            'cep' => 'required|string|max:9',
+            'rua' => 'required|string|max:300',
+            'bairro' => 'required|string|max:200',
+            'cidade' => 'required|string|max:200',
+            'estado' => 'required|string|max:200',
+            'complemento' => 'nullable|string',
+            'endereco' => 'required|string|max:255',
             'valor_mensalidade' => 'required|numeric|min:0',
-            'descricao'         => 'nullable|string|max:255',
-            'email'             => 'required|email|unique:academias,email|max:255',
-            'senha'             => 'required|string|min:8|confirmed',
-            'cnpj'              => 'required|string|unique:academias,cnpj|max:18',
-            'infraestrutura'    => 'required|string|max:255',
-            'tipos_aulas'       => 'required|string|max:255',
-            'latitude'  => 'nullable|numeric',
+            'descricao' => 'nullable|string|max:255',
+            'email' => 'required|email|unique:academias,email|max:255',
+            'senha' => 'required|string|min:8|confirmed',
+            'cnpj' => 'required|string|unique:academias,cnpj|max:18',
+            'infraestrutura' => 'required|string|max:255',
+            'tipos_aulas' => 'required|string|max:255',
+            'latitude' => 'nullable|numeric',
             'longitude' => 'nullable|numeric',
         ]);
 
@@ -55,21 +55,22 @@ class AcademiaController extends Controller
     {
         $academia_id = session('academia_id');
 
-        if (!$academia_id) {
+        if (! $academia_id) {
             return redirect()->route('login.index')->withErrors(['login' => 'Acesso negado. Faça o login.']);
         }
 
         $academia = Academia::with('fotos')->find($academia_id);
 
-        if (!$academia) {
+        if (! $academia) {
             session()->forget('academia_id');
+
             return redirect()->route('login.index')->withErrors(['login' => 'Conta de academia não encontrada.']);
         }
 
-        $totalAlunos  = Cliente::where('academia_id', $academia_id)->count();
-        $personals    = Personal::where('academia_id', $academia_id)->count();
+        $totalAlunos = Cliente::where('academia_id', $academia_id)->count();
+        $personals = Personal::where('academia_id', $academia_id)->count();
         $planosAtivos = Cliente::where('academia_id', $academia_id)->where('plano_ativo', true)->count();
-        $faturamento  = $totalAlunos * $academia->valor_mensalidade;
+        $faturamento = $totalAlunos * $academia->valor_mensalidade;
 
         $alunos = Cliente::where('academia_id', $academia_id)->latest()->take(5)->get();
 
@@ -90,9 +91,12 @@ class AcademiaController extends Controller
     public function listarAlunos()
     {
         $academia_id = session('academia_id');
-        if (!$academia_id) return redirect()->route('login.index');
+        if (! $academia_id) {
+            return redirect()->route('login.index');
+        }
 
         $todosAlunos = Cliente::where('academia_id', $academia_id)->orderBy('nome', 'asc')->get();
+
         return $this->dashboard();
     }
 
@@ -112,11 +116,11 @@ class AcademiaController extends Controller
         $academia = Academia::findOrFail($id);
 
         $dados = $request->validate([
-            'nome'              => 'required|string|max:255',
-            'cidade'            => 'required|string',
+            'nome' => 'required|string|max:255',
+            'cidade' => 'required|string',
             'valor_mensalidade' => 'required|numeric',
-            'descricao'         => 'nullable|string',
-            'senha'             => 'nullable|string|min:8|max:255',
+            'descricao' => 'nullable|string',
+            'senha' => 'nullable|string|min:8|max:255',
         ]);
 
         if ($request->filled('senha')) {
@@ -133,19 +137,19 @@ class AcademiaController extends Controller
     public function storePlano(Request $request)
     {
         $request->validate([
-            'nome'           => 'required|string|max:255',
-            'valor'          => 'required|numeric|min:0',
-            'duracao_meses'  => 'required|integer|min:1',
-            'descricao'      => 'nullable|string|max:500',
+            'nome' => 'required|string|max:255',
+            'valor' => 'required|numeric|min:0',
+            'duracao_meses' => 'required|integer|min:1',
+            'descricao' => 'nullable|string|max:500',
         ]);
 
         Plano::create([
-            'academia_id'   => session('academia_id'),
-            'nome'          => $request->nome,
-            'valor'         => $request->valor,
+            'academia_id' => session('academia_id'),
+            'nome' => $request->nome,
+            'valor' => $request->valor,
             'duracao_meses' => $request->duracao_meses,
-            'descricao'     => $request->descricao,
-            'ativo'         => true,
+            'descricao' => $request->descricao,
+            'ativo' => true,
         ]);
 
         return redirect()->back()->with('success', 'Plano criado com sucesso!');
@@ -158,19 +162,19 @@ class AcademiaController extends Controller
             ->firstOrFail();
 
         $request->validate([
-            'nome'          => 'required|string|max:255',
-            'valor'         => 'required|numeric|min:0',
+            'nome' => 'required|string|max:255',
+            'valor' => 'required|numeric|min:0',
             'duracao_meses' => 'required|integer|min:1',
-            'descricao'     => 'nullable|string|max:500',
-            'ativo'         => 'boolean',
+            'descricao' => 'nullable|string|max:500',
+            'ativo' => 'boolean',
         ]);
 
         $plano->update([
-            'nome'          => $request->nome,
-            'valor'         => $request->valor,
+            'nome' => $request->nome,
+            'valor' => $request->valor,
             'duracao_meses' => $request->duracao_meses,
-            'descricao'     => $request->descricao,
-            'ativo'         => $request->has('ativo'),
+            'descricao' => $request->descricao,
+            'ativo' => $request->has('ativo'),
         ]);
 
         return redirect()->back()->with('success', 'Plano atualizado com sucesso!');

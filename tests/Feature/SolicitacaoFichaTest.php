@@ -26,7 +26,9 @@ class SolicitacaoFichaTest extends TestCase
     use DatabaseTransactions;
 
     private Personal $personal;
+
     private Cliente $cliente;
+
     private SolicitacaoFicha $solicitacao;
 
     protected function setUp(): void
@@ -48,7 +50,7 @@ class SolicitacaoFichaTest extends TestCase
 
         $this->solicitacao = SolicitacaoFicha::create([
             'personal_id' => $this->personal->id,
-            'cliente_id'  => $this->cliente->id,
+            'cliente_id' => $this->cliente->id,
             'objetivos' => 'Emagrecer e ganhar resistência.',
             'condicoes_clinicas' => 'Condromalácia no joelho direito.',
             'nivel_experiencia' => 'intermediario',
@@ -260,11 +262,11 @@ class SolicitacaoFichaTest extends TestCase
     {
         $ficha = FichaTreino::create([
             'personal_id' => $this->personal->id,
-            'cliente_id'  => $this->cliente->id,
-            'dia_semana'  => 1,
+            'cliente_id' => $this->cliente->id,
+            'dia_semana' => 1,
             'nome_treino' => 'Treino A',
-            'ativo'       => true,
-            'nivel'       => 'iniciante',
+            'ativo' => true,
+            'nivel' => 'iniciante',
         ]);
 
         if ($criadaEm) {

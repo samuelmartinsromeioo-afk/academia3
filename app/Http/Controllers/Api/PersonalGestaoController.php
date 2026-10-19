@@ -16,7 +16,6 @@ use App\Models\FotoProgresso;
 use App\Models\MedidaCorporal;
 use App\Models\Meta;
 use App\Models\Presenca;
-use App\Services\EstatisticasTreino;
 use App\Services\NotificacaoService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -475,6 +474,7 @@ class PersonalGestaoController extends Controller
                 foreach (array_keys(MedidaCorporal::CAMPOS) as $campo) {
                     $json[$campo] = $m->$campo !== null ? (float) $m->$campo : null;
                 }
+
                 return $json;
             }),
             'fotos' => $fotos->map(fn ($f) => [
@@ -600,6 +600,7 @@ class PersonalGestaoController extends Controller
             if ($a['sumido'] !== $b['sumido']) {
                 return $b['sumido'] <=> $a['sumido'];
             }
+
             return ($a['aderencia'] ?? 101) <=> ($b['aderencia'] ?? 101);
         });
 
@@ -629,15 +630,15 @@ class PersonalGestaoController extends Controller
             NotificacaoService::cliente(
                 $cliente,
                 'Senti sua falta nos treinos! 💪',
-                "Olá, {$nome}! 👋\n\n" .
-                "Notei que você está um tempinho sem treinar. Bora retomar o ritmo? Cada treino conta — e seu shape agradece! 🔥\n\n" .
+                "Olá, {$nome}! 👋\n\n".
+                "Notei que você está um tempinho sem treinar. Bora retomar o ritmo? Cada treino conta — e seu shape agradece! 🔥\n\n".
                 "Conte comigo. — {$personal->nome}",
                 'incentivo_aluno',
                 [$nome]
             );
         }
 
-        return response()->json(['success' => true, 'message' => 'Incentivo enviado para ' . ($cliente->nome ?? 'o aluno') . '! 💪']);
+        return response()->json(['success' => true, 'message' => 'Incentivo enviado para '.($cliente->nome ?? 'o aluno').'! 💪']);
     }
 
     // ===================== PREÇOS =====================
@@ -697,8 +698,13 @@ class PersonalGestaoController extends Controller
             return ['key' => 'sem_registro', 'label' => 'Sem registros', 'taxa' => null];
         }
         $taxa = $presentes / $total;
-        if ($taxa >= 0.8) return ['key' => 'frequente', 'label' => 'Frequente', 'taxa' => round($taxa, 2)];
-        if ($taxa >= 0.5) return ['key' => 'medio', 'label' => 'Mais ou menos', 'taxa' => round($taxa, 2)];
+        if ($taxa >= 0.8) {
+            return ['key' => 'frequente', 'label' => 'Frequente', 'taxa' => round($taxa, 2)];
+        }
+        if ($taxa >= 0.5) {
+            return ['key' => 'medio', 'label' => 'Mais ou menos', 'taxa' => round($taxa, 2)];
+        }
+
         return ['key' => 'ausente', 'label' => 'Pouco frequente', 'taxa' => round($taxa, 2)];
     }
 

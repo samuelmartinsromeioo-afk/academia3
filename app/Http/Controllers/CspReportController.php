@@ -38,14 +38,14 @@ class CspReportController extends Controller
         $corta = fn ($v, int $n = 300) => is_scalar($v) ? mb_substr((string) $v, 0, $n) : null;
 
         Log::channel('security')->warning('csp_violacao', [
-            'diretiva'  => $corta($r['effective-directive'] ?? $r['violated-directive'] ?? null, 60),
+            'diretiva' => $corta($r['effective-directive'] ?? $r['violated-directive'] ?? null, 60),
             'bloqueado' => $corta($r['blocked-uri'] ?? null),
             'documento' => $corta($r['document-uri'] ?? null),
-            'linha'     => isset($r['line-number']) ? (int) $r['line-number'] : null,
+            'linha' => isset($r['line-number']) ? (int) $r['line-number'] : null,
             // Trecho do código que violou: ajuda a achar o <script> inline certo.
-            'amostra'   => $corta($r['script-sample'] ?? null, 120),
-            'modo'      => config('csp.report_only') ? 'report-only' : 'imposto',
-            'ip'        => $request->ip(),
+            'amostra' => $corta($r['script-sample'] ?? null, 120),
+            'modo' => config('csp.report_only') ? 'report-only' : 'imposto',
+            'ip' => $request->ip(),
         ]);
 
         // 204: o navegador não espera corpo.

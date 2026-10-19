@@ -41,10 +41,10 @@ class ModalidadeDaAulaTest extends TestCase
     private function personal(?string $modalidade, string $cpf): Personal
     {
         return Personal::create([
-            'nome' => 'PT ' . ($modalidade ?? 'sem'), 'email' => $cpf . '@aula.teste', 'cpf' => $cpf,
+            'nome' => 'PT '.($modalidade ?? 'sem'), 'email' => $cpf.'@aula.teste', 'cpf' => $cpf,
             'senha' => bcrypt('x'), 'cep' => '30130-000', 'rua' => 'R', 'bairro' => 'B',
             'cidade' => 'BH', 'estado' => 'MG', 'complemento' => '-', 'foto' => '',
-            'idade' => '1990-01-01', 'valor_secao' => 80.00, 'cref' => $cpf . '-G/MG',
+            'idade' => '1990-01-01', 'valor_secao' => 80.00, 'cref' => $cpf.'-G/MG',
             'modalidade' => $modalidade, 'status' => 'aprovado', 'data_aprovacao' => now()->subYear(),
         ]);
     }
@@ -77,12 +77,12 @@ class ModalidadeDaAulaTest extends TestCase
     public static function resolucoes(): array
     {
         return [
-            'escolha do aluno manda'          => ['Online', 'Híbrido', 'Online'],
-            'so presencial e dedutivel'       => [null, 'Presencial', 'Presencial'],
-            'so online e dedutivel'           => [null, 'Online', 'Online'],
+            'escolha do aluno manda' => ['Online', 'Híbrido', 'Online'],
+            'so presencial e dedutivel' => [null, 'Presencial', 'Presencial'],
+            'so online e dedutivel' => [null, 'Online', 'Online'],
             // O caso que motivou tudo: híbrido sem escolha não recebe palpite.
-            'hibrido sem escolha fica nulo'   => [null, 'Híbrido', null],
-            'sem declaracao fica nulo'        => [null, null, null],
+            'hibrido sem escolha fica nulo' => [null, 'Híbrido', null],
+            'sem declaracao fica nulo' => [null, null, null],
         ];
     }
 
@@ -95,12 +95,12 @@ class ModalidadeDaAulaTest extends TestCase
     public static function validacoes(): array
     {
         return [
-            'hibrido aceita presencial'        => ['Presencial', 'Híbrido', true],
-            'hibrido aceita online'           => ['Online', 'Híbrido', true],
-            'so presencial recusa online'     => ['Online', 'Presencial', false],
-            'so online recusa presencial'     => ['Presencial', 'Online', false],
-            'nao informado passa'             => [null, 'Presencial', true],
-            'sem declaracao aceita os dois'   => ['Online', null, true],
+            'hibrido aceita presencial' => ['Presencial', 'Híbrido', true],
+            'hibrido aceita online' => ['Online', 'Híbrido', true],
+            'so presencial recusa online' => ['Online', 'Presencial', false],
+            'so online recusa presencial' => ['Presencial', 'Online', false],
+            'nao informado passa' => [null, 'Presencial', true],
+            'sem declaracao aceita os dois' => ['Online', null, true],
         ];
     }
 
@@ -256,7 +256,7 @@ class ModalidadeDaAulaTest extends TestCase
             ->getContent();
 
         $this->assertStringContainsString('montarEscolhaModalidade', $html);
-        $this->assertStringContainsString("name=\"modalidade\"", $html);
+        $this->assertStringContainsString('name="modalidade"', $html);
         // A função decide pela oferta do profissional.
         $this->assertStringContainsString("oferta === 'Presencial' || oferta === 'Online'", $html);
     }

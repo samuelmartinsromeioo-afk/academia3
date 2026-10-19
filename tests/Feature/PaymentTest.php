@@ -26,19 +26,19 @@ class PaymentTest extends TestCase
      */
     public function test_calculate_split_acrescenta_a_comissao_ao_preco(): void
     {
-        $controller = new PaymentController();
-        $split      = $controller->calculateSplit(100.00);
+        $controller = new PaymentController;
+        $split = $controller->calculateSplit(100.00);
 
         $this->assertEquals(100.00, $split['trainer_amount'], 'o profissional recebe o preço integral');
-        $this->assertEquals(10.00,  $split['company_fee']);
+        $this->assertEquals(10.00, $split['company_fee']);
         $this->assertEquals(110.00, $split['amount_total'], 'o cliente paga preço + comissão');
-        $this->assertEquals(0.00,   $split['gateway_fee'], 'no Pix a taxa do gateway é da plataforma');
+        $this->assertEquals(0.00, $split['gateway_fee'], 'no Pix a taxa do gateway é da plataforma');
     }
 
     public function test_split_no_rounding_discrepancy(): void
     {
-        $controller = new PaymentController();
-        $split      = $controller->calculateSplit(333.33);
+        $controller = new PaymentController;
+        $split = $controller->calculateSplit(333.33);
 
         // No Pix as três colunas fecham: total = repasse + comissão.
         $this->assertEquals(
@@ -65,7 +65,7 @@ class PaymentTest extends TestCase
         // O guard de autenticação é verificado no endpoint atual de criação de pagamento.
         $this->postJson('/api/criar-pagamento', [
             'personal_id' => 1,
-            'tipo'        => 'pacote',
+            'tipo' => 'pacote',
         ])->assertStatus(401);
     }
 
@@ -100,23 +100,23 @@ class PaymentTest extends TestCase
             'created_at' => now(), 'updated_at' => now(),
         ]);
 
-        $idempotencyKey = 'cliente_1_pacote_1_' . now()->format('Y-m');
+        $idempotencyKey = 'cliente_1_pacote_1_'.now()->format('Y-m');
 
         Payment::create([
-            'user_id'         => 1,
-            'trainer_id'      => 1,
-            'membership_id'   => 1,
-            'amount_total'    => 200.00,
-            'company_fee'     => 20.00,
-            'trainer_amount'  => 180.00,
-            'status'          => 'pending',
+            'user_id' => 1,
+            'trainer_id' => 1,
+            'membership_id' => 1,
+            'amount_total' => 200.00,
+            'company_fee' => 20.00,
+            'trainer_amount' => 180.00,
+            'status' => 'pending',
             'idempotency_key' => $idempotencyKey,
         ]);
 
         $this->withSession(['cliente_id' => 1])
             ->postJson('/api/payments/create-intent', [
-                'trainer_id'     => 1,
-                'membership_id'  => 1,
+                'trainer_id' => 1,
+                'membership_id' => 1,
                 'payment_method' => 'credit_card',
             ])
             ->assertStatus(409)
@@ -142,20 +142,20 @@ class PaymentTest extends TestCase
         ]);
 
         $payment = Payment::create([
-            'user_id'                  => 2,
-            'trainer_id'               => 2,
-            'membership_id'            => 2,
-            'amount_total'             => 150.00,
-            'company_fee'              => 15.00,
-            'trainer_amount'           => 135.00,
+            'user_id' => 2,
+            'trainer_id' => 2,
+            'membership_id' => 2,
+            'amount_total' => 150.00,
+            'company_fee' => 15.00,
+            'trainer_amount' => 135.00,
             'stripe_payment_intent_id' => 'pi_test_failed_001',
-            'status'                   => 'pending',
+            'status' => 'pending',
         ]);
 
         $payment->update([
-            'status'          => 'failed',
+            'status' => 'failed',
             'failure_message' => 'Cartão recusado.',
-            'retry_count'     => $payment->retry_count + 1,
+            'retry_count' => $payment->retry_count + 1,
         ]);
 
         $fresh = $payment->fresh();
@@ -183,19 +183,19 @@ class PaymentTest extends TestCase
         ]);
 
         $payment = Payment::create([
-            'user_id'        => 3,
-            'trainer_id'     => 3,
-            'membership_id'  => 3,
-            'amount_total'   => 200.00,
-            'company_fee'    => 20.00,
+            'user_id' => 3,
+            'trainer_id' => 3,
+            'membership_id' => 3,
+            'amount_total' => 200.00,
+            'company_fee' => 20.00,
             'trainer_amount' => 180.00,
-            'status'         => 'pending',
+            'status' => 'pending',
         ]);
 
         // Simulate what handleSuccessfulPayment does (without Stripe call)
         $payment->update([
-            'status'            => 'succeeded',
-            'paid_at'           => now(),
+            'status' => 'succeeded',
+            'paid_at' => now(),
             'next_billing_date' => now()->addDays(30)->toDateString(),
         ]);
 
@@ -206,21 +206,21 @@ class PaymentTest extends TestCase
 
         TrainerPayout::create([
             'trainer_id' => 3,
-            'amount'     => 180.00,
-            'status'     => 'pending',
+            'amount' => 180.00,
+            'status' => 'pending',
         ]);
 
         $this->assertDatabaseHas('membership_confirmations', [
-            'user_id'            => 3,
-            'trainer_id'         => 3,
-            'payment_id'         => $payment->id,
+            'user_id' => 3,
+            'trainer_id' => 3,
+            'payment_id' => $payment->id,
             'scheduled_sessions' => 12,
         ]);
 
         $this->assertDatabaseHas('trainer_payouts', [
             'trainer_id' => 3,
-            'amount'     => 180.00,
-            'status'     => 'pending',
+            'amount' => 180.00,
+            'status' => 'pending',
         ]);
 
         $this->assertEquals('succeeded', $payment->fresh()->status);
@@ -244,12 +244,12 @@ class PaymentTest extends TestCase
         ]);
 
         return Payment::create([
-            'user_id'                  => 90,
-            'amount_total'             => 200.00,
-            'company_fee'              => 20.00,
-            'trainer_amount'           => 180.00,
+            'user_id' => 90,
+            'amount_total' => 200.00,
+            'company_fee' => 20.00,
+            'trainer_amount' => 180.00,
             'stripe_payment_intent_id' => $asaasId,
-            'status'                   => 'pending',
+            'status' => 'pending',
         ]);
     }
 
@@ -264,7 +264,7 @@ class PaymentTest extends TestCase
         $payment = $this->seedPendingPayment('pay_forged_001');
 
         $this->postJson('/api/asaas-webhook', [
-            'event'   => 'PAYMENT_CONFIRMED',
+            'event' => 'PAYMENT_CONFIRMED',
             'payment' => ['id' => 'pay_forged_001'],
         ])->assertStatus(401); // sem header asaas-access-token
 
@@ -278,7 +278,7 @@ class PaymentTest extends TestCase
 
         $this->withHeaders(['asaas-access-token' => 'token-errado'])
             ->postJson('/api/asaas-webhook', [
-                'event'   => 'PAYMENT_CONFIRMED',
+                'event' => 'PAYMENT_CONFIRMED',
                 'payment' => ['id' => 'pay_forged_002'],
             ])->assertStatus(401);
 
@@ -295,7 +295,7 @@ class PaymentTest extends TestCase
         $payment = $this->seedPendingPayment('pay_forged_003');
 
         $this->postJson('/api/asaas-webhook', [
-            'event'   => 'PAYMENT_CONFIRMED',
+            'event' => 'PAYMENT_CONFIRMED',
             'payment' => ['id' => 'pay_forged_003'],
         ])->assertStatus(401);
 

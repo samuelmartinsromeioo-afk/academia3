@@ -13,7 +13,8 @@ class Cupom extends Model
 {
     protected $table = 'cupons';
 
-    public const TIPO_INDICACAO   = 'indicacao';
+    public const TIPO_INDICACAO = 'indicacao';
+
     public const TIPO_PROMOCIONAL = 'promocional';
 
     /**
@@ -53,10 +54,10 @@ class Cupom extends Model
 
     protected $casts = [
         'bonus_valor' => 'decimal:2',
-        'ativo'       => 'boolean',
-        'expira_em'   => 'date',
+        'ativo' => 'boolean',
+        'expira_em' => 'date',
         'limite_usos' => 'integer',
-        'usos'        => 'integer',
+        'usos' => 'integer',
     ];
 
     public function dono()
@@ -141,7 +142,7 @@ class Cupom extends Model
             for ($i = 0; $i < 4; $i++) {
                 $sufixo .= $alfabeto[random_int(0, strlen($alfabeto) - 1)];
             }
-            $codigo = $prefixo . $sufixo;
+            $codigo = $prefixo.$sufixo;
         } while (static::where('codigo', $codigo)->exists());
 
         return $codigo;

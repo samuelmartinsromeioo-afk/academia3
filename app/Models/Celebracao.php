@@ -22,6 +22,6 @@ class Celebracao extends Model
 
     protected $casts = [
         'dados_extras' => 'array',
-        'visto_em'     => 'datetime',
+        'visto_em' => 'datetime',
     ];
 }

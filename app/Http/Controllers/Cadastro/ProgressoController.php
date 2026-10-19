@@ -29,7 +29,7 @@ class ProgressoController extends Controller
 
         $cliente = Cliente::findOrFail($clienteId);
         $medidas = MedidaCorporal::where('cliente_id', $clienteId)->orderBy('data')->get();
-        $fotos   = FotoProgresso::where('cliente_id', $clienteId)->orderByDesc('data')->get();
+        $fotos = FotoProgresso::where('cliente_id', $clienteId)->orderByDesc('data')->get();
 
         return view('cliente.Progresso', compact('cliente', 'medidas', 'fotos'));
     }
@@ -132,15 +132,15 @@ class ProgressoController extends Controller
 
         $cliente = Cliente::findOrFail($clienteId);
         $medidas = MedidaCorporal::where('cliente_id', $clienteId)->orderBy('data')->get();
-        $fotos   = FotoProgresso::where('cliente_id', $clienteId)->orderByDesc('data')->get();
-        $metas   = Meta::where('cliente_id', $clienteId)->orderBy('concluida')->orderByDesc('created_at')->get()
+        $fotos = FotoProgresso::where('cliente_id', $clienteId)->orderByDesc('data')->get();
+        $metas = Meta::where('cliente_id', $clienteId)->orderBy('concluida')->orderByDesc('created_at')->get()
             ->map(function (Meta $m) {
                 $m->progresso = $m->calcularProgresso();
+
                 return $m;
             });
         $exercicios = RegistroExercicio::where('cliente_id', $clienteId)->distinct()->orderBy('nome_exercicio')->pluck('nome_exercicio');
 
         return view('personal.ProgressoAluno', compact('cliente', 'medidas', 'fotos', 'metas', 'exercicios'));
     }
-
 }

@@ -15,7 +15,7 @@ class TrainerPayoutMail extends Mailable
     use Queueable, SerializesModels;
 
     public function __construct(
-        public Personal      $personal,
+        public Personal $personal,
         public TrainerPayout $payout
     ) {}
 

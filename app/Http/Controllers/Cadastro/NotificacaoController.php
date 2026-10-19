@@ -26,9 +26,9 @@ class NotificacaoController extends Controller
         $voltar = match ($d['tipo']) {
             'personal' => route('personal.dashboard'),
             'academia' => route('academia.dashboard'),
-            'studio'   => route('studio.dashboard'),
-            'loja'     => route('loja.dashboard'),
-            default    => route('cliente.index'),
+            'studio' => route('studio.dashboard'),
+            'loja' => route('loja.dashboard'),
+            default => route('cliente.index'),
         };
 
         return view('notificacoes.index', compact('notificacoes', 'voltar'));

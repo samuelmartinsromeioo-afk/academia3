@@ -30,7 +30,9 @@ class AulaAlunoApiTest extends TestCase
     use DatabaseTransactions;
 
     private Cliente $cliente;
+
     private Personal $personal;
+
     private string $token;
 
     protected function setUp(): void
@@ -56,7 +58,7 @@ class AulaAlunoApiTest extends TestCase
 
     private function comToken(?string $token = null): array
     {
-        return ['Authorization' => 'Bearer ' . ($token ?: $this->token), 'Accept' => 'application/json'];
+        return ['Authorization' => 'Bearer '.($token ?: $this->token), 'Accept' => 'application/json'];
     }
 
     /** Cria uma aula do aluno daqui a `$horas` horas. */

@@ -31,12 +31,12 @@ class Subscription extends Model
     ];
 
     protected $casts = [
-        'amount_total'   => 'decimal:2',
-        'company_fee'    => 'decimal:2',
+        'amount_total' => 'decimal:2',
+        'company_fee' => 'decimal:2',
         'trainer_amount' => 'decimal:2',
-        'gateway_fee'    => 'decimal:2',
-        'next_due_date'  => 'date',
-        'acesso_ate'     => 'date',
+        'gateway_fee' => 'decimal:2',
+        'next_due_date' => 'date',
+        'acesso_ate' => 'date',
     ];
 
     public function cliente()

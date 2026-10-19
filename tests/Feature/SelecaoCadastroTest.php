@@ -29,10 +29,10 @@ class SelecaoCadastroTest extends TestCase
     {
         return [
             'personal' => ['personal', 'form.personal'],
-            'cliente'  => ['cliente',  'form.cliente'],
+            'cliente' => ['cliente',  'form.cliente'],
             'academia' => ['academia', 'form.academia'],
-            'studio'   => ['studio',   'form.studio'],
-            'loja'     => ['loja',     'form.loja'],
+            'studio' => ['studio',   'form.studio'],
+            'loja' => ['loja',     'form.loja'],
         ];
     }
 
@@ -46,7 +46,7 @@ class SelecaoCadastroTest extends TestCase
     /** O que o usuário digita passa por Cupom::normalizar antes de seguir. */
     public function test_normaliza_o_cupom_recebido(): void
     {
-        $this->get('/cadastro/ir-cadastro/personal?cupom=' . urlencode(' maria-7f3k '))
+        $this->get('/cadastro/ir-cadastro/personal?cupom='.urlencode(' maria-7f3k '))
             ->assertRedirect(route('form.personal', ['cupom' => 'MARIA7F3K']));
     }
 
@@ -99,7 +99,7 @@ class SelecaoCadastroTest extends TestCase
                 $total++;
 
                 if (! View::exists($nome)) {
-                    $faltando[] = $nome . ' (em ' . $arquivo->getFilename() . ')';
+                    $faltando[] = $nome.' (em '.$arquivo->getFilename().')';
                 }
             }
         }

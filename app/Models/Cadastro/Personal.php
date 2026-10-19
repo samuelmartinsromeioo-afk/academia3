@@ -5,8 +5,8 @@ namespace App\Models\Cadastro;
 use App\Models\Agenda;
 use App\Models\Avaliacao;
 use App\Models\Foto;
-use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Contracts\Encryption\DecryptException;
+use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Support\Facades\Crypt;
 use Laravel\Sanctum\HasApiTokens;
 
@@ -15,11 +15,11 @@ use Laravel\Sanctum\HasApiTokens;
 // Laravel, então nada muda no fluxo Blade existente.
 class Personal extends Authenticatable
 {
-    use HasApiTokens;
-    use \App\Models\Concerns\TemCupomIndicacao;
     use \App\Models\Concerns\AceitaTermos;
-    use \App\Models\Concerns\TemSubcontaAsaas;
+    use \App\Models\Concerns\TemCupomIndicacao;
     use \App\Models\Concerns\TemSeloPioneiro;
+    use \App\Models\Concerns\TemSubcontaAsaas;
+    use HasApiTokens;
 
     protected $table = 'personals';
 
@@ -84,7 +84,7 @@ class Personal extends Authenticatable
 
     protected $casts = [
         'precos_avaliacao' => 'array',
-        'especialidades'   => 'array',
+        'especialidades' => 'array',
         'pioneiro_posicao' => 'integer',
     ];
 
@@ -206,7 +206,7 @@ class Personal extends Authenticatable
             }
             // Vínculo anteriormente rejeitado: permite solicitar de novo, reabrindo como pendente.
             $this->academiasVinculadas()->updateExistingPivot($academia->id, [
-                'status'        => 'pendente',
+                'status' => 'pendente',
                 'solicitado_em' => now(),
                 'respondido_em' => null,
             ]);
@@ -215,7 +215,7 @@ class Personal extends Authenticatable
         }
 
         $this->academiasVinculadas()->attach($academia->id, [
-            'status'        => 'pendente',
+            'status' => 'pendente',
             'solicitado_em' => now(),
         ]);
     }

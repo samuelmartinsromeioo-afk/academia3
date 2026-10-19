@@ -1,17 +1,17 @@
 <?php
+
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
-use App\Models\Avaliacao;
 use App\Models\Agenda;
-use Illuminate\Support\Facades\Auth;
+use App\Models\Avaliacao;
+use Illuminate\Http\Request;
 
 class AvaliacaoController extends Controller
 {
     public function store(Request $request)
     {
         $clienteId = session('cliente_id');
-        if (!$clienteId) {
+        if (! $clienteId) {
             return back()->with('error', 'Apenas clientes podem enviar avaliações.');
         }
 
@@ -28,7 +28,7 @@ class AvaliacaoController extends Controller
             ->where('descricao', 'like', '%Aula agendada%')
             ->exists();
 
-        if (!$ehAluno) {
+        if (! $ehAluno) {
             return back()->with('error', 'Você não é aluno deste personal. Apenas alunos podem fazer avaliações.');
         }
 
@@ -40,14 +40,14 @@ class AvaliacaoController extends Controller
             ->where('data', '<', now()->format('Y-m-d')) // Aula no passado
             ->exists();
 
-        if (!$realizouAula) {
+        if (! $realizouAula) {
             return back()->with('error', 'Você só pode avaliar após realizar uma aula com este personal.');
         }
 
         // ✅ Se passou nas validações, cria a avaliação
         $request->validate([
             'nota' => 'required|integer|min:1|max:5',
-            'comentario' => 'nullable|string|max:500'
+            'comentario' => 'nullable|string|max:500',
         ]);
 
         Avaliacao::create([
@@ -72,13 +72,13 @@ class AvaliacaoController extends Controller
             ->where('data', '<', now()->format('Y-m-d'))
             ->exists();
 
-        if (!$realizouAula) {
+        if (! $realizouAula) {
             return back()->with('error', 'Você só pode avaliar após realizar uma aula neste studio.');
         }
 
         $request->validate([
             'nota' => 'required|integer|min:1|max:5',
-            'comentario' => 'nullable|string|max:500'
+            'comentario' => 'nullable|string|max:500',
         ]);
 
         Avaliacao::create([

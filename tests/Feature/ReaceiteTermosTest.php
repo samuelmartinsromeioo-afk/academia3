@@ -6,7 +6,6 @@ use App\Models\Cadastro\Cliente;
 use App\Models\Cadastro\Personal;
 use App\Models\TermoAceite;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
-use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
 /**
@@ -22,6 +21,7 @@ class ReaceiteTermosTest extends TestCase
     use DatabaseTransactions;
 
     private Personal $personal;
+
     private Cliente $cliente;
 
     protected function setUp(): void
@@ -184,8 +184,8 @@ class ReaceiteTermosTest extends TestCase
 
         $this->comoPersonal()
             ->withSession([
-                'personal_id'     => $this->personal->id,
-                'termos_destino'  => route('indicacoes.painel'),
+                'personal_id' => $this->personal->id,
+                'termos_destino' => route('indicacoes.painel'),
             ])
             ->post(route('termos.aceite.registrar'), ['aceito' => '1'])
             ->assertRedirect(route('indicacoes.painel'));
@@ -195,7 +195,7 @@ class ReaceiteTermosTest extends TestCase
     public function test_destino_externo_e_ignorado(): void
     {
         $this->withSession([
-            'personal_id'    => $this->personal->id,
+            'personal_id' => $this->personal->id,
             'termos_destino' => 'https://evil.example.com/phish',
         ])
             ->post(route('termos.aceite.registrar'), ['aceito' => '1'])

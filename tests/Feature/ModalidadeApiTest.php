@@ -29,6 +29,7 @@ class ModalidadeApiTest extends TestCase
     use DatabaseTransactions;
 
     private Cliente $cliente;
+
     private string $token;
 
     protected function setUp(): void
@@ -56,7 +57,7 @@ class ModalidadeApiTest extends TestCase
     private function comToken(?string $token = null): array
     {
         return [
-            'Authorization' => 'Bearer ' . ($token ?: $this->token),
+            'Authorization' => 'Bearer '.($token ?: $this->token),
             'Accept' => 'application/json',
         ];
     }
@@ -64,10 +65,10 @@ class ModalidadeApiTest extends TestCase
     private function personal(?string $modalidade, string $cpf): Personal
     {
         return Personal::create([
-            'nome' => 'PT API ' . ($modalidade ?? 'sem'), 'email' => $cpf . '@mod.teste', 'cpf' => $cpf,
+            'nome' => 'PT API '.($modalidade ?? 'sem'), 'email' => $cpf.'@mod.teste', 'cpf' => $cpf,
             'senha' => bcrypt('x'), 'cep' => '30130-000', 'rua' => 'R', 'bairro' => 'B',
             'cidade' => 'BH', 'estado' => 'MG', 'complemento' => '-', 'foto' => '',
-            'idade' => '1990-01-01', 'valor_secao' => 80.00, 'cref' => $cpf . '-G/MG',
+            'idade' => '1990-01-01', 'valor_secao' => 80.00, 'cref' => $cpf.'-G/MG',
             'modalidade' => $modalidade, 'status' => 'aprovado', 'data_aprovacao' => now()->subYear(),
         ]);
     }
@@ -421,7 +422,7 @@ class ModalidadeApiTest extends TestCase
     private function nomesDaVitrine(string $queryExtra = ''): array
     {
         $resposta = $this->withHeaders($this->comToken())
-            ->getJson('/api/v1/explorar/personais?q=Vitrine' . $queryExtra)
+            ->getJson('/api/v1/explorar/personais?q=Vitrine'.$queryExtra)
             ->assertOk();
 
         return array_column($resposta->json('personais'), 'nome');
@@ -430,8 +431,8 @@ class ModalidadeApiTest extends TestCase
     /** Cria um personal da bateria da vitrine com nome previsível. */
     private function personalVitrine(string $sufixo, ?string $modalidade, array $especialidades = []): Personal
     {
-        $p = $this->personal($modalidade, '77' . $sufixo);
-        $p->update(['nome' => 'Vitrine ' . $sufixo, 'especialidades' => $especialidades]);
+        $p = $this->personal($modalidade, '77'.$sufixo);
+        $p->update(['nome' => 'Vitrine '.$sufixo, 'especialidades' => $especialidades]);
 
         return $p;
     }

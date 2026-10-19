@@ -28,8 +28,8 @@ trait AvaliaServicos
     private array $colunaAvaliacao = [
         'personal' => 'personal_id',
         'academia' => 'academia_id',
-        'studio'   => 'studio_id',
-        'loja'     => 'loja_id',
+        'studio' => 'studio_id',
+        'loja' => 'loja_id',
     ];
 
     /**
@@ -98,15 +98,15 @@ trait AvaliaServicos
         $minha = $cliente ? $todas->firstWhere('cliente_id', $cliente->id) : null;
 
         return [
-            'media_avaliacao'  => $media ? round($media, 1) : null,
+            'media_avaliacao' => $media ? round($media, 1) : null,
             'total_avaliacoes' => $todas->count(),
-            'avaliacoes'       => $todas->take(20)->map(fn ($a) => [
-                'nota'       => (int) $a->nota,
+            'avaliacoes' => $todas->take(20)->map(fn ($a) => [
+                'nota' => (int) $a->nota,
                 'comentario' => $a->comentario,
-                'cliente'    => $a->cliente?->nome,
-                'data'       => $a->created_at?->toDateString(),
+                'cliente' => $a->cliente?->nome,
+                'data' => $a->created_at?->toDateString(),
             ])->values(),
-            'pode_avaliar'   => $cliente ? $this->podeAvaliarServico($tipo, (int) $model->id, $cliente) : false,
+            'pode_avaliar' => $cliente ? $this->podeAvaliarServico($tipo, (int) $model->id, $cliente) : false,
             'minha_avaliacao' => $minha ? ['nota' => (int) $minha->nota, 'comentario' => $minha->comentario] : null,
         ];
     }
@@ -117,9 +117,9 @@ trait AvaliaServicos
         return match ($tipo) {
             'personal' => Personal::where('status', 'aprovado')->find($id),
             'academia' => Academia::where('status', 'aprovado')->find($id),
-            'studio'   => Studio::where('status', 'aprovado')->find($id),
-            'loja'     => Loja::where('status', 'aprovado')->find($id),
-            default    => null,
+            'studio' => Studio::where('status', 'aprovado')->find($id),
+            'loja' => Loja::where('status', 'aprovado')->find($id),
+            default => null,
         };
     }
 }

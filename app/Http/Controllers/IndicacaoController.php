@@ -22,8 +22,7 @@ class IndicacaoController extends Controller
     public function __construct(
         private CupomService $cupons,
         private IndicacaoSaqueService $saques,
-    ) {
-    }
+    ) {}
 
     /**
      * Checagem em tempo real do código digitado no cadastro.
@@ -38,7 +37,7 @@ class IndicacaoController extends Controller
 
         if (! $cupom || ! $cupom->estaValido()) {
             return response()->json([
-                'valido'  => false,
+                'valido' => false,
                 'mensagem' => config('indicacao.invalido'),
             ]);
         }
@@ -46,10 +45,10 @@ class IndicacaoController extends Controller
         $nome = $cupom->nomeDono();
 
         return response()->json([
-            'valido'   => true,
-            'codigo'   => $cupom->codigo,
+            'valido' => true,
+            'codigo' => $cupom->codigo,
             'mensagem' => $nome
-                ? 'Código válido — indicado por ' . strtok(trim($nome), ' ') . '.'
+                ? 'Código válido — indicado por '.strtok(trim($nome), ' ').'.'
                 : 'Código válido!',
         ]);
     }
@@ -77,25 +76,25 @@ class IndicacaoController extends Controller
             ->paginate(15);
 
         return view('indicacoes.painel', [
-            'usuario'       => $usuario,
-            'cupom'         => $cupom,
-            'indicacoes'    => $indicacoes,
-            'total'         => $usuario->totalIndicacoes(),
-            'pendentes'     => $usuario->indicacoesPendentes(),
+            'usuario' => $usuario,
+            'cupom' => $cupom,
+            'indicacoes' => $indicacoes,
+            'total' => $usuario->totalIndicacoes(),
+            'pendentes' => $usuario->indicacoesPendentes(),
             'bonusPendente' => $usuario->bonusPendente(),
-            'saldo'         => $usuario->saldoDisponivel(),
-            'emSaque'       => $usuario->bonusEmSaque(),
-            'sacado'        => $usuario->bonusSacado(),
-            'temAberto'     => $usuario->temSaqueEmAberto(),
-            'saqueMinimo'   => (float) config('indicacao.saque_minimo', 20.00),
-            'saqueAuto'     => (bool) config('indicacao.saque_automatico', false),
+            'saldo' => $usuario->saldoDisponivel(),
+            'emSaque' => $usuario->bonusEmSaque(),
+            'sacado' => $usuario->bonusSacado(),
+            'temAberto' => $usuario->temSaqueEmAberto(),
+            'saqueMinimo' => (float) config('indicacao.saque_minimo', 20.00),
+            'saqueAuto' => (bool) config('indicacao.saque_automatico', false),
             'saqueAutoTeto' => (float) config('indicacao.saque_auto_teto', 300.00),
-            'meusSaques'    => $usuario->saquesIndicacao()->latest()->limit(10)->get(),
-            'percentual'    => (float) config('indicacao.percentual', 0.10),
-            'janelaDias'    => (int) config('indicacao.janela_dias', 35),
-            'meta'          => (int) config('indicacao.meta_alunos', 6),
-            'linkConvite'   => route('cadastro.SelecaoCadastro', ['cupom' => $cupom->codigo]),
-            'voltar'        => $this->rotaDashboard($usuario),
+            'meusSaques' => $usuario->saquesIndicacao()->latest()->limit(10)->get(),
+            'percentual' => (float) config('indicacao.percentual', 0.10),
+            'janelaDias' => (int) config('indicacao.janela_dias', 35),
+            'meta' => (int) config('indicacao.meta_alunos', 6),
+            'linkConvite' => route('cadastro.SelecaoCadastro', ['cupom' => $cupom->codigo]),
+            'voltar' => $this->rotaDashboard($usuario),
         ]);
     }
 
@@ -125,7 +124,7 @@ class IndicacaoController extends Controller
 
         if ($resultado['ok']) {
             $saque = $resultado['saque'];
-            $valor = 'R$ ' . number_format((float) $saque->valor, 2, ',', '.');
+            $valor = 'R$ '.number_format((float) $saque->valor, 2, ',', '.');
 
             // A mensagem depende do caminho que o pedido tomou: Pix já disparado
             // ou fila do admin (acima do teto / automático desligado / falha).
@@ -142,8 +141,8 @@ class IndicacaoController extends Controller
 
         return back()->withErrors([
             'pix_chave' => 'Saldo insuficiente para saque. O mínimo é R$ '
-                . number_format((float) ($resultado['minimo'] ?? 0), 2, ',', '.')
-                . ' e só entra no cálculo o bônus de indicação cuja janela já fechou.',
+                .number_format((float) ($resultado['minimo'] ?? 0), 2, ',', '.')
+                .' e só entra no cálculo o bônus de indicação cuja janela já fechou.',
         ]);
     }
 
@@ -156,7 +155,7 @@ class IndicacaoController extends Controller
             ->withCount('usos')
             ->when($request->filled('busca'), function ($q) use ($request) {
                 $codigo = Cupom::normalizar($request->input('busca'));
-                $q->where('codigo', 'like', $codigo . '%');
+                $q->where('codigo', 'like', $codigo.'%');
             })
             ->when($request->input('tipo') === Cupom::TIPO_PROMOCIONAL,
                 fn ($q) => $q->where('tipo', Cupom::TIPO_PROMOCIONAL))
@@ -168,22 +167,22 @@ class IndicacaoController extends Controller
             ->withQueryString();
 
         return view('admin.indicacoes', [
-            'cupons'          => $cupons,
+            'cupons' => $cupons,
             'totalIndicacoes' => CupomUso::liberados()->count(),
-            'bonusTotal'      => (float) CupomUso::liberados()->sum('bonus_valor'),
-            'pendentes'       => CupomUso::pendentes()->count(),
-            'bonusPendente'   => (float) CupomUso::pendentes()->sum('bonus_valor'),
-            'saques'          => IndicacaoSaque::with('usuario')->latest()->limit(50)->get(),
-            'saquesAbertos'   => (float) IndicacaoSaque::naFilaDoAdmin()->sum('valor'),
+            'bonusTotal' => (float) CupomUso::liberados()->sum('bonus_valor'),
+            'pendentes' => CupomUso::pendentes()->count(),
+            'bonusPendente' => (float) CupomUso::pendentes()->sum('bonus_valor'),
+            'saques' => IndicacaoSaque::with('usuario')->latest()->limit(50)->get(),
+            'saquesAbertos' => (float) IndicacaoSaque::naFilaDoAdmin()->sum('valor'),
             'saquesProcessando' => (float) IndicacaoSaque::processando()->sum('valor'),
-            'saquesPagos'     => (float) IndicacaoSaque::pagos()->sum('valor'),
-            'saqueAuto'       => (bool) config('indicacao.saque_automatico', false),
-            'saqueAutoTeto'   => (float) config('indicacao.saque_auto_teto', 300.00),
+            'saquesPagos' => (float) IndicacaoSaque::pagos()->sum('valor'),
+            'saqueAuto' => (bool) config('indicacao.saque_automatico', false),
+            'saqueAutoTeto' => (float) config('indicacao.saque_auto_teto', 300.00),
             'saqueAutoTetoDiario' => (float) config('indicacao.saque_auto_teto_diario', 2000.00),
-            'saldoAsaas'      => $this->saldoAsaasParaPainel(),
-            'percentual'      => (float) config('indicacao.percentual', 0.10),
-            'janelaDias'      => (int) config('indicacao.janela_dias', 35),
-            'meta'            => (int) config('indicacao.meta_alunos', 6),
+            'saldoAsaas' => $this->saldoAsaasParaPainel(),
+            'percentual' => (float) config('indicacao.percentual', 0.10),
+            'janelaDias' => (int) config('indicacao.janela_dias', 35),
+            'meta' => (int) config('indicacao.meta_alunos', 6),
         ]);
     }
 
@@ -237,10 +236,10 @@ class IndicacaoController extends Controller
     public function adminStore(Request $request)
     {
         $dados = $request->validate([
-            'codigo'      => 'nullable|string|max:32',
-            'descricao'   => 'nullable|string|max:255',
+            'codigo' => 'nullable|string|max:32',
+            'descricao' => 'nullable|string|max:255',
             'bonus_valor' => 'nullable|numeric|min:0|max:100000',
-            'expira_em'   => 'nullable|date|after_or_equal:today',
+            'expira_em' => 'nullable|date|after_or_equal:today',
             'limite_usos' => 'nullable|integer|min:1|max:1000000',
         ]);
 
@@ -253,16 +252,16 @@ class IndicacaoController extends Controller
         }
 
         Cupom::create([
-            'codigo'      => $codigo,
-            'tipo'        => Cupom::TIPO_PROMOCIONAL,
-            'descricao'   => $dados['descricao'] ?? null,
+            'codigo' => $codigo,
+            'tipo' => Cupom::TIPO_PROMOCIONAL,
+            'descricao' => $dados['descricao'] ?? null,
             'bonus_valor' => $dados['bonus_valor'] ?? 0,
-            'expira_em'   => $dados['expira_em'] ?? null,
+            'expira_em' => $dados['expira_em'] ?? null,
             'limite_usos' => $dados['limite_usos'] ?? null,
-            'ativo'       => true,
+            'ativo' => true,
         ]);
 
-        return back()->with('sucesso', 'Cupom ' . $codigo . ' criado.');
+        return back()->with('sucesso', 'Cupom '.$codigo.' criado.');
     }
 
     /** Liga/desliga um cupom. */
@@ -271,7 +270,7 @@ class IndicacaoController extends Controller
         $cupom = Cupom::findOrFail($id);
         $cupom->update(['ativo' => ! $cupom->ativo]);
 
-        return back()->with('sucesso', 'Cupom ' . $cupom->codigo . ($cupom->ativo ? ' reativado.' : ' desativado.'));
+        return back()->with('sucesso', 'Cupom '.$cupom->codigo.($cupom->ativo ? ' reativado.' : ' desativado.'));
     }
 
     // ── Helpers ──────────────────────────────────────────────────────────
@@ -295,10 +294,10 @@ class IndicacaoController extends Controller
     {
         $perfis = [
             'personal_id' => \App\Models\Cadastro\Personal::class,
-            'cliente_id'  => \App\Models\Cadastro\Cliente::class,
+            'cliente_id' => \App\Models\Cadastro\Cliente::class,
             'academia_id' => \App\Models\Cadastro\Academia::class,
-            'studio_id'   => \App\Models\Cadastro\Studio::class,
-            'loja_id'     => \App\Models\Cadastro\Loja::class,
+            'studio_id' => \App\Models\Cadastro\Studio::class,
+            'loja_id' => \App\Models\Cadastro\Loja::class,
         ];
 
         foreach ($perfis as $chave => $model) {
@@ -315,11 +314,11 @@ class IndicacaoController extends Controller
     {
         return match (class_basename($usuario)) {
             'Personal' => route('personal.dashboard'),
-            'Cliente'  => route('cliente.index'),
+            'Cliente' => route('cliente.index'),
             'Academia' => route('academia.dashboard'),
-            'Studio'   => route('studio.dashboard'),
-            'Loja'     => route('loja.dashboard'),
-            default    => route('login.index'),
+            'Studio' => route('studio.dashboard'),
+            'Loja' => route('loja.dashboard'),
+            default => route('login.index'),
         };
     }
 }

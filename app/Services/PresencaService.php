@@ -22,9 +22,7 @@ use Illuminate\Support\Collection;
  */
 class PresencaService
 {
-    public function __construct(private AgendaService $agendas)
-    {
-    }
+    public function __construct(private AgendaService $agendas) {}
 
     /** Aula mais cedo do dia (a presença é uma por dia, não por aula). */
     public function aulaDoDia(int $personalId, int $clienteId, string $data): ?Agenda
@@ -60,14 +58,14 @@ class PresencaService
 
         if (! $aula) {
             return 'Esse aluno não tem aula agendada em '
-                . Carbon::parse($data)->format('d/m/Y')
-                . '. A presença só pode ser marcada em dia de aula.';
+                .Carbon::parse($data)->format('d/m/Y')
+                .'. A presença só pode ser marcada em dia de aula.';
         }
 
         $inicio = $this->inicioDaAula($aula);
         if ($this->agora()->lt($inicio)) {
-            return 'A aula de ' . $inicio->format('d/m/Y') . ' começa às ' . $inicio->format('H:i')
-                . '. A presença pode ser marcada a partir desse horário.';
+            return 'A aula de '.$inicio->format('d/m/Y').' começa às '.$inicio->format('H:i')
+                .'. A presença pode ser marcada a partir desse horário.';
         }
 
         return null;
@@ -98,8 +96,8 @@ class PresencaService
                 $inicio = $this->inicioDaAula($aula);
 
                 return [
-                    'data'     => $aula->data->format('Y-m-d'),
-                    'hora'     => $aula->hora_inicio ? substr($aula->hora_inicio, 0, 5) : null,
+                    'data' => $aula->data->format('Y-m-d'),
+                    'hora' => $aula->hora_inicio ? substr($aula->hora_inicio, 0, 5) : null,
                     'liberado' => $agora->gte($inicio),
                 ];
             })

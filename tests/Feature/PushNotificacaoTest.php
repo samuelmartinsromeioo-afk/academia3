@@ -30,6 +30,7 @@ class PushNotificacaoTest extends TestCase
     use DatabaseTransactions;
 
     private const TITULO = 'Pacote confirmado';
+
     private const CORPO = 'Suas 12 aulas foram agendadas. Veja os horários em "Minhas aulas".';
 
     /**

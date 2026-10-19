@@ -26,9 +26,7 @@ use Illuminate\Validation\Rule;
  */
 class RegisterController extends Controller
 {
-    public function __construct(private CupomService $cupons)
-    {
-    }
+    public function __construct(private CupomService $cupons) {}
 
     /**
      * Regras comuns a todos os cadastros daqui: aceite dos Termos e cupom.
@@ -66,6 +64,7 @@ class RegisterController extends Controller
             TermoAceite::ORIGEM_CADASTRO
         );
     }
+
     /**
      * GET /api/v1/cadastro/opcoes — catálogo das listas fechadas dos cadastros.
      *
@@ -105,33 +104,33 @@ class RegisterController extends Controller
     public function personal(Request $request)
     {
         $dados = $request->validate([
-            'nome'          => 'required|string|max:255',
-            'cep'           => 'required|string|max:9',
-            'rua'           => 'required|string|max:300',
-            'bairro'        => 'required|string|max:200',
-            'cidade'        => 'required|string|max:200',
-            'estado'        => 'required|string|max:200',
-            'complemento'   => 'required|string|min:1',
-            'cpf'           => ['required', 'unique:personals,cpf', function ($attribute, $value, $fail) {
+            'nome' => 'required|string|max:255',
+            'cep' => 'required|string|max:9',
+            'rua' => 'required|string|max:300',
+            'bairro' => 'required|string|max:200',
+            'cidade' => 'required|string|max:200',
+            'estado' => 'required|string|max:200',
+            'complemento' => 'required|string|min:1',
+            'cpf' => ['required', 'unique:personals,cpf', function ($attribute, $value, $fail) {
                 if (! CadastroHelper::validarCPF($value)) {
                     $fail('O CPF informado é inválido.');
                 }
             }],
-            'email'         => 'required|email|unique:personals,email',
+            'email' => 'required|email|unique:personals,email',
             // Mesma regra do site — `App\Support\Cref` é a fonte única. Era
             // `required|string|max:30` nas duas portas, ou seja, qualquer
             // string passava (ver o comentário em Cadastro\PersonalController).
-            'cref'          => Cref::regra(),
-            'foto'          => 'required|file|mimes:jpeg,jpg,png,gif,webp,heic,heif|max:10240',
-            'valor_secao'   => 'required|numeric',
-            'senha'         => 'required|string|min:8|confirmed',
+            'cref' => Cref::regra(),
+            'foto' => 'required|file|mimes:jpeg,jpg,png,gif,webp,heic,heif|max:10240',
+            'valor_secao' => 'required|numeric',
+            'senha' => 'required|string|min:8|confirmed',
             // Mesmo corte de idade do formulário web (CadastroHelper é a fonte
             // única): 21 anos para quem vai atender aluno e receber repasse.
-            'idade'         => array_merge(['required'], CadastroHelper::regraNascimento(CadastroHelper::IDADE_MINIMA_PROFISSIONAL)),
-            'whatsapp'      => 'nullable|string|max:20',
+            'idade' => array_merge(['required'], CadastroHelper::regraNascimento(CadastroHelper::IDADE_MINIMA_PROFISSIONAL)),
+            'whatsapp' => 'nullable|string|max:20',
             // Modalidade de atendimento. Aqui "Híbrido" É opção: é o profissional
             // declarando que atende dos dois jeitos (ver config textos.profissional).
-            'modalidade'    => ['nullable', Rule::in(config('textos.profissional.modalidades'))],
+            'modalidade' => ['nullable', Rule::in(config('textos.profissional.modalidades'))],
             /*
              * Especialidades e bio — o que o aluno realmente lê no card e no
              * perfil da vitrine. Faltavam aqui, então quem se cadastrava pelo
@@ -142,12 +141,12 @@ class RegisterController extends Controller
              * valor livre poluiria o catálogo de filtros da vitrine, que é
              * derivado do que os profissionais declararam.
              */
-            'especialidades'   => ['nullable', 'array'],
+            'especialidades' => ['nullable', 'array'],
             'especialidades.*' => ['string', Rule::in(config('textos.profissional.especialidades.PERSONAL_TRAINER'))],
-            'bio'           => 'nullable|string|max:2000',
-            'latitude'      => 'nullable|numeric',
-            'longitude'     => 'nullable|numeric',
-            'academias'     => 'nullable|string|max:1000',
+            'bio' => 'nullable|string|max:2000',
+            'latitude' => 'nullable|numeric',
+            'longitude' => 'nullable|numeric',
+            'academias' => 'nullable|string|max:1000',
         ] + $this->regrasComuns(), array_merge([
             'email.unique' => 'Este e-mail já está cadastrado.',
             'cpf.unique' => 'Este CPF já está cadastrado.',
@@ -282,26 +281,26 @@ class RegisterController extends Controller
     public function loja(Request $request)
     {
         $dados = $request->validate([
-            'nome'        => 'required|string|max:255',
-            'cnpj'        => 'required|string|max:18|unique:lojas,cnpj',
-            'email'       => 'required|email|max:255|unique:lojas,email',
-            'senha'       => 'required|string|min:8|confirmed',
-            'whatsapp'    => 'nullable|string|max:20',
-            'cep'         => 'required|string|max:9',
-            'rua'         => 'required|string|max:300',
-            'bairro'      => 'required|string|max:200',
-            'cidade'      => 'required|string|max:200',
-            'estado'      => 'required|string|max:2',
+            'nome' => 'required|string|max:255',
+            'cnpj' => 'required|string|max:18|unique:lojas,cnpj',
+            'email' => 'required|email|max:255|unique:lojas,email',
+            'senha' => 'required|string|min:8|confirmed',
+            'whatsapp' => 'nullable|string|max:20',
+            'cep' => 'required|string|max:9',
+            'rua' => 'required|string|max:300',
+            'bairro' => 'required|string|max:200',
+            'cidade' => 'required|string|max:200',
+            'estado' => 'required|string|max:2',
             'complemento' => 'nullable|string|max:255',
-            'endereco'    => 'required|string|max:255',
-            'descricao'   => 'nullable|string|max:500',
-            'latitude'    => 'nullable|numeric',
-            'longitude'   => 'nullable|numeric',
+            'endereco' => 'required|string|max:255',
+            'descricao' => 'nullable|string|max:500',
+            'latitude' => 'nullable|numeric',
+            'longitude' => 'nullable|numeric',
         ] + $this->regrasComuns(), [
-            'cnpj.unique'     => 'Este CNPJ já está cadastrado.',
-            'email.unique'    => 'Este e-mail já está cadastrado.',
+            'cnpj.unique' => 'Este CNPJ já está cadastrado.',
+            'email.unique' => 'Este e-mail já está cadastrado.',
             'senha.confirmed' => 'A confirmação de senha não confere.',
-            'senha.min'       => 'A senha deve ter no mínimo 8 caracteres.',
+            'senha.min' => 'A senha deve ter no mínimo 8 caracteres.',
             'aceita_termos.accepted' => 'Você precisa aceitar os termos de uso.',
         ]);
 

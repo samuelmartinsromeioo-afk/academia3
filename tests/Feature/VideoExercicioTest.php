@@ -16,7 +16,9 @@ class VideoExercicioTest extends TestCase
     use DatabaseTransactions;
 
     private int $academiaId;
+
     private int $clienteId;
+
     private int $personalId;
 
     protected function setUp(): void

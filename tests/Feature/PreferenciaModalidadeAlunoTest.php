@@ -41,10 +41,10 @@ class PreferenciaModalidadeAlunoTest extends TestCase
         // Um profissional de cada modalidade, para a vitrine ter o que filtrar.
         foreach ([['Presencial', '331'], ['Online', '332'], ['Híbrido', '333']] as [$mod, $cpf]) {
             Personal::create([
-                'nome' => "PT {$mod}", 'email' => strtolower($mod) . '@pref.teste', 'cpf' => $cpf,
+                'nome' => "PT {$mod}", 'email' => strtolower($mod).'@pref.teste', 'cpf' => $cpf,
                 'senha' => bcrypt('x'), 'cep' => '30130-000', 'rua' => 'R', 'bairro' => 'B',
                 'cidade' => 'BH', 'estado' => 'MG', 'complemento' => '-', 'foto' => '',
-                'idade' => '1990-01-01', 'valor_secao' => 80.00, 'cref' => $cpf . '-G/MG',
+                'idade' => '1990-01-01', 'valor_secao' => 80.00, 'cref' => $cpf.'-G/MG',
                 'modalidade' => $mod, 'status' => 'aprovado', 'data_aprovacao' => now()->subYear(),
             ]);
         }
@@ -211,16 +211,16 @@ class PreferenciaModalidadeAlunoTest extends TestCase
     {
         return [
             // Quem quer online é atendido por online e por híbrido.
-            'online quer online'            => ['Online', 'Online', true],
-            'online quer hibrido'           => ['Online', 'Híbrido', true],
-            'online NAO quer presencial'    => ['Online', 'Presencial', false],
+            'online quer online' => ['Online', 'Online', true],
+            'online quer hibrido' => ['Online', 'Híbrido', true],
+            'online NAO quer presencial' => ['Online', 'Presencial', false],
             // Simétrico para presencial.
-            'presencial quer presencial'    => ['Presencial', 'Presencial', true],
-            'presencial quer hibrido'       => ['Presencial', 'Híbrido', true],
-            'presencial NAO quer online'    => ['Presencial', 'Online', false],
+            'presencial quer presencial' => ['Presencial', 'Presencial', true],
+            'presencial quer hibrido' => ['Presencial', 'Híbrido', true],
+            'presencial NAO quer online' => ['Presencial', 'Online', false],
             // Sem preferência, serve qualquer um.
-            'sem preferencia aceita tudo'   => [null, 'Online', true],
-            'sem preferencia aceita nulo'   => [null, null, true],
+            'sem preferencia aceita tudo' => [null, 'Online', true],
+            'sem preferencia aceita nulo' => [null, null, true],
             // Profissional que não declarou não é punido pela omissão dele.
             'profissional sem declarar passa' => ['Online', null, true],
         ];

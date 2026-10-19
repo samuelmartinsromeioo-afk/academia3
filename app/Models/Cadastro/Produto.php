@@ -24,9 +24,9 @@ class Produto extends Model
     ];
 
     protected $casts = [
-        'preco'   => 'decimal:2',
+        'preco' => 'decimal:2',
         'estoque' => 'integer',
-        'ativo'   => 'boolean',
+        'ativo' => 'boolean',
     ];
 
     public function loja(): BelongsTo

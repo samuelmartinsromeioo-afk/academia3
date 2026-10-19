@@ -2,23 +2,23 @@
 
 namespace App\Models\Cadastro;
 
+use App\Models\Agenda;
+use App\Models\Avaliacao;
+use App\Models\Foto;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Laravel\Sanctum\HasApiTokens;
-use App\Models\Agenda;
-use App\Models\Avaliacao;
-use App\Models\Foto;
 
 // Extende Authenticatable + HasApiTokens para permitir login via API (Sanctum).
 class Studio extends Authenticatable
 {
-    use HasFactory;
-    use HasApiTokens;
-    use \App\Models\Concerns\TemCupomIndicacao;
     use \App\Models\Concerns\AceitaTermos;
-    use \App\Models\Concerns\TemSubcontaAsaas;
+    use \App\Models\Concerns\TemCupomIndicacao;
     use \App\Models\Concerns\TemSeloPioneiro;
+    use \App\Models\Concerns\TemSubcontaAsaas;
+    use HasApiTokens;
+    use HasFactory;
 
     protected $table = 'studios';
 
@@ -52,7 +52,7 @@ class Studio extends Authenticatable
     ];
 
     protected $casts = [
-        'valor_aula'     => 'decimal:2',
+        'valor_aula' => 'decimal:2',
         'data_aprovacao' => 'datetime',
         // Fora do $fillable de propósito: quem grava é definirPosicaoPioneiro().
         'pioneiro_posicao' => 'integer',
@@ -101,6 +101,7 @@ class Studio extends Authenticatable
     public function getMediaAvaliacaoAttribute()
     {
         $media = $this->avaliacoes()->avg('nota');
+
         return $media ? number_format($media, 1, '.', '') : '0.0';
     }
 
@@ -118,13 +119,13 @@ class Studio extends Authenticatable
             ->first();
 
         // Sem funcionamento definido no dia => studio fechado (nada agendável).
-        if (!$horario) {
+        if (! $horario) {
             return [];
         }
 
-        $capPadrao  = $horario->capacidade ?? $this->capacidade_padrao ?? 10;
-        $abertura   = \Carbon\Carbon::parse($data . ' ' . $horario->hora_abertura);
-        $fechamento = \Carbon\Carbon::parse($data . ' ' . $horario->hora_fechamento);
+        $capPadrao = $horario->capacidade ?? $this->capacidade_padrao ?? 10;
+        $abertura = \Carbon\Carbon::parse($data.' '.$horario->hora_abertura);
+        $fechamento = \Carbon\Carbon::parse($data.' '.$horario->hora_fechamento);
 
         $agendasDoDia = Agenda::where('studio_id', $this->id)
             ->whereDate('data', $data)
@@ -146,8 +147,8 @@ class Studio extends Authenticatable
 
         if ($aulas->isNotEmpty()) {
             foreach ($aulas as $aula) {
-                $inicio = \Carbon\Carbon::parse($data . ' ' . $aula->hora_inicio);
-                $fim    = $inicio->copy()->addMinutes((int) ($aula->duracao_min ?: 60));
+                $inicio = \Carbon\Carbon::parse($data.' '.$aula->hora_inicio);
+                $fim = $inicio->copy()->addMinutes((int) ($aula->duracao_min ?: 60));
 
                 // Ignora aulas que extrapolam o horário de funcionamento do dia.
                 if ($inicio->lt($abertura) || $fim->gt($fechamento)) {
@@ -155,24 +156,24 @@ class Studio extends Authenticatable
                 }
 
                 $janelas[] = [
-                    'inicio'           => $inicio,
-                    'fim'              => $fim,
-                    'capacidade'       => $aula->capacidade ?? $capPadrao,
-                    'profissional'     => $aula->professor->nome ?? $aula->profissional,
+                    'inicio' => $inicio,
+                    'fim' => $fim,
+                    'capacidade' => $aula->capacidade ?? $capPadrao,
+                    'profissional' => $aula->professor->nome ?? $aula->profissional,
                     'professor_resumo' => $aula->professor->resumo ?? null,
-                    'duracao'          => (int) ($aula->duracao_min ?: 60),
+                    'duracao' => (int) ($aula->duracao_min ?: 60),
                 ];
             }
         } else {
             $cursor = $abertura->copy();
             while ($cursor->copy()->addHour()->lte($fechamento)) {
                 $janelas[] = [
-                    'inicio'           => $cursor->copy(),
-                    'fim'              => $cursor->copy()->addHour(),
-                    'capacidade'       => $capPadrao,
-                    'profissional'     => null,
+                    'inicio' => $cursor->copy(),
+                    'fim' => $cursor->copy()->addHour(),
+                    'capacidade' => $capPadrao,
+                    'profissional' => null,
                     'professor_resumo' => null,
-                    'duracao'          => 60,
+                    'duracao' => 60,
                 ];
                 $cursor->addHour();
             }
@@ -181,7 +182,7 @@ class Studio extends Authenticatable
         $slots = [];
         foreach ($janelas as $j) {
             $slotInicio = $j['inicio']->format('H:i:s');
-            $slotFim    = $j['fim']->format('H:i:s');
+            $slotFim = $j['fim']->format('H:i:s');
 
             $sobrepostas = $agendasDoDia->filter(function ($agenda) use ($slotInicio, $slotFim) {
                 return $agenda->hora_inicio < $slotFim && $agenda->hora_fim > $slotInicio;
@@ -191,19 +192,19 @@ class Studio extends Authenticatable
                 continue;
             }
 
-            $ocupacao   = $sobrepostas->where('tipo_aula', '!=', 'bloqueio')->count();
+            $ocupacao = $sobrepostas->where('tipo_aula', '!=', 'bloqueio')->count();
             $capacidade = (int) $j['capacidade'];
 
             $slots[] = [
-                'inicio'           => substr($slotInicio, 0, 5),
-                'fim'              => substr($slotFim, 0, 5),
-                'label'            => substr($slotInicio, 0, 5) . ' - ' . substr($slotFim, 0, 5),
-                'capacidade'       => $capacidade,
-                'ocupacao'         => $ocupacao,
-                'vagas'            => max(0, $capacidade - $ocupacao),
-                'profissional'     => $j['profissional'],
+                'inicio' => substr($slotInicio, 0, 5),
+                'fim' => substr($slotFim, 0, 5),
+                'label' => substr($slotInicio, 0, 5).' - '.substr($slotFim, 0, 5),
+                'capacidade' => $capacidade,
+                'ocupacao' => $ocupacao,
+                'vagas' => max(0, $capacidade - $ocupacao),
+                'profissional' => $j['profissional'],
                 'professor_resumo' => $j['professor_resumo'] ?? null,
-                'duracao'          => $j['duracao'],
+                'duracao' => $j['duracao'],
             ];
         }
 

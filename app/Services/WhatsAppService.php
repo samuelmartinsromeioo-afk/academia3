@@ -24,10 +24,10 @@ class WhatsAppService
      * livre legível (que só entrega dentro da janela de 24h). Assim dá pra
      * registrar/aprovar os templates na Meta sem quebrar os envios atuais.
      *
-     * @param string $telefone      Número do destinatário.
-     * @param string $textoFallback Mensagem de texto legível (modo sem template).
-     * @param string $template      Nome do template aprovado na Meta.
-     * @param array  $params        Parâmetros do corpo do template ({{1}}, {{2}}, ...).
+     * @param  string  $telefone  Número do destinatário.
+     * @param  string  $textoFallback  Mensagem de texto legível (modo sem template).
+     * @param  string  $template  Nome do template aprovado na Meta.
+     * @param  array  $params  Parâmetros do corpo do template ({{1}}, {{2}}, ...).
      */
     public static function notificar(string $telefone, string $textoFallback, string $template, array $params = [], string $idioma = 'pt_BR'): bool
     {
@@ -60,10 +60,10 @@ class WhatsAppService
     public static function enviarTemplate(string $telefone, string $template, string $idioma = 'pt_BR', array $components = []): bool
     {
         return self::enviar($telefone, [
-            'type'     => 'template',
+            'type' => 'template',
             'template' => array_filter([
-                'name'       => $template,
-                'language'   => ['code' => $idioma],
+                'name' => $template,
+                'language' => ['code' => $idioma],
                 'components' => $components ?: null,
             ]),
         ]);
@@ -71,35 +71,40 @@ class WhatsAppService
 
     private static function enviar(string $telefone, array $payload): bool
     {
-        $token         = config('services.whatsapp.token');
+        $token = config('services.whatsapp.token');
         $phoneNumberId = config('services.whatsapp.phone_number_id');
 
-        if (!$token || !$phoneNumberId) {
+        if (! $token || ! $phoneNumberId) {
             Log::warning('WhatsApp (Meta) não configurado — mensagem não enviada.');
+
             return false;
         }
 
         $phone = self::normalizarTelefone($telefone);
-        if (!$phone) {
+        if (! $phone) {
             Log::warning('WhatsApp (Meta): telefone inválido — mensagem não enviada.');
+
             return false;
         }
 
         try {
             $res = Http::withToken($token)->post(
-                'https://graph.facebook.com/' . self::API_VERSION . "/{$phoneNumberId}/messages",
+                'https://graph.facebook.com/'.self::API_VERSION."/{$phoneNumberId}/messages",
                 array_merge(['messaging_product' => 'whatsapp', 'to' => $phone], $payload)
             );
 
             if ($res->successful()) {
                 Log::info('WhatsApp (Meta) enviado', ['to' => $phone]);
+
                 return true;
             }
 
             Log::error('WhatsApp (Meta): falha ao enviar', ['to' => $phone, 'body' => $res->body()]);
+
             return false;
         } catch (\Exception $e) {
             Log::error('WhatsApp (Meta): exceção ao enviar', ['error' => $e->getMessage()]);
+
             return false;
         }
     }
@@ -121,7 +126,7 @@ class WhatsAppService
         ], array_values($params));
 
         return [[
-            'type'       => 'body',
+            'type' => 'body',
             'parameters' => $parameters,
         ]];
     }
@@ -143,9 +148,10 @@ class WhatsAppService
         if ($phone === '') {
             return null;
         }
-        if (!str_starts_with($phone, '55')) {
-            $phone = '55' . $phone;
+        if (! str_starts_with($phone, '55')) {
+            $phone = '55'.$phone;
         }
+
         return $phone;
     }
 }

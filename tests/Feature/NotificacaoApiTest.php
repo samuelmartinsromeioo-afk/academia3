@@ -45,7 +45,7 @@ class NotificacaoApiTest extends TestCase
 
     private function headers(string $token): array
     {
-        return ['Authorization' => 'Bearer ' . $token, 'Accept' => 'application/json'];
+        return ['Authorization' => 'Bearer '.$token, 'Accept' => 'application/json'];
     }
 
     public function test_a_notificacao_chega_no_app_com_o_texto(): void

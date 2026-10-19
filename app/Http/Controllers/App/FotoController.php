@@ -3,10 +3,10 @@
 namespace App\Http\Controllers\App;
 
 use App\Http\Controllers\Controller;
-use App\Models\Foto;
-use App\Models\Cadastro\Personal;
 use App\Models\Cadastro\Academia as Academia;
+use App\Models\Cadastro\Personal;
 use App\Models\Cadastro\Studio;
+use App\Models\Foto;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 
@@ -16,7 +16,7 @@ class FotoController extends Controller
     public function storePersonal(Request $request)
     {
         $request->validate([
-            'foto'    => 'required|file|mimes:jpeg,jpg,png,gif,webp,heic,heif|max:10240',
+            'foto' => 'required|file|mimes:jpeg,jpg,png,gif,webp,heic,heif|max:10240',
             'legenda' => 'nullable|string|max:255',
         ]);
 
@@ -28,20 +28,20 @@ class FotoController extends Controller
 
         $path = $request->file('foto')->store('galeria/personals', 'public');
 
-        if (!$path) {
+        if (! $path) {
             return response()->json(['erro' => 'Falha ao salvar o arquivo. Verifique as permissões do servidor.'], 500);
         }
 
         $foto = $personal->fotos()->create([
-            'path'    => $path,
+            'path' => $path,
             'legenda' => $request->legenda,
         ]);
 
         return response()->json([
             'sucesso' => true,
             'foto' => [
-                'id'      => $foto->id,
-                'url'     => asset('storage/' . $path),
+                'id' => $foto->id,
+                'url' => asset('storage/'.$path),
                 'legenda' => $foto->legenda,
             ],
             'total' => $personal->fotos()->count(),
@@ -52,7 +52,7 @@ class FotoController extends Controller
     public function storeAcademia(Request $request)
     {
         $request->validate([
-            'foto'    => 'required|file|mimes:jpeg,jpg,png,gif,webp,heic,heif|max:10240',
+            'foto' => 'required|file|mimes:jpeg,jpg,png,gif,webp,heic,heif|max:10240',
             'legenda' => 'nullable|string|max:255',
         ]);
 
@@ -65,7 +65,7 @@ class FotoController extends Controller
         $path = $request->file('foto')->store('galeria/academias', 'public');
 
         $academia->fotos()->create([
-            'path'    => $path,
+            'path' => $path,
             'legenda' => $request->legenda,
         ]);
 
@@ -76,7 +76,7 @@ class FotoController extends Controller
     public function storeStudio(Request $request)
     {
         $request->validate([
-            'foto'    => 'required|file|mimes:jpeg,jpg,png,gif,webp,heic,heif|max:10240',
+            'foto' => 'required|file|mimes:jpeg,jpg,png,gif,webp,heic,heif|max:10240',
             'legenda' => 'nullable|string|max:255',
         ]);
 
@@ -89,7 +89,7 @@ class FotoController extends Controller
         $path = $request->file('foto')->store('galeria/studios', 'public');
 
         $studio->fotos()->create([
-            'path'    => $path,
+            'path' => $path,
             'legenda' => $request->legenda,
         ]);
 
@@ -116,8 +116,8 @@ class FotoController extends Controller
         $donoPorSessao = [
             'personal_id' => \App\Models\Cadastro\Personal::class,
             'academia_id' => \App\Models\Cadastro\Academia::class,
-            'studio_id'   => \App\Models\Cadastro\Studio::class,
-            'loja_id'     => \App\Models\Cadastro\Loja::class,
+            'studio_id' => \App\Models\Cadastro\Studio::class,
+            'loja_id' => \App\Models\Cadastro\Loja::class,
         ];
 
         $ehDono = false;

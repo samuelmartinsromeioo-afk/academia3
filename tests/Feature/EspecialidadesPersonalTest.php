@@ -21,7 +21,9 @@ class EspecialidadesPersonalTest extends TestCase
     use DatabaseTransactions;
 
     private Personal $hipertrofia;
+
     private Personal $semNada;
+
     private Cliente $cliente;
 
     protected function setUp(): void
@@ -283,7 +285,7 @@ class EspecialidadesPersonalTest extends TestCase
     private function comToken($user): array
     {
         return [
-            'Authorization' => 'Bearer ' . $user->createToken('app')->plainTextToken,
+            'Authorization' => 'Bearer '.$user->createToken('app')->plainTextToken,
             'Accept' => 'application/json',
         ];
     }

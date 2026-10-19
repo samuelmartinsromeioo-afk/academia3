@@ -78,7 +78,7 @@ class SmokeAppEndpointsTest extends TestCase
 
     private function contaDe(string $papel)
     {
-        $sufixo = 'smoke' . $papel;
+        $sufixo = 'smoke'.$papel;
 
         return match ($papel) {
             'cliente' => Cliente::create([
@@ -127,13 +127,13 @@ class SmokeAppEndpointsTest extends TestCase
         $falhas = [];
         foreach (self::ENDPOINTS[$papel] as $rota) {
             $resp = $this->withHeaders([
-                'Authorization' => 'Bearer ' . $token,
+                'Authorization' => 'Bearer '.$token,
                 'Accept' => 'application/json',
-            ])->getJson('/api/v1' . $rota);
+            ])->getJson('/api/v1'.$rota);
 
             if ($resp->status() !== 200) {
                 $falhas[] = sprintf(
-                    "  %s %s → %d  %s",
+                    '  %s %s → %d  %s',
                     strtoupper($papel),
                     $rota,
                     $resp->status(),
@@ -142,7 +142,7 @@ class SmokeAppEndpointsTest extends TestCase
             }
         }
 
-        $this->assertSame([], $falhas, "Telas que NÃO abrem para " . $papel . ":\n" . implode("\n", $falhas) . "\n");
+        $this->assertSame([], $falhas, 'Telas que NÃO abrem para '.$papel.":\n".implode("\n", $falhas)."\n");
     }
 
     public static function papeis(): array
@@ -159,7 +159,7 @@ class SmokeAppEndpointsTest extends TestCase
     public function test_rotas_publicas_do_cadastro_respondem(): void
     {
         foreach (self::PUBLICAS as $rota) {
-            $this->getJson('/api/v1' . $rota)->assertOk();
+            $this->getJson('/api/v1'.$rota)->assertOk();
         }
     }
 }

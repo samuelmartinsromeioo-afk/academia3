@@ -18,8 +18,11 @@ class Estorno extends Model
     protected $table = 'estornos';
 
     public const STATUS_PENDENTE = 'pendente';
+
     public const STATUS_DEVOLVIDO = 'devolvido';
+
     public const STATUS_RECUSADO = 'recusado';
+
     /** O personal remarcou a aula: o aluno recebe a aula, não o dinheiro. */
     public const STATUS_REMARCADO = 'remarcado';
 

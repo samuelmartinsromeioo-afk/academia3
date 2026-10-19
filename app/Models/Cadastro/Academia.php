@@ -2,26 +2,24 @@
 
 namespace App\Models\Cadastro;
 
+use App\Models\Foto;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Laravel\Sanctum\HasApiTokens;
-use App\Models\Foto;
-use App\Models\Cadastro\Plano;
-use App\Models\Cadastro\Filial;
+
 // Extende Authenticatable + HasApiTokens para permitir login via API (Sanctum),
 // igual a Cliente/Personal. O login web por sessão continua funcionando.
 class Academia extends Authenticatable
 {
-    use HasApiTokens;
-    use \App\Models\Concerns\TemCupomIndicacao;
     use \App\Models\Concerns\AceitaTermos;
-    use \App\Models\Concerns\TemSubcontaAsaas;
+    use \App\Models\Concerns\TemCupomIndicacao;
     use \App\Models\Concerns\TemSeloPioneiro;
+    use \App\Models\Concerns\TemSubcontaAsaas;
+    use HasApiTokens;
 
     // O nome da tabela deve bater com o banco
     protected $table = 'academias';
-
 
     protected $fillable = [
         'nome',
@@ -49,20 +47,21 @@ class Academia extends Authenticatable
         'asaas_account_id',
         'asaas_wallet_id',
         'asaas_api_key',
-                            ];
+    ];
 
-    //garante com que os dados saiam de forma correta do banco de dados 
+    // garante com que os dados saiam de forma correta do banco de dados
     protected $casts = [
         'valor' => 'decimal:2',
         'created_at' => 'datetime',
         // Fora do $fillable de propósito: quem grava é definirPosicaoPioneiro().
         'pioneiro_posicao' => 'integer',
     ];
+
     public function cliente(): HasMany
     {
         return $this->hasMany(Academia::class);
     }
-   
+
     public function fotos()
     {
         return $this->morphMany(Foto::class, 'fotavel');
@@ -122,6 +121,7 @@ class Academia extends Authenticatable
     public function getMediaAvaliacaoAttribute()
     {
         $media = $this->avaliacoes()->avg('nota');
+
         return $media ? number_format($media, 1, '.', '') : '0.0';
     }
 

@@ -16,11 +16,11 @@ class SelecaoController extends \App\Http\Controllers\Controller
     {
         $rota = match ($tipo) {
             'personal' => 'form.personal',
-            'cliente'  => 'form.cliente',
+            'cliente' => 'form.cliente',
             'academia' => 'form.academia',
-            'studio'   => 'form.studio',
-            'loja'     => 'form.loja',
-            default    => abort(404),
+            'studio' => 'form.studio',
+            'loja' => 'form.loja',
+            default => abort(404),
         };
 
         // Preserva o cupom de indicação vindo do link de convite.

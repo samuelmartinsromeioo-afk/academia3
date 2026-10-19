@@ -70,12 +70,12 @@ trait AceitaTermos
         try {
             TermoAceite::create([
                 'usuario_type' => $this->getMorphClass(),
-                'usuario_id'   => $this->getKey(),
-                'versao'       => $versao,
-                'aceito_em'    => now(),
-                'ip'           => $ip,
-                'user_agent'   => $userAgent ? mb_substr($userAgent, 0, 255) : null,
-                'origem'       => $origem,
+                'usuario_id' => $this->getKey(),
+                'versao' => $versao,
+                'aceito_em' => now(),
+                'ip' => $ip,
+                'user_agent' => $userAgent ? mb_substr($userAgent, 0, 255) : null,
+                'origem' => $origem,
             ]);
 
             return true;
@@ -87,9 +87,9 @@ trait AceitaTermos
             }
 
             \Illuminate\Support\Facades\Log::warning('Falha ao registrar aceite de termos', [
-                'usuario' => $this->getMorphClass() . '#' . $this->getKey(),
-                'versao'  => $versao,
-                'erro'    => $e->getMessage(),
+                'usuario' => $this->getMorphClass().'#'.$this->getKey(),
+                'versao' => $versao,
+                'erro' => $e->getMessage(),
             ]);
 
             return false;

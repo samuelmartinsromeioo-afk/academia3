@@ -22,16 +22,19 @@ use Illuminate\Support\Str;
 class MetaConversionsService
 {
     protected ?string $pixelId;
+
     protected ?string $token;
+
     protected string $apiVersion;
+
     protected ?string $testCode;
 
     public function __construct()
     {
-        $this->pixelId    = config('services.meta.pixel_id');
-        $this->token      = config('services.meta.capi_token');
+        $this->pixelId = config('services.meta.pixel_id');
+        $this->token = config('services.meta.capi_token');
         $this->apiVersion = config('services.meta.api_version', 'v21.0');
-        $this->testCode   = config('services.meta.test_event_code');
+        $this->testCode = config('services.meta.test_event_code');
     }
 
     public function enabled(): bool
@@ -43,12 +46,12 @@ class MetaConversionsService
      * Envia o evento server-side e devolve o payload pronto para o browser
      * (event, params e event_id para deduplicação).
      *
-     * @param  string       $eventName   Ex.: 'Purchase', 'Lead', 'CompleteRegistration'
-     * @param  array        $customData  Parâmetros do evento (value, currency, content_ids...)
-     * @param  array        $userData    ['email','phone','first_name','city','external_id']
-     * @param  string|null  $eventId     ID determinístico para deduplicação (ex.: "purchase_{id}").
-     *                                    Passe um id estável quando a página puder ser recarregada,
-     *                                    para a Meta deduplicar disparos repetidos do mesmo evento.
+     * @param  string  $eventName  Ex.: 'Purchase', 'Lead', 'CompleteRegistration'
+     * @param  array  $customData  Parâmetros do evento (value, currency, content_ids...)
+     * @param  array  $userData  ['email','phone','first_name','city','external_id']
+     * @param  string|null  $eventId  ID determinístico para deduplicação (ex.: "purchase_{id}").
+     *                                Passe um id estável quando a página puder ser recarregada,
+     *                                para a Meta deduplicar disparos repetidos do mesmo evento.
      */
     public function track(string $eventName, array $customData = [], array $userData = [], ?string $eventId = null, ?Request $request = null, ?string $eventSourceUrl = null): array
     {
@@ -58,8 +61,8 @@ class MetaConversionsService
         $this->send($eventName, $customData, $userData, $request, $eventId, $eventSourceUrl);
 
         return [
-            'event'    => $eventName,
-            'params'   => $customData,
+            'event' => $eventName,
+            'params' => $customData,
             'event_id' => $eventId,
         ];
     }
@@ -140,12 +143,12 @@ class MetaConversionsService
     protected function dispatch(string $eventName, array $customData, array $userData, string $eventId, ?string $eventSourceUrl): void
     {
         $payload = [
-            'event_name'    => $eventName,
-            'event_time'    => time(),
-            'event_id'      => $eventId,
+            'event_name' => $eventName,
+            'event_time' => time(),
+            'event_id' => $eventId,
             'action_source' => 'website',
-            'user_data'     => $userData,
-            'custom_data'   => (object) $customData,
+            'user_data' => $userData,
+            'custom_data' => (object) $customData,
         ];
         if ($eventSourceUrl) {
             $payload['event_source_url'] = $eventSourceUrl;
@@ -164,15 +167,15 @@ class MetaConversionsService
 
             if ($res->failed()) {
                 Log::warning('Meta CAPI: resposta de erro', [
-                    'event'  => $eventName,
+                    'event' => $eventName,
                     'status' => $res->status(),
-                    'body'   => $res->body(),
+                    'body' => $res->body(),
                 ]);
             }
         } catch (\Throwable $e) {
             Log::warning('Meta CAPI: falha ao enviar evento', [
                 'event' => $eventName,
-                'erro'  => $e->getMessage(),
+                'erro' => $e->getMessage(),
             ]);
         }
     }
@@ -236,7 +239,7 @@ class MetaConversionsService
                 $out['fbc'] = $fbc;
             } elseif ($fbclid = $request->query('fbclid')) {
                 // Monta o fbc a partir do clique quando o cookie ainda não existe.
-                $out['fbc'] = 'fb.1.' . time() . '.' . $fbclid;
+                $out['fbc'] = 'fb.1.'.time().'.'.$fbclid;
             }
         }
 
@@ -261,7 +264,7 @@ class MetaConversionsService
         }
         // 10 (fixo com DDD) ou 11 (celular com DDD) dígitos => falta o DDI 55.
         if (strlen($digits) <= 11) {
-            $digits = '55' . $digits;
+            $digits = '55'.$digits;
         }
 
         return $digits;
@@ -278,11 +281,11 @@ class MetaConversionsService
         }
 
         return [
-            'email'       => $model->email ?? null,
-            'phone'       => $model->whatsapp ?? $model->telefone ?? null,
-            'first_name'  => $model->nome ? Str::of($model->nome)->trim()->explode(' ')->first() : null,
-            'city'        => $model->cidade ?? null,
-            'state'       => $model->estado ?? null,
+            'email' => $model->email ?? null,
+            'phone' => $model->whatsapp ?? $model->telefone ?? null,
+            'first_name' => $model->nome ? Str::of($model->nome)->trim()->explode(' ')->first() : null,
+            'city' => $model->cidade ?? null,
+            'state' => $model->estado ?? null,
             'external_id' => $model->id ?? null,
         ];
     }

@@ -81,8 +81,8 @@ class CadastroHelper
 
         return [
             'date',
-            'before_or_equal:' . $limites['max'],
-            'after_or_equal:' . $limites['min'],
+            'before_or_equal:'.$limites['max'],
+            'after_or_equal:'.$limites['min'],
         ];
     }
 
@@ -98,10 +98,10 @@ class CadastroHelper
     public static function mensagensNascimento(int $idadeMinima, string $campo = 'idade'): array
     {
         return [
-            "{$campo}.required"        => 'Informe sua data de nascimento.',
-            "{$campo}.date"            => 'Informe uma data de nascimento válida.',
+            "{$campo}.required" => 'Informe sua data de nascimento.',
+            "{$campo}.date" => 'Informe uma data de nascimento válida.',
             "{$campo}.before_or_equal" => "É preciso ter no mínimo {$idadeMinima} anos para criar uma conta.",
-            "{$campo}.after_or_equal"  => 'Confira a data de nascimento: o ano informado não parece válido.',
+            "{$campo}.after_or_equal" => 'Confira a data de nascimento: o ano informado não parece válido.',
         ];
     }
 
@@ -117,7 +117,7 @@ class CadastroHelper
     {
         $sexos = (array) config('textos.profissional.sexos', []);
 
-        return 'in:' . implode(',', array_merge($sexos, array_map('mb_strtolower', $sexos)));
+        return 'in:'.implode(',', array_merge($sexos, array_map('mb_strtolower', $sexos)));
     }
 
     public static function validarCPF(string $cpf): bool
@@ -134,8 +134,12 @@ class CadastroHelper
                 $soma += $cpf[$i] * (($t + 1) - $i);
             }
             $resto = ($soma * 10) % 11;
-            if ($resto === 10 || $resto === 11) $resto = 0;
-            if ($resto !== (int) $cpf[$t]) return false;
+            if ($resto === 10 || $resto === 11) {
+                $resto = 0;
+            }
+            if ($resto !== (int) $cpf[$t]) {
+                return false;
+            }
         }
 
         return true;
@@ -167,7 +171,7 @@ class CadastroHelper
         // A matrícula é o maior bloco (normalmente 4–6 dígitos); a região é um
         // bloco curto de 1–2 dígitos com valor 1–11.
         $matricula = null;
-        $regiao    = null;
+        $regiao = null;
 
         foreach ($nums as $n) {
             if (strlen($n) >= 3 && $matricula === null) {
@@ -189,17 +193,17 @@ class CadastroHelper
     {
         try {
             $payload = [
-                'name'          => $personal->nome,
-                'email'         => $personal->email,
-                'cpfCnpj'       => preg_replace('/\D/', '', $personal->cpf),
-                'birthDate'     => $personal->idade,
-                'address'       => $personal->rua,
+                'name' => $personal->nome,
+                'email' => $personal->email,
+                'cpfCnpj' => preg_replace('/\D/', '', $personal->cpf),
+                'birthDate' => $personal->idade,
+                'address' => $personal->rua,
                 'addressNumber' => 'S/N',
-                'province'      => $personal->bairro,
-                'postalCode'    => preg_replace('/\D/', '', $personal->cep),
-                'complement'    => $personal->complemento,
-                'personType'    => 'FISICA',
-                'incomeValue'   => 5000,
+                'province' => $personal->bairro,
+                'postalCode' => preg_replace('/\D/', '', $personal->cep),
+                'complement' => $personal->complemento,
+                'personType' => 'FISICA',
+                'incomeValue' => 5000,
             ];
 
             if ($personal->whatsapp) {
@@ -209,31 +213,31 @@ class CadastroHelper
             $res = Http::withHeaders([
                 'access_token' => config('services.asaas.key'),
                 'Content-Type' => 'application/json',
-            ])->post(config('services.asaas.url') . '/accounts', $payload);
+            ])->post(config('services.asaas.url').'/accounts', $payload);
 
             $data = $res->json();
 
-            if ($res->successful() && !empty($data['walletId'])) {
+            if ($res->successful() && ! empty($data['walletId'])) {
                 $personal->update([
-                    'asaas_account_id' => $data['id']        ?? null,
-                    'asaas_wallet_id'  => $data['walletId']  ?? null,
-                    'asaas_api_key'    => $data['apiKey']    ?? null,
+                    'asaas_account_id' => $data['id'] ?? null,
+                    'asaas_wallet_id' => $data['walletId'] ?? null,
+                    'asaas_api_key' => $data['apiKey'] ?? null,
                 ]);
                 Log::info('Asaas: subconta criada para personal', [
                     'personal_id' => $personal->id,
-                    'wallet_id'   => $data['walletId'],
+                    'wallet_id' => $data['walletId'],
                 ]);
             } else {
                 Log::warning('Asaas: subconta não criada', [
                     'personal_id' => $personal->id,
-                    'status'      => $res->status(),
-                    'response'    => $data,
+                    'status' => $res->status(),
+                    'response' => $data,
                 ]);
             }
         } catch (\Exception $e) {
             Log::error('Asaas: exceção ao criar subconta', [
                 'personal_id' => $personal->id,
-                'error'       => $e->getMessage(),
+                'error' => $e->getMessage(),
             ]);
         }
     }

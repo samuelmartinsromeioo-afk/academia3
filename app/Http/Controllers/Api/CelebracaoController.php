@@ -25,11 +25,11 @@ class CelebracaoController extends Controller
         $u = $request->user();
 
         return match (true) {
-            $u instanceof Cliente  => ['cliente', $u->id],
+            $u instanceof Cliente => ['cliente', $u->id],
             $u instanceof Personal => ['personal', $u->id],
             $u instanceof Academia => ['academia', $u->id],
-            $u instanceof Studio   => ['studio', $u->id],
-            $u instanceof Loja     => ['loja', $u->id],
+            $u instanceof Studio => ['studio', $u->id],
+            $u instanceof Loja => ['loja', $u->id],
             default => abort(response()->json(['error' => 'Usuário inválido.'], 403)),
         };
     }
@@ -48,15 +48,15 @@ class CelebracaoController extends Controller
 
         return response()->json([
             'celebracoes' => $celebs->map(fn ($c) => [
-                'id'       => $c->id,
-                'tipo'     => $c->tipo,
-                'titulo'   => $c->titulo,
+                'id' => $c->id,
+                'tipo' => $c->tipo,
+                'titulo' => $c->titulo,
                 'mensagem' => $c->mensagem,
-                'cor'      => $c->cor_medalha ?: '#7cff00',
+                'cor' => $c->cor_medalha ?: '#7cff00',
                 // Nº da sequência (para as medalhas de streak); null nos outros tipos.
-                'num'      => $c->dados_extras['sequencia_atual'] ?? null,
+                'num' => $c->dados_extras['sequencia_atual'] ?? null,
                 // Dados estruturados (retrospectivas: itens/fotos/treinos etc.).
-                'dados'    => $c->dados_extras,
+                'dados' => $c->dados_extras,
             ])->values(),
         ]);
     }

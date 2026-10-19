@@ -196,9 +196,9 @@ class ReposicaoController extends Controller
         $this->avisarAluno(
             $pedido,
             'Reposição confirmada',
-            'Sua aula foi reposta para ' . \Carbon\Carbon::parse($dados['data'])->format('d/m/Y')
-                . ' às ' . $dados['hora_inicio'] . '.'
-                . ($dados['resposta'] ?? null ? ' ' . $dados['resposta'] : '')
+            'Sua aula foi reposta para '.\Carbon\Carbon::parse($dados['data'])->format('d/m/Y')
+                .' às '.$dados['hora_inicio'].'.'
+                .($dados['resposta'] ?? null ? ' '.$dados['resposta'] : '')
         );
 
         return [
@@ -320,10 +320,10 @@ class ReposicaoController extends Controller
         $this->avisarClienteDireto(
             $original->cliente,
             'Sua aula foi remarcada',
-            'Sua aula cancelada foi remarcada para ' . \Carbon\Carbon::parse($dados['data'])->format('d/m/Y')
-                . ' às ' . $dados['hora_inicio'] . '.'
-                . ($jaDevolvido ? '' : ' Como a aula será dada, o valor pago não será devolvido.')
-                . ($dados['resposta'] ?? null ? ' ' . $dados['resposta'] : '')
+            'Sua aula cancelada foi remarcada para '.\Carbon\Carbon::parse($dados['data'])->format('d/m/Y')
+                .' às '.$dados['hora_inicio'].'.'
+                .($jaDevolvido ? '' : ' Como a aula será dada, o valor pago não será devolvido.')
+                .($dados['resposta'] ?? null ? ' '.$dados['resposta'] : '')
         );
 
         return [

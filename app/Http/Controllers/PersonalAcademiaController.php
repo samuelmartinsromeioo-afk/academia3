@@ -40,7 +40,7 @@ class PersonalAcademiaController extends Controller
 
         $academias = Academia::query()
             ->where('status', 'aprovado')
-            ->where('nome', 'like', '%' . $termo . '%')
+            ->where('nome', 'like', '%'.$termo.'%')
             ->orderBy('nome')
             ->limit(10)
             ->get(['id', 'nome', 'cidade']);
@@ -60,7 +60,7 @@ class PersonalAcademiaController extends Controller
         }
 
         return response()->json([
-            'ok'      => true,
+            'ok' => true,
             'message' => 'Solicitação enviada! Aguarde a academia aprovar.',
         ]);
     }
@@ -76,7 +76,7 @@ class PersonalAcademiaController extends Controller
 
         if (! $vinculo || $vinculo->pivot->status !== 'pendente') {
             return response()->json([
-                'ok'    => false,
+                'ok' => false,
                 'error' => 'Só é possível cancelar uma solicitação pendente.',
             ], 422);
         }
@@ -96,9 +96,9 @@ class PersonalAcademiaController extends Controller
             ->get()
             ->map(fn (Academia $a) => [
                 'academia_id' => $a->id,
-                'nome'        => $a->nome,
-                'cidade'      => $a->cidade,
-                'status'      => $a->pivot->status,
+                'nome' => $a->nome,
+                'cidade' => $a->cidade,
+                'status' => $a->pivot->status,
             ]);
 
         return response()->json($lista);

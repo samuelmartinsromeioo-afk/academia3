@@ -32,14 +32,19 @@ class IndicacaoSaque extends Model
 {
     protected $table = 'indicacao_saques';
 
-    public const STATUS_SOLICITADO  = 'solicitado';
+    public const STATUS_SOLICITADO = 'solicitado';
+
     public const STATUS_PROCESSANDO = 'processando';
-    public const STATUS_PAGO        = 'pago';
-    public const STATUS_RECUSADO    = 'recusado';
-    public const STATUS_FALHOU      = 'falhou';
+
+    public const STATUS_PAGO = 'pago';
+
+    public const STATUS_RECUSADO = 'recusado';
+
+    public const STATUS_FALHOU = 'falhou';
 
     public const METODO_AUTOMATICO = 'automatico';
-    public const METODO_MANUAL     = 'manual';
+
+    public const METODO_MANUAL = 'manual';
 
     /** Prefixo do externalReference no Asaas — é por ele que o webhook nos reconhece. */
     public const REF_PREFIXO = 'indicacao_saque:';
@@ -67,17 +72,17 @@ class IndicacaoSaque extends Model
     ];
 
     protected $casts = [
-        'valor'            => 'decimal:2',
-        'processado_em'    => 'datetime',
+        'valor' => 'decimal:2',
+        'processado_em' => 'datetime',
         'transferencia_em' => 'datetime',
         // Chave Pix é dado pessoal: cifrada em repouso (LGPD / OWASP A02).
-        'pix_chave'        => 'encrypted',
+        'pix_chave' => 'encrypted',
     ];
 
     /** O externalReference desta linha no Asaas. */
     public function referenciaExterna(): string
     {
-        return self::REF_PREFIXO . $this->getKey();
+        return self::REF_PREFIXO.$this->getKey();
     }
 
     /** Extrai o id de um externalReference do Asaas. Null se não é nosso. */
@@ -157,11 +162,11 @@ class IndicacaoSaque extends Model
     public function situacao(): string
     {
         return match ($this->status) {
-            self::STATUS_PAGO        => 'Pago',
-            self::STATUS_RECUSADO    => 'Recusado',
-            self::STATUS_FALHOU      => 'Falhou',
+            self::STATUS_PAGO => 'Pago',
+            self::STATUS_RECUSADO => 'Recusado',
+            self::STATUS_FALHOU => 'Falhou',
             self::STATUS_PROCESSANDO => 'Pix em processamento',
-            default                  => 'Em análise',
+            default => 'Em análise',
         };
     }
 
@@ -182,6 +187,6 @@ class IndicacaoSaque extends Model
             return str_repeat('•', mb_strlen($chave));
         }
 
-        return mb_substr($chave, 0, 3) . str_repeat('•', 4) . mb_substr($chave, -3);
+        return mb_substr($chave, 0, 3).str_repeat('•', 4).mb_substr($chave, -3);
     }
 }

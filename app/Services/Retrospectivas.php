@@ -20,13 +20,13 @@ class Retrospectivas
 {
     /** campo => [label, unidade, menorEhMelhor] */
     private const CAMPOS = [
-        'peso'               => ['Peso', 'kg', true],
+        'peso' => ['Peso', 'kg', true],
         'percentual_gordura' => ['Gordura', '%', true],
-        'cintura'            => ['Cintura', 'cm', true],
-        'quadril'            => ['Quadril', 'cm', true],
-        'braco'              => ['Braço', 'cm', false],
-        'peito'              => ['Peito', 'cm', false],
-        'coxa'               => ['Coxa', 'cm', false],
+        'cintura' => ['Cintura', 'cm', true],
+        'quadril' => ['Quadril', 'cm', true],
+        'braco' => ['Braço', 'cm', false],
+        'peito' => ['Peito', 'cm', false],
+        'coxa' => ['Coxa', 'cm', false],
     ];
 
     /** Retrospectiva dos últimos ~2 meses. */
@@ -55,19 +55,19 @@ class Retrospectivas
             ->count();
 
         return [
-            'tipo'        => 'retrospectiva_bimestral',
-            'titulo'      => 'Sua evolução destes 2 meses',
-            'mensagem'    => 'A gente parou pra te mostrar o quanto você evoluiu por aqui. '
-                           . ($treinos > 0 ? "Foram {$treinos} treino(s) concluídos" : 'Você seguiu firme')
-                           . '. Cada número abaixo é resultado seu — e a família SNR tem orgulho de acompanhar de perto. Bora pros próximos!',
-            'icone'       => 'ph-chart-line-up',
+            'tipo' => 'retrospectiva_bimestral',
+            'titulo' => 'Sua evolução destes 2 meses',
+            'mensagem' => 'A gente parou pra te mostrar o quanto você evoluiu por aqui. '
+                           .($treinos > 0 ? "Foram {$treinos} treino(s) concluídos" : 'Você seguiu firme')
+                           .'. Cada número abaixo é resultado seu — e a família SNR tem orgulho de acompanhar de perto. Bora pros próximos!',
+            'icone' => 'ph-chart-line-up',
             'cor_medalha' => '#22D3EE',
-            'dados_extras'=> [
-                'periodo'  => '2 meses',
-                'desde'    => $base->data->toDateString(),
-                'ate'      => $atual->data->toDateString(),
-                'treinos'  => $treinos,
-                'itens'    => $itens,
+            'dados_extras' => [
+                'periodo' => '2 meses',
+                'desde' => $base->data->toDateString(),
+                'ate' => $atual->data->toDateString(),
+                'treinos' => $treinos,
+                'itens' => $itens,
             ],
         ];
     }
@@ -96,21 +96,21 @@ class Retrospectivas
         $fotoAgora = $fotos->last();
 
         return [
-            'tipo'        => 'retrospectiva_semestral',
-            'titulo'      => 'De onde você veio até aqui',
-            'mensagem'    => 'Olha o caminho que você fez desde o começo. Quando começou vs como está hoje: '
-                           . "{$meses} mes(es) de história" . ($treinos > 0 ? ", {$treinos} treinos" : '') . '. '
-                           . 'Guarda a imagem de quem você era e vê o quanto cresceu — a gente esteve com você o tempo todo.',
-            'icone'       => 'ph-medal',
+            'tipo' => 'retrospectiva_semestral',
+            'titulo' => 'De onde você veio até aqui',
+            'mensagem' => 'Olha o caminho que você fez desde o começo. Quando começou vs como está hoje: '
+                           ."{$meses} mes(es) de história".($treinos > 0 ? ", {$treinos} treinos" : '').'. '
+                           .'Guarda a imagem de quem você era e vê o quanto cresceu — a gente esteve com você o tempo todo.',
+            'icone' => 'ph-medal',
             'cor_medalha' => '#B14CFF',
-            'dados_extras'=> [
-                'desde'           => $inicio->data->toDateString(),
-                'ate'             => $agora->data->toDateString(),
-                'meses'           => $meses,
-                'treinos'         => $treinos,
-                'itens'           => $itens,
+            'dados_extras' => [
+                'desde' => $inicio->data->toDateString(),
+                'ate' => $agora->data->toDateString(),
+                'meses' => $meses,
+                'treinos' => $treinos,
+                'itens' => $itens,
                 'foto_inicio_url' => $fotoIni ? self::url($fotoIni->path) : null,
-                'foto_agora_url'  => ($fotoAgora && $fotoIni && $fotoAgora->id !== $fotoIni->id) ? self::url($fotoAgora->path) : null,
+                'foto_agora_url' => ($fotoAgora && $fotoIni && $fotoAgora->id !== $fotoIni->id) ? self::url($fotoAgora->path) : null,
             ],
         ];
     }
@@ -128,13 +128,13 @@ class Retrospectivas
             $delta = round($b - $a, 1);
 
             $itens[] = [
-                'label'    => $label,
-                'unidade'  => $un,
-                'de'       => $a,
-                'para'     => $b,
-                'delta'    => $delta,
+                'label' => $label,
+                'unidade' => $un,
+                'de' => $a,
+                'para' => $b,
+                'delta' => $delta,
                 // true = mudança boa, false = ruim, null = igual (para colorir no app)
-                'melhor'   => $delta == 0.0 ? null : ($menorMelhor ? $delta < 0 : $delta > 0),
+                'melhor' => $delta == 0.0 ? null : ($menorMelhor ? $delta < 0 : $delta > 0),
             ];
         }
 
@@ -149,6 +149,7 @@ class Retrospectivas
         if (str_starts_with($path, 'http')) {
             return $path;
         }
+
         return Storage::disk('public')->url($path);
     }
 }

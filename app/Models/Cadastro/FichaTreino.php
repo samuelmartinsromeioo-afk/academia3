@@ -50,7 +50,7 @@ class FichaTreino extends Model
     {
         return self::NIVEIS_LABEL[$this->nivel] ?? self::NIVEIS_LABEL['iniciante'];
     }
-    
+
     protected $fillable = [
         'personal_id',
         'academia_id',
@@ -100,6 +100,7 @@ class FichaTreino extends Model
     public function getDiaSemanaNome()
     {
         $dias = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
+
         return $dias[$this->dia_semana] ?? 'Desconhecido';
     }
 

@@ -166,6 +166,34 @@ class DiagnosticarSubcontaAsaas extends Command
         $geral = $situacao['geral'];
         $this->newLine();
         if ($geral === 'APPROVED') {
+            /*
+             * Cadastro aprovado NÃO garante que o split passa — foi o caso do
+             * personal #7, APPROVED nos quatro campos e com a wallet recusada.
+             * Dizer só "aprovada" aqui mandava o leitor concluir que estava
+             * tudo certo, que é o oposto do que o comando existe para fazer.
+             */
+            if (method_exists($conta, 'splitBloqueadoPeloAsaas') && $conta->asaas_split_bloqueado_em) {
+                $quando = \Carbon\Carbon::parse($conta->asaas_split_bloqueado_em);
+                $ativo = $conta->splitBloqueadoPeloAsaas();
+
+                $this->error('  => CADASTRO APROVADO, MAS A WALLET FOI RECUSADA NO SPLIT.');
+                $this->newLine();
+                $this->line('  <comment>São coisas diferentes:</comment> /myAccount/status responde pela situação');
+                $this->line('  CADASTRAL e não enxerga bloqueio de wallet. Quem viu foi a cobrança.');
+                $this->newLine();
+                $this->line('    recusado em : '.$quando->format('d/m/Y H:i'));
+                $this->line('    motivo      : '.($conta->asaas_split_bloqueio_motivo ?: '(não registrado)'));
+                $this->line('    trava       : '.($ativo
+                    ? 'ATIVA até '.$quando->copy()->addHours(\App\Services\AsaasService::HORAS_RETENTAR_SPLIT)->format('H:i')
+                    : 'expirada — a próxima cobrança vai testar de novo'));
+                $this->newLine();
+                $this->line('  <comment>Não é documentação.</comment> Reenviar documento não resolve: o cadastro já');
+                $this->line('  passou. Abra chamado no suporte do Asaas citando o walletId e peça o');
+                $this->line('  motivo do bloqueio — é o único lugar onde isto se levanta.');
+
+                return;
+            }
+
             $this->info('  => APROVADA. Se o split ainda falha, o bloqueio é por compliance e só o suporte do Asaas resolve.');
         } else {
             $this->error("  => NÃO APROVADA (general = {$geral}). É isto que faz o split ser recusado.");

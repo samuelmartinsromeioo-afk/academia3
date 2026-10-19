@@ -141,6 +141,7 @@ class ChatController extends Controller
 
             $contatos = Cliente::whereIn('id', $ids)->orderBy('nome')->get()->map(function ($c) use ($user) {
                 $ultima = Mensagem::where('personal_id', $user->id)->where('cliente_id', $c->id)->latest()->first();
+
                 return [
                     'id' => $c->id,
                     'nome' => $c->nome,
@@ -162,6 +163,7 @@ class ChatController extends Controller
 
             $contatos = Personal::whereIn('id', $ids)->orderBy('nome')->get()->map(function ($p) use ($user) {
                 $ultima = Mensagem::where('cliente_id', $user->id)->where('personal_id', $p->id)->latest()->first();
+
                 return [
                     'id' => $p->id,
                     'nome' => $p->nome,
@@ -275,6 +277,7 @@ class ChatController extends Controller
         if ($user instanceof Cliente) {
             return ['personal_id' => (int) $outroId, 'cliente_id' => $user->id, 'eu' => 'cliente'];
         }
+
         return null;
     }
 

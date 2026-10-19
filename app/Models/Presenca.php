@@ -16,7 +16,7 @@ class Presenca extends Model
     ];
 
     protected $casts = [
-        'data'     => 'date',
+        'data' => 'date',
         'presente' => 'boolean',
     ];
 

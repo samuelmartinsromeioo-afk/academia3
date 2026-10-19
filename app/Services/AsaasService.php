@@ -246,6 +246,22 @@ class AsaasService
     public const STATUS_CHAVE_INVALIDA = 'INVALID_KEY';
 
     /**
+     * Por quanto tempo uma wallet recusada pelo Asaas fica barrada aqui.
+     *
+     * A trava precisa expirar porque o Asaas **não avisa quando desbloqueia** e
+     * `/myAccount/status` responde APPROVED antes e depois — não existe
+     * endpoint que responda "a wallet voltou". Sem prazo, o profissional
+     * ficaria barrado para sempre por um bloqueio já resolvido.
+     *
+     * Seis horas equilibra os dois erros possíveis: curto o bastante para o
+     * profissional voltar a vender no mesmo dia em que o Asaas liberar, longo
+     * o bastante para que no máximo um aluno por janela passe pelo checkout
+     * que vai falhar. Essa cobrança falha é o preço de detectar o desbloqueio,
+     * e é o único jeito de detectá-lo.
+     */
+    public const HORAS_RETENTAR_SPLIT = 6;
+
+    /**
      * Mensagem de erro do Asaas traduzida para quem está comprando.
      *
      * O Asaas devolve texto escrito para quem INTEGRA, não para quem contrata
@@ -322,14 +338,23 @@ class AsaasService
                 'asaas' => $corpo['errors'][0]['description'] ?? null,
             ]));
 
-            if ($recebedor && method_exists($recebedor, 'registrarSituacaoSubconta')) {
-                // O Asaas acabou de dizer que não aceita. Marcar BLOCKED agora
-                // faz a trava valer na próxima tentativa, sem esperar a
-                // varredura — e a varredura corrige o rótulo exato depois.
-                $recebedor->forceFill([
-                    'asaas_account_status' => 'BLOCKED',
-                    'asaas_status_em' => now(),
-                ])->save();
+            if ($recebedor && method_exists($recebedor, 'registrarBloqueioDeSplit')) {
+                /*
+                 * Carimba a COLUNA DO BLOQUEIO DE WALLET, não o status
+                 * cadastral.
+                 *
+                 * Isto já escreveu `asaas_account_status = 'BLOCKED'`, e foi um
+                 * erro: `asaas:sincronizar-subcontas` é dono dessa coluna e
+                 * grava APPROVED a partir de `/myAccount/status` duas vezes ao
+                 * dia. Os dois brigavam pelo mesmo campo e o estado oscilava em
+                 * círculo — e, no meio do ciclo, o aluno lia que o profissional
+                 * estava "finalizando o cadastro" com o cadastro aprovado nos
+                 * quatro campos.
+                 *
+                 * Cada fonte escreve na sua coluna: `/myAccount/status` não
+                 * enxerga bloqueio de wallet, e a cobrança é a única que vê.
+                 */
+                $recebedor->registrarBloqueioDeSplit($corpo['errors'][0]['description'] ?? null);
             }
 
             if ($admin = config('services.admin.email')) {

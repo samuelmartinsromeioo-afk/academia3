@@ -47,7 +47,7 @@ class AvisosEventosTest extends TestCase
     private function cliente(string $sufixo = ''): Cliente
     {
         return Cliente::create([
-            'nome' => 'Aluno Aviso' . $sufixo, 'email' => "aviso{$sufixo}@teste.com",
+            'nome' => 'Aluno Aviso'.$sufixo, 'email' => "aviso{$sufixo}@teste.com",
             'senha' => bcrypt('x'), 'sexo' => 'masculino', 'idade' => '1995-01-01',
             'cep' => '87000-000', 'whatsapp' => null,
         ]);
@@ -82,7 +82,7 @@ class AvisosEventosTest extends TestCase
         $this->app['auth']->forgetGuards();
 
         return $this->withHeaders([
-            'Authorization' => 'Bearer ' . $token,
+            'Authorization' => 'Bearer '.$token,
             'Accept' => 'application/json',
         ])->getJson('/api/v1/notificacoes')->assertOk()->json('notificacoes');
     }
@@ -251,9 +251,9 @@ class AvisosEventosTest extends TestCase
 
         foreach ($contas as $conta) {
             $tipo = NotificacaoService::tipoDe($conta);
-            $this->assertNotNull($tipo, get_class($conta) . ' não tem papel de notificação.');
+            $this->assertNotNull($tipo, get_class($conta).' não tem papel de notificação.');
 
-            NotificacaoService::conta($conta, 'Teste ' . $tipo, "Corpo do aviso de {$tipo}.");
+            NotificacaoService::conta($conta, 'Teste '.$tipo, "Corpo do aviso de {$tipo}.");
 
             $avisos = $this->avisosDe($conta);
             $this->assertCount(1, $avisos, "A caixa de avisos do papel {$tipo} veio vazia.");

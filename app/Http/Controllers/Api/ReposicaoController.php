@@ -32,9 +32,7 @@ class ReposicaoController extends Controller
 {
     use ResolvesApiUser;
 
-    public function __construct(private AgendaService $agendas)
-    {
-    }
+    public function __construct(private AgendaService $agendas) {}
 
     private function web(): WebReposicaoController
     {

@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Models\Cadastro\Academia;
-use Illuminate\Http\Request;
 
 /**
  * Vínculo do lado da ACADEMIA: ver solicitações pendentes de personais e
@@ -63,7 +62,7 @@ class AcademiaSolicitacaoController extends Controller
         }
 
         $academia->personais()->updateExistingPivot($personalId, [
-            'status'        => $status,
+            'status' => $status,
             'respondido_em' => now(),
         ]);
 

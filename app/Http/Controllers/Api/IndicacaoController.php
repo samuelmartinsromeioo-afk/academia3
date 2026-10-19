@@ -20,9 +20,7 @@ use Illuminate\Http\Request;
  */
 class IndicacaoController extends Controller
 {
-    public function __construct(private CupomService $cupons)
-    {
-    }
+    public function __construct(private CupomService $cupons) {}
 
     /**
      * GET /api/v1/cupom/validar?codigo=XXXX — checagem ao vivo no cadastro.
@@ -52,7 +50,7 @@ class IndicacaoController extends Controller
             // Só o primeiro nome: confirma para quem digitou que é a pessoa
             // certa sem expor o nome completo de outra conta a um desconhecido.
             'mensagem' => $nome
-                ? 'Código válido — indicado por ' . strtok(trim($nome), ' ') . '.'
+                ? 'Código válido — indicado por '.strtok(trim($nome), ' ').'.'
                 : 'Código válido!',
         ]);
     }

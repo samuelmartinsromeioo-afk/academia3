@@ -36,6 +36,7 @@ use Illuminate\Support\Facades\Cache;
 class LembreteAulaAluno extends Command
 {
     protected $signature = 'aluno:lembrete-aula';
+
     protected $description = 'Avisa o aluno (push/WhatsApp/e-mail) da aula que começa em ~1h30';
 
     /**
@@ -47,6 +48,7 @@ class LembreteAulaAluno extends Command
      * aula mais ou menos juntos.
      */
     public const MINUTOS_MIN = 80;
+
     public const MINUTOS_MAX = 100;
 
     public function handle(AgendaService $agendaService): int
@@ -86,12 +88,13 @@ class LembreteAulaAluno extends Command
 
             if (! Cache::add($chave, true, $expira)) {
                 $this->line("↷ aula {$aula->id} (já avisada)");
+
                 continue;
             }
 
             AvisoService::aulaComecaEmBreve($aula->cliente, $aula->personal, $aula);
             $enviados++;
-            $this->line("✓ aula {$aula->id} — {$aula->cliente->nome} às " . substr((string) $aula->hora_inicio, 0, 5));
+            $this->line("✓ aula {$aula->id} — {$aula->cliente->nome} às ".substr((string) $aula->hora_inicio, 0, 5));
         }
 
         $this->info("Lembretes de aula enviados: {$enviados}.");
