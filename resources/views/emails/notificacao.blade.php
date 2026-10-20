@@ -27,14 +27,10 @@
         </div>
         <div class="body">
             <p>Olá, <span class="greeting">{{ $nome }}</span>!</p>
-            @php
-                // Reaproveita o texto do WhatsApp: escapa primeiro, depois converte
-                // *negrito* e quebras de linha em HTML seguro.
-                $html = e($corpo);
-                $html = preg_replace('/\*(.+?)\*/s', '<strong>$1</strong>', $html);
-                $html = nl2br($html);
-            @endphp
-            <div class="message">{!! $html !!}</div>
+            {{-- A conversão de *negrito* vive em App\Support\TextoAviso, porque a
+                 lista de avisos do site precisa exatamente da mesma (e mostrava o
+                 asterisco cru enquanto esta lógica morava só aqui). --}}
+            <div class="message">{!! \App\Support\TextoAviso::html($corpo) !!}</div>
         </div>
         <div class="footer">
             Esta é uma notificação automática do SnrFit.<br>

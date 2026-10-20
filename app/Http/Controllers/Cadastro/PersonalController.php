@@ -787,12 +787,9 @@ class PersonalController extends Controller
 
             $aula->update(['concluida' => true]);
 
-            $this->notificarCliente(
-                $cliente,
-                $aula->tipo_aula ?? 'aula',
-                $aula,
-                $personal->nome
-            );
+            // Texto em AvisoService: este evento tinha uma redação aqui e outra
+            // no app, para o mesmo aluno. Ver o método lá.
+            \App\Services\AvisoService::aulaConcluida($cliente, $personal, $aula);
 
             return redirect()->back()->with('success', '✅ Aula finalizada! Cliente foi notificado.');
         } catch (\Exception $e) {
@@ -810,41 +807,6 @@ class PersonalController extends Controller
     private function criarSubcontaAsaas(Personal $personal): void
     {
         \App\Support\CadastroHelper::criarSubcontaAsaasPersonal($personal);
-    }
-
-    private function notificarCliente($cliente, $tipoAula, $aula, $nomePersonal)
-    {
-        try {
-            if (! $cliente) {
-                return;
-            }
-
-            $data = $aula->data instanceof \Carbon\Carbon ?
-                $aula->data->format('d/m/Y') :
-                \Carbon\Carbon::parse($aula->data)->format('d/m/Y');
-
-            $mensagem = "👋 Olá {$cliente->nome}!\n\n";
-            $mensagem .= "✅ Sua aula foi concluída com sucesso!\n\n";
-            $mensagem .= "👨‍🏫 Personal: {$nomePersonal}\n";
-            $mensagem .= "📅 Data: {$data}\n";
-            $mensagem .= "⏰ Horário: {$aula->hora_inicio} - {$aula->hora_fim}\n";
-
-            if ($tipoAula === 'pacote') {
-                $mensagem .= "📦 Tipo: Aula de Pacote\n";
-            } elseif ($tipoAula === 'avulsa') {
-                $mensagem .= "🎯 Tipo: Aula Avulsa\n";
-            }
-
-            $mensagem .= "\nObrigado por treinar conosco! 💪";
-
-            \App\Services\NotificacaoService::cliente(
-                $cliente,
-                'Aula concluída — SnrFit',
-                $mensagem,
-            );
-        } catch (\Exception $e) {
-            Log::error('Erro ao notificar cliente: '.$e->getMessage());
-        }
     }
 
     // ─────────────────────────────────────────────

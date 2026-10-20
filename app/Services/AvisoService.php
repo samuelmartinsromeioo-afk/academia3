@@ -214,6 +214,52 @@ class AvisoService
         });
     }
 
+    /**
+     * O personal finalizou a aula → confirma para o ALUNO.
+     *
+     * Este evento é a razão de ser deste arquivo, em estado puro: ele existia
+     * nas DUAS portas com texto e assunto DIFERENTES — o site mandava
+     * "Aula concluída — SnrFit" com os dados em linhas de emoji, o app mandava
+     * "Aula concluída! 💪" com outra redação. Mesmo evento, duas versões, e
+     * nenhuma das duas sabia da outra: o aluno recebia um texto ou outro
+     * dependendo de onde o personal tocou o botão.
+     *
+     * O texto unificado mantém o que cada lado tinha de melhor: o tipo da aula
+     * (que só o site trazia, e é o que diz ao aluno se gastou uma sessão do
+     * pacote ou pagou avulsa) e o horário completo (que só o app trazia).
+     *
+     * Recebe a `Agenda` porque aqui a linha continua existindo — ao contrário do
+     * cancelamento, que a apaga.
+     */
+    public static function aulaConcluida(?Cliente $cliente, ?Personal $personal, Agenda $aula): void
+    {
+        if (! $cliente) {
+            return;
+        }
+
+        self::seguro('aula_concluida', function () use ($cliente, $personal, $aula) {
+            $nome = $personal->nome ?? 'Seu personal';
+            $quando = self::quando($aula->data, null);
+            $horario = substr((string) $aula->hora_inicio, 0, 5)
+                .($aula->hora_fim ? ' às '.substr((string) $aula->hora_fim, 0, 5) : '');
+
+            $tipo = match ($aula->tipo_aula) {
+                'pacote' => "Esta foi uma aula do seu *pacote*.\n",
+                'avulsa' => "Esta foi uma *aula avulsa*.\n",
+                default => '',
+            };
+
+            NotificacaoService::cliente(
+                $cliente,
+                'Aula concluída — SnrFit',
+                "✅ *Aula concluída*\n\n"
+                ."Sua aula de *{$quando}*, das {$horario}, com *{$nome}* foi finalizada.\n"
+                .$tipo
+                ."\nBom treino e até a próxima! 💪"
+            );
+        });
+    }
+
     // ──────────────────────── PAGAMENTOS ────────────────────────
 
     /**

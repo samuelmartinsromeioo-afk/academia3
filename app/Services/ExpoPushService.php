@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\PushToken;
+use App\Support\TextoAviso;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
@@ -57,6 +58,15 @@ class ExpoPushService
         if (empty($tokens)) {
             return;
         }
+
+        /*
+         * O banner do aparelho não formata nada: os `*` da marcação dos textos
+         * de aviso apareceriam crus na notificação. Aqui só dá para removê-los
+         * — a conversão em negrito de verdade acontece onde há formatação
+         * (e-mail e listas), via App\Support\TextoAviso.
+         */
+        $titulo = TextoAviso::simples($titulo);
+        $corpo = TextoAviso::simples($corpo);
 
         foreach (array_chunk($tokens, 100) as $lote) {
             $mensagens = array_map(fn ($to) => [

@@ -60,7 +60,10 @@
                         <span class="ico"><i class="ph {{ $n->icone ?: 'ph-bell' }}"></i></span>
                         <span class="body">
                             <span class="t">{{ $n->titulo }}</span>
-                            <span class="m">{{ \Illuminate\Support\Str::limit($n->mensagem, 220) }}</span>
+                            {{-- Trunca e converte num passo: TextoAviso escapa antes de
+                                 aplicar o negrito (o texto traz nome de usuário dentro) e
+                                 corta antes de converter, para o limite não partir uma tag. --}}
+                            <span class="m">{!! \App\Support\TextoAviso::html($n->mensagem, 220) !!}</span>
                             <span class="q">{{ $n->created_at->diffForHumans() }}</span>
                         </span>
                         @if(!$n->lida)<span class="dot"></span>@endif

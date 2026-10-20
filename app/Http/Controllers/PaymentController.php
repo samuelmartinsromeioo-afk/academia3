@@ -592,9 +592,12 @@ class PaymentController extends Controller
                             "Nível: {$solicitacao->nivel_experiencia}\n".
                             ($solicitacao->condicoes_clinicas ? "Condições clínicas: {$solicitacao->condicoes_clinicas}\n" : '').
                             ($solicitacao->observacoes ? "Observações: {$solicitacao->observacoes}\n" : '').
+                            // Esta chamada ainda passava o nome do template da
+                            // Meta e os params do WhatsApp — canal removido em
+                            // 19/10, cujos parâmetros saíram da assinatura.
+                            // PHP aceita argumento extra em método de usuário
+                            // sem erro, então o resíduo passou despercebido.
                             "\nAcesse seu painel para montar a ficha. 💪",
-                            'ficha_solicitada_personal',
-                            [$cliente->nome, (string) $solicitacao->objetivos]
                         );
                     }
 
@@ -2980,8 +2983,7 @@ class PaymentController extends Controller
                 : '🏬 Retirada na loja';
 
             /*
-             * Aviso para a LOJA pelo canal completo (in-app + push + WhatsApp +
-             * e-mail), não só WhatsApp.
+             * Aviso para a LOJA pelo canal completo (in-app + push + e-mail).
              *
              * Antes isto era `notificarWhatsApp($loja->whatsapp, ...)`, e o
              * efeito era duplo: a tela "Avisos" da loja no app ficava sempre

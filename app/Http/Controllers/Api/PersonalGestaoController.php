@@ -272,16 +272,9 @@ class PersonalGestaoController extends Controller
 
         $aula->update(['concluida' => true]);
 
-        try {
-            $dataStr = $aula->data instanceof Carbon ? $aula->data->format('d/m/Y') : Carbon::parse($aula->data)->format('d/m/Y');
-            NotificacaoService::cliente(
-                $cliente,
-                'Aula concluída! 💪',
-                "✅ *Aula concluída*\n\nSua aula de {$dataStr} ({$aula->hora_inicio} - {$aula->hora_fim}) com *{$personal->nome}* foi finalizada.\n\nBom treino e até a próxima! 💪",
-            );
-        } catch (\Exception $e) {
-            // notificação é melhor esforço
-        }
+        // Texto em AvisoService: este evento mandava uma redação daqui e outra
+        // diferente do site, para o mesmo aluno. Ver o método lá.
+        \App\Services\AvisoService::aulaConcluida($cliente, $personal, $aula);
 
         return response()->json(['success' => true, 'message' => '✅ Aula finalizada! Cliente foi notificado.']);
     }
