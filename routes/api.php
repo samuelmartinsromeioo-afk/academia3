@@ -154,6 +154,23 @@ Route::prefix('v1')->group(function () {
             Route::get('/precos', [\App\Http\Controllers\Api\PersonalGestaoController::class, 'precos']);
             Route::post('/precos', [\App\Http\Controllers\Api\PersonalGestaoController::class, 'salvarPrecos']);
 
+            /*
+             * Carteira: saldo e saque Pix.
+             *
+             * NÃO reaproveite `/api/personal/saldo` e `/api/personal/sacar` (no
+             * grupo `web`, no fim deste arquivo) para o app: elas leem
+             * `session('personal_id')` e devolvem 401 a qualquer request
+             * Bearer, que é o motivo de o personal só conseguir sacar pelo site.
+             * As duas portas compartilham CarteiraPersonalService.
+             *
+             * Throttle apertado porque é dinheiro saindo: o valor é validado e o
+             * destino nem vem da requisição, mas repetir a chamada cria uma
+             * transferência nova a cada vez.
+             */
+            Route::get('/carteira', [\App\Http\Controllers\Api\CarteiraPersonalController::class, 'show']);
+            Route::post('/carteira/sacar', [\App\Http\Controllers\Api\CarteiraPersonalController::class, 'sacar'])
+                ->middleware('throttle:5,1');
+
             // Templates de ficha
             Route::get('/templates', [\App\Http\Controllers\Api\PersonalExtrasController::class, 'templates']);
             Route::post('/templates', [\App\Http\Controllers\Api\PersonalExtrasController::class, 'criarTemplate']);

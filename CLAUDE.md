@@ -241,6 +241,37 @@ Duas decisões dentro disso: **`sexo` é `sometimes|required`, não `required`**
 
 **Nenhum cadastro do app dispara `CompleteRegistration` no Meta** (o web dispara nos cinco). Isso é uma lacuna conhecida, não um esquecimento: `MetaConversionsService::trackServer()` existe e funcionaria, mas o app não tem o banner de consentimento que o web tem, e `META_REQUIRE_CONSENT=true` é o padrão — disparar dali seria furar o gate de LGPD que o projeto construiu de propósito. Se for para fechar essa lacuna, o caminho é consentimento no app primeiro.
 
+#### "Academias onde atua" — duas fontes, e o vínculo aprovado era invisível
+
+`Personal::locaisDeAtuacao()` é a **fonte única** da pergunta que o aluno faz antes de contratar: *vou treinar aonde?* Devolve `['vinculadas' => [...], 'informadas' => [...]]`, e a separação é o ponto — são duas fontes com confiabilidade diferente e **juntá-las numa lista perde a informação que importa**:
+
+- `vinculadas` = a relação `academiasAprovadas()` (pivô `academia_personal`, status `aprovado`). A academia **confirmou**, então tem id, endereço e selo.
+- `informadas` = a **coluna de texto livre** `personals.academias`, que o personal digita (uma por linha). Ninguém conferiu e não há o que linkar.
+
+Eram **duas metades do mesmo defeito**. O **app** não recebia nada: `ExplorarController::pacotesDoPersonal` — a tela em que o aluno contrata — mandava nome, foto, modalidade e especialidades, e nenhuma academia; então o `academia_nome` que o servidor **já aceitava** (`criarPagamentoPersonal` o leva para `booking_data`) nunca era enviado, e a aula nascia sem local. O **site** mostrava só o texto livre: `academiasAprovadas()` existia desde o módulo de vínculo e **nenhuma vitrine a lia** — a academia aprovava e o aluno nunca via. É o modo de falha de `personals.modalidade` (dado coletado que ninguém lê) nas duas direções ao mesmo tempo.
+
+Três detalhes que custam se mudarem: a **deduplicação** por nome normalizado existe porque o personal digita à mão a academia que depois aprovou o vínculo, e "Smart Fit" duas vezes — uma verificada e outra não — parece defeito; **vínculo `pendente` não entra**, porque mostrá-lo afirmaria ao aluno algo que ninguém aprovou; e o retorno é sempre **as duas chaves, vazias quando não há nada**, porque as duas pontas iteram sem checar tipo.
+
+Exige `academiasAprovadas` **eager-loaded** em listagem (`ClienteController@index` e `pacotesDoPersonal` já carregam) — sem isso é uma query por personal da vitrine.
+
+No app a escolha do local virou `CampoEscolha` nas duas contratações, com a regra do site: **local único é pré-selecionado** (perguntar algo de resposta única é ruído) e nenhum local mostra o aviso de combinar pelo chat, em vez de calar. O render do site passou a montar os itens **por DOM, não por template string** — o nome é digitado pelo profissional e um apóstrofo quebrava o `value` do `<option>` montado à mão.
+
+Pinado por `tests/Feature/LocaisAtuacaoPersonalTest.php`, que afirma as duas pontas (payload do app e `window.personalsData` do site) contra a mesma linha.
+
+#### Carteira do personal — o saque existia e o app não alcançava
+
+`GET /api/personal/saldo` e `POST /api/personal/sacar` estão no grupo `Route::middleware(['web'])` de `routes/api.php` e leem `session('personal_id')`. Num request Bearer **não existe sessão**, então respondiam **401 sempre**: o personal vendia pelo app e só conseguia receber abrindo o navegador. É literalmente o defeito do cancelamento de assinatura, cujo diagnóstico já estava escrito algumas linhas acima no mesmo arquivo — e o app nem tinha tela, então nada acusava.
+
+As portas do app são `GET /api/v1/personal/carteira` e `POST /api/v1/personal/carteira/sacar` (`Api\CarteiraPersonalController`, `throttle:5,1`), e **as duas portas compartilham `App\Services\CarteiraPersonalService`**. Isso não é estética: o saque cria um `PersonalSaque` **antes** de chamar o Asaas só para a transferência nascer com `externalReference = personal_saque:{id}`, e `AsaasWebhookController::validarSaque()` é **fail-closed** — uma segunda implementação que esquecesse a referência teria todo saque **recusado pelo próprio Asaas**, com o dinheiro não saindo e nada explicando por quê.
+
+**O destino não vem da requisição.** O corpo carrega só `valor`; a chave sai de `personals.chave_pix`, igual ao saque de indicação. A tela mostra a chave **mascarada** porque ele precisa conferir para onde o dinheiro vai antes de confirmar, e `Button` é acionado com `loading` (que bloqueia o toque) — duplo toque criaria duas transferências.
+
+`sem_conta` **não é erro**: sem subconta o repasse é manual (ver *Known gap* do modelo de receita), então a tela diz isso em vez de mostrar R$ 0,00 sem explicação — saldo zerado parece falha e o personal ficaria tentando sacar.
+
+**Lacuna conhecida, deliberada:** academia, studio e loja continuam sem saque no app — `/academia/sacar`, `/studio/sacar` e `/loja/sacar` têm o mesmo defeito e ficaram de fora para não quadruplicar de uma vez a superfície de uma rota que move dinheiro. O caminho é o mesmo: extrair o serviço, resolver o dono pelo token, e **nunca** aceitar a chave Pix do corpo.
+
+`tests/Feature/CarteiraPersonalAppTest.php` prende o `externalReference` **no payload enviado** (não só na linha do banco), que uma chave Pix no corpo é ignorada, e que as duas portas seguem funcionando — cada uma com a sua autenticação.
+
 ### Idade mínima — 18 para o aluno, 21 para o personal
 
 `CadastroHelper::IDADE_MINIMA_ALUNO` (18) e `IDADE_MINIMA_PROFISSIONAL` (21) são a **fonte única**. Delas saem: as regras das quatro portas de cadastro (`Cadastro\{Cliente,Personal}Controller@store`, `Api\AuthController@register`, `Api\RegisterController@personal`), o `min`/`max` do `<input type="date">` nos dois formulários, o aviso na tela e o `idade_minima` de `GET /api/v1/cadastro/opcoes` que o app baixa. **Não escreva 18 nem 21 em outro lugar** — é a mesma armadilha do `0.10` da comissão, que sobreviveu à própria correção em nove cópias.

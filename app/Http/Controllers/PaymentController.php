@@ -17,6 +17,7 @@ use App\Models\PersonalSaque;
 use App\Models\Subscription;
 use App\Models\TrainerPayout;
 use App\Services\AsaasService;
+use App\Services\CarteiraPersonalService;
 use App\Services\MetaConversionsService;
 use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Http\Request;
@@ -712,7 +713,13 @@ class PaymentController extends Controller
     // ─────────────────────────────────────────────
     // CARTEIRA DO PERSONAL — SALDO E SAQUE
     // ─────────────────────────────────────────────
-    public function saldoPersonal(Request $request)
+    /*
+     * Saldo e saque vivem em CarteiraPersonalService: a mesma operação também é
+     * servida ao app por Api\CarteiraPersonalController, e uma segunda cópia que
+     * esquecesse o externalReference teria todo saque recusado pelo webhook
+     * fail-closed. Aqui fica só o que é do web: o dono vem da SESSÃO.
+     */
+    public function saldoPersonal(Request $request, CarteiraPersonalService $carteira)
     {
         $personalId = session('personal_id');
         if (! $personalId) {
@@ -720,34 +727,24 @@ class PaymentController extends Controller
         }
 
         $personal = Personal::find($personalId);
-
-        if (! $personal?->asaas_api_key) {
-            return response()->json(['saldo' => 0, 'sem_conta' => true]);
+        if (! $personal) {
+            return response()->json(['error' => 'Não autenticado.'], 401);
         }
 
-        $apiKey = $personal->getAsaasApiKeyDecrypted();
+        $res = $carteira->saldo($personal);
 
-        $res = Http::withHeaders([
-            'access_token' => $apiKey,
-            'Content-Type' => 'application/json',
-        ])->get($this->asaas().'/finance/balance');
-
-        unset($apiKey);
-
-        if ($res->failed()) {
-            Log::error('Asaas saldo: falha', ['personal_id' => $personalId, 'body' => $res->json()]);
-
-            return response()->json(['error' => 'Não foi possível consultar o saldo.'], 500);
+        if (! $res['ok']) {
+            return response()->json(['error' => $res['erro']], 500);
         }
 
         return response()->json([
-            'saldo' => $res->json()['balance'] ?? 0,
-            'sem_conta' => false,
-            'tem_pix' => ! empty($personal->chave_pix),
+            'saldo' => $res['saldo'],
+            'sem_conta' => $res['sem_conta'],
+            'tem_pix' => $res['tem_pix'],
         ]);
     }
 
-    public function sacarPersonal(Request $request)
+    public function sacarPersonal(Request $request, CarteiraPersonalService $carteira)
     {
         $personalId = session('personal_id');
         if (! $personalId) {
@@ -755,82 +752,24 @@ class PaymentController extends Controller
         }
 
         $personal = Personal::find($personalId);
-
-        if (! $personal?->asaas_api_key) {
-            return response()->json(['error' => 'Sua conta Asaas ainda não foi configurada.'], 422);
-        }
-
-        if (! $personal->chave_pix) {
-            return response()->json(['error' => 'Cadastre sua chave PIX no perfil antes de sacar.'], 422);
+        if (! $personal) {
+            return response()->json(['error' => 'Não autenticado.'], 401);
         }
 
         $validated = $request->validate([
             'valor' => 'required|numeric|min:0.01',
         ]);
 
-        $apiKey = $personal->getAsaasApiKeyDecrypted();
+        $res = $carteira->sacar($personal, (float) $validated['valor']);
 
-        // Registra ANTES de chamar o Asaas, para a transferência nascer com um
-        // externalReference verificável: o webhook de validação de saque é
-        // fail-closed e recusa transferência que não casa com registro nosso.
-        $saque = PersonalSaque::create([
-            'personal_id' => $personalId,
-            'value' => (float) $validated['valor'],
-            'status' => 'CREATING',
-        ]);
-        $saque->update(['external_reference' => 'personal_saque:'.$saque->id]);
-
-        $res = Http::withHeaders([
-            'access_token' => $apiKey,
-            'Content-Type' => 'application/json',
-        ])->post($this->asaas().'/transfers', [
-            'operationType' => 'PIX',
-            'value' => (float) $validated['valor'],
-            'pixAddressKey' => $personal->chave_pix,
-            'pixAddressKeyType' => $this->detectarTipoChavePix($personal->chave_pix),
-            'description' => 'Saque SnrFit',
-            'externalReference' => $saque->external_reference,
-        ]);
-
-        unset($apiKey);
-
-        $data = $res->json();
-
-        if (! empty($data['errors'])) {
-            $errMsg = AsaasService::mensagemDeErro($data, 'Falha ao processar saque.');
-            Log::error('Asaas saque: falha', ['personal_id' => $personalId, 'body' => $data]);
-            $saque->update(['status' => 'FAILED']);
-
-            return response()->json(['error' => $errMsg], 422);
+        if (! $res['ok']) {
+            return response()->json(['error' => $res['erro']], $res['status']);
         }
-
-        if ($res->failed()) {
-            Log::error('Asaas saque: http error', ['personal_id' => $personalId, 'body' => $data]);
-            $saque->update(['status' => 'FAILED']);
-
-            return response()->json(['error' => 'Falha ao processar saque. Tente novamente.'], 500);
-        }
-
-        $saque->update([
-            'asaas_transfer_id' => $data['id'] ?? null,
-            'status' => $data['status'] ?? 'PENDING',
-            'transaction_receipt_url' => $data['transactionReceiptUrl'] ?? null,
-        ]);
-
-        TrainerPayout::where('trainer_id', $personalId)
-            ->where('status', 'in_wallet')
-            ->update(['status' => 'paid', 'stripe_payout_id' => $data['id'] ?? null]);
-
-        Log::info('Asaas saque realizado', [
-            'personal_id' => $personalId,
-            'valor' => $validated['valor'],
-            'transfer_id' => $data['id'] ?? null,
-        ]);
 
         return response()->json([
             'success' => true,
-            'transfer_id' => $data['id'] ?? null,
-            'valor' => $validated['valor'],
+            'transfer_id' => $res['transfer_id'],
+            'valor' => $res['valor'],
         ]);
     }
 
