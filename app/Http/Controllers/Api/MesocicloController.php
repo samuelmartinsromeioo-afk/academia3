@@ -4,9 +4,11 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Api\Concerns\ResolvesApiUser;
 use App\Http\Controllers\Controller;
+use App\Models\Cadastro\FichaTreino;
 use App\Models\Cadastro\Mesociclo;
 use App\Models\Cadastro\MesocicloTreino;
 use App\Support\VideosExercicios;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 
 /**
@@ -29,11 +31,42 @@ class MesocicloController extends Controller
             ->orderByDesc('created_at')
             ->first();
 
+        $fichaDoDia = $this->fichaDoDia($cliente);
+
+        /*
+         * Sem periodização a resposta NÃO é mais vazia.
+         *
+         * `fichas_treino.dia_semana` existe desde o começo (0=Dom … 6=Sáb) e
+         * nada no app lia: o aluno sem mesociclo — que é a maioria, porque
+         * periodização é recurso avançado — abria a home e via "Ver minhas
+         * fichas" genérico, mesmo tendo uma ficha marcada para HOJE. O dado
+         * estava no banco e a pergunta "o que eu treino hoje?" não tinha
+         * resposta na tela principal.
+         */
         if (! $meso) {
-            return response()->json(['mesociclo' => null, 'treino' => null, 'proximo' => null]);
+            return response()->json([
+                'mesociclo' => null,
+                'treino' => null,
+                'proximo' => null,
+                'ficha_do_dia' => $fichaDoDia,
+                'origem' => $fichaDoDia ? 'ficha' : null,
+            ]);
         }
 
         return response()->json([
+            'ficha_do_dia' => $fichaDoDia,
+            /*
+             * Quem o app deve exibir, decidido AQUI.
+             *
+             * Com periodização ativa ela manda: é o plano que o profissional
+             * montou em sequência, e o treino dela avança por conclusão, não por
+             * dia da semana. A ficha do dia vai junto no payload de qualquer
+             * forma, para o app não precisar de uma segunda chamada se um dia a
+             * tela quiser mostrar as duas — mas quem escolhe é o servidor, no
+             * mesmo princípio de `modalidade_filtro` e `modalidades_disponiveis`:
+             * regra de precedência duplicada no app é regra que diverge.
+             */
+            'origem' => 'mesociclo',
             'mesociclo' => [
                 'id' => $meso->id,
                 'nome' => $meso->nome,
@@ -70,6 +103,56 @@ class MesocicloController extends Controller
         ]);
 
         return response()->json(['success' => true, 'message' => 'Treino concluído! O próximo da sequência já está pronto. 🔁']);
+    }
+
+    /**
+     * A ficha de treino marcada para HOJE, no mesmo formato de `treinoJson`.
+     *
+     * Mesmo shape de propósito: a tela principal do aluno renderiza "o treino de
+     * hoje" com um caminho só, venha ele da periodização ou de uma ficha fixa.
+     * Dois formatos diferentes obrigariam o app a ter dois renderizadores para a
+     * mesma informação.
+     *
+     * O DIA DA SEMANA sai da hora de parede do Brasil, não de `now()`:
+     * `config('app.timezone')` é UTC, então entre 21:00 e a meia-noite daqui o
+     * `dayOfWeek` em UTC já é o do dia seguinte — e o aluno veria, à noite, o
+     * treino de amanhã. É o mesmo erro que deslocava o lembrete de aula.
+     */
+    private function fichaDoDia($cliente): ?array
+    {
+        $diaSemana = Carbon::now(config('app.timezone_negocio', 'America/Sao_Paulo'))->dayOfWeek;
+
+        $ficha = FichaTreino::with(['exercicios' => fn ($q) => $q->orderBy('ordem')])
+            ->where('cliente_id', $cliente->id)
+            ->where('ativo', true)
+            ->where('dia_semana', $diaSemana)
+            ->orderByDesc('created_at')
+            ->first();
+
+        if (! $ficha) {
+            return null;
+        }
+
+        return [
+            'id' => $ficha->id,
+            // `letra` não existe em ficha (é conceito de mesociclo); o dia faz o
+            // papel de rótulo curto no card.
+            'letra' => null,
+            'nome_treino' => $ficha->nome_treino,
+            'dia_semana' => $ficha->dia_semana,
+            'dia_semana_nome' => $ficha->getDiaSemanaNome(),
+            'observacoes' => $ficha->observacoes,
+            'concluido_hoje' => $ficha->foi_concluido_hoje(),
+            'exercicios' => $ficha->exercicios->map(fn ($e) => [
+                'id' => $e->id,
+                'nome_exercicio' => $e->nome_exercicio,
+                'series' => $e->series,
+                'repeticoes' => $e->repeticoes,
+                'peso' => $e->peso !== null ? (float) $e->peso : null,
+                'observacoes' => $e->observacoes,
+                'video_url' => $this->videoStreamUrl(VideosExercicios::para($e->nome_exercicio)),
+            ])->values(),
+        ];
     }
 
     private function treinoJson(?MesocicloTreino $treino): ?array
