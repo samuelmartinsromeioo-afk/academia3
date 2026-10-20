@@ -334,6 +334,35 @@ A coluna do corpo do aviso é **`mensagem`** (`notificacoes`: `destinatario_tipo
 
 **Lacuna deliberada:** o push sempre manda `data = ['tela' => 'Notificacoes']` (`Notificacao::para`), e a API **não** expõe `url` nem `icone`. Então todo aviso leva à *lista*, nunca ao assunto — "nova mensagem de X" abre Avisos, não a conversa. Fechar isso não é expor `url`: a coluna guarda uma rota **web** (`route('chat.conversa', …)`), que não existe no app. Exigiria um campo de destino que os dois lados entendam (ex.: `destino: {tela, params}`) decidido em `AvisoService`/`Notificacao::para`, mais o mapeamento no app — e o app publicado ignoraria o campo novo até atualizar, o que é aceitável porque o fallback já é a lista.
 
+#### Renderização do `*negrito*` dos avisos
+
+Os ~39 textos usam a marcação do WhatsApp (`*negrito*`, quebras de linha) porque o WhatsApp foi um dos canais até 19/10/2026. O canal saiu, a marcação ficou, e **as superfícies que não a interpretam mostram o asterisco cru** — a lista de avisos do site e a do app exibiam literalmente `*Aula cancelada*`. O e-mail (`emails/notificacao.blade.php`) já convertia certo, e era a única.
+
+A correção **não podia ser editar os 39 textos**: seriam 39 edições para um problema de apresentação, e o e-mail passaria a sair sem destaque nenhum. `App\Support\TextoAviso` concentra as duas saídas — `html()` para onde existe formatação (e-mail e lista do site) e `simples()` para onde não existe (o banner do push, que o Expo não formata, então ali só dá para remover). O app tem o par inevitável em `TextoMarcado` (`components/UI.js`), porque React Native não desenha HTML; o que não pode haver é duas implementações **do mesmo lado**.
+
+Três detalhes que o `TextoAvisoTest` prende, cada um por um motivo concreto:
+
+1. **Escapa antes de converter.** Estes textos interpolam nome de cadastro (`"*{$cliente->nome}* contratou um plano"`), então a ordem inversa é XSS no e-mail e na lista. Há teste com `<script>` no nome.
+2. **Trunca antes de converter.** A lista do site corta em 220 caracteres; cortar depois podia partir um `<strong>` no meio.
+3. **O regex não atravessa linha** (`[^*\n]+`). O anterior era `/\*(.+?)\*/s` — com a flag `s`, um asterisco solto numa linha casava com o da linha **seguinte** e engolia a quebra. Asterisco órfão remanescente é removido, nunca exibido.
+
+#### "Treino de hoje" — DUAS fontes, e `origem` é quem decide
+
+A tela principal do aluno responde "o que eu treino hoje?", e isso tem duas fontes com lógicas diferentes:
+
+| Fonte | Como define o treino |
+|---|---|
+| `mesociclos` (periodização) | **sequência** A/B/C/D que avança quando o aluno conclui |
+| `fichas_treino.dia_semana` | **dia da semana** fixo (0=Dom … 6=Sáb) |
+
+`/treino-do-dia` só sabia da primeira e devolvia tudo `null` sem ela — mas `dia_semana` existe desde a primeira migration e **nada no app lia**. Efeito: o aluno sem mesociclo (a maioria, porque periodização é recurso avançado) abria a tela principal e via "Ver minhas fichas" genérico **mesmo tendo ficha marcada para hoje**. A resposta estava no banco e não estava na tela. Mesmo modo de falha de `personals.modalidade`.
+
+**As duas vêm no MESMO shape**, para a tela renderizar o treino de hoje por um caminho só — dois formatos obrigariam o app a ter dois renderizadores para a mesma informação. E **`origem`** (`'mesociclo'` | `'ficha'` | `null`) diz qual exibir: com periodização ativa ela manda. Quem decide a precedência é o servidor, no mesmo princípio de `modalidade_filtro` e `modalidades_disponiveis` — regra de precedência duplicada no app é regra que diverge.
+
+**O dia da semana sai de `config('app.timezone_negocio')`, nunca de `now()`.** `app.timezone` é UTC de propósito, então entre 21:00 e a meia-noite daqui o `dayOfWeek` em UTC já é o do **dia seguinte** — e o aluno que olha o celular antes de dormir veria o treino de amanhã. É o mesmo erro que deslocava o lembrete de aula em 4h. `TreinoDoDiaFichaTest::test_o_dia_sai_do_fuso_do_brasil_nao_do_utc` congela o relógio às 23:30 de São Paulo com **duas** fichas concorrentes (uma no dia do Brasil, outra no dia do UTC) e afirma qual foi escolhida.
+
+No app, o card lista os 4 primeiros exercícios com série × repetição e carga — o dado que o aluno usa *durante* o treino; antes dizia só "7 exercício(s)", e os exercícios **já vinham no payload** (a home usava apenas `.length` deles). O corte em 4 mantém o streak e os outros cartões alcançáveis sem rolar a tela inteira. **O botão muda de destino com a origem**: periodização abre `TreinoDoDia` (que lê o mesociclo), ficha fixa abre `ExecutarTreino` com o `fichaId` — mandar a ficha para `TreinoDoDia` cairia na mensagem "você ainda não tem periodização ativa", num aluno que acabou de ver o treino de hoje na tela anterior.
+
 #### Sinal de aviso novo DENTRO do app
 
 `GET /notificacoes/nao-lidas` existe desde sempre e o app **nunca o chamava**; `QuickAccessRow` (`components/UI.js`) já desenhava `item.badge` com estilo pronto e **nenhuma tela passava o valor**. As duas metades da mesma funcionalidade estavam construídas e desconectadas, então o atalho "Avisos" ficava idêntico com 0 ou com 12 pendências: fora do banner na tela de bloqueio, o app não dava **nenhum** sinal de que havia aviso novo — quem descartasse o push ou abrisse o app direto não ficava sabendo. É o mesmo modo de falha que `personals.modalidade` teve (dado coletado que ninguém lê), aqui na direção inversa: UI pronta que ninguém alimenta.
