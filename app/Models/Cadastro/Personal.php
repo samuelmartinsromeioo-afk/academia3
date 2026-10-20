@@ -186,6 +186,66 @@ class Personal extends Authenticatable
     }
 
     /**
+     * Onde este personal atua, para a vitrine do aluno (web E app).
+     *
+     * São DUAS fontes com confiabilidade diferente, e por isso o retorno as
+     * mantém separadas em vez de juntar numa lista só:
+     *
+     * - `vinculadas`: a relação `academiasAprovadas` — a academia confirmou o
+     *   vínculo, então é dado verificado e clicável (tem id).
+     * - `informadas`: a COLUNA de texto livre `academias`, que o personal digita
+     *   à mão (uma por linha). Ninguém conferiu, e não dá para linkar.
+     *
+     * Existe aqui, e não em cada vitrine, porque são três consumidores (o modal
+     * do web, o payload do app e qualquer tela futura) e a regra de quebra de
+     * linha + a deduplicação não podem divergir entre eles. O web mostrava só o
+     * texto livre e o vínculo aprovado era invisível ao aluno; o app não mostrava
+     * nenhum dos dois.
+     *
+     * Exige `academiasAprovadas` eager-loaded em listagem, senão é N+1.
+     */
+    public function locaisDeAtuacao(): array
+    {
+        $vinculadas = $this->academiasAprovadas
+            ->map(fn ($a) => [
+                'id' => $a->id,
+                'nome' => $a->nome,
+                'bairro' => $a->bairro,
+                'cidade' => $a->cidade,
+                'estado' => $a->estado,
+            ])
+            ->values()
+            ->all();
+
+        // O personal costuma digitar à mão a mesma academia que depois aprovou o
+        // vínculo. Listar as duas mostraria "Smart Fit" duas vezes, uma
+        // verificada e outra não, o que parece defeito.
+        $jaVinculadas = array_map(
+            fn ($a) => $this->chaveNomeAcademia($a['nome']),
+            $vinculadas
+        );
+
+        $informadas = collect(preg_split('/\r\n|\r|\n/', (string) $this->academias))
+            ->map(fn ($linha) => trim($linha))
+            ->filter()
+            ->reject(fn ($nome) => in_array($this->chaveNomeAcademia($nome), $jaVinculadas, true))
+            ->unique(fn ($nome) => $this->chaveNomeAcademia($nome))
+            ->values()
+            ->all();
+
+        return [
+            'vinculadas' => $vinculadas,
+            'informadas' => $informadas,
+        ];
+    }
+
+    /** Normaliza o nome da academia só para comparar duas grafias da mesma. */
+    private function chaveNomeAcademia(string $nome): string
+    {
+        return preg_replace('/\s+/', ' ', mb_strtolower(trim($nome)));
+    }
+
+    /**
      * Cria uma solicitação de vínculo (pendente) para a academia informada.
      * Bloqueia duplicidade: se já existe vínculo pendente ou aprovado com essa
      * academia, lança RuntimeException com mensagem amigável (o controller trata).

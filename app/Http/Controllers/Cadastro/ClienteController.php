@@ -31,7 +31,9 @@ class ClienteController extends Controller
         // Só personal trainers no painel (nutricionistas têm fluxo próprio).
         $personals = Personal::where('status', 'aprovado')
             ->personalTrainers()
-            ->with(['fotos', 'avaliacoes', 'pacotesAvaliacao' => fn ($q) => $q->where('ativo', true)->orderBy('nome')])
+            // academiasAprovadas alimenta "Academias onde atua" no modal; sem o
+            // eager load é uma query por personal da vitrine.
+            ->with(['fotos', 'avaliacoes', 'academiasAprovadas', 'pacotesAvaliacao' => fn ($q) => $q->where('ativo', true)->orderBy('nome')])
             // Pioneiros (100 primeiros do estado) aparecem em destaque, no topo.
             ->orderByRaw('pioneiro_posicao IS NULL')
             ->orderBy('pioneiro_posicao')

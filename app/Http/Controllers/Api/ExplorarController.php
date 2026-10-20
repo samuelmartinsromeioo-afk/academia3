@@ -622,7 +622,9 @@ class ExplorarController extends Controller
     {
         $cliente = $this->clienteAutenticado($request);
 
-        $personal = Personal::where('status', 'aprovado')->findOrFail($id);
+        $personal = Personal::where('status', 'aprovado')
+            ->with('academiasAprovadas')
+            ->findOrFail($id);
         $pacotes = Pacote::where('personal_id', $personal->id)->orderBy('frequencia')->get();
 
         return response()->json([
@@ -640,6 +642,14 @@ class ExplorarController extends Controller
                 // em que decide contratar.
                 'especialidades' => array_values(array_filter(array_map('trim', (array) $personal->especialidades))),
                 'valor_secao' => $personal->valor_secao !== null ? (float) $personal->valor_secao : null,
+                /*
+                 * Onde ele atua. É a pergunta que o aluno faz ANTES de contratar
+                 * ("vou treinar aonde?") e o app não tinha resposta: o payload
+                 * não trazia nem a coluna de texto livre nem o vínculo aprovado.
+                 * As duas vêm separadas de locaisDeAtuacao() porque só uma é
+                 * verificada — ver o método no model.
+                 */
+                'academias' => $personal->locaisDeAtuacao(),
                 /*
                  * Pode receber pagamento agora? O app usa para desabilitar o botão
                  * de contratar em vez de deixar o aluno chegar ao checkout e tomar

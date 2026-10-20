@@ -1598,7 +1598,11 @@
             valor_avaliacao: {{ $p->valor_avaliacao ?? 0 }},
             precos_avaliacao: {!! json_encode($p->precos_avaliacao ?: (object)[], JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP) !!},
             pacotes_avaliacao: {!! json_encode($p->pacotesAvaliacao->map(fn($pa) => ['id' => $pa->id, 'nome' => $pa->nome, 'valor' => (float) $pa->valor, 'tipos' => $pa->tipos]), JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP) !!},
-            academias: {!! json_encode($p->academias ?? '', JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP) !!},
+            {{-- Vínculo aprovado + texto livre, já quebrado e deduplicado pelo
+                 model. Era só a coluna de texto livre aqui, e o JS fazia o
+                 split — o que deixava o vínculo que a academia aprovou
+                 invisível para o aluno. --}}
+            academias: {!! json_encode($p->locaisDeAtuacao(), JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP) !!},
             modalidade: {!! json_encode($p->modalidade ?? '', JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP) !!},
             especialidades: {!! json_encode(array_values(array_filter(array_map('trim', (array) $p->especialidades))), JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP) !!},
             fotos: [
@@ -1628,6 +1632,69 @@
     window.horariosDisponiveisData = {!! json_encode($horariosGrouped, JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP) !!};
 
     let personalSelecionadoId = null;
+
+    /*
+     * Nomes dos locais de treino do personal, para os selects de "onde vai ser"
+     * (pacote e aula avulsa) — o valor vai para agendas.academia_nome.
+     *
+     * `personal.academias` é o retorno de Personal::locaisDeAtuacao(): as
+     * vinculadas (vínculo aprovado pela academia) vêm primeiro porque são
+     * dado verificado, depois as que o personal digitou à mão. A quebra de
+     * linha e a deduplicação já vieram prontas do servidor.
+     */
+    function nomesLocaisAtuacao(personal) {
+        const locais = (personal && personal.academias) || {};
+
+        return [
+            ...(locais.vinculadas || []).map(a => a.nome),
+            ...(locais.informadas || []),
+        ].map(n => String(n).trim()).filter(Boolean);
+    }
+
+    /*
+     * Monta o select de local de treino. Os <option> são criados por DOM, não
+     * por template string: estes nomes são digitados pelo profissional e um
+     * apóstrofo ou aspas no nome quebrava o atributo value do HTML montado à
+     * mão (além de ser porta de injeção).
+     */
+    function montarSelectLocal(nomes, onChange) {
+        const select = document.createElement('select');
+        select.style.cssText = 'width:100%; background:var(--bg-card,#111); border:1px solid var(--border,#333); color:#fff; padding:10px 12px; border-radius:10px; font-size:0.85rem; outline:none; cursor:pointer;';
+
+        const vazia = document.createElement('option');
+        vazia.value = '';
+        vazia.textContent = 'Selecione uma academia';
+        select.appendChild(vazia);
+
+        nomes.forEach(nome => {
+            const opt = document.createElement('option');
+            opt.value = nome;
+            opt.textContent = nome;
+            select.appendChild(opt);
+        });
+
+        select.addEventListener('change', () => onChange(select.value));
+
+        return select;
+    }
+
+    /** Rótulo "Academia / Local de Treino" dos dois modais. */
+    function rotuloLocalTreino() {
+        const label = document.createElement('label');
+        label.style.cssText = 'display:block; color:var(--primary); font-weight:900; text-transform:uppercase; font-size:0.7rem; margin-bottom:6px;';
+        label.innerHTML = '<i class="ph ph-map-pin"></i> Academia / Local de Treino';
+
+        return label;
+    }
+
+    /** Aviso de que o personal não informou nenhum local. */
+    function avisoSemLocal(margem) {
+        const p = document.createElement('p');
+        p.style.cssText = `color:var(--text-muted); font-size:0.8rem; padding:10px 12px; background:rgba(255,255,255,0.04); border-radius:10px; border:1px solid var(--border,#333); margin:${margem};`;
+        p.innerHTML = '<i class="ph ph-info"></i> O personal ainda não informou as academias em que trabalha.';
+
+        return p;
+    }
 
     // ============ MODAL DE DETALHES DO PERSONAL ============
     // Selo de pioneiro ("verificado") para os trechos montados em JS.
@@ -1713,16 +1780,41 @@
             document.getElementById('detalhesEspecialidadesSection').style.display = 'none';
         }
 
-        // ACADEMIAS
-        if (personal.academias && personal.academias.trim()) {
+        // ACADEMIAS ONDE ATUA — duas fontes: o vínculo que a academia aprovou
+        // (verificado, com endereço) e o que o personal digitou à mão. O split
+        // e a deduplicação vêm do servidor (Personal::locaisDeAtuacao).
+        const locais = personal.academias || {};
+        const vinculadas = locais.vinculadas || [];
+        const informadas = locais.informadas || [];
+        const boxAcademias = document.getElementById('detalhesAcademias');
+
+        if (vinculadas.length || informadas.length) {
             document.getElementById('detalhesAcademiasSection').style.display = 'block';
-            const academiasArray = personal.academias.split('\n').filter(a => a.trim());
-            document.getElementById('detalhesAcademias').innerHTML = academiasArray.map(a => `
-                <div class="detalhes-academia-item">
-                    <i class="ph ph-building"></i>
-                    <span>${a.trim()}</span>
-                </div>
-            `).join('');
+            boxAcademias.innerHTML = '';
+
+            // Estes nomes são texto que o profissional digita. Montados como nó
+            // de texto, nunca por innerHTML — o código anterior interpolava o
+            // nome direto no HTML.
+            const itemAcademia = (nome, detalhe, verificado) => {
+                const div = document.createElement('div');
+                div.className = 'detalhes-academia-item';
+                const ico = document.createElement('i');
+                ico.className = verificado ? 'ph ph-seal-check' : 'ph ph-building';
+                div.appendChild(ico);
+                const span = document.createElement('span');
+                span.textContent = detalhe ? `${nome} — ${detalhe}` : nome;
+                div.appendChild(span);
+                div.title = verificado
+                    ? 'Vínculo confirmado pela academia'
+                    : 'Informado pelo profissional';
+                return div;
+            };
+
+            vinculadas.forEach(a => {
+                const onde = [a.bairro, a.cidade].filter(Boolean).join(', ');
+                boxAcademias.appendChild(itemAcademia(a.nome, onde, true));
+            });
+            informadas.forEach(nome => boxAcademias.appendChild(itemAcademia(nome, '', false)));
         } else {
             document.getElementById('detalhesAcademiasSection').style.display = 'none';
         }
@@ -2300,34 +2392,28 @@
         // Popula o select de academias do personal
         const personal = window.personalsData[personalId];
         const container = document.getElementById('pacoteAcademiaContainer');
-        const academias = personal && personal.academias
-            ? personal.academias.split('\n').map(a => a.trim()).filter(a => a.length > 0)
-            : [];
+        const academias = nomesLocaisAtuacao(personal);
 
         container.style.display = 'block';
         container.dataset.temAcademias = academias.length > 0 ? 'true' : 'false';
         document.getElementById('pacote_academia_nome').value = '';
+        container.innerHTML = '';
 
         if (academias.length > 0) {
-            container.innerHTML = `
-                <label style="display:block; color:var(--primary); font-weight:900; text-transform:uppercase; font-size:0.7rem; margin-bottom:6px;">
-                    <i class="ph ph-map-pin"></i> Academia / Local de Treino
-                </label>
-                <select id="academiaPackSelect"
-                        onchange="document.getElementById('pacote_academia_nome').value = this.value; atualizarBotao();"
-                        style="width:100%; background:var(--bg-card,#111); border:1px solid var(--border,#333); color:#fff; padding:10px 12px; border-radius:10px; font-size:0.85rem; outline:none; cursor:pointer;">
-                    <option value="">Selecione uma academia</option>
-                    ${academias.map(a => `<option value="${a}">${a}</option>`).join('')}
-                </select>`;
+            const select = montarSelectLocal(academias, valor => {
+                document.getElementById('pacote_academia_nome').value = valor;
+                atualizarBotao();
+            });
+            select.id = 'academiaPackSelect';
+            container.appendChild(rotuloLocalTreino());
+            container.appendChild(select);
+
             if (academias.length === 1) {
-                document.getElementById('academiaPackSelect').value = academias[0];
+                select.value = academias[0];
                 document.getElementById('pacote_academia_nome').value = academias[0];
             }
         } else {
-            container.innerHTML = `
-                <p style="color:var(--text-muted); font-size:0.8rem; padding:10px 12px; background:rgba(255,255,255,0.04); border-radius:10px; border:1px solid var(--border,#333); margin:0;">
-                    <i class="ph ph-info"></i> O personal ainda não informou as academias em que trabalha.
-                </p>`;
+            container.appendChild(avisoSemLocal('0'));
         }
 
         montarEscolhaModalidade(personal);
@@ -2663,31 +2749,24 @@
 
         const personal = window.personalsData[id];
         const container = document.getElementById('academiaAvulsaContainer');
-        const academias = personal?.academias
-            ? personal.academias.split('\n').map(a => a.trim()).filter(a => a.length > 0)
-            : [];
+        const academias = nomesLocaisAtuacao(personal);
+        container.innerHTML = '';
 
         if (academias.length > 0) {
-            container.innerHTML = `
-                <label style="display:block; color:var(--primary); font-weight:900; text-transform:uppercase; font-size:0.7rem; margin-bottom:6px;">
-                    <i class="ph ph-map-pin"></i> Academia / Local de Treino
-                </label>
-                <select onchange="document.getElementById('avulsaAcademiaNomeInput').value=this.value"
-                        style="width:100%; background:var(--bg-dark,#111); border:1px solid var(--border,#333); color:#fff; padding:10px 12px; border-radius:10px; font-size:0.85rem; outline:none; cursor:pointer; margin-bottom:0;">
-                    <option value="">Selecione uma academia</option>
-                    ${academias.map(a => `<option value="${a}">${a}</option>`).join('')}
-                </select>`;
+            const select = montarSelectLocal(academias, valor => {
+                document.getElementById('avulsaAcademiaNomeInput').value = valor;
+            });
+            container.appendChild(rotuloLocalTreino());
+            container.appendChild(select);
+
             if (academias.length === 1) {
-                container.querySelector('select').value = academias[0];
+                select.value = academias[0];
                 document.getElementById('avulsaAcademiaNomeInput').value = academias[0];
             } else {
                 document.getElementById('avulsaAcademiaNomeInput').value = '';
             }
         } else {
-            container.innerHTML = `
-                <p style="color:var(--text-muted); font-size:0.8rem; padding:10px 12px; background:rgba(255,255,255,0.04); border-radius:10px; border:1px solid var(--border,#333); margin:0 0 15px;">
-                    <i class="ph ph-info"></i> O personal ainda não informou as academias em que trabalha.
-                </p>`;
+            container.appendChild(avisoSemLocal('0 0 15px'));
             document.getElementById('avulsaAcademiaNomeInput').value = '';
         }
 
