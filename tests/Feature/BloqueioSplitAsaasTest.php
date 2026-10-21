@@ -374,4 +374,52 @@ class BloqueioSplitAsaasTest extends TestCase
             );
         }
     }
+
+    // ── Sem walletId NÃO vende ──────────────────────────────────────────
+
+    /**
+     * Recebedor sem wallet não vende — nem "sem split".
+     *
+     * O caso que originou isto: uma cobrança de R$ 22 (R$ 20 do personal + R$ 2
+     * de comissão) caiu INTEIRA na conta da plataforma, porque `montarSplit()`
+     * devolvia `null` quando faltava wallet e null significava "siga sem
+     * split". A venda era bem-sucedida, o aluno pagava, o aviso saía — e R$ 20
+     * de terceiro entravam na conta da plataforma como se fossem receita dela,
+     * enquanto `payments.trainer_amount` registrava que o profissional tinha
+     * R$ 20 a receber. Problema fiscal de um lado, saldo mentindo do outro, e
+     * nenhum sinal além de um `Log::warning` que ninguém lia.
+     */
+    public function test_sem_wallet_a_cobranca_e_barrada(): void
+    {
+        $p = $this->personalAprovado();
+        $p->forceFill(['asaas_wallet_id' => null])->save();
+        $p->refresh();
+
+        $this->assertFalse(
+            $p->podeReceberPagamento(),
+            'sem wallet o repasse não tem destino, então não pode vender'
+        );
+
+        try {
+            app(AsaasService::class)->montarSplit($p, 20.00, ['personal_id' => $p->id]);
+            $this->fail('montarSplit devia abortar sem wallet, em vez de seguir sem split');
+        } catch (\Illuminate\Http\Exceptions\HttpResponseException $e) {
+            $this->assertSame(422, $e->getResponse()->getStatusCode());
+        }
+    }
+
+    /**
+     * E o scope concorda. Sem isto o profissional apareceria na vitrine e o
+     * aluno levaria o 422 só no checkout — o defeito que a trava corrige.
+     */
+    public function test_scope_tambem_exclui_quem_nao_tem_wallet(): void
+    {
+        $p = $this->personalAprovado();
+        $p->forceFill(['asaas_wallet_id' => null])->save();
+
+        $this->assertFalse(
+            Personal::podeReceber()->whereKey($p->id)->exists(),
+            'o scope precisa excluir quem o método já recusa'
+        );
+    }
 }

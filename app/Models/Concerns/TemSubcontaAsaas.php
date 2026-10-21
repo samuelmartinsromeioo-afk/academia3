@@ -24,10 +24,8 @@ trait TemSubcontaAsaas
      *
      * Três situações, e a terceira é a que exige cuidado:
      *
-     *  1. sem `asaas_wallet_id` → NÃO há split. Isso não impede a cobrança:
-     *     `montarSplit()` devolve null, o dinheiro cai na conta da plataforma e
-     *     o repasse vira manual (`personal_saques`). É um fluxo que existe e
-     *     funciona, então não é motivo para esconder o botão de pagar.
+     *  1. sem `asaas_wallet_id` → **NÃO pode**. Sem wallet não há destino para
+     *     o repasse (ver abaixo; isto mudou em 20/10/2026).
      *
      *  2. com wallet e status APPROVED → pode.
      *
@@ -39,9 +37,24 @@ trait TemSubcontaAsaas
      */
     public function podeReceberPagamento(): bool
     {
+        /*
+         * SEM walletId NÃO PODE RECEBER. Isto respondia `true` até 20/10/2026,
+         * com a justificativa de que "sem split cai na plataforma e o repasse é
+         * manual — fluxo que existe e funciona".
+         *
+         * O fluxo deixou de existir: `AsaasService::montarSplit()` agora aborta
+         * em vez de cobrar sem split, porque dinheiro de terceiro entrando na
+         * conta da plataforma é problema fiscal e faz o saldo do profissional
+         * mentir (o comentário lá explica os três motivos).
+         *
+         * Manter `true` aqui seria pior que inconsistência: a vitrine diria
+         * "pode receber", o aluno escolheria o profissional, montaria o pacote e
+         * tomaria 422 no checkout — exatamente o defeito que esta trava nasceu
+         * para corrigir. Os dois lados têm de contar a mesma história, e
+         * `scopePodeReceber()` espelha isto em SQL.
+         */
         if (empty($this->asaas_wallet_id)) {
-            // Sem split: cai na conta da plataforma e o repasse é manual.
-            return true;
+            return false;
         }
 
         /*
@@ -265,9 +278,14 @@ trait TemSubcontaAsaas
         $limite = now()->subHours(AsaasService::HORAS_RETENTAR_SPLIT);
 
         return $query
+            // Wallet é OBRIGATÓRIA: sem ela o repasse não tem destino e a
+            // cobrança é abortada em montarSplit(). Até 20/10/2026 esta linha
+            // era `whereNull('asaas_wallet_id')` dentro do OR, tratando a
+            // ausência como "pode" — espelhando o `return true` que havia no
+            // método. Os dois mudaram juntos, e têm de continuar juntos.
+            ->whereNotNull('asaas_wallet_id')
             ->where(function ($q) {
-                $q->whereNull('asaas_wallet_id')
-                    ->orWhereNull('asaas_account_status')
+                $q->whereNull('asaas_account_status')
                     ->orWhere('asaas_account_status', AsaasService::STATUS_APROVADA)
                     ->orWhere('asaas_account_status', AsaasService::STATUS_CHAVE_INVALIDA);
             })

@@ -33,6 +33,11 @@ class AcademiaPagamentoTest extends TestCase
             'email' => 'ac.pgto@teste.com', 'senha' => bcrypt('x'),
             'cep' => '30000-000', 'rua' => 'R', 'bairro' => 'B', 'cidade' => 'BH',
             'estado' => 'MG', 'complemento' => '-', 'endereco' => 'R, 1', 'valor_mensalidade' => 150,
+            // Wallet é pré-requisito para vender desde 20/10/2026: sem ela
+            // montarSplit() aborta 422, porque cobrar sem split faria o dinheiro
+            // da academia cair na conta da plataforma. Uma academia que recebe
+            // pagamento é, por definição, uma academia com wallet.
+            'asaas_wallet_id' => 'wal_academia_pgto',
         ]);
 
         $this->clienteId = DB::table('clientes')->insertGetId([

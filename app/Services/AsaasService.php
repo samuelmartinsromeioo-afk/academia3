@@ -651,10 +651,41 @@ class AsaasService
     {
         $walletId = $recebedor->asaas_wallet_id ?? null;
 
+        /*
+         * SEM walletId A COBRANÇA NÃO ACONTECE. Nunca devolva null daqui.
+         *
+         * Até 20/10/2026 isto devolvia `null`, e null significa "siga sem
+         * split": a cobrança ia ao Asaas inteira, o dinheiro do profissional
+         * caía na conta da PLATAFORMA e o repasse ficava manual. Estava
+         * documentado como gap deliberado, e é insustentável por três motivos
+         * que só aparecem depois do fato:
+         *
+         * 1. FISCAL. Entra na conta da plataforma, como receita dela, dinheiro
+         *    que é de terceiro — os R$ 20 do profissional contabilizados junto
+         *    dos R$ 2 que realmente são nossos.
+         * 2. O saldo do profissional passa a MENTIR. `payments.trainer_amount`
+         *    é gravado com ou sem split, então o registro diz que ele tem R$ 20
+         *    a receber enquanto o dinheiro está em outra conta.
+         * 3. Ninguém percebe. A cobrança é bem-sucedida, o aluno paga, o aviso
+         *    sai — e a única pista era um Log::warning que nada lê.
+         *
+         * Abortar 422 é o mesmo tratamento da wallet bloqueada, logo abaixo, e
+         * pelo mesmo motivo: melhor a venda falhar na frente do aluno, com texto
+         * que explica, do que acontecer errado em silêncio.
+         *
+         * CONSEQUÊNCIA ACEITA: profissional sem subconta não vende até ela
+         * existir. Rode `asaas:conferir-repasses` para ver quem está nessa
+         * situação ANTES de subir isto.
+         */
         if (! $walletId) {
-            Log::warning('Asaas: split não aplicado — recebedor sem walletId', $ctx);
+            Log::error('Asaas: cobrança barrada — recebedor sem walletId (o repasse não teria destino)', $ctx);
 
-            return null;
+            abort(response()->json([
+                'error' => method_exists($recebedor, 'motivoNaoRecebe') && $recebedor->motivoNaoRecebe()
+                    ? $recebedor->motivoNaoRecebe()
+                    : 'Este profissional ainda está finalizando o cadastro de recebimentos '
+                      .'e não pode receber pagamentos no momento.',
+            ], 422));
         }
 
         /*

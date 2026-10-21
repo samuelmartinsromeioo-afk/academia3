@@ -70,6 +70,11 @@ class ModalidadeApiTest extends TestCase
             'cidade' => 'BH', 'estado' => 'MG', 'complemento' => '-', 'foto' => '',
             'idade' => '1990-01-01', 'valor_secao' => 80.00, 'cref' => $cpf.'-G/MG',
             'modalidade' => $modalidade, 'status' => 'aprovado', 'data_aprovacao' => now()->subYear(),
+            // Wallet é pré-requisito para vender desde 20/10/2026: montarSplit
+            // aborta sem ela, para o dinheiro do personal não cair na conta da
+            // plataforma. Os testes de pagamento daqui precisam de um
+            // profissional que de fato possa receber.
+            'asaas_wallet_id' => 'wal_pt_'.$cpf,
         ]);
     }
 

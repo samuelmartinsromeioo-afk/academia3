@@ -134,7 +134,17 @@ The history worth keeping: the rate once existed in **nine** copies of `0.10` ac
 
 Note `academias.valor_mensalidade` is the price the **gym charges its students**, not something the gym pays us — the student pays it plus the commission, and the gym receives it whole.
 
-Known gap, deliberate: when a receiver has no `asaas_wallet_id`, `montarSplit()` returns `null` and the charge still goes through **without a split**, so everything lands in the platform account and the payout is manual (`personal_saques`) — for the full `trainer_amount`, which is now the whole price. If you change this, change it everywhere.
+**Sem `asaas_wallet_id` a cobrança NÃO acontece** (mudou em 2026-10-20). `montarSplit()` **aborta 422**; nunca devolve `null`.
+
+Isto era o inverso, e era um gap deliberado: sem wallet a cobrança seguia **sem split**, tudo caía na conta da plataforma e o repasse ficava manual. O caso que derrubou a tese: uma cobrança de R$ 22 (R$ 20 do personal + R$ 2 de comissão) entrou **inteira** na conta da plataforma. Três estragos, nessa ordem de gravidade:
+
+1. **Fiscal.** Dinheiro de terceiro entra como receita da plataforma — R$ 20 do profissional contabilizados junto dos R$ 2 que são nossos.
+2. **O saldo do profissional passa a mentir.** `payments.trainer_amount` é gravado com ou sem split, então o registro diz que ele tem R$ 20 a receber enquanto o dinheiro está em outra conta.
+3. **Ninguém percebe.** A cobrança é bem-sucedida, o aluno paga, o aviso sai, e a única pista era um `Log::warning` que nada lê. Falhar na frente do aluno, com texto que explica, é melhor que acontecer errado em silêncio.
+
+**`podeReceberPagamento()` e `scopePodeReceber()` mudaram junto, e têm de continuar juntos** — se só o método recusasse, o profissional apareceria na vitrine e o aluno levaria o 422 no checkout, exatamente o defeito que a trava existe para corrigir.
+
+**Consequência aceita:** recebedor sem subconta não vende até ela existir. Isso atinge sobretudo **academia, studio e loja**, que (ao contrário do personal) **não criam subconta no cadastro** — dependem da rota manual `/{papel}/criar-conta-asaas`. `php artisan asaas:conferir-repasses` lista quem está nessa situação (o impacto) e os pagamentos que já caíram sem split (a dívida de repasse manual, com os payment ids). **Rode antes de qualquer deploy que mexa nisso.**
 
 **Active subscriptions created before the inversion were deliberately left alone.** They live at Asaas with the old value and a 90% split, and they keep running that way until the student cancels or re-contracts. Rewriting the value of a subscription in flight would raise a student's monthly bill by 10% without them asking.
 
@@ -150,7 +160,7 @@ A trava fica em `montarSplit()` e **não** nos dez pontos de entrada de cobranç
 
 **A trava é um TIMESTAMP, não um booleano, e isso é obrigatório.** O Asaas **não avisa quando desbloqueia** e `/myAccount/status` responde APPROVED antes e depois: não existe endpoint que diga "a wallet voltou". Um booleano precisaria de alguém para desligá-lo e não há quem — o profissional ficaria barrado para sempre por um bloqueio já resolvido. Com a data a trava **expira** (`AsaasService::HORAS_RETENTAR_SPLIT`, 6h) e a próxima cobrança testa: liberou, volta a vender sozinho; não liberou, o carimbo se renova. O preço é **uma cobrança falha por janela**, e é o único jeito de detectar o desbloqueio sem um endpoint que não existe.
 
-Três liberações contraintuitivas de `podeReceberPagamento()`, todas deliberadas: **sem `asaas_wallet_id` → pode** (não há split, cai na plataforma e o repasse é manual — fluxo que existe e funciona); **status `null` → pode** (null é "ainda não sincronizamos", não "reprovada"; tratá-lo como impedimento pararia a plataforma inteira no deploy em que a coluna nasceu vazia); **`INVALID_KEY` → pode** (a cobrança usa a chave da **plataforma** e o split só referencia o `walletId` — a chave do profissional serve a saldo e saque, então quebrá-la o deixa sem ver o dinheiro e sem sacar, mas vendendo; barrar a venda puniria duas vezes quem já está prejudicado).
+**Sem `asaas_wallet_id` → NÃO pode** (desde 2026-10-20). Respondia `true`, com a justificativa de que "sem split cai na plataforma e o repasse é manual — fluxo que existe e funciona"; o fluxo deixou de existir porque `montarSplit()` passou a abortar (ver o bloco do modelo de receita). As **duas** liberações contraintuitivas que sobraram, ambas deliberadas: **status `null` → pode** (null é "ainda não sincronizamos", não "reprovada"; tratá-lo como impedimento pararia a plataforma inteira no deploy em que a coluna nasceu vazia); **`INVALID_KEY` → pode** (a cobrança usa a chave da **plataforma** e o split só referencia o `walletId` — a chave do profissional serve a saldo e saque, então quebrá-la o deixa sem ver o dinheiro e sem sacar, mas vendendo; barrar a venda puniria duas vezes quem já está prejudicado).
 
 **`scopePodeReceber()` espelha o método em SQL e os dois PRECISAM concordar** — se o filtro divergir, o profissional aparece na vitrine e toma erro no checkout, que é exatamente o defeito que a trava veio corrigir. `BloqueioSplitAsaasTest` compara as duas respostas **na mesma linha**, em vez de afirmar cada uma por fora. *Lacuna conhecida:* nenhuma query de vitrine chama o scope hoje — quem está ligado é `podeReceberPagamento()` (`pode_receber` no payload de `Api\ExplorarController`), ou seja o profissional bloqueado **aparece** na lista com o aviso. Ligar o scope é mudança de produto (esconder vs. mostrar com aviso), não limpeza.
 
