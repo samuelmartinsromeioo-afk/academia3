@@ -70,6 +70,12 @@ class AcademiaController extends Controller
         // sem isto a conta nova cairia na tela de reaceite no primeiro acesso.
         $academia->registrarAceiteTermos($request->ip(), (string) $request->userAgent(), \App\Models\TermoAceite::ORIGEM_CADASTRO);
 
+        // Subconta de recebimento, como o cadastro de personal já fazia. Sem
+        // wallet a academia não vende (montarSplit aborta), e até aqui isso
+        // dependia de ela achar o botão "criar conta Asaas" no painel.
+        // Best-effort: falha do Asaas não impede o cadastro.
+        \App\Support\CadastroHelper::criarSubcontaAsaasPJ($academia);
+
         $fb = app(MetaConversionsService::class);
 
         return redirect()->route('cadastro.sucesso')

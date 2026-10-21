@@ -84,6 +84,15 @@ class StudioController extends Controller
         // sem isto a conta nova cairia na tela de reaceite no primeiro acesso.
         $studio->registrarAceiteTermos($request->ip(), (string) $request->userAgent(), \App\Models\TermoAceite::ORIGEM_CADASTRO);
 
+        /*
+         * Subconta de recebimento. O studio era o pior caso dos cinco papéis:
+         * não havia criação em NENHUM lugar do sistema — nem no cadastro, nem
+         * self-service como academia e loja —, então nenhum studio jamais teve
+         * wallet e todo pagamento de studio caía inteiro na conta da plataforma.
+         * Best-effort: falha do Asaas não impede o cadastro.
+         */
+        \App\Support\CadastroHelper::criarSubcontaAsaasPJ($studio);
+
         $fb = app(MetaConversionsService::class);
 
         return redirect()->route('cadastro.sucesso')

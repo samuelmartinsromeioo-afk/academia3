@@ -189,6 +189,86 @@ class CadastroHelper
         return $matricula !== null && $regiao !== null;
     }
 
+    /**
+     * Cria a subconta Asaas de um recebedor PESSOA JURÍDICA (academia, studio,
+     * loja), gravando `asaas_account_id`, `asaas_wallet_id` e `asaas_api_key`.
+     *
+     * Existe porque **nenhum** dos três cadastros criava subconta: o personal
+     * criava no `store` desde sempre, academia e loja dependiam de uma rota
+     * self-service que o dono precisava achar no painel, e **studio não tinha
+     * nem rota** — ou seja, studio nunca podia receber split, e todo pagamento
+     * de studio caía inteiro na conta da plataforma.
+     *
+     * Isso deixou de ser só "repasse manual" e passou a impedir a venda:
+     * `AsaasService::montarSplit()` aborta sem `asaas_wallet_id`, porque
+     * dinheiro de terceiro entrando na conta da plataforma é problema fiscal.
+     * Sem criar a subconta no cadastro, a trava transformaria cada novo
+     * cadastro num profissional que não vende.
+     *
+     * NUNCA LANÇA, e é por isso que o cadastro não depende dela: uma
+     * instabilidade do Asaas não pode impedir alguém de se cadastrar. Quando
+     * falha, fica o log e o recebedor sem wallet — que `asaas:conferir-repasses`
+     * lista e `asaas:criar-subcontas-faltantes` resolve depois.
+     */
+    public static function criarSubcontaAsaasPJ($recebedor): void
+    {
+        if (! empty($recebedor->asaas_wallet_id)) {
+            return;
+        }
+
+        $papel = strtolower(class_basename($recebedor));
+
+        try {
+            $payload = [
+                'name' => $recebedor->nome,
+                'email' => $recebedor->email,
+                'cpfCnpj' => preg_replace('/\D/', '', (string) $recebedor->cnpj),
+                'personType' => 'JURIDICA',
+                'companyType' => 'LIMITED',
+                'incomeValue' => 10000,
+                'address' => $recebedor->rua,
+                'addressNumber' => 'S/N',
+                'province' => $recebedor->bairro,
+                'postalCode' => preg_replace('/\D/', '', (string) $recebedor->cep),
+                'complement' => $recebedor->complemento,
+            ];
+
+            $res = Http::withHeaders([
+                'access_token' => config('services.asaas.key'),
+                'Content-Type' => 'application/json',
+            ])->post(config('services.asaas.url').'/accounts', $payload);
+
+            $data = $res->json();
+
+            if ($res->successful() && ! empty($data['walletId'])) {
+                $recebedor->update([
+                    'asaas_account_id' => $data['id'] ?? null,
+                    'asaas_wallet_id' => $data['walletId'] ?? null,
+                    'asaas_api_key' => $data['apiKey'] ?? null,
+                ]);
+
+                Log::info('Asaas: subconta criada', [
+                    'papel' => $papel,
+                    'id' => $recebedor->id,
+                    'wallet_id' => $data['walletId'],
+                ]);
+            } else {
+                Log::warning('Asaas: subconta NÃO criada — recebedor não poderá vender', [
+                    'papel' => $papel,
+                    'id' => $recebedor->id,
+                    'status' => $res->status(),
+                    'response' => $data,
+                ]);
+            }
+        } catch (\Throwable $e) {
+            Log::error('Asaas: exceção ao criar subconta', [
+                'papel' => $papel,
+                'id' => $recebedor->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
+    }
+
     public static function criarSubcontaAsaasPersonal(Personal $personal): void
     {
         try {

@@ -87,6 +87,11 @@ class LojaController extends Controller
         // sem isto a conta nova cairia na tela de reaceite no primeiro acesso.
         $loja->registrarAceiteTermos($request->ip(), (string) $request->userAgent(), \App\Models\TermoAceite::ORIGEM_CADASTRO);
 
+        // Subconta de recebimento. Antes dependia de a loja achar o botão
+        // "criar conta Asaas" no painel; sem wallet ela não vende, porque
+        // montarSplit aborta. Best-effort: falha do Asaas não impede o cadastro.
+        \App\Support\CadastroHelper::criarSubcontaAsaasPJ($loja);
+
         $fb = app(MetaConversionsService::class);
 
         return redirect()->route('cadastro.sucesso')
