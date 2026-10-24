@@ -1379,6 +1379,38 @@ class AsaasService
         return $res->failed() ? null : $res->json();
     }
 
+    /**
+     * Os splits que o Asaas tem registrados para uma cobrança.
+     *
+     * Existe porque `payments` NÃO guarda o split enviado (ver o docblock de
+     * ConferirRepasses), e sem isso "o repasse saiu?" só se responde abrindo o
+     * painel do Asaas cobrança por cobrança. Duas perguntas diferentes se
+     * respondem aqui, e confundi-las já custou tempo:
+     *
+     *  - lista VAZIA  → a cobrança foi criada SEM split. O dinheiro do
+     *    profissional caiu inteiro na conta da plataforma. Causa a montante:
+     *    recebedor sem walletId no código antigo, que seguia sem split.
+     *  - lista com `status` recusado/cancelado → o split foi enviado e barrado
+     *    DEPOIS. Causa a jusante: a validação de saque respondeu REFUSED —
+     *    tipicamente ASAAS_WEBHOOK_TOKEN divergente, que recusa tudo.
+     *
+     * Devolve null quando não deu para consultar; quem chama deve tratar null
+     * como "não sei", nunca como "não tem split".
+     *
+     * @return array<int, array<string, mixed>>|null
+     */
+    public function consultarSplitsDoPagamento(string $asaasPaymentId): ?array
+    {
+        $res = Http::withHeaders($this->asaasHeaders())
+            ->get($this->asaas()."/payments/{$asaasPaymentId}/splits");
+
+        if ($res->failed()) {
+            return null;
+        }
+
+        return (array) ($res->json('data') ?? []);
+    }
+
     // ─────────────────────────────────────────────
     // TRANSFERÊNCIAS (saída de dinheiro da conta da PLATAFORMA)
     // ─────────────────────────────────────────────
