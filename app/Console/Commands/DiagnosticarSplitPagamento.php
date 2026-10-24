@@ -126,10 +126,36 @@ class DiagnosticarSplitPagamento extends Command
             );
         }
 
-        $splits = $asaas->consultarSplitsDoPagamento($asaasId);
+        $splits = $asaas->consultarSplitsDoPagamento($asaasId, $erroSplits);
 
         if ($splits === null) {
             $this->error('  Não foi possível consultar os splits.');
+
+            /*
+             * O status HTTP é a diferença entre três ações opostas, e sem ele
+             * este comando só sabia dizer "falhou" — que é o mesmo que não
+             * dizer nada, numa ferramenta feita para responder exatamente isto.
+             *
+             * O 404 é o caso delicado: como o GET da cobrança ACABOU de passar
+             * com as mesmas credenciais, um 404 no subrecurso dificilmente é
+             * "cobrança não existe". Mesmo assim não o traduzimos em "não tem
+             * split" — essa conclusão manda fazer deploy, e tomá-la a partir de
+             * um indício derrubaria a regra que este comando existe para
+             * sustentar. Imprime-se o indício; quem conclui é quem está lendo.
+             */
+            if (is_array($erroSplits)) {
+                $this->line('  HTTP <fg=yellow>'.$erroSplits['status'].'</> — '.$erroSplits['corpo']);
+
+                $pista = match (true) {
+                    $erroSplits['status'] === 404 => 'o Asaas não achou splits para esta cobrança. Como o GET da cobrança '
+                        ."funcionou,\n  isto aponta para cobrança criada SEM split — confirme no painel do Asaas antes de agir.",
+                    in_array($erroSplits['status'], [401, 403], true) => 'credencial. Confira ASAAS_API_KEY (a da conta RAIZ) e ASAAS_URL.',
+                    $erroSplits['status'] >= 500 => 'instabilidade do Asaas. Rode de novo em alguns minutos.',
+                    default => 'resposta inesperada. Confira ASAAS_URL e a versão da API.',
+                };
+
+                $this->line('  <fg=yellow>Pista:</> '.$pista);
+            }
 
             return true;
         }

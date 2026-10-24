@@ -1397,14 +1397,39 @@ class AsaasService
      * Devolve null quando não deu para consultar; quem chama deve tratar null
      * como "não sei", nunca como "não tem split".
      *
+     * `$erro` recebe o status HTTP e o corpo quando a consulta falha. Sem isso
+     * o chamador só sabe "falhou", e as causas pedem ações OPOSTAS: 401/403 é
+     * credencial, 5xx é instabilidade (tentar de novo), e um 404 aqui — logo
+     * depois de o GET da própria cobrança ter funcionado com as mesmas
+     * credenciais — é forte indício de que o Asaas não tem split nenhum para
+     * ela. Quem decide continua sendo o humano: devolver `[]` por causa de um
+     * 404 seria o "não sei" virando "não tem", que é justamente o que o
+     * contrato deste método existe para impedir.
+     *
+     * @param  array{status:int, corpo:string}|null  $erro
      * @return array<int, array<string, mixed>>|null
      */
-    public function consultarSplitsDoPagamento(string $asaasPaymentId): ?array
+    public function consultarSplitsDoPagamento(string $asaasPaymentId, ?array &$erro = null): ?array
     {
+        $erro = null;
+
         $res = Http::withHeaders($this->asaasHeaders())
             ->get($this->asaas()."/payments/{$asaasPaymentId}/splits");
 
         if ($res->failed()) {
+            $erro = [
+                'status' => $res->status(),
+                // Truncado: o corpo de erro do Asaas é curto, mas isto vai para
+                // terminal e log e não vale despejar uma página de HTML.
+                'corpo' => mb_strimwidth(trim((string) $res->body()), 0, 300, '…'),
+            ];
+
+            Log::warning('Asaas: consulta de splits falhou', [
+                'payment' => $asaasPaymentId,
+                'status' => $erro['status'],
+                'corpo' => $erro['corpo'],
+            ]);
+
             return null;
         }
 

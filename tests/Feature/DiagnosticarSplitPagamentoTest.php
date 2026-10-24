@@ -94,6 +94,41 @@ class DiagnosticarSplitPagamentoTest extends TestCase
             ->assertFailed();
     }
 
+    /**
+     * O caso que mandou acrescentar isto: em produção as duas cobranças da
+     * personal #7 responderam "Não foi possível consultar os splits" e mais
+     * nada — numa ferramenta cujo trabalho é dizer o que houve, "falhou" sem o
+     * status é o mesmo que silêncio. As causas pedem ações opostas (credencial,
+     * instabilidade, ausência de split), e o status HTTP é o que as separa.
+     *
+     * @dataProvider statusDeFalha
+     */
+    public function test_falha_mostra_o_status_http_e_a_pista(int $status, string $pista): void
+    {
+        Http::fake([
+            '*/payments/pay_teste/splits' => Http::response(['errors' => [['description' => 'x']]], $status),
+            '*/payments/pay_teste' => Http::response(['status' => 'RECEIVED', 'value' => 22.00], 200),
+        ]);
+
+        $this->artisan('asaas:diagnosticar-split', ['asaas_id' => 'pay_teste'])
+            ->expectsOutputToContain('HTTP '.$status)
+            ->expectsOutputToContain($pista)
+            // A regra não afrouxa: nem mesmo o 404 conclui por conta própria.
+            ->doesntExpectOutputToContain('SPLIT NUNCA FOI ENVIADO')
+            ->assertFailed();
+    }
+
+    /** @return array<string, array{int, string}> */
+    public static function statusDeFalha(): array
+    {
+        return [
+            'sem splits para a cobranca' => [404, 'SEM split'],
+            'credencial' => [401, 'ASAAS_API_KEY'],
+            'proibido' => [403, 'ASAAS_API_KEY'],
+            'instabilidade' => [500, 'de novo em alguns minutos'],
+        ];
+    }
+
     public function test_cobranca_inexistente_pede_conferir_credenciais(): void
     {
         Http::fake(['*' => Http::response(['errors' => [['description' => 'not found']]], 404)]);
