@@ -193,12 +193,31 @@ class AsaasWebhookController extends Controller
         $transfer = (array) $request->input('transfer', []);
         $ref = (string) ($transfer['externalReference'] ?? '');
 
-        // Saque da subconta do profissional (sacarPersonal/sacarSubconta). Só
-        // chega aqui se o webhook da subconta apontar para nós; aprovamos quando
-        // casa com o registro criado antes da chamada, no valor exato.
-        $decisao = str_starts_with($ref, 'personal_saque:')
-            ? $this->autorizarSaquePersonal($ref, $transfer)
-            : app(IndicacaoSaqueService::class)->autorizarTransferencia($transfer);
+        /*
+         * Saque da RECEITA DA PLATAFORMA, feito à mão no painel do Asaas.
+         *
+         * Vem sem `externalReference`, porque não fomos nós que criamos — e
+         * por isso caía em "Referência externa não reconhecida." e era
+         * recusado. Não existe fluxo no sistema para a plataforma sacar o que
+         * é dela (os `sacar*` são dos profissionais), então sem esta saída o
+         * dono da conta não tem como tirar o próprio dinheiro a não ser
+         * desligando a validação.
+         *
+         * Conferido ANTES dos outros dois porque é o único caso em que o
+         * destino, por si só, já autoriza: dinheiro indo para uma chave que
+         * já estava cadastrada em `config/plataforma.php` não é perda. Quem
+         * tiver a API key continua sem conseguir desviar para a conta dele.
+         *
+         * Devolve null quando o destino não é nosso, e aí a decisão segue
+         * para as regras normais.
+         */
+        $decisao = $this->autorizarSaqueDaPlataforma($transfer)
+            // Saque da subconta do profissional (sacarPersonal/sacarSubconta). Só
+            // chega aqui se o webhook da subconta apontar para nós; aprovamos quando
+            // casa com o registro criado antes da chamada, no valor exato.
+            ?? (str_starts_with($ref, 'personal_saque:')
+                ? $this->autorizarSaquePersonal($ref, $transfer)
+                : app(IndicacaoSaqueService::class)->autorizarTransferencia($transfer));
 
         // A02 — só metadados no log: o payload traz chave Pix e dados bancários
         // do destino. Nunca o corpo inteiro.
@@ -207,6 +226,10 @@ class AsaasWebhookController extends Controller
             'external_reference' => $transfer['externalReference'] ?? null,
             'valor' => $transfer['value'] ?? null,
             'motivo' => $decisao['motivo'],
+            // Mascarado, não a chave. Serve para você conferir POR QUE um
+            // saque seu não casou com a lista (pontuação, chave trocada) sem
+            // que o log carregue o dado de destino de ninguém.
+            'destino' => self::mascararChavePix(self::chaveDeDestino($transfer)),
             'ip' => $request->ip(),
         ];
 
@@ -222,6 +245,146 @@ class AsaasWebhookController extends Controller
         Log::channel('security')->info('Asaas: transferência aprovada na validação', $contexto);
 
         return response()->json(['status' => 'APPROVED']);
+    }
+
+    /**
+     * Autoriza o saque da receita da plataforma para uma chave Pix NOSSA.
+     *
+     * É a única autorização que se decide pelo DESTINO e não por um registro
+     * prévio, e isso é deliberado: a plataforma não tem fluxo para sacar o
+     * que é dela, então o saque é manual no painel do Asaas e chega aqui sem
+     * `externalReference` para conferir. O que sustenta a decisão é que
+     * dinheiro indo para uma chave já cadastrada em `config/plataforma.php`
+     * não é perda — é o dono recebendo.
+     *
+     * Devolve `null` quando o destino NÃO é nosso, para a decisão seguir
+     * para as regras normais (indicação / subconta do profissional). Devolver
+     * uma recusa aqui atropelaria aquelas verificações.
+     *
+     * @return array{aprovar:bool, motivo:string}|null
+     */
+    private function autorizarSaqueDaPlataforma(array $transfer): ?array
+    {
+        $chaves = (array) config('plataforma.saque.chaves_pix', []);
+        $destino = self::chaveDeDestino($transfer);
+
+        if ($chaves === [] || $destino === '') {
+            return null;
+        }
+
+        $destinoNormalizado = self::normalizarChavePix($destino);
+        $ehNossa = false;
+
+        foreach ($chaves as $chave) {
+            // hash_equals pelo mesmo motivo do resto do módulo: comparação de
+            // segredo em tempo constante (ver as notas OWASP no CLAUDE.md).
+            if (hash_equals(self::normalizarChavePix((string) $chave), $destinoNormalizado)) {
+                $ehNossa = true;
+                break;
+            }
+        }
+
+        if (! $ehNossa) {
+            return null;
+        }
+
+        /*
+         * Teto por transferência, mesmo indo para a nossa chave.
+         *
+         * Serve ao mesmo propósito do `indicacao.saque_auto_teto`: limitar o
+         * estrago de qualquer falha única. Se a conta for drenada para uma
+         * chave nossa, o dinheiro é recuperável — mas um valor fora do padrão
+         * ainda é sinal de que algo está errado, e vale parar para olhar.
+         */
+        $teto = (float) config('plataforma.saque.teto', 0);
+        $valor = isset($transfer['value']) ? (float) $transfer['value'] : null;
+
+        if ($valor === null) {
+            return ['aprovar' => false, 'motivo' => 'Valor da transferência não informado.'];
+        }
+
+        if ($teto > 0 && $valor > $teto) {
+            return [
+                'aprovar' => false,
+                'motivo' => 'Valor acima do teto de saque da plataforma.',
+            ];
+        }
+
+        return ['aprovar' => true, 'motivo' => 'Saque da plataforma para chave cadastrada.'];
+    }
+
+    /**
+     * O destino EFETIVO da transferência.
+     *
+     * O Asaas aceita dois formatos e usa um ou o outro:
+     *
+     *   • `pixAddressKey` (+ `pixAddressKeyType`) — transferência por chave
+     *     Pix. É o formato que o próprio sistema usa em todos os `sacar*`.
+     *   • `bankAccount` — transferência por dados bancários (agência, conta,
+     *     CPF/CNPJ do titular). É o que o painel do Asaas monta quando o saque
+     *     é feito à mão escolhendo a conta de destino.
+     *
+     * Olhar só a chave Pix deixaria o saque manual por dados bancários com
+     * destino VAZIO — e a lista de chaves nunca casaria, mantendo o bloqueio
+     * que ela existe para resolver.
+     *
+     * A precedência não é cosmética: se o payload trouxer os dois, vale o que
+     * o Asaas usa de fato (`pixAddressKey`). Aceitar "qualquer um dos dois que
+     * casar" permitiria mandar dinheiro para a chave de um atacante enquanto
+     * se põe o nosso CPF no `bankAccount` só para passar na conferência.
+     */
+    private static function chaveDeDestino(array $transfer): string
+    {
+        $chavePix = trim((string) ($transfer['pixAddressKey'] ?? ''));
+
+        if ($chavePix !== '') {
+            return $chavePix;
+        }
+
+        $conta = (array) ($transfer['bankAccount'] ?? []);
+
+        return trim((string) ($conta['cpfCnpj'] ?? ''));
+    }
+
+    /**
+     * Forma comparável de uma chave Pix.
+     *
+     * CPF, CNPJ e telefone são cadastrados com e sem pontuação dependendo de
+     * onde se olha, e uma comparação literal faria "123.456.789-09" não casar
+     * com "12345678909" — o tipo de divergência que manda o saque legítimo
+     * para a recusa. E-mail e chave aleatória só perdem caixa e espaços.
+     */
+    private static function normalizarChavePix(string $chave): string
+    {
+        $chave = mb_strtolower(trim($chave));
+
+        // Só dígitos e pontuação de documento/telefone: compara pelos dígitos.
+        if ($chave !== '' && preg_match('/^[0-9.\-\/+() ]+$/', $chave) === 1) {
+            return (string) preg_replace('/\D/', '', $chave);
+        }
+
+        return $chave;
+    }
+
+    /**
+     * Chave mascarada para o log (A02: a chave em si nunca é registrada).
+     *
+     * Mostra o bastante para você identificar qual destino foi recusado sem
+     * que o log carregue o dado de pagamento de alguém.
+     */
+    private static function mascararChavePix(string $chave): string
+    {
+        if ($chave === '') {
+            return '(sem chave)';
+        }
+
+        $tamanho = mb_strlen($chave);
+
+        if ($tamanho <= 4) {
+            return str_repeat('*', $tamanho);
+        }
+
+        return mb_substr($chave, 0, 2).str_repeat('*', $tamanho - 4).mb_substr($chave, -2);
     }
 
     /**
