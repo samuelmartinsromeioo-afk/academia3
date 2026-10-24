@@ -210,6 +210,26 @@ class SaquePlataformaWebhookTest extends TestCase
             ->assertJson(['status' => 'REFUSED']);
     }
 
+    /**
+     * O destino chegando MASCARADO é o caso que invalida a autorização por
+     * destino, e no log ele era indistinguível de "chave errada" — as duas
+     * recusam igual, mas uma se resolve cadastrando a chave certa e a outra não
+     * se resolve por esse caminho. Daí o `destino_formato` no contexto.
+     *
+     * Um valor ofuscado jamais pode ser lido como chave válida: se casasse,
+     * bastaria enviar asteriscos para sacar.
+     */
+    public function test_destino_mascarado_nunca_casa_com_a_lista(): void
+    {
+        $this->postSaqueManual(['pixAddressKey' => '**************'])
+            ->assertOk()
+            ->assertJson(['status' => 'REFUSED']);
+
+        $this->postSaqueManual(['bankAccount' => ['cpfCnpj' => '**************']])
+            ->assertOk()
+            ->assertJson(['status' => 'REFUSED']);
+    }
+
     public function test_lista_vazia_recusa_tudo(): void
     {
         // O comportamento de antes, preservado para quem não configurar nada.

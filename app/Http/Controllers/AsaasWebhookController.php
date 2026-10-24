@@ -230,6 +230,24 @@ class AsaasWebhookController extends Controller
             // saque seu não casou com a lista (pontuação, chave trocada) sem
             // que o log carregue o dado de destino de ninguém.
             'destino' => self::mascararChavePix(self::chaveDeDestino($transfer)),
+            /*
+             * O FORMATO de cada campo de destino, nunca o valor.
+             *
+             * Existe porque um saque manual recusado deixava o diagnóstico sem
+             * saída: com a lista de chaves carregada e a conta APROVADA, o log
+             * dizia apenas que o destino não casou — sem dizer se o campo veio
+             * ausente, mascarado pelo Asaas, ou simplesmente diferente. As três
+             * causas pedem ações opostas (mudar de abordagem, conferir a chave,
+             * cadastrar o outro formato) e nenhuma era distinguível.
+             *
+             * `mascarado` é o caso que invalida a comparação por destino: se o
+             * Asaas entrega a chave já ofuscada, nenhum allowlist pode casar,
+             * por mais correta que a chave cadastrada esteja.
+             */
+            'destino_formato' => [
+                'pixAddressKey' => self::formatoDoCampo($transfer['pixAddressKey'] ?? null),
+                'bankAccount.cpfCnpj' => self::formatoDoCampo($transfer['bankAccount']['cpfCnpj'] ?? null),
+            ],
             'ip' => $request->ip(),
         ];
 
@@ -372,6 +390,35 @@ class AsaasWebhookController extends Controller
      * Mostra o bastante para você identificar qual destino foi recusado sem
      * que o log carregue o dado de pagamento de alguém.
      */
+    /**
+     * Classifica um campo de destino SEM revelar o valor.
+     *
+     * Três respostas, porque são três ações diferentes: `ausente` (o Asaas não
+     * manda esse campo nesta operação), `mascarado` (manda ofuscado — e aí
+     * comparar com allowlist é impossível, não é questão de cadastrar certo) e
+     * `preenchido:N` (veio um valor real de N caracteres, então uma recusa é
+     * divergência de chave e se resolve conferindo o cadastro).
+     *
+     * O tamanho entra porque distingue CPF (11) de CNPJ (14) sem expor dígito
+     * nenhum — é o bastante para saber qual formato cadastrar.
+     */
+    private static function formatoDoCampo(mixed $valor): string
+    {
+        $texto = trim((string) ($valor ?? ''));
+
+        if ($texto === '') {
+            return 'ausente';
+        }
+
+        // Só asteriscos/pontos/x: o gateway ofuscou. Qualquer dígito ou letra
+        // real tira daqui, então um valor legítimo nunca é lido como mascarado.
+        if (preg_match('/^[*x.\s-]+$/i', $texto) === 1) {
+            return 'mascarado('.mb_strlen($texto).')';
+        }
+
+        return 'preenchido('.mb_strlen($texto).')';
+    }
+
     private static function mascararChavePix(string $chave): string
     {
         if ($chave === '') {
