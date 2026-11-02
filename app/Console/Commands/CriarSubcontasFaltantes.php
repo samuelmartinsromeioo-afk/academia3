@@ -61,6 +61,7 @@ class CriarSubcontasFaltantes extends Command
 
         $criados = 0;
         $falhas = 0;
+        $ignorados = 0;
 
         foreach ($papeis as $papel => $classe) {
             $pendentes = $classe::whereNull('asaas_wallet_id')
@@ -84,6 +85,31 @@ class CriarSubcontasFaltantes extends Command
                 }
 
                 $rotulo = "  #{$r->id} ".mb_strimwidth((string) $r->nome, 0, 30, '…');
+
+                /*
+                 * JÁ TEM SUBCONTA, só perdeu a coluna da wallet — não crie
+                 * outra.
+                 *
+                 * `whereNull('asaas_wallet_id')` não distingue "nunca teve
+                 * subconta" de "tem subconta e a coluna foi apagada", e o
+                 * segundo caso existe em produção: o walletId da personal #7
+                 * foi apagado de propósito em 19/10/2026 (ver
+                 * `asaas:recuperar-wallet`). Criar aqui é o pior resultado
+                 * possível — se o Asaas aceitar, a gravação sobrescreve
+                 * `asaas_account_id` e `asaas_api_key` e a conta REAL do
+                 * profissional fica órfã, com o saldo dele dentro, sem erro
+                 * nenhum à vista.
+                 *
+                 * Pular é seguro: `asaas:conferir-repasses` continua listando
+                 * quem está assim, então ninguém fica invisível.
+                 */
+                if (! empty($r->asaas_account_id) || ! empty($r->asaas_api_key)) {
+                    $this->line($rotulo.'  <fg=yellow>↷ já tem subconta, falta só a wallet</>');
+                    $this->line('      → php artisan asaas:recuperar-wallet --'.$papel.'='.$r->id);
+                    $ignorados++;
+
+                    continue;
+                }
 
                 if ($seco) {
                     $this->line($rotulo.'  → seria criada');
@@ -109,6 +135,15 @@ class CriarSubcontasFaltantes extends Command
                     $falhas++;
                 }
             }
+        }
+
+        // Antes do early-return do dry-run: quem foi pulado por já ter
+        // subconta precisa aparecer nos dois modos, senão o operador conclui
+        // que o comando "não fez nada" e vai procurar outro jeito.
+        if ($ignorados > 0) {
+            $this->newLine();
+            $this->warn("Pulados por já terem subconta: {$ignorados}");
+            $this->line('Estes não precisam de subconta nova, só do walletId de volta — use asaas:recuperar-wallet.');
         }
 
         if ($seco) {
