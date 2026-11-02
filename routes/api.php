@@ -76,6 +76,16 @@ Route::prefix('v1')->group(function () {
         Route::post('/perfil/foto', [\App\Http\Controllers\Api\PerfilController::class, 'foto']);
 
         /*
+         * Galeria do personal (Foto polimórfica) — o que o aluno vê na vitrine.
+         * Só podia ser montada pelo site, então quem usa apenas o app aparecia
+         * sem foto de trabalho nenhuma. O dono sai sempre do token.
+         */
+        Route::get('/perfil/galeria', [\App\Http\Controllers\Api\PerfilController::class, 'galeria']);
+        Route::post('/perfil/galeria', [\App\Http\Controllers\Api\PerfilController::class, 'adicionarFoto']);
+        Route::delete('/perfil/galeria/{id}', [\App\Http\Controllers\Api\PerfilController::class, 'removerFoto'])
+            ->whereNumber('id');
+
+        /*
          * Direitos do titular dentro do app (qualquer papel). A exclusão é
          * requisito da App Store; a exportação e a leitura dos consentimentos
          * existem porque a Política afirma que o titular acessa, exporta e

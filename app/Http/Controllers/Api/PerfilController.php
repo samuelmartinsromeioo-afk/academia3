@@ -76,6 +76,143 @@ class PerfilController extends Controller
         ]);
     }
 
+    /*
+     |--------------------------------------------------------------------------
+     | GALERIA DO PERSONAL
+     |--------------------------------------------------------------------------
+     |
+     | A galeria (`Foto` polimórfica) é o que o aluno vê na vitrine e na tela de
+     | contratar. Ela só podia ser montada pelo SITE (`POST /personal/fotos`),
+     | então o personal que usa apenas o app aparecia sem nenhuma foto de
+     | trabalho e competia em desvantagem com quem veio pelo navegador — sem
+     | nada na tela dizendo que faltava algo.
+     |
+     | SÓ PERSONAL, de propósito. Academia e studio também têm `fotos`, mas lá
+     | `POST /perfil/foto` trata a relação como "foto de perfil" e APAGA a
+     | galeria inteira a cada upload (ver o método `foto` acima). Expor uma
+     | galeria para eles aqui criaria dois donos para a mesma relação: subir o
+     | avatar destruiria a galeria. Desembaraçar isso é decisão de produto, não
+     | limpeza — e some com fotos de quem já usa o site.
+     */
+
+    /** Limite igual ao do site (FotoController::storePersonal). */
+    private const MAX_FOTOS_PERSONAL = 9;
+
+    // GET /api/v1/perfil/galeria
+    public function galeria(Request $request)
+    {
+        $personal = $this->personalDaGaleria($request);
+
+        return response()->json([
+            'fotos' => $this->fotosJson($personal),
+            'limite' => self::MAX_FOTOS_PERSONAL,
+        ]);
+    }
+
+    // POST /api/v1/perfil/galeria  (multipart: campo "foto")
+    public function adicionarFoto(Request $request)
+    {
+        $personal = $this->personalDaGaleria($request);
+
+        /*
+         * A03 — allowlist explícita, nunca a regra `image`: ela aceita SVG, que
+         * é XML e pode carregar <script>. Como o arquivo vai para o disco
+         * PÚBLICO e é servido da mesma origem do site, um SVG aqui seria XSS
+         * armazenado. Mesma lista do site e dos outros uploads do projeto.
+         */
+        $request->validate([
+            'foto' => 'required|file|mimes:jpeg,jpg,png,gif,webp,heic,heif|max:10240',
+            'legenda' => 'nullable|string|max:255',
+        ]);
+
+        // O limite é conferido ANTES de gravar o arquivo: o contrário deixaria
+        // lixo no disco a cada tentativa recusada.
+        if ($personal->fotos()->count() >= self::MAX_FOTOS_PERSONAL) {
+            return response()->json([
+                'error' => 'Limite de '.self::MAX_FOTOS_PERSONAL.' fotos atingido. Remova uma antes de adicionar outra.',
+            ], 422);
+        }
+
+        $path = $request->file('foto')->store('galeria/personals', 'public');
+
+        if (! $path) {
+            return response()->json(['error' => 'Falha ao salvar o arquivo.'], 500);
+        }
+
+        $foto = $personal->fotos()->create([
+            'path' => $path,
+            'legenda' => $request->input('legenda'),
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'foto' => $this->fotoJson($foto),
+            'fotos' => $this->fotosJson($personal->fresh()),
+        ]);
+    }
+
+    // DELETE /api/v1/perfil/galeria/{id}
+    public function removerFoto(Request $request, $id)
+    {
+        $personal = $this->personalDaGaleria($request);
+
+        /*
+         * A01 — o dono sai do TOKEN e a foto é buscada DENTRO da relação dele.
+         *
+         * Consultar `Foto::find($id)` e comparar depois é a forma que já deu
+         * errado neste projeto: a comparação era com `fotavel_type` escrito à
+         * mão, com a caixa trocada, e o dono legítimo tomava 403 na própria
+         * foto (ver o docblock de FotoController::destroy). Partindo da relação
+         * não há o que comparar — a query não alcança foto de outro.
+         */
+        $foto = $personal->fotos()->whereKey($id)->first();
+
+        if (! $foto) {
+            return response()->json(['error' => 'Foto não encontrada.'], 404);
+        }
+
+        $this->apagarArquivo($foto->path);
+        $foto->delete();
+
+        return response()->json([
+            'success' => true,
+            'fotos' => $this->fotosJson($personal->fresh()),
+        ]);
+    }
+
+    /** Só personal tem galeria pela API — ver o bloco acima. */
+    private function personalDaGaleria(Request $request): Personal
+    {
+        $user = $request->user();
+
+        if (! $user instanceof Personal) {
+            abort(response()->json([
+                'error' => 'Apenas o personal pode gerenciar a galeria por aqui.',
+            ], 403));
+        }
+
+        return $user;
+    }
+
+    /** @return array<int, array{id:int, url:?string, legenda:?string}> */
+    private function fotosJson(Personal $personal): array
+    {
+        return $personal->fotos()->orderBy('id')->get()
+            ->map(fn ($f) => $this->fotoJson($f))
+            ->all();
+    }
+
+    private function fotoJson($foto): array
+    {
+        return [
+            'id' => $foto->id,
+            // Absoluta: o app desenha <Image source={{uri}}> direto, e caminho
+            // relativo do disco não carrega em aparelho nenhum.
+            'url' => $this->urlPublica($foto->path),
+            'legenda' => $foto->legenda,
+        ];
+    }
+
     private function fotoAtual($user, string $tipo): ?string
     {
         $path = match ($tipo) {

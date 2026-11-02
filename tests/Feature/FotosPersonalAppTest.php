@@ -5,6 +5,8 @@ namespace Tests\Feature;
 use App\Models\Cadastro\Cliente;
 use App\Models\Cadastro\Personal;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 /**
@@ -158,5 +160,141 @@ class FotosPersonalAppTest extends TestCase
                 'a ordem e o conjunto têm de bater: é a mesma relação'
             );
         }
+    }
+
+    // ===================== O PERSONAL MONTA A GALERIA PELO APP =====================
+
+    private function tokenDo(Personal $p): array
+    {
+        return [
+            'Authorization' => 'Bearer '.$p->createToken('app')->plainTextToken,
+            'Accept' => 'application/json',
+        ];
+    }
+
+    /**
+     * O ciclo completo: o personal sobe pelo app e o ALUNO passa a ver.
+     *
+     * É a afirmação que importa — as duas metades ligadas. Um teste que só
+     * checasse o 200 do upload passaria mesmo se a foto não chegasse à vitrine,
+     * que era exatamente o estado anterior (dava para ver, não dava para subir).
+     */
+    public function test_personal_sobe_foto_pelo_app_e_o_aluno_passa_a_ver(): void
+    {
+        Storage::fake('public');
+        $p = $this->criarPersonal([]);
+
+        $envio = $this->postJson('/api/v1/perfil/galeria', [
+            'foto' => UploadedFile::fake()->image('treino.jpg'),
+            'legenda' => 'Treino de força',
+        ], $this->tokenDo($p));
+
+        $envio->assertOk()->assertJsonPath('success', true);
+        $this->assertSame('Treino de força', $envio->json('foto.legenda'));
+
+        /*
+         * O guard do Sanctum guarda o usuário resolvido no container, e o app
+         * é o mesmo entre as duas chamadas deste teste: sem esquecê-lo, a
+         * requisição seguinte continuaria autenticada como o PERSONAL e a
+         * vitrine responderia 403 em vez de atender o aluno.
+         */
+        $this->app['auth']->forgetGuards();
+
+        // A ponta que fecha o ciclo: a vitrine do aluno.
+        $vitrine = $this->getJson("/api/v1/personais/{$p->id}/pacotes", $this->comToken($this->aluno()));
+
+        $vitrine->assertOk();
+        $this->assertCount(1, $vitrine->json('personal.fotos'));
+    }
+
+    /**
+     * SVG é RECUSADO, e este é o teste que não pode sair daqui.
+     *
+     * A regra `image` do Laravel aceita svg; o arquivo vai para o disco público
+     * e é servido da mesma origem do site, então um SVG — que é XML e aceita
+     * <script> — viraria XSS armazenado com roubo de sessão. A allowlist
+     * explícita é a única defesa, e nada além deste teste a segura no lugar.
+     */
+    public function test_svg_e_recusado_no_upload_da_galeria(): void
+    {
+        Storage::fake('public');
+        $p = $this->criarPersonal([]);
+
+        $this->postJson('/api/v1/perfil/galeria', [
+            'foto' => UploadedFile::fake()->create('payload.svg', 8, 'image/svg+xml'),
+        ], $this->tokenDo($p))->assertStatus(422);
+
+        $this->assertSame(0, $p->fotos()->count());
+    }
+
+    /** O limite do site (9) vale igual no app, senão as duas portas divergem. */
+    public function test_limite_de_nove_fotos_vale_no_app(): void
+    {
+        Storage::fake('public');
+        $p = $this->criarPersonal(array_map(fn ($i) => "galeria/personals/{$i}.jpg", range(1, 9)));
+
+        $this->postJson('/api/v1/perfil/galeria', [
+            'foto' => UploadedFile::fake()->image('decima.jpg'),
+        ], $this->tokenDo($p))->assertStatus(422);
+
+        $this->assertSame(9, $p->fotos()->count(), 'a décima não pode entrar');
+    }
+
+    /**
+     * Ninguém apaga a foto de outro — e o dono sai do TOKEN, nunca do corpo.
+     *
+     * A busca parte da relação do dono (`$personal->fotos()->whereKey(...)`),
+     * então a query nem alcança foto alheia. Comparar `fotavel_type` depois é a
+     * forma que já falhou neste projeto, com a caixa do namespace trocada.
+     */
+    public function test_personal_nao_apaga_foto_de_outro(): void
+    {
+        $dono = $this->criarPersonal(['galeria/personals/dele.jpg']);
+        $intruso = $this->criarPersonal([]);
+
+        $foto = $dono->fotos()->first();
+
+        $this->deleteJson("/api/v1/perfil/galeria/{$foto->id}", [], $this->tokenDo($intruso))
+            ->assertStatus(404);
+
+        $this->assertSame(1, $dono->fotos()->count(), 'a foto do dono continua lá');
+    }
+
+    /** O dono apaga a própria, e o arquivo sai do disco junto. */
+    public function test_personal_apaga_a_propria_foto(): void
+    {
+        Storage::fake('public');
+        $p = $this->criarPersonal([]);
+
+        $this->postJson('/api/v1/perfil/galeria', [
+            'foto' => UploadedFile::fake()->image('sai.jpg'),
+        ], $this->tokenDo($p))->assertOk();
+
+        $foto = $p->fotos()->first();
+        $path = $foto->path;
+        Storage::disk('public')->assertExists($path);
+
+        $this->deleteJson("/api/v1/perfil/galeria/{$foto->id}", [], $this->tokenDo($p))
+            ->assertOk()
+            ->assertJsonPath('fotos', []);
+
+        // Apagar só a linha deixaria o arquivo órfão no disco para sempre.
+        Storage::disk('public')->assertMissing($path);
+    }
+
+    /**
+     * Aluno não gerencia galeria de ninguém.
+     *
+     * A rota é autenticada por token e serve os cinco papéis — sem esta trava,
+     * qualquer conta logada chegaria nela. É o mesmo defeito de
+     * `pacotes/salvar`, que aceitava `personal_id` do corpo sob um middleware
+     * que admite todos os papéis.
+     */
+    public function test_aluno_nao_gerencia_galeria(): void
+    {
+        $cliente = $this->aluno();
+
+        $this->getJson('/api/v1/perfil/galeria', $this->comToken($cliente))
+            ->assertStatus(403);
     }
 }
