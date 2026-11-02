@@ -11,8 +11,10 @@ use App\Models\Cadastro\Cliente;
 use App\Models\Cadastro\Personal;
 use App\Models\SolicitacaoAvaliacao;
 use App\Services\Celebracoes;
+use App\Support\ResumoAvaliacao;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 
 /**
@@ -73,6 +75,82 @@ class AvaliacaoFisicaController extends Controller
         }
 
         return AvaliacaoFisicaResource::collection($query->paginate(20));
+    }
+
+    /**
+     * GET /api/v1/avaliacoes/resumo — a leitura, não os dados crus.
+     *
+     * O site tem a aba "Resumo" desde sempre: um card por categoria com o
+     * valor mais recente e, onde há referência, uma classificação
+     * (Ótimo…Péssimo). O app listava registros crus e não tinha nada disso,
+     * porque a regra vivia em métodos privados do controller web — a mesma
+     * classe de defeito de `locaisDeAtuacao()`. Hoje os dois leem
+     * `App\Support\ResumoAvaliacao`.
+     *
+     * SEM PAGINAÇÃO, de propósito: `antes_depois` compara o primeiro peso do
+     * período com o último, então calcular sobre uma página faria a variação
+     * mentir — e mentiria para menos, que é pior, porque parece plausível.
+     */
+    public function resumo(Request $request)
+    {
+        $user = $request->user();
+
+        $query = AvaliacaoFisica::orderByDesc('data_avaliacao')->orderByDesc('id');
+
+        if ($user instanceof Personal) {
+            /*
+             * `cliente_id` é OBRIGATÓRIO aqui, ao contrário do index.
+             * O resumo pega o registro mais recente de cada categoria; sem
+             * filtrar por aluno, ele misturaria o peso de um com a pressão de
+             * outro e apresentaria isso como o quadro de uma pessoa.
+             */
+            if (! $request->filled('cliente_id')) {
+                return response()->json(['error' => 'Informe cliente_id para montar o resumo.'], 422);
+            }
+
+            $query->where('personal_id', $user->id)
+                ->where('cliente_id', (int) $request->query('cliente_id'));
+        } elseif ($user instanceof Cliente) {
+            $query->where('cliente_id', $user->id);
+        } else {
+            return response()->json(['error' => 'Acesso negado.'], 403);
+        }
+
+        $registros = $query->get();
+
+        $cards = collect(ResumoAvaliacao::montar($registros))
+            ->map(fn ($item, $tipo) => [
+                'tipo' => $tipo,
+                'tipo_label' => AvaliacaoFisica::META[$tipo]['label'] ?? $tipo,
+                'valor' => $item['valor'],
+                'detalhe' => $item['detalhe'],
+                'classificacao' => $item['classificacao'],
+                'data' => $item['registro']->data_avaliacao?->toDateString(),
+                'avaliacao_id' => $item['registro']->id,
+                // O site mostra a foto do antes/depois e o PDF da
+                // bioimpedância no próprio card; sem eles o app teria um
+                // resumo mais pobre que o do navegador.
+                'foto_url' => $this->urlPublica($item['registro']->foto),
+                'arquivo_url' => $this->urlPublica($item['registro']->arquivo),
+            ])
+            ->values();
+
+        return response()->json([
+            'resumo' => $cards,
+            /*
+             * O mapa de rótulo/cor vai junto em vez de o app embutir o seu:
+             * uma cópia dentro de um binário já publicado na loja fica velha
+             * no dia em que alguém mexer nas cores, e ninguém vai lembrar da
+             * relação. É a mesma razão de `/cadastro/opcoes`.
+             */
+            'classificacoes' => ResumoAvaliacao::CLASSIFICACOES,
+        ]);
+    }
+
+    /** URL absoluta de um arquivo do disco public (null se não houver). */
+    private function urlPublica(?string $caminho): ?string
+    {
+        return $caminho ? Storage::disk('public')->url($caminho) : null;
     }
 
     /**

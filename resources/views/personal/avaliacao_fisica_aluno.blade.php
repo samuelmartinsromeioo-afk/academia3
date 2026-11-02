@@ -157,13 +157,9 @@
     @php
         $tipos = \App\Models\AvaliacaoFisica::META;
         $tiposCriaveis = \App\Models\AvaliacaoFisica::TIPOS;
-        $classificacoes = [
-            'otimo'   => ['label' => 'Ótimo',   'cor' => '#7cff00'],
-            'bom'     => ['label' => 'Bom',     'cor' => '#00ff88'],
-            'normal'  => ['label' => 'Normal',  'cor' => '#4da6ff'],
-            'ruim'    => ['label' => 'Ruim',    'cor' => '#ffaa00'],
-            'pessimo' => ['label' => 'Péssimo', 'cor' => '#ff4444'],
-        ];
+        // Fonte única: este mapa estava copiado em três blades, que é como
+        // cópias divergem. Ver App\Support\ResumoAvaliacao.
+        $classificacoes = \App\Support\ResumoAvaliacao::CLASSIFICACOES;
     @endphp
 
     <div class="tipo-tabs">

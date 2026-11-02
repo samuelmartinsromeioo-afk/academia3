@@ -386,6 +386,14 @@ Route::prefix('v1')->group(function () {
         // Avaliação física
         Route::prefix('avaliacoes')->group(function () {
             Route::get('/', [ApiAvaliacaoFisicaController::class, 'index']);
+            /*
+             * Antes de `/{id}` por clareza (o `whereNumber` ali já impediria o
+             * conflito, mas a ordem deixa a intenção explícita). Endpoint
+             * próprio e não um campo do index porque o index PAGINA: o resumo
+             * precisa do período inteiro — `antes_depois` compara o primeiro
+             * peso com o último, e sobre uma página a variação mentiria.
+             */
+            Route::get('/resumo', [ApiAvaliacaoFisicaController::class, 'resumo']);
             Route::post('/', [ApiAvaliacaoFisicaController::class, 'store']);
             Route::get('/{id}', [ApiAvaliacaoFisicaController::class, 'show'])->whereNumber('id');
         });
