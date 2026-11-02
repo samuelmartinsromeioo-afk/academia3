@@ -156,7 +156,10 @@ class ExplorarController extends Controller
         $cliente = $this->clienteAutenticado($request);
 
         $query = Personal::where('status', 'aprovado')
-            ->with('avaliacoes')
+            // `fotos` eager-loaded: o card usa a primeira como fallback do
+            // avatar (igual a cliente/personais.blade.php), e sem o with()
+            // seria uma query por personal da página.
+            ->with(['avaliacoes', 'fotos'])
             ->orderByRaw('pioneiro_posicao IS NULL')
             ->orderBy('pioneiro_posicao')
             ->orderBy('nome');
@@ -194,6 +197,15 @@ class ExplorarController extends Controller
             'id' => $p->id,
             'nome' => $p->nome,
             'foto' => $this->urlPublica($p->foto),
+            /*
+             * Galeria do personal (Foto polimórfica), igual ao payload de
+             * academia e studio. O card do app já sabia desenhá-la —
+             * `item.foto || item.logo || item.fotos?.[0]` está lá desde sempre
+             * em ExplorarScreen — e era o servidor que nunca mandava o campo.
+             * Mesmo modo de falha de `personals.modalidade`: UI pronta sem
+             * ninguém alimentando.
+             */
+            'fotos' => $p->fotos->map(fn ($f) => $this->urlPublica($f->path))->filter()->values(),
             'bairro' => $p->bairro,
             'cidade' => $p->cidade,
             'estado' => $p->estado,
@@ -623,7 +635,7 @@ class ExplorarController extends Controller
         $cliente = $this->clienteAutenticado($request);
 
         $personal = Personal::where('status', 'aprovado')
-            ->with('academiasAprovadas')
+            ->with(['academiasAprovadas', 'fotos'])
             ->findOrFail($id);
         $pacotes = Pacote::where('personal_id', $personal->id)->orderBy('frequencia')->get();
 
@@ -632,6 +644,15 @@ class ExplorarController extends Controller
                 'id' => $personal->id,
                 'nome' => $personal->nome,
                 'foto' => $this->urlPublica($personal->foto),
+                /*
+                 * A galeria que ele montou no painel. O site a exibe na vitrine
+                 * e no modal de detalhes (cliente/index.blade.php) desde
+                 * sempre; o app não recebia nenhuma foto além do avatar, então
+                 * o aluno decidia contratar vendo menos do que quem entra pelo
+                 * navegador. Chave `fotos` = array de URLs, idêntico a academia
+                 * e studio, para a tela não precisar de um segundo formato.
+                 */
+                'fotos' => $personal->fotos->map(fn ($f) => $this->urlPublica($f->path))->filter()->values(),
                 'modalidade' => $personal->modalidade,
                 // Quais modalidades o app deve oferecer na reserva: uma só quando
                 // o profissional atende de um jeito (não pergunte), duas quando é
