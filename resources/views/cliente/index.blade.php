@@ -1937,6 +1937,7 @@
         document.getElementById('pixValor').textContent = precoAlunoBR(valor);
         document.getElementById('pixDetalhe').textContent = linhaDetalhePix(valor);
         document.getElementById('pixStatusMsg').style.display = 'none';
+        estadoModalPix('pix', false);
         document.getElementById('modalPix').style.display = 'flex';
         clearInterval(pixPollingInterval);
 
@@ -1948,6 +1949,7 @@
             // O servidor é a autoridade sobre o valor cobrado — o que foi
             // desenhado antes era só a antecipação da mesma conta.
             document.getElementById('pixValor').textContent = 'R$ ' + parseFloat(pix.amount).toFixed(2).replace('.', ',');
+            estadoModalPix('pix', true);
 
             pixPollingInterval = setInterval(async () => {
                 try {
@@ -1964,7 +1966,7 @@
             }, 4000);
         } catch(err) {
             fecharModalPix();
-            alert('Erro: ' + err.message);
+            alertarDepoisDeFechar('Erro: ' + err.message);
         }
     }
 
@@ -2116,6 +2118,7 @@
         document.getElementById('pixValor').textContent = precoAlunoBR(valor);
         document.getElementById('pixDetalhe').textContent = linhaDetalhePix(valor);
         document.getElementById('pixStatusMsg').style.display = 'none';
+        estadoModalPix('pix', false);
         document.getElementById('modalPix').style.display = 'flex';
         clearInterval(pixPollingInterval);
 
@@ -2125,6 +2128,7 @@
             document.getElementById('pixQrCodeImg').src = 'data:image/png;base64,' + pix.pixQrCode;
             document.getElementById('pixCopiaCola').value = pix.pixPayload;
             document.getElementById('pixValor').textContent = moneyBR(pix.amount);
+            estadoModalPix('pix', true);
 
             pixPollingInterval = setInterval(async () => {
                 try {
@@ -2141,7 +2145,7 @@
             }, 4000);
         } catch(err) {
             fecharModalPix();
-            alert('Erro: ' + err.message);
+            alertarDepoisDeFechar('Erro: ' + err.message);
         }
     }
 
@@ -3052,6 +3056,9 @@
                 document.getElementById('pixDetalhe').textContent = linhaDetalhePix(data.valores.base);
             }
             document.getElementById('pixRecorrenteNota').style.display = data.recorrente ? 'block' : 'none';
+            // Este fluxo só abre o modal APÓS a cobrança existir, mas o estado
+            // precisa ser ligado mesmo assim: `pixCobranca` nasce escondido.
+            estadoModalPix('pix', true);
             document.getElementById('modalPix').style.display = 'flex';
 
             // Inicia polling
@@ -3079,10 +3086,48 @@
         }
     });
 
+    /*
+     * Estado do modal de Pix: a cobrança já existe, ou ainda está sendo criada?
+     *
+     * Um helper só para os dois modais (`pix` e `pixAcademia`) porque é a mesma
+     * pergunta, e duas implementações divergiriam — um dos modais voltaria a
+     * mostrar QR em branco com "aguardando confirmação".
+     *
+     * Enquanto `pronta` é falso o aluno vê apenas o valor e "gerando cobrança";
+     * o QR, o código e a promessa de confirmação só aparecem quando há o que
+     * pagar de fato.
+     */
+    function estadoModalPix(prefixo, pronta) {
+        const cobranca = document.getElementById(prefixo + 'Cobranca');
+        const texto    = document.getElementById(prefixo + 'AguardandoTexto');
+
+        if (cobranca) cobranca.style.display = pronta ? 'block' : 'none';
+        if (texto) {
+            texto.textContent = pronta
+                ? 'Aguardando confirmação do pagamento...'
+                : 'Gerando cobrança, aguarde...';
+        }
+    }
+
+    /*
+     * Alerta DEPOIS de o navegador repintar o fechamento do modal.
+     *
+     * `alert()` é síncrono e trava a thread: chamado logo após mudar
+     * `style.display`, o navegador exibe a caixa por cima do DOM ainda não
+     * repintado, e o modal continua visível atrás do erro — foi exatamente o
+     * que apareceu na tela quando o split foi recusado.
+     */
+    function alertarDepoisDeFechar(mensagem) {
+        setTimeout(() => alert(mensagem), 0);
+    }
+
     function fecharModalPix() {
         document.getElementById('modalPix').style.display = 'none';
         const nota = document.getElementById('pixRecorrenteNota');
         if (nota) nota.style.display = 'none';
+        // Volta ao estado "gerando": sem isto, a próxima abertura herdaria o QR
+        // e o "aguardando confirmação" da cobrança anterior.
+        estadoModalPix('pix', false);
         clearInterval(pixPollingInterval);
     }
 
@@ -3111,17 +3156,31 @@
             🔁 Assinatura mensal — uma nova cobrança PIX é gerada todo mês.
         </p>
 
-        <img id="pixQrCodeImg" src="" alt="QR Code Pix" style="width:200px; height:200px; border-radius:12px; background:#fff; padding:8px; margin-bottom:16px;">
+        {{--
+            QR e código ficam ESCONDIDOS até a cobrança existir de fato.
+            O modal abre antes do fetch de propósito (é ele que cobre a tela e
+            impede o duplo clique, que geraria duas cobranças), mas antes desta
+            mudança ele abria já mostrando um QR em branco e o texto "Aguardando
+            confirmação do pagamento" — afirmando ao aluno que havia uma cobrança
+            para pagar quando ela ainda nem tinha sido criada. Quando a criação
+            falhava (ex.: split recusado), era isso que ficava na tela atrás do
+            alerta de erro.
+        --}}
+        <div id="pixCobranca" style="display:none;">
+            <img id="pixQrCodeImg" src="" alt="QR Code Pix" style="width:200px; height:200px; border-radius:12px; background:#fff; padding:8px; margin-bottom:16px;">
 
-        <p style="color:#a0a0a0; font-size:0.8rem; margin:0 0 8px;">Ou copie o código Pix:</p>
-        <div style="display:flex; gap:8px; margin-bottom:16px;">
-            <input id="pixCopiaCola" type="text" readonly style="flex:1; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); border-radius:8px; padding:8px 12px; color:#fff; font-size:0.75rem; outline:none;">
-            <button id="btnCopiarPix" onclick="copiarPixCola()" style="background:var(--primary); color:#000; border:none; border-radius:8px; padding:8px 14px; font-weight:700; font-size:0.8rem; cursor:pointer; white-space:nowrap;">Copiar código</button>
+            <p style="color:#a0a0a0; font-size:0.8rem; margin:0 0 8px;">Ou copie o código Pix:</p>
+            <div style="display:flex; gap:8px; margin-bottom:16px;">
+                <input id="pixCopiaCola" type="text" readonly style="flex:1; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); border-radius:8px; padding:8px 12px; color:#fff; font-size:0.75rem; outline:none;">
+                <button id="btnCopiarPix" onclick="copiarPixCola()" style="background:var(--primary); color:#000; border:none; border-radius:8px; padding:8px 14px; font-weight:700; font-size:0.8rem; cursor:pointer; white-space:nowrap;">Copiar código</button>
+            </div>
         </div>
 
         <div style="display:flex; align-items:center; gap:8px; justify-content:center; color:#a0a0a0; font-size:0.8rem; margin-bottom:12px;">
             <div style="width:10px; height:10px; border:2px solid rgba(124,255,0,0.3); border-top-color:var(--primary); border-radius:50%; animation:spinPix 1s linear infinite;"></div>
-            Aguardando confirmação do pagamento...
+            {{-- Texto trocado por estadoModalPix(): "gerando" antes da cobrança
+                 existir, "aguardando confirmação" só depois. --}}
+            <span id="pixAguardandoTexto">Gerando cobrança, aguarde...</span>
         </div>
 
         <p id="pixStatusMsg" style="display:none; font-weight:700; font-size:0.9rem; margin:0;"></p>
@@ -3153,15 +3212,19 @@
         <p style="color:#7cff00; font-size:0.78rem; font-weight:700; margin:-10px 0 16px; background:rgba(124,255,0,0.08); border:1px solid rgba(124,255,0,0.25); border-radius:10px; padding:8px 12px;">
             🔁 Assinatura mensal — uma nova cobrança PIX é gerada todo mês.
         </p>
-        <img id="pixAcademiaQr" src="" alt="QR Code" style="width:200px; height:200px; border-radius:12px; background:#fff; padding:8px; margin-bottom:16px;">
-        <p style="color:#a0a0a0; font-size:0.8rem; margin:0 0 8px;">Ou copie o código Pix:</p>
-        <div style="display:flex; gap:8px; margin-bottom:16px;">
-            <input id="pixAcademiaCopia" type="text" readonly style="flex:1; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); border-radius:8px; padding:8px 12px; color:#fff; font-size:0.75rem; outline:none;">
-            <button onclick="copiarPixAcademia()" style="background:#7cff00; color:#000; border:none; border-radius:8px; padding:8px 14px; font-weight:700; font-size:0.8rem; cursor:pointer; white-space:nowrap;">Copiar código</button>
+        {{-- Mesmo motivo do modalPix: nada de QR em branco nem de "aguardando
+             confirmação" antes de a cobrança existir. --}}
+        <div id="pixAcademiaCobranca" style="display:none;">
+            <img id="pixAcademiaQr" src="" alt="QR Code" style="width:200px; height:200px; border-radius:12px; background:#fff; padding:8px; margin-bottom:16px;">
+            <p style="color:#a0a0a0; font-size:0.8rem; margin:0 0 8px;">Ou copie o código Pix:</p>
+            <div style="display:flex; gap:8px; margin-bottom:16px;">
+                <input id="pixAcademiaCopia" type="text" readonly style="flex:1; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); border-radius:8px; padding:8px 12px; color:#fff; font-size:0.75rem; outline:none;">
+                <button onclick="copiarPixAcademia()" style="background:#7cff00; color:#000; border:none; border-radius:8px; padding:8px 14px; font-weight:700; font-size:0.8rem; cursor:pointer; white-space:nowrap;">Copiar código</button>
+            </div>
         </div>
         <div style="display:flex; align-items:center; gap:8px; justify-content:center; color:#a0a0a0; font-size:0.8rem; margin-bottom:12px;">
             <div style="width:10px; height:10px; border:2px solid rgba(124,255,0,0.3); border-top-color:#7cff00; border-radius:50%; animation:spinPix 1s linear infinite;"></div>
-            Aguardando confirmação do pagamento...
+            <span id="pixAcademiaAguardandoTexto">Gerando cobrança, aguarde...</span>
         </div>
         <p id="pixAcademiaStatus" style="display:none; font-weight:700; font-size:0.9rem; margin:0;"></p>
         @include('partials.asaas-pagamento')
@@ -3224,6 +3287,7 @@
         document.getElementById('pixAcademiaQr').src = '';
         document.getElementById('pixAcademiaCopia').value = '';
         document.getElementById('pixAcademiaStatus').style.display = 'none';
+        estadoModalPix('pixAcademia', false);
         document.getElementById('modalPixAcademia').style.display = 'flex';
 
         try {
@@ -3242,6 +3306,7 @@
             if (data.valores) {
                 document.getElementById('pixAcademiaDetalhe').textContent = linhaDetalhePix(data.valores.base);
             }
+            estadoModalPix('pixAcademia', true);
 
             pixAcademiaPolling = setInterval(async () => {
                 try {
@@ -3261,13 +3326,14 @@
             }, 4000);
 
         } catch (err) {
-            alert('Erro ao iniciar pagamento: ' + err.message);
             fecharModalPixAcademia();
+            alertarDepoisDeFechar('Erro ao iniciar pagamento: ' + err.message);
         }
     }
 
     function fecharModalPixAcademia() {
         document.getElementById('modalPixAcademia').style.display = 'none';
+        estadoModalPix('pixAcademia', false);
         if (pixAcademiaPolling) { clearInterval(pixAcademiaPolling); pixAcademiaPolling = null; }
     }
 
@@ -3543,6 +3609,8 @@
         document.getElementById('pixValor').textContent = precoAlunoBR(valorSecao);
         document.getElementById('pixDetalhe').textContent = linhaDetalhePix(valorSecao);
         document.getElementById('pixStatusMsg').style.display = 'none';
+        // A cobrança ainda não existe: esconde QR/código e diz "gerando".
+        estadoModalPix('pix', false);
         document.getElementById('modalPix').style.display = 'flex';
         clearInterval(pixPollingInterval);
 
@@ -3560,6 +3628,8 @@
             document.getElementById('pixQrCodeImg').src = 'data:image/png;base64,' + pix.pixQrCode;
             document.getElementById('pixCopiaCola').value = pix.pixPayload;
             document.getElementById('pixValor').textContent = 'R$ ' + parseFloat(pix.amount).toFixed(2).replace('.', ',');
+            // Agora sim existe cobrança: revela o QR e passa a prometer confirmação.
+            estadoModalPix('pix', true);
 
             pixPollingInterval = setInterval(async () => {
                 try {
@@ -3579,7 +3649,7 @@
 
         } catch (err) {
             fecharModalPix();
-            alert('Erro ao iniciar pagamento: ' + err.message);
+            alertarDepoisDeFechar('Erro ao iniciar pagamento: ' + err.message);
         }
     }
 
