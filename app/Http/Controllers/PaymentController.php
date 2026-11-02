@@ -256,7 +256,11 @@ class PaymentController extends Controller
                 AsaasService::reportarBloqueioDeRecebedor($personal, $corpoErro, ['fluxo' => 'avulsa_pix', 'personal_id' => $personal->id]);
 
                 return response()->json([
-                    'error' => AsaasService::mensagemDeErro($corpoErro, 'Falha ao gerar cobrança. Tente novamente.'),
+                    // O recebedor vai junto para o bloqueio de wallet não ser
+                    // descrito como "cadastro pendente": só ele sabe se o
+                    // cadastro está APPROVED (ver mensagemDeErro). O report
+                    // acima já carimbou, então a resposta dele é a atual.
+                    'error' => AsaasService::mensagemDeErro($corpoErro, 'Falha ao gerar cobrança. Tente novamente.', $personal),
                 ], 500);
             }
 
@@ -1957,7 +1961,7 @@ class PaymentController extends Controller
                 AsaasService::reportarBloqueioDeRecebedor($studio, $corpoErro, ['fluxo' => 'studio_aula_pix', 'studio_id' => $studio->id]);
 
                 return response()->json([
-                    'error' => AsaasService::mensagemDeErro($corpoErro, 'Falha ao gerar cobrança. Tente novamente.'),
+                    'error' => AsaasService::mensagemDeErro($corpoErro, 'Falha ao gerar cobrança. Tente novamente.', $studio),
                 ], 500);
             }
 
@@ -2683,7 +2687,7 @@ class PaymentController extends Controller
                 AsaasService::reportarBloqueioDeRecebedor($loja, $corpoErro, ['fluxo' => 'loja_pix', 'loja_id' => $loja->id]);
 
                 return response()->json([
-                    'error' => AsaasService::mensagemDeErro($corpoErro, 'Falha ao gerar cobrança. Tente novamente.'),
+                    'error' => AsaasService::mensagemDeErro($corpoErro, 'Falha ao gerar cobrança. Tente novamente.', $loja),
                 ], 500);
             }
 

@@ -159,6 +159,20 @@ trait TemSubcontaAsaas
      * Asaas nem nada que só faça sentido para quem mantém o sistema. O aluno
      * não tem o que fazer com "general = PENDING"; ele precisa saber que não é
      * culpa dele e que não adianta tentar de novo agora.
+     *
+     * TRÊS causas, TRÊS textos, e a separação é o ponto — cada fusão já
+     * produziu uma mentira:
+     *
+     *   wallet bloqueada  → decisão do banco; o cadastro dele está aprovado
+     *   sem wallet        → a subconta não existe do nosso lado; nada é dele
+     *   status pendente   → o único caso em que ele tem algo a fazer
+     *
+     * A ordem importa: bloqueio primeiro (é o estado mais específico), wallet
+     * ausente depois, e o texto de cadastro pendente só no fim, quando a wallet
+     * existe e o Asaas está esperando algo DELE.
+     *
+     * `test_os_tres_motivos_nao_se_confundem` afirma que continuam distintos,
+     * porque cada teste individual passaria mesmo com dois deles fundidos.
      */
     public function motivoNaoRecebe(): ?string
     {
@@ -176,6 +190,34 @@ trait TemSubcontaAsaas
         if ($this->splitBloqueadoPeloAsaas()) {
             return 'A conta de recebimentos deste profissional está temporariamente '
                 .'bloqueada pelo banco, e por isso ele não consegue receber agora. '
+                .'Não é nada com o seu pagamento — tente mais tarde ou escolha outro profissional.';
+        }
+
+        /*
+         * SEM wallet o profissional NÃO tem nada a finalizar — e dizer que tem
+         * é a terceira versão do mesmo erro de texto desta classe.
+         *
+         * O `asaas_wallet_id` nasce da RESPOSTA da criação da subconta, então a
+         * coluna vazia significa que a subconta não existe do nosso lado. As
+         * duas maneiras de chegar aqui são ambas externas a ele:
+         *
+         *  - a criação nunca completou (academia, studio e loja não a criam no
+         *    cadastro; dependem da rota manual `/{papel}/criar-conta-asaas`);
+         *  - a coluna foi APAGADA por operação — foi o que se fez com o
+         *    personal #7 em 19/10/2026, para tentar destravar as vendas dele
+         *    enquanto a wallet estava bloqueada por compliance.
+         *
+         * No segundo caso o cadastro dele está APPROVED nos quatro campos, e o
+         * texto de "finalizando o cadastro" manda o aluno cobrar dele algo que
+         * ele já fez — e o manda reenviar documentação que já passou. Era
+         * exatamente a queixa que originou esta mudança.
+         *
+         * O texto de cadastro pendente fica para o único caso em que é
+         * verdadeiro: wallet existe e o Asaas está esperando algo DELE (abaixo).
+         */
+        if (empty($this->asaas_wallet_id)) {
+            return 'A conta de recebimentos deste profissional ainda não está ativa, '
+                .'então ele não consegue receber pagamentos agora. '
                 .'Não é nada com o seu pagamento — tente mais tarde ou escolha outro profissional.';
         }
 

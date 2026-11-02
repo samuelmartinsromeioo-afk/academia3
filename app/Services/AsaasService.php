@@ -280,8 +280,27 @@ class AsaasService
      * reconhecido NÃO é repassado cru: cai no `$padrao` de quem chamou, porque
      * um texto de API de terceiro na cara do usuário é sempre pior do que uma
      * frase genérica nossa. O detalhe técnico vive no log, que é onde serve.
+     *
+     * `$recebedor` é opcional e existe para o bloqueio de wallet NÃO MENTIR.
+     *
+     * O texto do Asaas é o mesmo nos dois casos ("wallet [...] bloqueada"), e
+     * só o corpo do erro não distingue um cadastro realmente pendente de uma
+     * wallet aprovada que o banco bloqueou. Enquanto este método decidia só
+     * pelo corpo, o segundo caso lia *"ainda está finalizando o cadastro de
+     * recebimentos"* — falso para quem está APPROVED nos quatro campos, e
+     * pior que impreciso: manda o profissional mexer em documentação que já
+     * passou e o aluno culpar quem não tem culpa.
+     *
+     * Quem sabe distinguir é o próprio recebedor, por `motivoNaoRecebe()`, que
+     * lê o status cadastral e o carimbo de bloqueio. Os pontos de cobrança
+     * chamam `reportarBloqueioDeRecebedor()` ANTES daqui, então nessa altura o
+     * carimbo já está fresco e a resposta dele é a certa.
+     *
+     * Continua opcional de propósito: nem todo chamador tem um recebedor em
+     * mãos (criação de cliente, saque), e sem ele o comportamento é exatamente
+     * o de antes.
      */
-    public static function mensagemDeErro(?array $corpo, string $padrao): string
+    public static function mensagemDeErro(?array $corpo, string $padrao, $recebedor = null): string
     {
         $bruto = $corpo['errors'][0]['description'] ?? null;
 
@@ -290,6 +309,10 @@ class AsaasService
         }
 
         if (self::ehBloqueioDeRecebedor($corpo)) {
+            if ($recebedor && method_exists($recebedor, 'motivoNaoRecebe') && $recebedor->motivoNaoRecebe()) {
+                return $recebedor->motivoNaoRecebe();
+            }
+
             return 'Este profissional ainda está finalizando o cadastro de recebimentos '
                 .'e não pode receber pagamentos no momento. Tente novamente mais tarde '
                 .'ou escolha outro profissional.';
@@ -1226,8 +1249,9 @@ class AsaasService
             $subData = $subRes->json();
 
             if (! empty($subData['errors'])) {
-                $errMsg = AsaasService::mensagemDeErro($subData, 'Falha ao criar assinatura.');
                 Log::error('Asaas assinatura PIX: falha', ['body' => $subData]);
+
+                $recebedor = $this->recebedorDosCampos($subFields);
 
                 /*
                  * Este é o caminho exato do defeito relatado: pacote de personal
@@ -1241,12 +1265,26 @@ class AsaasService
                  * avisa o admin, para a próxima tentativa já ser barrada antes.
                  */
                 self::reportarBloqueioDeRecebedor(
-                    $this->recebedorDosCampos($subFields),
+                    $recebedor,
                     $subData,
                     ['fluxo' => 'assinatura_pix', 'cliente_id' => $cliente->id]
                 );
 
-                abort(response()->json(['error' => $errMsg], 422));
+                /*
+                 * A mensagem é montada DEPOIS do report, e a ordem é a correção.
+                 *
+                 * É `reportarBloqueioDeRecebedor()` que carimba
+                 * `asaas_split_bloqueado_em`, e é esse carimbo que permite a
+                 * `motivoNaoRecebe()` dizer "bloqueada pelo banco" em vez do
+                 * genérico "finalizando o cadastro". Montando antes, como
+                 * estava, o aluno lia o texto de cadastro pendente a respeito
+                 * de um profissional APPROVED nos quatro campos — e, como a
+                 * trava expira em HORAS_RETENTAR_SPLIT, era o que ele lia em
+                 * toda primeira tentativa depois de cada janela.
+                 */
+                abort(response()->json([
+                    'error' => AsaasService::mensagemDeErro($subData, 'Falha ao criar assinatura.', $recebedor),
+                ], 422));
             }
             if ($subRes->failed() || empty($subData['id'])) {
                 Log::error('Asaas assinatura PIX: http error', ['body' => $subData]);

@@ -231,6 +231,133 @@ class BloqueioSplitAsaasTest extends TestCase
         $this->assertStringContainsString('finalizando o cadastro', (string) $p->motivoNaoRecebe());
     }
 
+    /**
+     * SEM WALLET o aluno também não lê "finalizando o cadastro".
+     *
+     * Terceira versão do mesmo erro de texto, e a que o titular relatou: o
+     * `asaas_wallet_id` do personal #7 foi APAGADO em operação (19/10/2026, na
+     * tentativa de destravar a venda dele), o cadastro dele segue APPROVED nos
+     * quatro campos, e desde que `montarSplit()` passou a abortar sem wallet o
+     * aluno recebia "este profissional ainda está finalizando o cadastro de
+     * recebimentos" — a respeito de alguém que não tem nada a finalizar.
+     *
+     * A coluna vazia nunca é pendência DELE: o walletId nasce da resposta da
+     * criação da subconta, então vazio significa que ela não existe do nosso
+     * lado — criação que não completou, ou apagada por nós.
+     */
+    public function test_sem_wallet_o_texto_nao_culpa_o_cadastro_do_profissional(): void
+    {
+        $p = $this->personalAprovado();
+        $p->forceFill(['asaas_wallet_id' => null])->save();
+        $p->refresh();
+
+        $motivo = (string) $p->motivoNaoRecebe();
+
+        $this->assertNotSame('', $motivo, 'barrado sem explicação é o pior dos casos');
+        $this->assertStringNotContainsString(
+            'finalizando o cadastro',
+            $motivo,
+            'o cadastro dele está APPROVED; quem não existe é a subconta, do nosso lado'
+        );
+
+        // E segue sem vocabulário de gateway, como nos outros dois textos.
+        $this->assertStringNotContainsString('wallet', mb_strtolower($motivo));
+        $this->assertStringNotContainsString('Asaas', $motivo);
+    }
+
+    /**
+     * Os três motivos são TEXTOS DIFERENTES.
+     *
+     * É o que impede a correção de ser desfeita por fusão: se dois deles
+     * voltarem a ser a mesma frase, um dos três públicos volta a ler algo falso
+     * — e nenhum teste individual acusaria, porque cada um passaria sozinho.
+     */
+    public function test_os_tres_motivos_nao_se_confundem(): void
+    {
+        $semWallet = $this->personalAprovado();
+        $semWallet->forceFill(['asaas_wallet_id' => null])->save();
+
+        $bloqueada = $this->personalAprovado();
+        $bloqueada->registrarBloqueioDeSplit('wallet bloqueada');
+
+        $pendente = $this->personalAprovado();
+        $pendente->forceFill(['asaas_account_status' => 'PENDING'])->save();
+
+        $motivos = [
+            'sem wallet' => (string) $semWallet->fresh()->motivoNaoRecebe(),
+            'wallet bloqueada' => (string) $bloqueada->fresh()->motivoNaoRecebe(),
+            'cadastro pendente' => (string) $pendente->fresh()->motivoNaoRecebe(),
+        ];
+
+        $this->assertCount(
+            3,
+            array_unique($motivos),
+            'três causas diferentes, três textos diferentes: '.json_encode($motivos, JSON_UNESCAPED_UNICODE)
+        );
+
+        // Só a causa que é realmente dele fala do cadastro dele.
+        $this->assertStringContainsString('finalizando o cadastro', $motivos['cadastro pendente']);
+        $this->assertStringContainsString('bloqueada pelo banco', $motivos['wallet bloqueada']);
+    }
+
+    /**
+     * A MENSAGEM DO ERRO também não mente — e era exatamente onde ela mentia.
+     *
+     * `motivoNaoRecebe()` já respondia certo, mas ele só é consultado enquanto a
+     * trava está valendo. Como a trava EXPIRA (propriedade 2 acima), passada a
+     * janela a cobrança sai, o Asaas recusa, e quem escreve o texto é
+     * `mensagemDeErro()` — que decidia só pelo corpo do erro e devolvia
+     * "finalizando o cadastro". Ou seja: era o texto da PRIMEIRA tentativa
+     * depois de cada janela de HORAS_RETENTAR_SPLIT, que na prática é o que o
+     * aluno lia quase sempre.
+     *
+     * A invariante que torna a delegação sempre correta: quem chega aqui com
+     * erro de bloqueio passou por `montarSplit()` com `podeReceberPagamento()`
+     * verdadeiro, logo o status cadastral dele NÃO estava pendente. A trava
+     * barra antes todo recebedor com cadastro incompleto.
+     */
+    public function test_mensagem_do_erro_nao_descreve_bloqueio_como_cadastro_pendente(): void
+    {
+        $p = $this->personalAprovado();
+
+        // O estado real no instante em que a mensagem é montada: os pontos de
+        // cobrança chamam reportarBloqueioDeRecebedor() ANTES dela.
+        AsaasService::reportarBloqueioDeRecebedor($p, self::ERRO_ASAAS, ['fluxo' => 'teste']);
+        $p->refresh();
+
+        $msg = AsaasService::mensagemDeErro(self::ERRO_ASAAS, 'Falha ao gerar cobrança.', $p);
+
+        $this->assertStringNotContainsString(
+            'finalizando o cadastro',
+            $msg,
+            'o cadastro dele está APPROVED — este texto manda mexer no que já passou'
+        );
+        $this->assertStringContainsString('bloqueada', $msg);
+        $this->assertSame(
+            $p->motivoNaoRecebe(),
+            $msg,
+            'as duas superfícies (trava e erro do gateway) têm de contar a mesma história'
+        );
+
+        // E nada do vocabulário do gateway chega a quem está comprando.
+        $this->assertStringNotContainsString('wallet', mb_strtolower($msg));
+        $this->assertStringNotContainsString('82947cc6', $msg);
+        $this->assertStringNotContainsString('Asaas', $msg);
+    }
+
+    /**
+     * Sem recebedor em mãos o texto genérico continua — é o comportamento de
+     * antes, preservado porque nem todo chamador tem um (criação de cliente,
+     * saque). O parâmetro é opcional de propósito.
+     */
+    public function test_sem_recebedor_a_mensagem_mantem_o_texto_generico(): void
+    {
+        $this->assertStringContainsString(
+            'finalizando o cadastro',
+            AsaasService::mensagemDeErro(self::ERRO_ASAAS, 'Falha ao gerar cobrança.')
+        );
+    }
+
     // ── O caminho completo: o erro do Asaas chega até a coluna ──────────
 
     /**
