@@ -44,6 +44,33 @@ return [
             'throw' => false,
         ],
 
+        /*
+         * Documentos de identidade enviados para a análise da subconta Asaas
+         * (RG, CNH, selfie, contrato social).
+         *
+         * DISCO SEPARADO, E NUNCA O `public`. Todo upload do projeto até aqui
+         * usa `->store(..., 'public')`, cuja raiz é `storage/app/public` e é
+         * servida pela web pelo symlink `public/storage`. Isso é adequado para
+         * foto de perfil e logo; para foto de RG/CNH seria **vazamento de
+         * documento de identidade numa URL adivinhável**, sem autenticação
+         * nenhuma — o tipo de dado que a LGPD trata como de risco alto e cuja
+         * exposição não tem como ser desfeita depois.
+         *
+         * Note a AUSÊNCIA deliberada de `url` e de `visibility`: sem `url` o
+         * disco não sabe gerar link público, então nem por engano uma view
+         * consegue imprimir o caminho do documento de alguém. Se algum dia
+         * precisar exibi-lo, sirva por rota autenticada que confere o dono —
+         * nunca acrescentando `url` aqui.
+         *
+         * Fora de `storage/app/public` também por isto: `php artisan
+         * storage:link` não o alcança.
+         */
+        'documentos' => [
+            'driver' => 'local',
+            'root' => storage_path('app/documentos-subconta'),
+            'throw' => false,
+        ],
+
         's3' => [
             'driver' => 's3',
             'key' => env('AWS_ACCESS_KEY_ID'),

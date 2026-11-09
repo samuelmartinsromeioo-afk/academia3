@@ -10,6 +10,7 @@ use App\Models\Cadastro\Personal;
 use App\Models\Cadastro\Studio;
 use App\Models\TermoAceite;
 use App\Services\CupomService;
+use App\Services\DocumentoSubcontaService;
 use App\Support\CadastroHelper;
 use App\Support\Cref;
 use Illuminate\Http\Request;
@@ -42,7 +43,29 @@ class RegisterController extends Controller
         return [
             'aceita_termos' => 'required|accepted',
             'cupom' => $this->cupons->regraValidacao(),
+            /*
+             * Documento de identidade para a análise da subconta Asaas.
+             *
+             * Entra aqui, no helper compartilhado, para as QUATRO portas do app
+             * ganharem o campo de uma vez — paridade com os quatro cadastros do
+             * site, que é o princípio que o projeto já persegue (ver a seção
+             * "Cadastro — paridade site ↔ app" no CLAUDE.md).
+             *
+             * `nullable`, como no site: obrigatório na tela, mas nunca
+             * bloqueando o cadastro. E aqui há uma razão a mais — o binário já
+             * publicado na loja não manda este campo, e `required` daria 422 em
+             * cima de todo mundo que não atualizou o app. É o mesmo raciocínio
+             * de `sexo`/`cep`, e o oposto do de `idade`, que virou trava de
+             * propósito (lá recusar é o objetivo; aqui não é).
+             */
+            'documento_identidade' => DocumentoSubcontaService::regraValidacao(),
         ];
+    }
+
+    /** Mensagens comuns, para o campo novo explicar-se em vez de dar "inválido". */
+    private function mensagensComuns(): array
+    {
+        return DocumentoSubcontaService::mensagensValidacao('documento_identidade');
     }
 
     /**
@@ -63,6 +86,12 @@ class RegisterController extends Controller
             (string) $request->userAgent(),
             TermoAceite::ORIGEM_CADASTRO
         );
+
+        // Documento para a análise da subconta. Também aqui, no ponto comum,
+        // para as quatro portas do app o gravarem sem quatro edições. Nunca
+        // lança — o cadastro já está persistido neste ponto.
+        app(DocumentoSubcontaService::class)
+            ->guardar($conta, $request->file('documento_identidade'));
     }
 
     /**
@@ -153,10 +182,13 @@ class RegisterController extends Controller
             'senha.confirmed' => 'A confirmação de senha não confere.',
             'foto.required' => 'Envie uma foto sua (será exibida no seu perfil).',
             'aceita_termos.accepted' => 'Você precisa aceitar os termos de uso.',
-        ], CadastroHelper::mensagensNascimento(CadastroHelper::IDADE_MINIMA_PROFISSIONAL)));
+        ], CadastroHelper::mensagensNascimento(CadastroHelper::IDADE_MINIMA_PROFISSIONAL), $this->mensagensComuns()));
 
         $codigoCupom = Arr::pull($dados, 'cupom');
-        Arr::forget($dados, 'aceita_termos');
+        // Nenhum dos dois é coluna: estes métodos passam o array inteiro ao
+        // `create()`. O documento é gravado em `registrarVinculos()`, lido
+        // direto do request.
+        Arr::forget($dados, ['aceita_termos', 'documento_identidade']);
 
         $dados['foto'] = $request->file('foto')->store('personals', 'public');
         $dados['senha'] = Hash::make($dados['senha']);
@@ -205,12 +237,15 @@ class RegisterController extends Controller
             'cnpj.unique' => 'Este CNPJ já está cadastrado.',
             'senha.confirmed' => 'A confirmação de senha não confere.',
             'aceita_termos.accepted' => 'Você precisa aceitar os termos de uso.',
-        ]);
+        ] + $this->mensagensComuns());
 
         $this->garantirEmailLivre($dados['email'], exceto: 'academia');
 
         $codigoCupom = Arr::pull($dados, 'cupom');
-        Arr::forget($dados, 'aceita_termos');
+        // Nenhum dos dois é coluna: estes métodos passam o array inteiro ao
+        // `create()`. O documento é gravado em `registrarVinculos()`, lido
+        // direto do request.
+        Arr::forget($dados, ['aceita_termos', 'documento_identidade']);
 
         $dados['senha'] = Hash::make($dados['senha']);
         $dados['status'] = 'pendente';
@@ -255,13 +290,16 @@ class RegisterController extends Controller
             'senha.confirmed' => 'A confirmação de senha não confere.',
             'senha.min' => 'A senha deve ter no mínimo 8 caracteres.',
             'aceita_termos.accepted' => 'Você precisa aceitar os termos de uso.',
-        ]);
+        ] + $this->mensagensComuns());
 
         $this->garantirEmailLivre($dados['email'], exceto: 'studio');
         $this->garantirCnpjLivre($dados['cnpj'], exceto: 'studio');
 
         $codigoCupom = Arr::pull($dados, 'cupom');
-        Arr::forget($dados, 'aceita_termos');
+        // Nenhum dos dois é coluna: estes métodos passam o array inteiro ao
+        // `create()`. O documento é gravado em `registrarVinculos()`, lido
+        // direto do request.
+        Arr::forget($dados, ['aceita_termos', 'documento_identidade']);
 
         $dados['senha'] = Hash::make($dados['senha']);
         $dados['status'] = 'pendente';
@@ -302,13 +340,16 @@ class RegisterController extends Controller
             'senha.confirmed' => 'A confirmação de senha não confere.',
             'senha.min' => 'A senha deve ter no mínimo 8 caracteres.',
             'aceita_termos.accepted' => 'Você precisa aceitar os termos de uso.',
-        ]);
+        ] + $this->mensagensComuns());
 
         $this->garantirEmailLivre($dados['email'], exceto: 'loja');
         $this->garantirCnpjLivre($dados['cnpj'], exceto: 'loja');
 
         $codigoCupom = Arr::pull($dados, 'cupom');
-        Arr::forget($dados, 'aceita_termos');
+        // Nenhum dos dois é coluna: estes métodos passam o array inteiro ao
+        // `create()`. O documento é gravado em `registrarVinculos()`, lido
+        // direto do request.
+        Arr::forget($dados, ['aceita_termos', 'documento_identidade']);
 
         $dados['senha'] = Hash::make($dados['senha']);
         $dados['status'] = 'pendente';

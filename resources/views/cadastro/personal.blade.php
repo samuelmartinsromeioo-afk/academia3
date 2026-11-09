@@ -536,6 +536,8 @@
             </div>
 
             <!-- CUPOM DE INDICAÇÃO -->
+            @include('partials.campo-documento-subconta')
+
             @include('partials.campo-cupom')
 
             <!-- CHECKBOX TERMOS DE USO -->

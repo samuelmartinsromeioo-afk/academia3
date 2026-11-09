@@ -51,10 +51,24 @@ class AcademiaController extends Controller
             'latitude' => 'nullable|numeric',
             'longitude' => 'nullable|numeric',
             'cupom' => $cupons->regraValidacao(),
-        ]);
+            /*
+             * Documento de identidade do responsável, para a análise da
+             * subconta Asaas — ver a nota longa em `Cadastro\PersonalController`.
+             * `nullable` de propósito: obrigatório na tela, mas nunca
+             * bloqueando o cadastro, igual à criação da subconta logo abaixo.
+             *
+             * Só o documento de identidade vem daqui. Os tipos extras que o
+             * Asaas exigir de PJ (contrato social, certificado MEI) ficam para
+             * o painel, que é guiado pela lista REAL de pendências dele — pedir
+             * no cadastro um documento que talvez não seja exigido é atrito à
+             * toa, e adivinhar a lista é duplicar a regra do Asaas.
+             */
+            'documento_identidade' => \App\Services\DocumentoSubcontaService::regraValidacao(),
+        ], \App\Services\DocumentoSubcontaService::mensagensValidacao('documento_identidade'));
 
         // Fora do create(): `cupom` não é coluna de academias.
         $codigoCupom = \Illuminate\Support\Arr::pull($dados, 'cupom');
+        \Illuminate\Support\Arr::pull($dados, 'documento_identidade');
 
         $dados['senha'] = Hash::make($dados['senha']);
         $dados['status'] = 'pendente'; // precisa de aprovação do administrador
@@ -75,6 +89,12 @@ class AcademiaController extends Controller
         // dependia de ela achar o botão "criar conta Asaas" no painel.
         // Best-effort: falha do Asaas não impede o cadastro.
         \App\Support\CadastroHelper::criarSubcontaAsaasPJ($academia);
+
+        // Depois da subconta, para o envio caber no mesmo request quando ela
+        // nasce com chave; senão fica no disco privado e sobe por
+        // `asaas:enviar-documentos`.
+        app(\App\Services\DocumentoSubcontaService::class)
+            ->guardar($academia, $request->file('documento_identidade'));
 
         $fb = app(MetaConversionsService::class);
 

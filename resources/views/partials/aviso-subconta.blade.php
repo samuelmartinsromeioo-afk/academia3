@@ -172,5 +172,16 @@
                 Depois de enviar os documentos, a liberação pode levar algumas horas.
             </p>
         @endif
+
+        {{--
+            Envio do documento SEM sair daqui.
+
+            Vem depois do link de onboarding, não em vez dele: os dois coexistem
+            porque o Asaas decide, grupo por grupo, qual dos dois caminhos aceita
+            — quando o grupo traz `onboardingUrl` ele RECUSA o envio por API, e
+            aí o link é o único caminho. Esconder um dos dois deixaria parte das
+            pessoas sem saída.
+        --}}
+        @include('partials.enviar-documento-subconta', ['conta' => $avisoSub])
     </div>
 @endif

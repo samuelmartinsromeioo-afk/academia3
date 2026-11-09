@@ -57,7 +57,10 @@
         </div>
     @endif
 
-    <form action="{{ route('loja.store') }}" method="POST" class="form-grid">
+    {{-- `enctype` obrigatório desde o campo de documento: sem ele o arquivo
+         não chega ao servidor e o upload falha em silêncio (ver a nota igual
+         em `cadastro/academia`). --}}
+    <form action="{{ route('loja.store') }}" method="POST" enctype="multipart/form-data" class="form-grid">
         @csrf
 
         <div class="form-group">
@@ -165,6 +168,8 @@
                 <textarea name="descricao" rows="2" placeholder="Conte um pouco sobre a sua loja e os produtos que vende">{{ old('descricao') }}</textarea>
             </div>
         </div>
+
+        @include('partials.campo-documento-subconta')
 
         @include('partials.campo-cupom')
 

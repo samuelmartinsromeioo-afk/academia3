@@ -45,12 +45,19 @@ class LojaController extends Controller
             'latitude' => 'nullable|numeric',
             'longitude' => 'nullable|numeric',
             'cupom' => $cupons->regraValidacao(),
-        ], [
+            // Documento de identidade do responsável para a análise da subconta
+            // Asaas. `nullable` de propósito — ver a nota em
+            // `Cadastro\PersonalController`: obrigatório na tela, nunca
+            // bloqueando o cadastro.
+            'documento_identidade' => \App\Services\DocumentoSubcontaService::regraValidacao(),
+        ], array_merge([
             'cnpj.unique' => 'Este CNPJ já está cadastrado.',
             'email.unique' => 'Este e-mail já está cadastrado.',
             'senha.confirmed' => 'A confirmação de senha não confere.',
             'senha.min' => 'A senha deve ter no mínimo 8 caracteres.',
-        ]);
+        ], \App\Services\DocumentoSubcontaService::mensagensValidacao('documento_identidade')));
+
+        \Illuminate\Support\Arr::pull($dados, 'documento_identidade');
 
         // E-mail/CNPJ não podem colidir com outros papéis (o login tenta na ordem
         // e o papel anterior ganharia o acesso).
@@ -91,6 +98,12 @@ class LojaController extends Controller
         // "criar conta Asaas" no painel; sem wallet ela não vende, porque
         // montarSplit aborta. Best-effort: falha do Asaas não impede o cadastro.
         \App\Support\CadastroHelper::criarSubcontaAsaasPJ($loja);
+
+        // Depois da subconta, para o envio caber no mesmo request quando ela
+        // nasce com chave; senão fica no disco privado e sobe por
+        // `asaas:enviar-documentos`.
+        app(\App\Services\DocumentoSubcontaService::class)
+            ->guardar($loja, $request->file('documento_identidade'));
 
         $fb = app(MetaConversionsService::class);
 

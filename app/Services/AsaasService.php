@@ -632,7 +632,15 @@ class AsaasService
         ];
     }
 
-    private function chaveDaSubconta($conta): ?string
+    /**
+     * Chave de API da própria subconta, decriptada.
+     *
+     * Público porque `DocumentoSubcontaService` também precisa dela: o envio de
+     * documento é `/myAccount/*`, que só responde sobre a conta dona do token.
+     * Duplicar esta função lá significaria duplicar o fallback de decriptação —
+     * e uma das duas cópias leria chave em texto puro como se fosse cifrada.
+     */
+    public function chaveDaSubconta($conta): ?string
     {
         if (empty($conta->asaas_api_key)) {
             return null;

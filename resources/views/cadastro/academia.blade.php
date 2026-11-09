@@ -51,7 +51,11 @@
         </div>
     @endif
 
-    <form action="{{ route('academia.store') }}" method="POST" class="form-grid">
+    {{-- `enctype` passou a ser obrigatório quando este formulário ganhou o
+         documento de identidade: sem ele o navegador envia só o NOME do
+         arquivo, `$request->file()` vem vazio e o upload falha EM SILÊNCIO —
+         cadastro concluído, documento nunca enviado, ninguém avisado. --}}
+    <form action="{{ route('academia.store') }}" method="POST" enctype="multipart/form-data" class="form-grid">
         @csrf
 
         <div class="form-group">
@@ -170,6 +174,8 @@
                 </div>
             </div>
         </div>
+
+        @include('partials.campo-documento-subconta')
 
         @include('partials.campo-cupom')
 

@@ -56,6 +56,26 @@ class Kernel extends ConsoleKernel
          */
         $schedule->command('asaas:sincronizar-subcontas')->twiceDaily(5, 17)->withoutOverlapping();
         $schedule->command('asaas:sincronizar-subcontas --urgentes')->hourly()->withoutOverlapping();
+
+        /*
+         * Envio ao Asaas dos documentos que o recebedor subiu pelo site, e
+         * releitura do veredito da análise.
+         *
+         * De meia em meia hora, e não de hora em hora, por causa dos dois
+         * extremos do ciclo: a doc do Asaas manda esperar ≥15s depois de criar
+         * a subconta antes de consultar documentos (então o envio nunca cabe no
+         * request do cadastro e a primeira tentativa é sempre aqui), e do outro
+         * lado uma RECUSA só vira "mande outro arquivo" na tela depois que esta
+         * varredura a lê. Meia hora é o atraso máximo em cada ponta.
+         *
+         * Barato de propósito: a consulta parte dos DOCUMENTOS pendentes, não
+         * dos recebedores — sem documento a tratar, nenhum request sai.
+         *
+         * Pode rodar sozinho sem supervisão, ao contrário de
+         * `asaas:criar-subcontas-faltantes`: não cria conta, não move dinheiro,
+         * e só sobe arquivo que o próprio dono enviou.
+         */
+        $schedule->command('asaas:enviar-documentos')->everyThirtyMinutes()->withoutOverlapping();
     }
 
     /**

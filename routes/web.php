@@ -223,6 +223,13 @@ Route::post('/indicacoes/saque', [IndicacaoController::class, 'solicitarSaque'])
     ->name('indicacoes.saque')
     ->middleware(['check.login', 'throttle:5,1']);
 
+// Reenvio de documento da subconta pelo painel do recebedor. O dono sai SEMPRE
+// da sessão, nunca do corpo — o request carrega só o arquivo e o tipo.
+// Throttle porque é upload de arquivo de 10 MB.
+Route::post('/documentos-subconta', [\App\Http\Controllers\DocumentoSubcontaController::class, 'store'])
+    ->name('documentos.subconta.store')
+    ->middleware(['check.login', 'throttle:10,1']);
+
 
 // ==========================================
 // RECURSOS GERAIS (Mapas, Fotos e Avaliações)

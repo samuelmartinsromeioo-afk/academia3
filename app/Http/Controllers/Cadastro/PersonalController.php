@@ -7,6 +7,7 @@ use App\Models\Agenda;
 use App\Models\Cadastro\Cliente;
 use App\Models\Cadastro\Personal;
 use App\Models\Presenca;
+use App\Services\DocumentoSubcontaService;
 use App\Services\MetaConversionsService;
 use App\Support\CadastroHelper;
 use App\Support\Cref;
@@ -59,6 +60,22 @@ class PersonalController extends Controller
             'modalidade' => 'nullable|string|in:Presencial,Online,Híbrido',
             'bio' => 'nullable|string|max:2000',
             'cupom' => $cupons->regraValidacao(),
+            /*
+             * Documento de identidade para a análise da subconta Asaas, pedido
+             * aqui para o profissional não precisar depois ir ao painel do
+             * Asaas descobrir o que falta.
+             *
+             * `nullable`, não `required`: o campo é obrigatório na TELA, mas o
+             * envio ao Asaas nunca pode bloquear o cadastro — é a mesma regra
+             * de `criarSubcontaAsaasPersonal`, que não lança. Hoje isso importa
+             * concretamente: a criação de subconta devolve 403 enquanto a
+             * homologação BaaS não concluir, e exigir o documento aqui
+             * transformaria o 403 do Asaas em cadastro impossível de terminar.
+             *
+             * A regra sai de `DocumentoSubcontaService` — fonte única das oito
+             * portas de cadastro mais o reenvio no painel.
+             */
+            'documento_identidade' => DocumentoSubcontaService::regraValidacao(),
         ];
 
         /*
@@ -76,8 +93,14 @@ class PersonalController extends Controller
 
         $dados = $request->validate(
             $regras,
-            CadastroHelper::mensagensNascimento(CadastroHelper::IDADE_MINIMA_PROFISSIONAL)
+            array_merge(
+                CadastroHelper::mensagensNascimento(CadastroHelper::IDADE_MINIMA_PROFISSIONAL),
+                DocumentoSubcontaService::mensagensValidacao('documento_identidade')
+            )
         );
+
+        // Fora do create(): não é coluna de personals.
+        \Illuminate\Support\Arr::pull($dados, 'documento_identidade');
 
         // Grava canônico (`123456-G/SP`): é o que permite comparar, achar
         // duplicata e montar a consulta ao conselho sem adivinhar formato.
@@ -115,6 +138,15 @@ class PersonalController extends Controller
         $personal->registrarAceiteTermos($request->ip(), (string) $request->userAgent(), \App\Models\TermoAceite::ORIGEM_CADASTRO);
 
         $this->criarSubcontaAsaas($personal);
+
+        /*
+         * Guarda o documento DEPOIS de criar a subconta, para o envio poder
+         * acontecer no mesmo request quando a subconta nasce com chave. Quando
+         * ela não nasce (403 do BaaS hoje), o arquivo fica no disco privado e
+         * `asaas:enviar-documentos` o sobe sozinho quando a conta existir.
+         */
+        app(DocumentoSubcontaService::class)
+            ->guardar($personal, $request->file('documento_identidade'));
 
         $fb = app(MetaConversionsService::class);
 
