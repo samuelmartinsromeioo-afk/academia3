@@ -107,6 +107,22 @@
         .doc-nav a:hover { border-color: var(--primary); color: var(--primary); }
         .doc-nav a.active { border-color: var(--primary); color: var(--primary); background: rgba(124,255,0,0.08); }
 
+        /* Atribuição de responsabilidade financeira, no topo do documento.
+           Caixa neutra (não verde-marca) de propósito: é identificação de
+           TERCEIRO, e pintá-la com a cor da SNR FIT sugeriria o contrário do
+           que a frase diz. */
+        .selo-responsavel {
+            display: flex; flex-direction: column; align-items: center; gap: 10px;
+            margin: 22px auto 0; max-width: 560px; padding: 16px 20px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--border); border-radius: 14px;
+        }
+        .selo-responsavel p {
+            margin: 0; font-size: 0.78rem; line-height: 1.5;
+            text-align: center; color: var(--text-muted);
+        }
+        .selo-responsavel strong { color: rgba(255, 255, 255, 0.85); }
+
         .footer {
             text-align: center; margin-top: 50px; padding-top: 30px;
             border-top: 1px solid var(--border); color: var(--text-muted); font-size: 0.9rem;
@@ -164,6 +180,17 @@
             .tbl-wrap { overflow: visible; }
             .content table { min-width: 0; font-size: 0.74rem; }
             .content th { background: #f0f0f0; color: #000; }
+
+            /* A atribuição de responsabilidade financeira SAI NO PAPEL: é
+               cláusula, não enfeite de tela. Só troca as cores para a folha
+               branca — o selo positivo quem liga é `partials/selo-asaas`. */
+            .selo-responsavel { background: transparent; border: 1px solid #ccc; }
+            .selo-responsavel p { color: #333; }
+            .selo-responsavel strong { color: #000; }
+
+            /* O selo do rodapé não se repete na folha: o do topo já identifica
+               o processador, e dois selos na mesma página impressa é ruído. */
+            .footer .selo-asaas-rodape { display: none; }
         }
     </style>
 </head>
@@ -203,6 +230,42 @@
                 · Versão @yield('doc_versao', '1.0')
             </p>
 
+            {{--
+                Quem responde pelos serviços financeiros, dito ANTES do corpo do
+                documento. Em todos os seis documentos legais e na própria tela
+                de aceite, porque o layout é compartilhado.
+
+                Fica aqui, e não só no checkout, por uma razão de contrato: o
+                CDC (art. 4º, III e art. 6º, III) dá ao consumidor o direito de
+                saber com quem contrata, e a liquidação do dinheiro não é feita
+                por nós — quem a faz tem de estar identificado no documento, não
+                apenas na tela de pagar. O detalhamento (razão social, CNPJ,
+                responsabilidades) está na seção 0.1 dos Termos; aqui é só a
+                atribuição, em destaque.
+
+                `imprimivel` é obrigatório: esta página tem botão "Imprimir" e
+                vira folha BRANCA no papel, onde o selo negativo-branco ficaria
+                invisível.
+            --}}
+            <div class="selo-responsavel">
+                @include('partials.selo-asaas', ['altura' => 34, 'imprimivel' => true])
+                <p>
+                    Serviços financeiros e liquidação dos pagamentos por
+                    <strong>{{ \App\Support\Empresa::get('psp_razao_social') }}</strong>,
+                    instituição autorizada e regulada pelo <strong>Banco Central do Brasil</strong>.
+                    A {{ \App\Support\Empresa::get('marca') }} <strong>não é instituição de
+                        pagamento</strong> e não detém, em nome próprio, os valores pagos.
+                    {{--
+                        A remissão tem de ser um LINK para as condições gerais, não
+                        "cláusula 0.1". Este layout serve os SEIS documentos, e nos
+                        cinco de perfil a numeração é a deles — "cláusula 0.1" ali
+                        aponta para uma cláusula que não existe no documento que a
+                        pessoa está lendo.
+                    --}}
+                    <a href="{{ route('termos') }}#s0-1">Quem responde pelo quê</a>.
+                </p>
+            </div>
+
             <div class="doc-nav">
                 <a href="{{ route('termos') }}" class="@yield('nav_index')">Visão geral</a>
                 <a href="{{ route('termos.aluno') }}" class="@yield('nav_aluno')">Aluno</a>
@@ -224,6 +287,12 @@
                 {{ \App\Support\Empresa::get('razao_social') }} · CNPJ {{ \App\Support\Empresa::get('cnpj') }}<br>
                 Contato: <a href="mailto:{{ \App\Support\Empresa::get('email_suporte') }}" style="color:var(--primary);">{{ \App\Support\Empresa::get('email_suporte') }}</a>
             </p>
+
+            {{-- Escondido na impressão (ver @media print): o selo do topo já
+                 identifica o processador na folha. --}}
+            <div class="selo-asaas-rodape" style="margin-top: 18px;">
+                @include('partials.selo-asaas', ['altura' => 30, 'imprimivel' => false])
+            </div>
             {{--
                 Rever a escolha de cookies de dentro do documento que a explica.
                 Antes a Política instruía a "limpar os cookies do navegador",

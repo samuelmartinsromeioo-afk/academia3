@@ -780,6 +780,14 @@
     });
 </script>
 
+{{-- Esta view é um documento standalone (não usa layout), então não herdava o
+     rodapé de marca — e com ele faltava o selo do Asaas e a atribuição de
+     responsabilidade financeira, que o programa BaaS exige estarem visíveis.
+     O dashboard da academia já o tinha, via `layouts.academia`.
+     Funciona aqui porque a view carrega `snrfit-brand.css`, que define
+     `.snr-footer`/`.snr-logo`. --}}
+@include('partials.brand-footer')
+
 @include('partials.celebracao-modal')
 </body>
 </html>

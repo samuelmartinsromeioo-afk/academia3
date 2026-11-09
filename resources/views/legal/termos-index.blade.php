@@ -59,7 +59,9 @@
     <div class="toc">
         <h3><i class="ph ph-list"></i> Índice</h3>
         <ul>
-            <li><a href="#s0">0. Identificação do titular da Plataforma</a></li>
+            <li><a href="#s0">0. Identificação do titular da Plataforma</a>
+                <ul><li><a href="#s0-1">0.1. Quem responde pelos serviços financeiros</a></li></ul>
+            </li>
             <li><a href="#s1">1. Aceitação, documentos aplicáveis e definições</a>
                 <ul><li><a href="#s1-4">1.4. Como os prazos são contados</a></li></ul>
             </li>
@@ -112,6 +114,98 @@
     </ul>
     <p class="muted">Identificação exigida pelo art. 2º do Decreto nº 7.962/2013, que regulamenta o
         Código de Defesa do Consumidor para a contratação no comércio eletrônico.</p>
+
+    {{--
+        0.1 — QUEM RESPONDE PELO DINHEIRO.
+
+        Esta seção não acrescenta obrigação nem retira direito: a regra já
+        estava na cláusula 2 ("não é instituição de pagamento") e na 13
+        (falhas/retenções do processador). O que ela faz é REUNIR num lugar só
+        o que estava correto mas espalhado por cinco cláusulas — definição 1.3,
+        2, 7, 12.1 e 13 — e nomear a instituição com a sua qualificação.
+
+        Por isso a versão dos Termos NÃO subiu com ela: nada aqui muda preço,
+        taxa, repasse ou posição de ninguém, e `config/termos.php` é explícito
+        em só subir `versao` em mudança material, porque subir joga toda conta
+        logada na tela de reaceite.
+
+        O CNPJ sai de `empresa.psp_cnpj` e é OMITIDO enquanto a chave estiver
+        vazia — ver a justificativa no próprio config: num contrato, CNPJ errado
+        identifica falsamente a instituição que detém o dinheiro, e isso é pior
+        que não informá-lo.
+    --}}
+    <h2 id="s0-1">0.1. IDENTIFICAÇÃO DO RESPONSÁVEL PELOS SERVIÇOS FINANCEIROS</h2>
+
+    <div class="highlighted">
+        <p style="margin-bottom:12px;">
+            Os pagamentos feitos nesta Plataforma <strong>não são recebidos, custodiados nem
+                liquidados pela {{ $emp('marca') }}</strong>. Toda a movimentação financeira é
+            realizada por instituição de pagamento autorizada e regulada pelo
+            <strong>Banco Central do Brasil</strong>, a saber:
+        </p>
+        <ul style="margin-bottom:12px;">
+            <li><strong>Razão social:</strong> {{ $emp('psp_razao_social') }}</li>
+            @if($pspCnpj = $emp('psp_cnpj'))
+                <li><strong>CNPJ:</strong> {{ $pspCnpj }}</li>
+            @endif
+            <li><strong>Site:</strong>
+                <a href="{{ $emp('psp_site') }}" target="_blank" rel="noopener">{{ $emp('psp_site') }}</a>
+            </li>
+            <li><strong>Papel no contrato:</strong> <em>Processador de Pagamentos</em>, conforme
+                definido na cláusula 1.3.</li>
+        </ul>
+        <div style="display:flex; justify-content:center; margin:4px 0 2px;">
+            @include('partials.selo-asaas', ['altura' => 34, 'imprimivel' => true])
+        </div>
+    </div>
+
+    <h3>0.1.1. O que é responsabilidade do Processador de Pagamentos</h3>
+    <ul>
+        <li>O <strong>recebimento e a custódia</strong> dos valores pagos pelo Aluno, que transitam
+            em contas mantidas por ele, <strong>nunca em conta da {{ $emp('marca') }}</strong>.</li>
+        <li>A <strong>liquidação e o repasse</strong> ao Profissional, Academia, Studio ou Loja, por
+            meio da divisão automática do pagamento (<em>split</em>), nos <strong>prazos e condições
+                dele</strong>.</li>
+        <li>A <strong>abertura, a verificação e a manutenção da subconta</strong> de cada recebedor,
+            incluindo a análise de documentos e a decisão sobre aprová-la, recusá-la, limitá-la ou
+            bloqueá-la — decisão que <strong>não é da {{ $emp('marca') }}</strong> e que ela não
+            controla nem reverte.</li>
+        <li>As <strong>tarifas do meio de pagamento</strong> (PIX, cartão, boleto), os
+            <strong>prazos de saque</strong>, as <strong>retenções, cauções e antifraude</strong>, e
+            as regras de <strong>chargeback</strong> e contestação de cartão.</li>
+        <li>A <strong>segurança dos dados do meio de pagamento</strong>. Os dados do cartão são
+            digitados em ambiente dele e <strong>a {{ $emp('marca') }} não recebe, não vê e não
+                armazena número de cartão, CVV ou validade</strong>.</li>
+    </ul>
+
+    <h3>0.1.2. O que continua sendo responsabilidade da {{ $emp('marca') }}</h3>
+    <ul>
+        <li><strong>Calcular e exibir corretamente</strong> o preço, a Taxa de Intermediação e o
+            Valor Final antes da contratação (cláusula 7).</li>
+        <li><strong>Instruir o pagamento</strong> junto ao Processador com os dados corretos do
+            recebedor e do valor, e registrar o resultado na sua conta.</li>
+        <li><strong>A sua própria remuneração</strong> — a Taxa de Intermediação —, que é devida à
+            {{ $emp('marca') }} e não ao Processador.</li>
+        <li>O <strong>atendimento inicial</strong> sobre qualquer pagamento feito aqui: você fala
+            com a gente primeiro, pelo
+            <a href="mailto:{{ $emp('email_suporte') }}">{{ $emp('email_suporte') }}</a>, e nós
+            acionamos o Processador quando a causa estiver do lado dele.</li>
+    </ul>
+
+    <div class="highlighted warn">
+        <p><strong>Em resumo:</strong> a {{ $emp('marca') }} é responsável pelo
+            <strong>ambiente de intermediação</strong> — vitrine, agenda, treino, cálculo do preço e
+            instrução da cobrança. A <strong>guarda e a movimentação do seu dinheiro</strong> são do
+            Processador de Pagamentos, instituição autorizada para isso. A
+            {{ $emp('marca') }} <strong>não é instituição de pagamento</strong> e não presta serviço
+            financeiro por conta própria — ver as cláusulas 2, 7 e 13.</p>
+    </div>
+
+    <p class="muted">A Plataforma atua como <strong>subadquirente/facilitadora</strong> perante o
+        Processador de Pagamentos, no âmbito do programa de <em>Banking as a Service</em> por ele
+        oferecido. A atividade privativa de instituição de pagamento é exercida exclusivamente pelo
+        Processador, nos termos da Lei nº 12.865/2013 e da regulamentação do Banco Central do
+        Brasil.</p>
 
     {{-- ─────────────────────────────────────────────────────────────── --}}
 

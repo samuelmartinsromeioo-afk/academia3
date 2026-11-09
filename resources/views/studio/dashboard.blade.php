@@ -979,6 +979,11 @@
     });
 </script>
 
+{{-- Documento standalone: não herdava o rodapé de marca, logo não exibia o
+     selo do Asaas nem a atribuição de responsabilidade financeira. Ver a nota
+     igual em `loja/dashboard`. --}}
+@include('partials.brand-footer')
+
 @include('partials.celebracao-modal')
 </body>
 </html>

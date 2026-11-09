@@ -118,6 +118,37 @@ return [
 
     // Processador de pagamentos. A Plataforma NÃO é instituição de pagamento;
     // quem é autorizado a operar arranjo de pagamento é o parceiro.
+    //
+    // Esta chave é o TERMO DEFINIDO da cláusula 1.3 dos Termos e aparece nos
+    // seis documentos legais. Mudar o texto dela muda os seis de uma vez — é
+    // por isso que ela não repete em view nenhuma.
     'processador_pagamentos' => env('EMPRESA_PSP', 'Asaas (Asaas Gestão Financeira S.A.)'),
+
+    // Qualificação completa do processador, para a seção 0.1 dos Termos.
+    //
+    // POR QUE SEPARADO de `processador_pagamentos`: aquela chave é o termo
+    // definido que o contrato usa dezenas de vezes ("conforme o Processador de
+    // Pagamentos"), e precisa ser curta. Estes dois identificam a instituição
+    // uma única vez, onde o CDC exige saber com quem se contrata.
+    //
+    // O CNPJ é o que INDIVIDUALIZA a instituição responsável pela liquidação:
+    // sem ele o documento nomeia uma marca, não uma pessoa jurídica acionável.
+    //
+    // O CNPJ está no DEFAULT, e não só no `.env`, de propósito: `.env` não é
+    // versionado, então um valor só local deixaria a linha OMITIDA justamente
+    // em produção, que é onde o documento produz efeito. Isto não é segredo
+    // nem varia por ambiente — é a identificação de uma pessoa jurídica
+    // pública, igual à razão social logo abaixo.
+    //
+    // Informado pelo titular em 2026-11-09, a partir do contrato BaaS, e com os
+    // dígitos verificadores conferidos. A regra que continua valendo: nunca
+    // preencha este campo com número obtido de memória ou de busca na web. Num
+    // contrato, CNPJ errado é identificação FALSA da instituição que detém o
+    // dinheiro dos usuários — pior que a ausência, porque ausência ninguém lê
+    // como afirmação. Se algum dia houver dúvida, esvazie em vez de adivinhar:
+    // vazio, a linha é omitida da seção 0.1 (igual ao CEP), sem quebrar nada.
+    'psp_razao_social' => env('EMPRESA_PSP_RAZAO_SOCIAL', 'Asaas Gestão Financeira S.A.'),
+    'psp_cnpj' => env('EMPRESA_PSP_CNPJ', '19.540.550/0001-21'),
+    'psp_site' => env('EMPRESA_PSP_SITE', 'https://asaas.com'),
 
 ];
