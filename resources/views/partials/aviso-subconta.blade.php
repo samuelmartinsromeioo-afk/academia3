@@ -58,11 +58,19 @@
             segurança do banco e <strong>só o suporte do Asaas pode levantar</strong>.
         </p>
 
-        <p style="font-size:0.84rem; color:var(--text-muted); margin:0 0 12px;">
-            Entre em contato com o suporte do Asaas pelo app ou pelo painel deles e peça o
-            motivo do bloqueio da sua conta. Assim que liberarem, as vendas voltam
-            sozinhas — você não precisa avisar a gente.
+        <p style="font-size:0.84rem; color:var(--text-muted); margin:0 0 10px;">
+            Entre em contato com o suporte do Asaas e peça o motivo do bloqueio da sua conta.
+            Assim que liberarem, as vendas voltam sozinhas — você não precisa avisar a gente.
         </p>
+
+        {{-- Os canais do Asaas, aqui, não são cortesia: este é o único aviso do
+             sistema que manda a pessoa falar com o prestador, e mandá-la
+             "procurar o suporte do Asaas" sem o endereço dele é um beco sem
+             saída. O playbook de BaaS obriga o tomador a garantir acesso claro
+             a esses canais justamente nesta situação. --}}
+        <div style="margin:0 0 12px;">
+            @include('partials.asaas-suporte', ['compacto' => true])
+        </div>
 
         <p style="font-size:0.84rem; color:var(--text-muted); margin:0;">
             Se precisar de ajuda para abrir o chamado, fale com

@@ -103,6 +103,11 @@
             tributária</strong> do estabelecimento.</li>
     </ul>
 
+    {{-- Cláusula modelo do Asaas (programa BaaS), depois de pagamentos/split:
+         a subconta e o saque descritos acima são a conta de pagamento que a
+         cláusula identifica. Texto único em `partials/legal-clausula-baas`. --}}
+    @include('partials.legal-clausula-baas')
+
     <h2 id="ac6">6. ACADEMIA COMO CONTROLADORA DE DADOS (LGPD)</h2>
     <div class="highlighted">
         Ao tratar dados dos seus próprios alunos (cadastro, anamnese, avaliações físicas, frequência), a academia atua como <strong>controladora</strong> nos termos da LGPD e a Plataforma como <strong>operadora</strong> nessa parte. A academia obriga-se a: possuir base legal e coletar <strong>consentimento</strong> para dados sensíveis de saúde; usar os dados apenas para as finalidades informadas; mantê-los em sigilo; e atender às requisições dos titulares e da ANPD. A academia é responsável perante seus alunos por esse tratamento.

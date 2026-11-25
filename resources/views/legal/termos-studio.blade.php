@@ -81,6 +81,11 @@
             tributária</strong> do estabelecimento.</li>
     </ul>
 
+    {{-- Cláusula modelo do Asaas (programa BaaS), depois de pagamentos/split:
+         a subconta e o saque descritos acima são a conta de pagamento que a
+         cláusula identifica. Texto único em `partials/legal-clausula-baas`. --}}
+    @include('partials.legal-clausula-baas')
+
     <h2 id="st6">6. STUDIO COMO CONTROLADOR DE DADOS (LGPD)</h2>
     <div class="highlighted">
         Ao tratar dados dos seus alunos (cadastro, reservas, anamnese/avaliações quando aplicável), o studio atua como <strong>controlador</strong> e a Plataforma como <strong>operadora</strong> nessa parte. O studio obriga-se a possuir base legal, coletar <strong>consentimento</strong> para dados sensíveis, usar os dados apenas para as finalidades informadas, mantê-los em sigilo e atender aos titulares e à ANPD.

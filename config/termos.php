@@ -11,40 +11,56 @@
  * preencha `resumo` dizendo o que mudou, que é o que dá validade ao aceite.
  */
 return [
-    'versao' => '3.1',
+    'versao' => '3.2',
 
-    'vigente_desde' => '2026-10-14',
+    'vigente_desde' => '2026-11-25',
 
     /*
      * O que mudou nesta versão, em linguagem clara. Mostrado na tela de
      * reaceite: um aceite de "mudou alguma coisa" tem pouco valor probatório;
      * o usuário precisa saber o que está aceitando.
      *
-     * Versão MENOR (3.1) porque nada aqui muda PREÇO, TAXA ou REPASSE — a
-     * contraprestação segue exatamente a da 3.0. O que a 3.1 faz é de duas
-     * naturezas, e as duas autorizam vigência imediata pela própria cláusula 19
-     * (último item: alteração exigida por lei e correção de erro material):
+     * Versão MENOR (3.2) porque nada aqui muda PREÇO, TAXA ou REPASSE — a
+     * contraprestação segue exatamente a da 3.0. A 3.2 é de UMA natureza só:
+     * conformidade com o programa de Banking as a Service do Processador de
+     * Pagamentos, conforme o "Playbook de BaaS para clientes Asaas" e a
+     * Resolução Conjunta nº 16/2025 do Banco Central.
      *
-     *  1. AMPLIA DIREITOS, sem retirar nenhum: exportação dos dados e
-     *     cancelamento de assinatura passaram a existir dentro do app,
-     *     consentimento de saúde ganhou revogação própria (sem precisar apagar a
-     *     conta) e a escolha de cookies passou a ser reversível no produto.
-     *  2. CORRIGE o texto onde ele descrevia procedimento que o sistema não
-     *     tinha — que é o defeito mais grave que um documento legal pode ter,
-     *     porque a promessa é oponível a quem a escreveu.
+     * O que ela faz, e por que é material o suficiente para pedir reaceite:
      *
-     * Por isso o reaceite de toda conta logada é adequado e não precisa dos 30
-     * dias de aviso prévio: ninguém perde direito, posição ou valor com ela.
+     *  1. ACRESCENTA a cláusula "Prestação de Serviços Financeiros" nos seis
+     *     documentos, no texto do MODELO do próprio Asaas — quem presta o
+     *     serviço financeiro, em que qualidade a SNR FIT atua (integradora
+     *     tecnológica e distribuidora da experiência do produto) e a ciência do
+     *     cliente de que a responsabilidade regulatória é do Asaas.
+     *  2. RETIRA do texto a afirmação de que a Plataforma atuava como
+     *     "subadquirente/facilitadora". Esse rótulo nomeia atividade de
+     *     instituição de pagamento, que a SNR FIT não exerce e não é autorizada
+     *     a exercer — e o playbook veda ao tomador apresentar-se assim. Era
+     *     declaração incorreta sobre quem responde pelo dinheiro, num documento
+     *     oponível a quem o escreveu.
+     *  3. PUBLICA os canais de suporte do Asaas, que o programa exige estarem
+     *     acessíveis ao cliente final sempre que ele usa a operação financeira.
+     *     Antes os documentos diziam "fale com a gente primeiro" sem informar
+     *     que existe a porta do prestador.
+     *
+     * Nenhum direito é retirado e nenhum valor muda: o usuário passa a ler com
+     * precisão quem guarda e quem movimenta o dinheiro — informação, não
+     * obrigação nova. Por isso a vigência é imediata pela própria cláusula 19
+     * (último item: alteração exigida por lei/regulação e correção de erro
+     * material), e o reaceite de toda conta logada é adequado: o aceite anterior
+     * foi dado sobre um texto que descrevia errado o papel da Plataforma.
+     *
+     * (O resumo da 3.1 — prazos, app, dados de saúde, cookies — saiu daqui
+     * porque este campo é "o que mudou NESTA versão"; o histórico fica no git.)
      */
     'resumo' => [
-        'Nada muda no <strong>preço, na taxa ou no repasse</strong>: a regra da versão 3.0 continua valendo igual — você recebe integralmente o preço que cadastrou e a taxa é somada ao valor do aluno.',
-        'O que mudou é o <strong>como fazer</strong>. Cada prazo do contrato agora diz se é em dias corridos, dias úteis ou horas, de quando começa a contar e o que acontece se cair em fim de semana ou feriado (cláusula 1.4), e cada direito tem o caminho de telas, o prazo e a confirmação que você recebe (cláusula 12.1).',
-        '<strong>Pelo app</strong> você agora exporta seus dados, cancela assinatura e abre "Privacidade e meus dados" — antes isso só existia no site, embora os documentos já prometessem os dois.',
-        'Os <strong>dados de saúde</strong> (anamnese) passaram a ter consentimento destacado e revogação própria: revogar apaga a anamnese e <strong>não</strong> encerra a sua conta.',
-        'A escolha sobre <strong>cookies de medição</strong> pode ser mudada a qualquer momento no próprio site, sem limpar o navegador — e nenhum evento vai à Meta sem ela, nem na renovação de assinatura.',
-        'Toda <strong>exclusão de conta e todo cancelamento</strong> passam a gerar confirmação por escrito, que serve de comprovante.',
-        '<strong>Excluir a conta agora cancela as suas assinaturas mensais</strong> junto, no mesmo ato — antes a recorrência continuava cobrando depois do encerramento. Se você é profissional, a sua saída não cancela o plano dos seus alunos: eles são avisados para decidir.',
-        'No cadastro de <strong>personal</strong>, o CREF passou a ser validado no formato, e a aprovação exige a <strong>conferência do registro no Conselho Regional</strong> — que fica registrada. Isso não é garantia de habilitação nem monitoramento contínuo: a cláusula 2.1 dos Termos do Personal diz exatamente o alcance.',
+        'Nada muda no <strong>preço, na taxa ou no repasse</strong>: você continua recebendo integralmente o preço que cadastrou, e a taxa segue somada ao valor do aluno.',
+        'Os documentos agora trazem a cláusula <strong>"Prestação de Serviços Financeiros"</strong>, no texto do próprio Asaas: os serviços financeiros desta plataforma — conta de pagamento, processamento das transações, transferências e saques — são prestados pela <strong>Asaas Gestão Financeira Instituição de Pagamentos S.A.</strong>, autorizada pelo Banco Central do Brasil.',
+        'Ficou escrito, com todas as letras, que a <strong>SNR FIT atua como integradora tecnológica</strong> e distribuidora da experiência do produto — <strong>não</strong> é instituição financeira nem de pagamento, e não faz intermediação financeira em nome próprio.',
+        'Saiu do texto a expressão <strong>"subadquirente/facilitadora"</strong>, que sugeria um papel de pagamentos que a SNR FIT não tem. Quem exerce essa atividade, e responde por ela, é só o Asaas.',
+        'Você passa a ter os <strong>canais de suporte do Asaas</strong> nos documentos e na central de ajuda, e pode acioná-lo diretamente sobre conta de pagamento, liquidação, transferências e saques. O nosso suporte continua sendo a porta de entrada para preço, agenda, cancelamento e reembolso.',
+        'O <strong>selo "Serviços financeiros Asaas"</strong> passa a aparecer também nas telas de saldo, saque, bônus de indicação e abertura da conta de recebimentos, e nos e-mails de pagamento — para você sempre saber quem está movimentando o dinheiro.',
     ],
 
     /*

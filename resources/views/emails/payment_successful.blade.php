@@ -55,6 +55,7 @@
 
             <p style="margin-top:28px;">Em caso de dúvidas, entre em contato conosco.</p>
         </div>
+        @include('emails.partials.asaas-rodape')
         <div class="footer">
             &copy; {{ date('Y') }} SnrFit. Todos os direitos reservados.
         </div>

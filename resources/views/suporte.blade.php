@@ -139,7 +139,13 @@
             <p>Na tela inicial, toque em <strong>Criar conta</strong> e escolha o perfil: aluno, personal trainer, academia, studio ou loja. Perfis profissionais passam por aprovação.</p>
 
             <h3>Dúvidas sobre pagamentos e assinaturas</h3>
-            <p>Os pagamentos são processados com segurança pela Asaas. Para cobranças, cancelamentos ou reembolsos, fale com <a href="mailto:suporte@snrfittech.com">suporte@snrfittech.com</a>.</p>
+            <p>Os serviços financeiros desta plataforma são prestados pela
+                <strong>{{ \App\Support\Empresa::get('psp_razao_social') }}</strong>, instituição de
+                pagamento autorizada a funcionar pelo Banco Central do Brasil. Para cobranças,
+                cancelamentos ou reembolsos, fale com
+                <a href="mailto:{{ \App\Support\Empresa::get('email_suporte') }}">{{ \App\Support\Empresa::get('email_suporte') }}</a>
+                — e, para a operação financeira em si (conta de pagamento, liquidação,
+                transferências e saques), você pode acionar o Asaas direto, nos canais abaixo.</p>
 
             <h3>O app não abre ou apresenta um problema</h3>
             <p>Feche e abra o app novamente e verifique sua conexão com a internet. Se persistir, envie para <a href="mailto:suporte@snrfittech.com">suporte@snrfittech.com</a> o modelo do aparelho e a versão do sistema.</p>
@@ -152,6 +158,24 @@
                 <strong>Configurações → Excluir conta</strong> → confirme com sua senha. Seus dados pessoais são anonimizados/apagados.
             </div>
             <p>Prefere que a gente faça por você? Envie o pedido para <a href="mailto:suporte@snrfittech.com">suporte@snrfittech.com</a>.</p>
+        </div>
+
+        {{--
+            Canais do Asaas, numa seção própria da central de suporte.
+
+            Exigência do "Playbook de BaaS para clientes Asaas": o cliente final
+            tem de ter acesso claro ao suporte do Asaas sempre que usar as
+            operações financeiras, e saber que pode acioná-lo. A página listava
+            só o nosso e-mail para qualquer assunto, inclusive os que a SNR FIT
+            não tem como resolver — conta de pagamento, liquidação, bloqueio de
+            recebimentos são decisão e operação do prestador.
+        --}}
+        <div class="card">
+            <h2><i class="ph ph-bank"></i> Suporte financeiro (Asaas)</h2>
+            @include('partials.asaas-suporte')
+            <div style="display:flex; justify-content:center; margin-top:16px;">
+                @include('partials.selo-asaas', ['altura' => 32, 'imprimivel' => false])
+            </div>
         </div>
 
         <div class="card">

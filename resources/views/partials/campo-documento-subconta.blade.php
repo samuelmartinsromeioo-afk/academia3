@@ -37,3 +37,28 @@
         <p style="font-size:0.78rem; color:#ff8a8a; margin:6px 0 0;">{{ $message }}</p>
     @enderror
 </div>
+
+{{--
+    Selo + atribuição na tela de CRIAÇÃO DE SUBCONTA.
+
+    O "Playbook de BaaS para clientes Asaas" nomeia esta tela por extenso entre
+    as que exigem o selo ("Telas de produto — Criação de subconta", contas de
+    pagamento para terceiros), e é a hipótese mais clara da Resolução Conjunta
+    nº 16/2025: a pessoa está entregando documento para a abertura de uma conta
+    de pagamento. Quem abre, analisa e mantém essa conta é o Asaas — e sem esta
+    atribuição a tela dava a entender que a conta era da SNR FIT, justamente o
+    que o playbook veda.
+
+    Fica aqui, e não nos quatro cadastros, pelo mesmo motivo do campo: um lugar
+    só para os quatro papéis que têm subconta.
+--}}
+<div class="full-width">
+    @include('partials.asaas-recebimentos', [
+        'texto' => 'A sua <strong>conta de recebimentos</strong> é uma conta de pagamento aberta e
+            mantida por <strong>'.\App\Support\Empresa::get('psp_razao_social').'</strong>,
+            instituição de pagamento autorizada a funcionar pelo Banco Central do Brasil. A análise
+            deste documento, a aprovação e a manutenção da conta são do Asaas; a
+            '.\App\Support\Empresa::get('marca').' apenas solicita a abertura e mostra a situação
+            aqui no painel.',
+    ])
+</div>

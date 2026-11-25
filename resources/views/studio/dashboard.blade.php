@@ -398,7 +398,10 @@
             <button type="button" id="btnOpenAlunos"><i class="ph ph-users"></i> Meus Alunos</button>
             <button type="button" id="btnOpenPerfil"><i class="ph ph-user-gear"></i> Editar Perfil</button>
             <button type="button" id="btnOpenGaleria"><i class="ph ph-images"></i> Minha Galeria</button>
-            <button type="button" id="btnOpenCarteira"><i class="ph ph-piggy-bank" style="color: var(--primary);"></i> Minha Carteira</button>
+                {{-- "Carteira" saiu do rótulo: `Wallet` está entre as palavras que o
+                     playbook de BaaS veda ao tomador, porque sugere que quem oferece a
+                     conta é a plataforma. Os ids de JS continuam `carteira*`. --}}
+            <button type="button" id="btnOpenCarteira"><i class="ph ph-piggy-bank" style="color: var(--primary);"></i> Meus Recebimentos</button>
             <a href="{{ route('studio.horarios') }}"><i class="ph ph-clock"></i> Meus Horários</a>
             <a href="{{ route('indicacoes.painel') }}"><i class="ph ph-gift"></i> Indique e ganhe</a>
             <a href="{{ route('lgpd.meus-dados') }}"><i class="ph ph-shield-check"></i> Privacidade e meus dados</a>
@@ -776,7 +779,7 @@
     <div class="modal-content" style="max-width:480px;">
         <button type="button" class="modal-close" onclick="fecharCarteira()">&times;</button>
         <h2 style="color:var(--primary); font-size:1.4rem; font-weight:900; text-align:center;">
-            <i class="ph ph-piggy-bank"></i> CARTEIRA DO STUDIO
+            <i class="ph ph-piggy-bank"></i> RECEBIMENTOS DO STUDIO
         </h2>
 
         <div id="carteiraLoading" style="text-align:center; padding:30px 0; color:#a0a0a0;">
@@ -804,7 +807,7 @@
                 </div>
 
                 <p id="carteiraSaqueErro" style="display:none; color:#ff6b6b; font-size:0.82rem; background:rgba(255,107,107,0.1); border:1px solid rgba(255,107,107,0.3); border-radius:8px; padding:10px 14px; margin-bottom:14px;"></p>
-                <p id="carteiraSaqueSucesso" style="display:none; color:#4caf50; font-weight:700; text-align:center; padding:8px 0; font-size:0.9rem;">✅ Saque solicitado! O valor chegará via PIX em instantes.</p>
+                <p id="carteiraSaqueSucesso" style="display:none; color:#4caf50; font-weight:700; text-align:center; padding:8px 0; font-size:0.9rem;">✅ Saque solicitado! O Asaas vai processar a transferência PIX para a chave do seu perfil.</p>
 
                 <button id="btnSacar" onclick="confirmarSaque()"
                     style="width:100%; background:var(--primary); color:#000; border:none; border-radius:12px; padding:14px; font-weight:900; font-size:0.95rem; cursor:pointer;">
@@ -822,6 +825,12 @@
             Sua conta de repasse ainda está sendo configurada pelo administrador.<br>
             Os saques estarão disponíveis em breve.
         </div>
+
+        {{-- Selo obrigatório do programa BaaS: esta tela consulta saldo e ordena
+             transferência, que é gestão de valores. Fora do `carteiraConteudo` de
+             propósito — o selo tem de aparecer também quando a conta ainda não está
+             configurada, que é quando a pessoa se pergunta de quem é a conta. --}}
+        @include('partials.asaas-recebimentos')
     </div>
 </div>
 

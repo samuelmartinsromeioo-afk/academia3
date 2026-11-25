@@ -46,6 +46,7 @@
                 O valor será transferido para sua conta conforme o acordo estabelecido com a academia.
             </p>
         </div>
+        @include('emails.partials.asaas-rodape')
         <div class="footer">
             &copy; {{ date('Y') }} SnrFit. Todos os direitos reservados.
         </div>

@@ -100,6 +100,11 @@
             regular (chave PIX válida de titularidade da loja e cadastro sem pendência).</li>
     </ul>
 
+    {{-- Cláusula modelo do Asaas (programa BaaS), depois de pagamentos/split:
+         a subconta e o saque descritos acima são a conta de pagamento que a
+         cláusula identifica. Texto único em `partials/legal-clausula-baas`. --}}
+    @include('partials.legal-clausula-baas')
+
     <h2 id="lo6">6. PRODUTOS PROIBIDOS E RESTRITOS</h2>
     <p>É vedado anunciar produtos ilícitos, falsificados, sem registro obrigatório ou que exijam prescrição/autorização que a loja não possua — incluindo <strong>medicamentos, anabolizantes e substâncias controladas</strong>. Suplementos e alimentos devem cumprir a regulamentação sanitária aplicável (ex.: ANVISA).</p>
 

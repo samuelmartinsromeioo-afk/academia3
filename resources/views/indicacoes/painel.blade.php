@@ -393,6 +393,18 @@
             </p>
         @endif
 
+        {{-- Selo obrigatório do programa BaaS. Esta tela paga dinheiro: o bônus
+             sai por transferência Pix executada pelo Asaas, e sem o selo a
+             página dava a entender que quem transfere é a SNR FIT. Fica depois
+             do formulário de saque, que é o ponto em que a pessoa decide. --}}
+        @include('partials.asaas-recebimentos', [
+            'texto' => 'As transferências Pix do bônus são executadas por
+                <strong>'.\App\Support\Empresa::get('psp_razao_social').'</strong>, instituição de
+                pagamento autorizada a funcionar pelo Banco Central do Brasil. A
+                '.\App\Support\Empresa::get('marca').' apura o bônus e ordena o pagamento; a
+                movimentação do dinheiro é do Asaas.',
+        ])
+
         @if ($meusSaques->isNotEmpty())
             <div class="titulo-secao" style="margin-top:26px;">Seus pedidos</div>
             <table>

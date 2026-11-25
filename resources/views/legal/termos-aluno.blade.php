@@ -143,6 +143,13 @@
             <strong>até que você cancele</strong>.</li>
     </ul>
 
+    {{-- Cláusula modelo do Asaas (programa BaaS), logo depois de "quanto você
+         paga": é onde o aluno está pensando em dinheiro, e é a hipótese que a
+         Resolução Conjunta nº 16/2025 descreve — movimentação de valores.
+         Texto único em `partials/legal-clausula-baas`, incluído pelos seis
+         documentos; sai sem número porque a numeração deste documento é dele. --}}
+    @include('partials.legal-clausula-baas')
+
     <h2 id="a6">6. CONTRATAÇÃO, AGENDA E CANCELAMENTOS</h2>
     <ul>
         <li>A execução do serviço é do <strong>profissional ou estabelecimento</strong> contratado; a

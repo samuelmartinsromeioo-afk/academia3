@@ -99,6 +99,12 @@ return [
             'https://cdn-icons-png.flaticon.com',
             'https://server.arcgisonline.com',    // tiles do mapa (leaflet)
             'https://www.facebook.com',           // pixel <noscript>
+            // Selo "Serviços financeiros Asaas". O playbook de BaaS manda
+            // servir o selo deste CDN (URL com `?id=`, enviada pelo suporte) e
+            // exige que ele esteja visível em todo fluxo financeiro — um host
+            // ausente aqui viraria selo BLOQUEADO pelo navegador, isto é,
+            // descumprimento silencioso. Ver `empresa.psp_selo_url`.
+            'https://baas.asaas.com',
         ], $cdnMidia, $extra('CSP_EXTRA_IMG')),
 
         'media-src' => array_merge([

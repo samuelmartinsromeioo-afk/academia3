@@ -178,6 +178,35 @@ Os textos são **dois públicos diferentes** e não se podem fundir: `motivoNaoR
 
 **`mensagemDeErro()` recebe o recebedor e delega a ele** — o parâmetro é opcional, e isso fechou a última ponta onde o texto mentia. Ele decidia só pelo corpo do erro do Asaas, que é idêntico nos dois casos (*"wallet [...] bloqueada"*), e devolvia o genérico de cadastro pendente. Como a trava **expira** em `HORAS_RETENTAR_SPLIT`, esse era o texto da *primeira* tentativa depois de **cada** janela — ou seja, na prática o que o aluno lia quase sempre. A invariante que torna a delegação sempre correta: quem chega lá com erro de bloqueio passou por `montarSplit()` com `podeReceberPagamento()` verdadeiro, logo o status cadastral dele **não** estava pendente. Dois cuidados que seguem juntos: os pontos de cobrança chamam `reportarBloqueioDeRecebedor()` **antes** de montar a mensagem (é ele que carimba, e é o carimbo que permite distinguir) — na assinatura, que é o caminho do pacote de personal, a mensagem era montada *antes* e a ordem foi invertida; e o parâmetro continua opcional porque criação de cliente e saque não têm recebedor em mãos.
 
+#### Conformidade BaaS — o que o playbook do Asaas exige da INTERFACE
+
+O Asaas é a instituição de pagamento do arranjo; a SNR FIT é **tomadora** do programa de *Banking as a Service* dele. O "Playbook de BaaS para clientes Asaas" (recebido em 25/11/2026, PDF na raiz do repo) traduz a **Resolução Conjunta nº 16/2025 do BACEN** em obrigações de tela e de texto — e é por isso que elas são código, não burocracia: **nada disso quebra funcionalidade quando desaparece**. Selo removido, cláusula "melhorada", rótulo de volta para "Minha Carteira": tudo continua vendendo e cobrando, e tudo é descumprimento do contrato com quem detém o dinheiro dos usuários. Mesma classe de defeito do `SegurancaOwaspTest`.
+
+As quatro exigências, e onde cada uma vive:
+
+| Exigência do playbook | Onde está |
+|---|---|
+| Selo visível em **todo** fluxo, página e comunicação com operação financeira | `partials/selo-asaas` (o átomo) + os três enquadramentos: `asaas-pagamento` (checkout), `asaas-recebimentos` (saldo/saque/bônus/subconta), `brand-footer` (rodapé de página) e `emails/partials/asaas-rodape` (comunicações) |
+| **Menção textual** nos documentos legais, no texto do modelo deles | `partials/legal-clausula-baas`, incluído pelos SEIS documentos |
+| Canal de **suporte do Asaas** acessível ao cliente final | `partials/asaas-suporte` (na central `/suporte`, nos seis documentos, no aviso de subconta e no rodapé dos e-mails) |
+| **Nomenclatura**: não se apresentar como instituição financeira/de pagamento nem usar Bank, Banco, Pay, Payments, Financeira, Wallet | ver os dois blocos abaixo |
+
+**O texto da cláusula é do Asaas, e não se reescreve.** O playbook veda ao tomador "alterar nem criar documentos legais relacionados ao processamento financeiro de pagamentos". Por isso ela mora em **um** partial e não em seis cópias — seis cópias é a forma mais segura de alguém "melhorar" uma delas sem ninguém ver. A única substituição permitida é `[NOME DA TOMADORA]` → `empresa.razao_social`.
+
+**O que foi RETIRADO, e é o achado que mais importa:** os Termos diziam que a Plataforma atuava como *"subadquirente/facilitadora"* perante o Processador. Esses rótulos nomeiam atividade de instituição de pagamento — que a SNR FIT não exerce, não é autorizada a exercer, e cuja afirmação é exatamente a vedação de "apresentar-se como instituição financeira ou de pagamento em qualquer canal". Pior: contradizia, no mesmo documento, a cláusula modelo que diz que o tomador é "integradora tecnológica e distribuidora da experiência do produto". Era declaração incorreta sobre quem responde pelo dinheiro, num documento oponível a quem o escreveu.
+
+**"Carteira" saiu dos rótulos dos quatro painéis** (`Meus Recebimentos`), porque `Wallet` está na lista vedada e "carteira" é a mesma palavra em português para a mesma coisa: uma conta de recebimentos **que não é nossa**. Os ids e handlers de JS (`carteira*`, `abrirCarteira`, `fecharCarteira`) **ficam** — o programa restringe o que o usuário lê, não o nome de uma variável, e renomeá-los seria churn com risco de quebrar o painel. Pelo mesmo critério, "Wallet ID" na tela de admin fica: é o nome do campo da API do Asaas, lido por quem opera, não pelo cliente final.
+
+**O selo vem do CDN do Asaas quando houver URL homologada** (`empresa.psp_selo_url` / `psp_selo_url_claro`, enviadas pelo suporte com um `?id=`), e cai na cópia local de `public/img/asaas/` enquanto não houver. A cópia local **não é equivalente**: só a URL do Asaas permite que ele verifique que a aplicação carregou o selo. Dois cuidados que andam juntos com isso: `https://baas.asaas.com` tem de continuar no `img-src` de `config/csp.php` (host ausente = selo **bloqueado** pelo navegador, isto é, descumprimento silencioso) e o `Referrer-Policy` **não** pode virar `no-referrer`/`same-origin`, senão a verificação do selo para de funcionar em todo o site sem quebrar nada visível. O `rel="noopener noreferrer"` do link é recomendação do próprio playbook e vale para a navegação, não para o carregamento da imagem.
+
+**O 0800 do Asaas é de pessoa jurídica** e sai sempre com essa ressalva (`empresa.psp_suporte_telefone_nota`). A maioria dos nossos clientes finais é pessoa física: divulgar o número sem a nota manda o aluno para uma ligação que não o atende, que é pior que não divulgar. Para PF o caminho é `contato@asaas.com.br`.
+
+**Nos e-mails é menção textual, sem imagem, e isso é deliberado:** o selo é SVG, o Gmail não renderiza SVG e vários clientes bloqueiam imagem remota — um selo que não aparece é pior que a menção, porque dá aparência de cumprido. Se houver PNG homologado, ele entra em `emails/partials/asaas-rodape`.
+
+`tests/Feature/ConformidadeBaasAsaasTest.php` prende tudo isso afirmando **frase renderizada**, não arquivo: as páginas são lidas com os espaços colapsados (`textoDe()`), senão o teste passaria a depender de onde o Blade quebrou a linha e acusaria cláusula ausente numa reindentação.
+
+**Lacuna conhecida, fora do site:** o app (React Native, repo separado) tem telas de `Carteira`/saldo/saque sem selo e sem a atribuição. Mesma exigência, mesma solução, outro repositório — e, como a loja distribui binário, a correção lá depende de publicação.
+
 ### Financial Calculation
 
 `Personal::calcularFinanceiroMes()` computes monthly revenue by splitting package sessions (valor_mensal / frequencia) from individual sessions (valor_secao). This logic lives on the model, not in the controller.

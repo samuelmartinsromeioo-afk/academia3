@@ -147,8 +147,75 @@ return [
     // dinheiro dos usuários — pior que a ausência, porque ausência ninguém lê
     // como afirmação. Se algum dia houver dúvida, esvazie em vez de adivinhar:
     // vazio, a linha é omitida da seção 0.1 (igual ao CEP), sem quebrar nada.
-    'psp_razao_social' => env('EMPRESA_PSP_RAZAO_SOCIAL', 'Asaas Gestão Financeira S.A.'),
+    // A razão social é a do MODELO DE CLÁUSULA do "Playbook de BaaS para
+    // clientes Asaas" (slide 11), que é o documento oficial do prestador: ali a
+    // instituição se qualifica como "ASAAS GESTÃO FINANCEIRA INSTITUIÇÃO DE
+    // PAGAMENTOS S.A., instituição de pagamento autorizada a funcionar pelo
+    // Banco Central do Brasil".
+    //
+    // Era 'Asaas Gestão Financeira S.A.' — nome que o próprio playbook também
+    // usa, no fim da mesma cláusula. Os dois correspondem ao mesmo CNPJ, mas o
+    // playbook manda aplicar a cláusula como está escrita e veda ao tomador
+    // "alterar nem criar documentos legais relacionados ao processamento
+    // financeiro de pagamentos" — então quem manda é a forma completa, que é a
+    // que nomeia a licença.
+    'psp_razao_social' => env('EMPRESA_PSP_RAZAO_SOCIAL', 'Asaas Gestão Financeira Instituição de Pagamentos S.A.'),
     'psp_cnpj' => env('EMPRESA_PSP_CNPJ', '19.540.550/0001-21'),
     'psp_site' => env('EMPRESA_PSP_SITE', 'https://asaas.com'),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Suporte do Asaas ao cliente final (exigência do playbook BaaS)
+    |--------------------------------------------------------------------------
+    |
+    | O playbook é explícito: "O cliente final deve ter acesso claro às
+    | informações de suporte do Asaas, sempre que utilizar operações
+    | financeiras de pagamentos processadas pela plataforma" e "o parceiro é
+    | responsável por garantir que o cliente final saiba que pode acionar o
+    | Asaas".
+    |
+    | Isto NÃO substitui o nosso suporte (`email_suporte`), e os dois têm
+    | escopos diferentes de propósito: o nosso atende o produto e o início de
+    | qualquer dúvida de cobrança; o do Asaas atende a operação financeira —
+    | conta de pagamento, liquidação, saque, bloqueio de wallet —, que é
+    | justamente o que não está sob o nosso controle. Omitir o canal dele era
+    | deixar o usuário sem porta para o único responsável por essa parte.
+    |
+    | O 0800 é de ATENDIMENTO A PESSOA JURÍDICA, conforme o playbook, e isso
+    | tem de aparecer junto do número: a maior parte dos nossos clientes finais
+    | é pessoa física, e mandar um aluno ligar num canal que não o atende é
+    | pior que não divulgar o número. Para pessoa física o caminho é o e-mail.
+    |
+    | Valores conforme o playbook recebido em 25/11/2026. Não altere de memória
+    | nem de busca na web: canal de suporte errado em página de pagamento manda
+    | o usuário para o vazio no momento em que ele mais precisa de resposta.
+    */
+    'psp_suporte_telefone' => env('EMPRESA_PSP_SUPORTE_TELEFONE', '0800 009 0037'),
+    'psp_suporte_telefone_nota' => env('EMPRESA_PSP_SUPORTE_TELEFONE_NOTA', 'somente pessoa jurídica; o mesmo número recebe mensagens'),
+    'psp_suporte_email' => env('EMPRESA_PSP_SUPORTE_EMAIL', 'contato@asaas.com.br'),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Selo "Serviços financeiros Asaas" — URL homologada
+    |--------------------------------------------------------------------------
+    |
+    | O playbook determina que os selos sejam servidos do repositório privado
+    | via CDN do Asaas, por URL pública personalizada com um `?id=`, e avisa
+    | que os exemplos impressos no documento NÃO devem ser usados: a URL real
+    | é enviada pelo time de suporte durante a integração.
+    |
+    | Enquanto estas chaves estiverem vazias, `partials/selo-asaas` serve o SVG
+    | local de `public/img/asaas/` — o selo continua visível, que é o requisito
+    | de fundo. Preenchendo-as, o selo passa a vir do CDN do Asaas, e só então
+    | o Asaas consegue VERIFICAR que a aplicação carregou o selo (é para isso
+    | que o playbook pede que o Referer não seja bloqueado na <img>).
+    |
+    | Ao preencher: use a URL inteira, com o `?id=`, exatamente como o suporte
+    | do Asaas enviar, e confirme que `https://baas.asaas.com` continua no
+    | `img-src` de `config/csp.php` — sem isso o navegador bloqueia justamente
+    | a imagem que o programa exige estar visível.
+    */
+    'psp_selo_url' => env('EMPRESA_PSP_SELO_URL', ''),          // variante negativa (fundo escuro)
+    'psp_selo_url_claro' => env('EMPRESA_PSP_SELO_URL_CLARO', ''), // variante positiva (fundo claro)
 
 ];

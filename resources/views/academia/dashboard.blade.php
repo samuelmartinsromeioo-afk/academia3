@@ -330,7 +330,10 @@
                 <i class="ph ph-heartbeat" style="color: var(--primary);"></i> Avaliação física
             </button>
             <button type="button" onclick="abrirCarteira(); toggleMenu();">
-                <i class="ph ph-piggy-bank" style="color: var(--primary);"></i> Minha Carteira
+                {{-- "Carteira" saiu do rótulo: `Wallet` está entre as palavras que o
+                     playbook de BaaS veda ao tomador, porque sugere que quem oferece a
+                     conta é a plataforma. Os ids de JS continuam `carteira*`. --}}
+                <i class="ph ph-piggy-bank" style="color: var(--primary);"></i> Meus Recebimentos
             </button>
             @if(!$filialAtual)
             <button type="button" onclick="window.location.href='{{ route('academia.filiais') }}'">
@@ -657,7 +660,7 @@
 <div id="modalCarteira" class="modal-overlay">
     <div class="modal-content" style="max-width: 480px;">
         <h2 style="color: var(--primary); font-size: 1.4rem; margin-top: 0; font-weight: 900; text-align: center;">
-            <i class="ph ph-piggy-bank"></i> CARTEIRA DA ACADEMIA
+            <i class="ph ph-piggy-bank"></i> RECEBIMENTOS DA ACADEMIA
         </h2>
 
         <div id="carteiraLoading" style="text-align:center; padding:30px 0; color: var(--text-muted);">
@@ -685,7 +688,7 @@
                 </div>
 
                 <p id="carteiraSaqueErro" style="display:none; color:#ff6b6b; font-size:0.82rem; background:rgba(255,107,107,0.1); border:1px solid rgba(255,107,107,0.3); border-radius:8px; padding:10px 14px; margin-bottom:14px;"></p>
-                <p id="carteiraSaqueSucesso" style="display:none; color: var(--success); font-weight:700; text-align:center; padding:8px 0; font-size:0.9rem;">✅ Saque solicitado! O valor chegará via PIX em instantes.</p>
+                <p id="carteiraSaqueSucesso" style="display:none; color: var(--success); font-weight:700; text-align:center; padding:8px 0; font-size:0.9rem;">✅ Saque solicitado! O Asaas vai processar a transferência PIX para a chave do seu perfil.</p>
 
                 <button type="button" id="btnSacar" onclick="confirmarSaque()"
                     style="width:100%; background:var(--primary); color:#000; border:none; border-radius:12px; padding:14px; font-weight:900; font-size:0.95rem; cursor:pointer;">
@@ -708,6 +711,13 @@
                 <i class="ph ph-lightning"></i> Ativar recebimentos
             </button>
         </div>
+
+
+        {{-- Selo obrigatório do programa BaaS: esta tela consulta saldo e ordena
+             transferência, que é gestão de valores. Fora do `carteiraConteudo` de
+             propósito — o selo tem de aparecer também quando a conta ainda não está
+             configurada, que é quando a pessoa se pergunta de quem é a conta. --}}
+        @include('partials.asaas-recebimentos')
 
         <button type="button" onclick="fecharCarteira()" class="btn-save btn-cancel" style="margin-top:14px;">Fechar</button>
     </div>
@@ -845,6 +855,17 @@
         }
     }
 </script>
+{{-- Esta view é um documento standalone: tem o próprio `<head>` e NÃO estende
+     `layouts.academia`, que é quem inclui o rodapé de marca. Então o selo do
+     Asaas e a atribuição de responsabilidade financeira não apareciam na
+     página da academia — só no modal de recebimentos —, e o programa BaaS exige
+     que estejam visíveis no fluxo financeiro. (O comentário em
+     `loja/dashboard` dizia que "o dashboard da academia já o tinha, via
+     layouts.academia"; o layout tem, esta view não o usa.)
+     Funciona aqui porque a view carrega `snrfit-brand.css`, que define
+     `.snr-footer`/`.snr-logo`. --}}
+@include('partials.brand-footer')
+
 @include('partials.celebracao-modal')
 </body>
 </html>

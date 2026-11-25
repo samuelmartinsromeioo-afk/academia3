@@ -226,7 +226,10 @@
         <div class="dropdown-menu" id="dropdownMenu">
             <button type="button" id="btnOpenNovo"><i class="ph ph-plus" style="color: var(--primary);"></i> Novo Produto</button>
             <button type="button" id="btnOpenPedidos"><i class="ph ph-receipt"></i> Pedidos</button>
-            <button type="button" id="btnOpenCarteira"><i class="ph ph-piggy-bank" style="color: var(--primary);"></i> Minha Carteira</button>
+                {{-- "Carteira" saiu do rótulo: `Wallet` está entre as palavras que o
+                     playbook de BaaS veda ao tomador, porque sugere que quem oferece a
+                     conta é a plataforma. Os ids de JS continuam `carteira*`. --}}
+            <button type="button" id="btnOpenCarteira"><i class="ph ph-piggy-bank" style="color: var(--primary);"></i> Meus Recebimentos</button>
             <button type="button" id="btnOpenPerfil"><i class="ph ph-storefront"></i> Editar Loja</button>
             <a href="{{ route('lojas.detalhes', $loja->id) }}" target="_blank"><i class="ph ph-eye"></i> Ver minha vitrine</a>
             <a href="{{ route('indicacoes.painel') }}"><i class="ph ph-gift"></i> Indique e ganhe</a>
@@ -578,7 +581,7 @@
 <div id="modalCarteira" class="modal-overlay">
     <div class="modal-content" style="max-width:480px;">
         <button type="button" class="modal-close" onclick="document.getElementById('modalCarteira').style.display='none'">&times;</button>
-        <h2 style="color:var(--primary); text-align:center;"><i class="ph ph-piggy-bank"></i> Carteira da Loja</h2>
+        <h2 style="color:var(--primary); text-align:center;"><i class="ph ph-piggy-bank"></i> Recebimentos da Loja</h2>
 
         <div id="carteiraLoading" style="text-align:center; padding:30px 0; color:var(--text-muted);">
             <i class="ph ph-spinner ph-spin fa-2x"></i><br><br>Consultando saldo...
@@ -613,12 +616,18 @@
                     <button onclick="sacarTudo()" style="background:rgba(255,255,255,0.07); color:#fff; border:1px solid var(--border); border-radius:10px; padding:10px 14px; font-size:0.8rem; cursor:pointer; white-space:nowrap;">Tudo</button>
                 </div>
                 <p id="carteiraSaqueErro" style="display:none; color:#ff6b6b; font-size:0.82rem; background:rgba(255,107,107,0.1); border:1px solid rgba(255,107,107,0.3); border-radius:8px; padding:10px 14px; margin-bottom:14px;"></p>
-                <p id="carteiraSaqueSucesso" style="display:none; color:#4caf50; font-weight:700; text-align:center; padding:8px 0; font-size:0.9rem;">✅ Saque solicitado! O valor chega via PIX em instantes.</p>
+                <p id="carteiraSaqueSucesso" style="display:none; color:#4caf50; font-weight:700; text-align:center; padding:8px 0; font-size:0.9rem;">✅ Saque solicitado! O Asaas vai processar a transferência PIX para a chave do seu perfil.</p>
                 <button id="btnSacar" onclick="confirmarSaque()" class="btn-save" style="width:100%;">
                     <i class="ph ph-arrow-down"></i> Sacar via PIX
                 </button>
             </div>
         </div>
+
+        {{-- Selo obrigatório do programa BaaS: esta tela consulta saldo e ordena
+             transferência, que é gestão de valores. Fora do `carteiraConteudo` de
+             propósito — o selo tem de aparecer também quando a conta ainda não está
+             configurada, que é quando a pessoa se pergunta de quem é a conta. --}}
+        @include('partials.asaas-recebimentos')
     </div>
 </div>
 
@@ -783,7 +792,9 @@
 {{-- Esta view é um documento standalone (não usa layout), então não herdava o
      rodapé de marca — e com ele faltava o selo do Asaas e a atribuição de
      responsabilidade financeira, que o programa BaaS exige estarem visíveis.
-     O dashboard da academia já o tinha, via `layouts.academia`.
+     (Dizia aqui que "o dashboard da academia já o tinha, via layouts.academia":
+     o layout tem, mas `academia/dashboard` também é standalone e não o usa —
+     corrigido lá, com include próprio.)
      Funciona aqui porque a view carrega `snrfit-brand.css`, que define
      `.snr-footer`/`.snr-logo`. --}}
 @include('partials.brand-footer')

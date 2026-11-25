@@ -40,6 +40,7 @@
 
             <p>A cobrança é mensal (assinatura) e o repasse cai automaticamente na sua carteira. Acesse seu painel para acompanhar a agenda e confirmar a presença do aluno.</p>
         </div>
+        @include('emails.partials.asaas-rodape')
         <div class="footer">
             © {{ date('Y') }} SnrFit · E-mail automático, não responda.
         </div>

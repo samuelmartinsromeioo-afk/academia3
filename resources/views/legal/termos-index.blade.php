@@ -154,9 +154,11 @@
             <li><strong>Papel no contrato:</strong> <em>Processador de Pagamentos</em>, conforme
                 definido na cláusula 1.3.</li>
         </ul>
-        <div style="display:flex; justify-content:center; margin:4px 0 2px;">
-            @include('partials.selo-asaas', ['altura' => 34, 'imprimivel' => true])
-        </div>
+        {{-- O selo saiu DESTE bloco, não do documento: a cláusula 0.2, logo
+             abaixo, passou a trazê-lo. Com os dois, a mesma imagem aparecia
+             duas vezes em dois blocos coladinhos — e o selo repetido lê-se como
+             descuido, não como ênfase. Ele continua no topo e no rodapé da
+             página, pelo `legal/layout`. --}}
     </div>
 
     <h3>0.1.1. O que é responsabilidade do Processador de Pagamentos</h3>
@@ -186,10 +188,23 @@
             recebedor e do valor, e registrar o resultado na sua conta.</li>
         <li><strong>A sua própria remuneração</strong> — a Taxa de Intermediação —, que é devida à
             {{ $emp('marca') }} e não ao Processador.</li>
-        <li>O <strong>atendimento inicial</strong> sobre qualquer pagamento feito aqui: você fala
-            com a gente primeiro, pelo
-            <a href="mailto:{{ $emp('email_suporte') }}">{{ $emp('email_suporte') }}</a>, e nós
-            acionamos o Processador quando a causa estiver do lado dele.</li>
+        {{--
+            Antes este item dizia só "você fala com a gente primeiro". Ficou
+            incompleto depois do playbook de BaaS, que obriga o tomador a
+            garantir que o cliente final SAIBA que pode acionar o Asaas para
+            suporte das operações financeiras. "Fale com a gente primeiro" lido
+            sozinho sugere que não há outra porta — e há, por exigência do
+            programa. Os dois canais convivem: o nosso é o atendimento de
+            entrada e o único que resolve preço, agenda e cancelamento; o do
+            Asaas é o do responsável pela operação financeira.
+        --}}
+        <li>O <strong>atendimento inicial</strong> sobre qualquer pagamento feito aqui: fale com a
+            gente pelo
+            <a href="mailto:{{ $emp('email_suporte') }}">{{ $emp('email_suporte') }}</a> e nós
+            acionamos o Processador quando a causa estiver do lado dele. Isso
+            <strong>não impede</strong> você de procurar o Processador de Pagamentos diretamente
+            sobre conta de pagamento, liquidação, transferências e saques — os canais dele estão na
+            cláusula 0.2.</li>
     </ul>
 
     <div class="highlighted warn">
@@ -201,11 +216,47 @@
             financeiro por conta própria — ver as cláusulas 2, 7 e 13.</p>
     </div>
 
-    <p class="muted">A Plataforma atua como <strong>subadquirente/facilitadora</strong> perante o
-        Processador de Pagamentos, no âmbito do programa de <em>Banking as a Service</em> por ele
-        oferecido. A atividade privativa de instituição de pagamento é exercida exclusivamente pelo
-        Processador, nos termos da Lei nº 12.865/2013 e da regulamentação do Banco Central do
-        Brasil.</p>
+    {{--
+        Dizia: "A Plataforma atua como SUBADQUIRENTE/FACILITADORA perante o
+        Processador de Pagamentos". A frase foi trocada, e o motivo é de
+        conformidade, não de estilo.
+
+        "Subadquirente" e "facilitadora" nomeiam papéis do arranjo de pagamento
+        — atividade de instituição de pagamento. Afirmá-los é exatamente o que o
+        "Playbook de BaaS para clientes Asaas" veda ao tomador: apresentar-se
+        como instituição de pagamento em qualquer canal e usar nomenclatura que
+        sugira autorização que não possui. Pior: contradizia, no mesmo
+        documento, a cláusula 0.2 — que é o modelo de cláusula do próprio Asaas
+        e diz que o tomador atua "exclusivamente como integradora tecnológica e
+        distribuidora da experiência do produto".
+
+        O conteúdo verdadeiro da frase antiga (a atividade privativa é só do
+        Processador) continua aqui; o que saiu foi o rótulo que atribuía à
+        Plataforma um papel regulatório que ela não tem.
+    --}}
+    <p class="muted">A {{ $emp('marca') }} participa do programa de <em>Banking as a Service</em>
+        oferecido pelo Processador de Pagamentos como <strong>tomadora</strong>, integrando no
+        próprio produto os serviços financeiros prestados por ele. A atividade privativa de
+        instituição de pagamento é exercida <strong>exclusivamente pelo Processador</strong>, nos
+        termos da Lei nº 12.865/2013 e da regulamentação do Banco Central do Brasil, e a
+        {{ $emp('marca') }} <strong>não a exerce em nome próprio</strong> nem se apresenta como
+        autorizada a exercê-la.</p>
+
+    {{-- ─────────────────────────────────────────────────────────────── --}}
+
+    {{--
+        Cláusula de Prestação de Serviços Financeiros — modelo do Asaas,
+        transcrito em `partials/legal-clausula-baas`. O playbook exige a menção
+        textual nos documentos legais e veda ao tomador alterar ou criar
+        documento legal sobre o processamento financeiro, então o texto entra
+        como ele é e vive num lugar só, incluído pelos seis documentos.
+
+        Fica em 0.2, logo depois da identificação do responsável (0.1): as duas
+        respondem à mesma pergunta — quem presta o serviço financeiro — e a 0.1
+        é o detalhamento que o modelo não traz (CNPJ, divisão de
+        responsabilidades, canal de atendimento).
+    --}}
+    @include('partials.legal-clausula-baas', ['titulo' => '0.2.'])
 
     {{-- ─────────────────────────────────────────────────────────────── --}}
 

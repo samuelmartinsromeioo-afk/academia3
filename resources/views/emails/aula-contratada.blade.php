@@ -42,6 +42,7 @@
  
             <p>Acesse o sistema para visualizar todos os seus alunos.</p>
         </div>
+        @include('emails.partials.asaas-rodape')
         <div class="footer">
             © {{ date('Y') }} SnrFit · E-mail automático, não responda.
         </div>

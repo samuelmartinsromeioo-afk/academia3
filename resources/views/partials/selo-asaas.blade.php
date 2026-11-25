@@ -5,16 +5,31 @@
     `partials/asaas-pagamento`, que inclui este. Não duplique a <img> numa view:
     o arquivo do selo, a altura e a opacidade têm de mudar num lugar só.
 
-    O arquivo é servido do NOSSO domínio (`public/img/asaas/`), não de
-    baas.asaas.com. Três razões, todas concretas:
-      1. `baas.asaas.com` não está no `img-src` do `config/csp.php` — apontar
-         para lá faria o navegador BLOQUEAR o selo, justamente a imagem que o
-         programa exige estar visível.
-      2. Um asset do selo fora do ar derrubaria o selo de todas as páginas.
-      3. A URL do Asaas carrega `?id=<uuid>`, ou seja um request a terceiro em
-         toda página — inclusive nas legais, onde o projeto evita de propósito
-         qualquer carga externa sem consentimento.
-    Os SVG locais são byte a byte idênticos aos de baas.asaas.com (conferido).
+    DE ONDE VEM A IMAGEM — o playbook de BaaS manda servir o selo do
+    repositório privado do Asaas, por URL pública com `?id=`, e diz que é assim
+    que o Asaas VERIFICA que a aplicação carregou o selo. A URL real é enviada
+    pelo suporte durante a integração; os links do documento são exemplos e não
+    devem ser usados.
+
+    Então o caminho é configurável, e a ordem é esta:
+      1. `empresa.psp_selo_url` / `psp_selo_url_claro` preenchidas → o selo vem
+         do CDN do Asaas, que é o que o playbook pede. `https://baas.asaas.com`
+         está no `img-src` de `config/csp.php`; sem isso o navegador bloquearia
+         justamente a imagem que o programa exige estar visível.
+      2. Vazias (estado atual, enquanto o suporte não envia a URL) → o SVG
+         local de `public/img/asaas/`, byte a byte idêntico ao de
+         baas.asaas.com (conferido).
+
+    O fallback local existe porque selo ausente é descumprimento: é melhor
+    servir a cópia idêntica do nosso domínio do que deixar a página sem selo
+    esperando uma URL que ainda não chegou. O que o fallback NÃO faz é permitir
+    a verificação do lado do Asaas — por isso ele é fallback, não destino.
+
+    Nenhuma política de referrer é aplicada à <img>: o playbook pede
+    explicitamente que o Referer não seja bloqueado, e o `Referrer-Policy:
+    strict-origin-when-cross-origin` de `SecurityHeaders` envia a origem em
+    requisição cross-origin, que é o que o Asaas precisa ver. Não troque esse
+    header por `no-referrer`.
 
     Parâmetros, todos opcionais:
       $altura     -> altura em px (padrão 30).
@@ -31,12 +46,21 @@
     $imprimivel = $imprimivel ?? false;
 
     $alt = 'Serviços financeiros Asaas';
-    $arquivoEscuro = asset('img/asaas/selo-asaas-negativo-branco.svg');
-    $arquivoClaro = asset('img/asaas/selo-asaas-positivo.svg');
+
+    // URL homologada do Asaas quando configurada; cópia local enquanto não.
+    $arquivoEscuro = \App\Support\Empresa::get('psp_selo_url')
+        ?: asset('img/asaas/selo-asaas-negativo-branco.svg');
+    $arquivoClaro = \App\Support\Empresa::get('psp_selo_url_claro')
+        ?: asset('img/asaas/selo-asaas-positivo.svg');
 
     $estilo = "height:{$altura}px; width:auto; opacity:0.9;";
 @endphp
-<a href="{{ \App\Support\Empresa::get('psp_site') }}" target="_blank" rel="noopener"
+{{-- `rel="noopener noreferrer"` e `target="_blank"` são o que o playbook
+     recomenda para o link do selo: o cliente abre o site do Asaas em outra aba
+     sem perder a jornada em que está. O `noreferrer` aqui vale para a
+     NAVEGAÇÃO ao clicar, não para o carregamento da <img> — o Referer da
+     imagem continua saindo, que é o que o Asaas usa para verificar o selo. --}}
+<a href="{{ \App\Support\Empresa::get('psp_site') }}" target="_blank" rel="noopener noreferrer"
    aria-label="Serviços financeiros fornecidos pela {{ \App\Support\Empresa::get('psp_razao_social') }}"
    style="display:inline-block; line-height:0;">
     @if($imprimivel)

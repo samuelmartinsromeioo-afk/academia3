@@ -642,7 +642,12 @@
                     <i class="ph ph-tag" style="color: var(--primary);"></i> Valores Avaliações
                 </a>
                 <button type="button" id="btnOpenFinance"><i class="ph ph-wallet" style="color: var(--success)"></i> Minhas Finanças</button>
-                <button type="button" id="btnOpenCarteira"><i class="ph ph-piggy-bank" style="color: var(--primary)"></i> Minha Carteira</button>
+                {{-- "Carteira" saiu do rótulo: `Wallet` está entre as palavras
+                     que o playbook de BaaS veda ao tomador, porque sugere que
+                     quem oferece a conta é a plataforma. O id do elemento
+                     continua `btnOpenCarteira` — é referência de JS, não texto
+                     que o usuário lê. --}}
+                <button type="button" id="btnOpenCarteira"><i class="ph ph-piggy-bank" style="color: var(--primary)"></i> Meus Recebimentos</button>
                 <button type="button" id="btnOpenGaleria"><i class="ph ph-images"></i> Minha Galeria</button>
                 <button type="button" id="btnOpenAvaliacoes"><i class="ph-fill ph-star" style="color: var(--primary)"></i> Minhas Avaliações</button>
                 <a href="{{ route('indicacoes.painel') }}" style="display:flex; align-items:center; gap:12px; padding:15px 20px; color:#fff; text-decoration:none; font-size:14px; transition:0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.05)';this.style.color='#7cff00'" onmouseout="this.style.background='';this.style.color='#fff'">
@@ -880,7 +885,7 @@
     <div id="modalCarteira" class="modal-overlay" style="display:none;">
         <div class="modal-content" style="max-width:480px;">
             <h2 style="color:var(--primary); font-size:1.4rem; margin-top:0; font-weight:900; text-align:center;">
-                <i class="ph ph-piggy-bank"></i> MINHA CARTEIRA
+                <i class="ph ph-piggy-bank"></i> MEUS RECEBIMENTOS
             </h2>
 
             <div id="carteiraLoading" style="text-align:center; padding:30px 0; color:#a0a0a0;">
@@ -908,7 +913,11 @@
                     </div>
 
                     <p id="carteiraSaqueErro" style="display:none; color:#ff6b6b; font-size:0.82rem; background:rgba(255,107,107,0.1); border:1px solid rgba(255,107,107,0.3); border-radius:8px; padding:10px 14px; margin-bottom:14px;"></p>
-                    <p id="carteiraSaqueSucesso" style="display:none; color:#4caf50; font-weight:700; text-align:center; padding:8px 0; font-size:0.9rem;">✅ Saque solicitado! O valor chegará via PIX em instantes.</p>
+                    {{-- Antes: "O valor chegará via PIX em instantes." Quem
+                         executa a transferência é o Asaas, e a frase atribuía
+                         a operação (e o prazo) à plataforma — as duas coisas
+                         que o playbook de BaaS veda sugerir. --}}
+                    <p id="carteiraSaqueSucesso" style="display:none; color:#4caf50; font-weight:700; text-align:center; padding:8px 0; font-size:0.9rem;">✅ Saque solicitado! O Asaas vai processar a transferência PIX para a chave do seu perfil.</p>
 
                     <button id="btnSacar" onclick="confirmarSaque()"
                         style="width:100%; background:var(--primary); color:#000; border:none; border-radius:12px; padding:14px; font-weight:900; font-size:0.95rem; cursor:pointer;">
@@ -926,6 +935,13 @@
                 Sua conta de repasse ainda está sendo configurada.<br>
                 Os saques estarão disponíveis em breve.
             </div>
+
+            {{-- Selo obrigatório do programa BaaS: esta tela consulta saldo e
+                 ordena transferência, que é gestão de valores. Fora do
+                 `carteiraConteudo` de propósito — o selo tem de aparecer
+                 também quando a conta ainda não está configurada, que é
+                 exatamente quando a pessoa se pergunta de quem é a conta. --}}
+            @include('partials.asaas-recebimentos')
 
             <button type="button" onclick="fecharCarteira()" class="btn-save" style="margin-top:16px;">Fechar</button>
         </div>

@@ -225,6 +225,12 @@
             (<a href="{{ route('termos') }}#s1-4">cláusula 1.4 dos Termos gerais</a>, item 7).</li>
     </ul>
 
+    {{-- Cláusula modelo do Asaas (programa BaaS), depois de preço/taxa/repasse:
+         a subconta, o saldo e o saque deste documento são a conta de pagamento
+         que a cláusula identifica. Texto único em
+         `partials/legal-clausula-baas`. --}}
+    @include('partials.legal-clausula-baas')
+
     <h2 id="p7">7. ESTORNOS, REEMBOLSOS E COMPENSAÇÃO</h2>
     <p>Quando o aluno exerce o <strong>direito de arrependimento</strong> (7 dias
         <strong>corridos</strong>, art. 49 do CDC), obtém reembolso por vício do serviço, ou quando
